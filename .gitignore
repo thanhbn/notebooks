@@ -1,0 +1,7 @@
+.env
+.claude
+langchain_env
+.venv
+*venv*
+.idea
+
