@@ -1,0 +1,925 @@
+# 2401.12954v1.pdf
+# Converted from PDF to TXT
+# Source path: D:\llm\notebooks\AI-Papers\2401.12954v1.pdf
+# File size: 793470 bytes
+
+===============================================
+PDF FILE CONTENT
+===============================================
+
+
+--- PAGE 1 ---
+Meta-Prompting :
+Enhancing Language Models with Task-Agnostic Scaffolding
+Mirac Suzgun
+Stanford University∗
+msuzgun@stanford.eduAdam Tauman Kalai
+OpenAI∗
+adam@kal.ai
+Abstract
+Weintroducemeta-prompting,aneffectivescaffoldingtechniquedesignedtoenhance
+thefunctionalityoflanguagemodels(LMs). ThisapproachtransformsasingleLMintoa
+multi-facetedconductor,adeptatmanagingandintegratingmultipleindependentLM
+queries. Byemployinghigh-levelinstructions,meta-promptingguidestheLMtobreak
+downcomplextasksintosmaller,moremanageablesubtasks. Thesesubtasksarethen
+handled by distinct “expert” instances of the same LM, each operating under specific,
+tailoredinstructions. CentraltothisprocessistheLMitself,initsroleastheconductor,
+whichensuresseamlesscommunicationandeffectiveintegrationoftheoutputsfromthese
+expertmodels. Itadditionallyemploysitsinherentcriticalthinkingandrobustverification
+processestorefineandauthenticatetheendresult. Thiscollaborativepromptingapproach
+empowersasingleLMtosimultaneouslyactasacomprehensiveorchestratorandapanel
+ofdiverseexperts,significantlyenhancingitsperformanceacrossawidearrayoftasks.
+The zero-shot, task-agnostic nature of meta-prompting greatly simplifies user interaction
+by obviating the need for detailed, task-specific instructions. Furthermore, our research
+demonstrates the seamless integration of external tools, such as a Python interpreter, into
+themeta-promptingframework,therebybroadeningitsapplicabilityandutility. Through
+rigorous experimentation with GPT-4, we establish the superiority of meta-prompting
+over conventional scaffolding methods: When averaged across all tasks, including the
+Gameof24,Checkmate-in-One,andPythonProgrammingPuzzles,meta-prompting—
+augmentedwithaPythoninterpreterfunctionality—surpassesstandardpromptingby
+17.1%, expert (dynamic) prompting by 17.3%, and multipersona prompting by 15.2%.1
+Std0-CoTEx-StEx-DyMPMeta020406080100Task Accuracy (%)Game of 24
+Std0-CoTEx-StEx-DyMPMeta020406080100Checkmate-in-One
+Std0-CoTEx-StEx-DyMPMeta020406080100Sonnet Writing
+Figure1: EnhancingGPT-4withmeta-prompting. Inthisstudy,weintroduceandexaminetheeffectivenessofmeta-
+prompting, contrasting it with a range of zero-shot prompting techniques, including standard zero-shot (Std), zero-shot
+chain-of-thought (0-CoT; Kojima et al .(2022)), generic and dynamic expert (Ex-St and Ex-Dy; Xu et al .(2023)), and
+multipersona(MP;Wangetal.(2023)). Ourresearchdemonstratesthatmeta-prompting,particularlywhencombined
+with a Python interpreter, significantly improves overall accuracy and robustness in GPT-4 across a variety of tasks.
+∗Work done while at Microsoft Research New England.
+1The data, prompts, and the model outputs are all available at https://github.com/suzgunmirac/meta-prompting .
+1arXiv:2401.12954v1  [cs.CL]  23 Jan 2024
+
+--- PAGE 2 ---
+1 Introduction
+The latest generation of language models (LMs)—notably, GPT-4 (OpenAI, 2023), PaLM (Anil et al ., 2023),
+and LLaMa (Touvron et al ., 2023)—have expanded the boundaries of natural-language processing and
+generation. These large-scale models can tackle a wide spectrum of tasks, ranging from writing Shake-
+spearean sonnets about hedgehogs to summarizing intricate medical reports and solving competition-level
+programming puzzles. Despite their versatility, these models are not infallible; they sometimes generate
+responsesthatareinaccurate,misleading,orconflicting. Astheoperationalcostsofthesemodelsbecome
+more affordable, it becomes natural to ask whether one might use scaffolding systems and leverage multiple
+LM queries to not only refine but also to enhance the accuracy and robustness of these model outputs.
+In this work, we introduce a new technique for enhancing the functionality and performance of LMs, called
+meta-prompting. Itinvolvesconstructingahigh-level“meta”promptthatinstructsanLMto: (i)breakdown
+complextasksorproblemsintosmaller,manageablepieces;(ii)assignthesepiecestospecialized“expert”
+modelswithproperanddetailednatural-languageinstructions;(iii)overseethecommunicationbetween
+theseexpertmodels; and(iv)applyitsowncriticalthinking,reasoning, andverificationskillsthroughout
+the process. When presented with a query, the LM, effectively prompted under meta-prompting, serves
+as a conductor. It produces a message history—a narrative, if you will—comprising the responses from
+variousexpertmodels. TheLMisoriginallyresponsibleforgeneratingtheconductor’sportionofthishistory,
+whichincludestheselectionofexpertsandtheformulationofspecificinstructionsforthem. However,the
+same LM doubles itself as these independent experts as well, generating outputs based on the expertise and
+information chosen by the conductor for each particular query.
+Thisapproachallowsforasingle,uniformLMtomaintainacoherentlineofreasoningwhilealsotapping
+intoavarietyofexpertroles. Theuseofdynamicallyselectedcontextsforpromptingtheseexpertsintroduces
+fresh perspectives into the process, while the conductor model retains a bird’s-eye view of the entire history
+and coordination. This method, therefore, enables a single black-box LM to function effectively as both a
+central conductor and a diverse panel of experts to produce more accurate, reliable, and coherent responses.
+Our proposed meta-prompting technique combines and expands upon various prompting ideas introduced
+byrecentstudies—including, high-levelplanninganddecision-making (Yaoetal .,2023b;Sunetal .,2023;Hao
+etal.,2023a), dynamicpersonaassignment (Xuetal .,2023;Wangetal .,2023),multi-agentdebating (Duetal .,
+2023;Zhugeetal .,2023),self-debuggingandself-reflection (Schicketal .,2023b;Liuetal .,2023a;Gouetal .,2023;
+Madaan et al ., 2023; Shinn et al ., 2023). A key aspect of meta-prompting is its task-agnostic nature. Unlike
+traditional scaffolding methods that require specific instructions or examples tailored to each task, meta-
+prompting employs the same set of high-level instructions across various tasks and inputs. This universality
+isparticularlybeneficialforuserswhomightfinditcumbersometoprovidedetailedexamplesorspecific
+guidance for every distinct task. For instance, in responding to a one-off request like “Write a Shakespearean
+sonnetaboutselfies,”theuserwouldnotneedtosupplyexamplesofhigh-qualityneoclassicalpoems. The
+meta-promptingapproachelevatestheutilityoflanguagemodelsbyofferingabroad,flexibleframework
+withoutcompromisingonspecificityorrelevance. Additionally,todemonstratetheversatilityandintegration
+capabilities of meta-prompting, we have enhanced our system with the functionality to invoke a Python
+interpreter. Thisallowsfor aneven moredynamicand comprehensiveapplication ofthe technique,further
+extending its potential to address a wide array of tasks and queries effectively.
+Weprovideanillustrativevisualizationofameta-promptingsessioninFigure2. ItdepictshowtheMeta
+Model—ourtechnicaltermforthecentralcontrollingLM(a.k.a. theconductor)—interspersesitsownoutput
+withinputsandoutputsfromvariousspecializedexpertmodelsorcodeexecutions. Suchaconfiguration
+makes meta-prompting a nearly universal tool. It allows for the consolidation of various LM interactions and
+computations into a single, coherent narrative. What sets meta-prompting apart is that it leaves the decision
+of which prompts to use and which code snippets to execute to the discretion of the LM itself.
+In our comprehensive experiments, which primarily utilize GPT-4 as the foundational LM, we compare
+the efficacy of meta-prompting against other task-agnostic scaffolding methods. Our findings reveal that
+meta-promptingnotonlyenhancesoverallperformancebutoftenleadstostate-of-the-artresultsacrossa
+diverse range of tasks. Its flexibility is noteworthy: The conductor model has the capability to call upon
+2
+
+--- PAGE 3 ---
+Based on the information given, what are the most logical next steps or conclusions? Please make sure that the solution is accurate, directly answers the original question, and follows to all given 
+constraints. Additionally, please review the ﬁnal solution yourself or have another expert(s) verify it. Expert Chess Analyst: ""You are a chess analyst with expertise in reviewing and verifying chess moves, strategies, and tactics. Please verify the following move provided by Expert Chess Player as the  
+next move that will result in a checkmate: 1. d4 d5 2. g3 c6 3. Bg2 Nf6 4. Nf3 e6 5. O-O Be7 6 [...]  31. Qxg6 Re8 32. Rxe8+ Qf8 33. Rxf8# . Conﬁrm if this move is accurate and results in a checkmate.""" [...]  Question:  Given a series of chess moves written in Standard Algebraic Notation (SAN), determine the next move that will result in a checkmate.  1. d4 d5 2. g3 c6 3. Bg2 Nf6 4. Nf3 e6 5. O-O Be7 6. 
+Re1 O-O 7. Nbd2 Nbd7  [...]  31. Qxg6 Re8 32. Rxe8+ Qf8 33.  Let's ﬁrst come up with a list of experts you may want to consult for this problem and then immediately start solving it. Injected Instruction 
+Expert Chess Player: """You are a chess expert with deep knowledge of the game, including strategies, tactics, and Standard Algebraic Notation (SAN). Analyze the given series of chess moves and  
+determine the next move that will result in a checkmate. Here is the series of moves: 1. d4 d5 2. g3 c6 3. Bg2 Nf6 4. Nf3 e6 5. O-O Be7 6. Re1 O-O 7. Nbd2 Nbd7 [...] 31. Qxg6 Re8 32. Rxe8+ Qf8 33. """
+Meta Model Output  (prompted on the entire message history) 
+Yes, the sequence of moves provided is accurate and results in a checkmate. The ﬁnal move, 33. Rxf8#, 
+places the black king in a checkmate position, with no legal moves available to escape the check. Based on the information given, what are the most logical next steps or conclusions? Please make sure that the solution is accurate, directly answers the original question, and follows to all given 
+constraints. Additionally, please review the ﬁnal solution yourself or have another expert(s) verify it. 
+Expert Chess Analyst Output (after prompted only on the highlighted text) 
+Since the Expert Chess Analyst has conﬁrmed the accuracy of the move provided by the Expert Chess Player , we can now present the ﬁnal answer .  
+>> FINAL ANSWER: """33. Rxf8#""" 
+Rxf8# 
+Expert Chess Player Output (after prompted only on the highlighted text) 
+Injected Instruction 
+Injected Instruction 
+Meta Model Output  (prompted on the entire message history) 
+Meta Model Output  (prompted on the entire message history) 
+You are Meta-Expert, an extremely clever expert with the unique ability to collaborate with multiple experts (such as Expert Problem Solver , Expert Mathematician, Expert Essayist, etc.) to tackle any 
+task and solve any complex problems. Some experts are adept at generating solutions, while others excel in verifying answers and providing valuable feedback…   System Instruction 
+Figure2: Anexamplemeta-promptinghistory,wherethepromptshavebeenshortenedforillustrativepurposes. The
+historyisinitializedbyaquestionprovidedbyauser. Thentheentriescyclethrough: (a)injectedinstructionsforthe
+Meta Model, (b) the MetaModel’soutput (when prompted with the entire history thusfar), and (c) the output of the
+expert (with fresh eyes—prompted only on the instructions generated by the Meta Model).
+expertmodels(basicallyitself,albeitwithfreshinstructions)forperformingavarietyoffunctions. These
+functions might include critiquing earlier outputs, selecting specific personas for certain tasks, refining
+generated content, and ensuring that the final outputs meet the desired criteria in both substance and form.
+This approach shows a marked improvement over several existing methods, as demonstrated in Figure 1.
+Thecorecontributionofthisworkistheintroductionofatask-agnosticscaffoldingsystemthatleveragesa
+single LM. This LM not only carries forward the thread of the task but also dynamically selects and instructs
+expertmodelsappropriateforeachspecifictask. Theeffectivenessofthissystemisshowcasedacrossvarious
+benchmarks,includingtheGameof24(Yaoetal .,2023a),Checkmate-in-OnefromtheBIG-Benchsuite(BIG-
+Bench authors, 2023), and our novel task of “Shakespearean Sonnet Writing.” Overall, our empirical results
+underscore the versatility and robustness of meta-prompting in enhancing LM performance.
+2 Meta Prompting
+Intuition and Abstract Overview. The modus operandi of meta-prompting is to use a model2to coordinate
+andexecutemultipleindependentinquiriesandsubsequentlysynthesizetheirresponsestorenderafinal
+response. Thismechanism,inprinciple, endorsesanensembleapproach,drawingfromthestrengthand
+diversity of independent specialized models to collaboratively address and tackle multifaceted tasks or
+problems. Wepositthatwhileasingle,general-purposemodelmightdelivervaluableandusefulinsights
+intogenericqueries, combiningtheperspectivesandconclusionsofmultipledomain-specificmodels(which
+we also refer to as experts) has the potential to yield more comprehensive, robust, and accurate solutions.
+2Our use of the term model refers to the application of an LM with certain prompt templates to play a specified “role.” We typically
+only use a single LM (e.g., GPT-4) to implement all the models in an execution.
+3
+
+--- PAGE 4 ---
+Centraltoourmeta-promptingstrategyisitsshallowhierarchicalconfiguration,whereasinglemodel—called
+the “Meta Model”—emerges as the principal entity of authority. This prompting structure is reminiscent of
+anorchestra,whereintheconductor’sroleismirroredbytheMetaModelandeachmusiciancorresponds
+to a distinct domain-specific model. Just as a conductor harmonizes multiple musical elements to craft a
+beautiful melody, the Meta Model combines solutions and insights from a range of models to provide an
+accurate and comprehensive answer to an intricate problem or task.
+Conceptually,adomain-specificexpertwithinourframeworkcantakediverseforms,suchasafinetunedLM
+tailored to perform a particular task, a specialized API equipped to handle specific domain-related inquiries,
+or even computational tools like calculators or a Python interpreter that can perform arithmetic calculations
+orwriteandexecutecode. Theseexperts,despitetheirvaryingfunctionalities,aredirectedandunifiedunder
+the supervision of the Meta Model.
+Underoursetup,expertscanbecalledonlybytheMetaModel. Theycannotdirectlyinteractorcommunicate
+with each other, though the Meta Model can choose to share some text from or combine the insights of
+various experts when interacting with a new expert. This restriction is made to simplify the communication
+between the experts and to put the Meta Model at the center of the operation.
+Notation and Terminology. Before we delve into the specific steps involved in meta-prompting, we establish
+somenotationandterminology. Welet Sdenotethesetoffinitestrings,with ∅representingtheemptystring.
+We use x∈Sto refer to a test-time query, which can be a task or a problem described in natural language. A
+crucial element of meta-prompting isthe fixed language model, denoted as LM, which operates from StoS.
+Thismodel,likeGPT-4,takesaninputtext(aprompthistorythatmayincludealistofpreviousmessages,
+symbolizedby H)andproducesacorrespondingoutput(i.e.,response). Wealsointroducespecifictemplate
+functions: tinit, tmid,andtexp,eachmappingfrom StoS;eachtakesastringinputandformatsitaccordingtoa
+predefinedtemplate. Specifically, tinitandtmidareusedtoformattextforthehistorygiventotheMetaModel,
+while texpwrapstheoutputoftheMetaModelinapromptsuitableforanexpertmodel. Furthermore,we
+have two string extractors, eexpanderet, each mapping from StoS. These extractors are designed to retrieve
+asubstringthatisenclosedwithinspecificdelimiters,returningthefirstmatchingsegmentincaseswhere
+multiple segments are present. The symbol ⊕is used to represent string concatenation. Lastly, we introduce
+a specific string referred to as error ∈S, which is designed to denote an error message in the process.
+Algorithmic Procedure. Algorithm 1 provides pseudocode of our proposed meta-prompting approach. We
+further provide a conceptual overview of the procedure below:
+Algorithm 1 Meta Prompting
+Input:LM:S→S;x,error∈S;T∈N;tinit, tmid, texp, eexp, eret:S→S
+1:H1←tinit(x)
+2:fort∈[1, . . . , T ]do
+3: yt←LM(Ht)
+4:ifeexp(yt)̸=∅then ▷Meta Model provided expert instructions
+5: prompt ←texp(eexp(yt))
+6: zt←LM(prompt )
+7: Ht+1← H t⊕tmid(zt)
+8:else if eret(yt)̸=∅then ▷Meta Model returned a final answer
+9: return eret(yt)
+10:else ▷Meta Model formatting error
+11: Ht+1← H t⊕error
+12:end if
+13:end for
+1.Transforming the Input : Using the transformation function tinit, the raw query is placed in a suitable
+template followed by initial instructions to the Meta Model.
+2.Loop Iteration :
+4
+
+--- PAGE 5 ---
+(a)Prompting the Meta Model : The current message list, namely Ht, guides the Meta Model’s next
+action—either directly addressing the query or consulting a domain-specific expert.
+(b)Engaging Domain-Specific Expert Models : If the Meta Model does not return a result, it can
+conjureanyexpertandgiveitinstructions,whichareextractedfromitsoutputusing eexp. This
+process is isolated though: Each expert only sees what the Meta Model chooses to share with
+them,andrespondsaccordingly. Forinstance,ifaproblempertainstomathematicsandhistory,
+the Meta Model might consult a mathematics expert for a calculation and a history expert for
+historical context. The output of the expert is extracted and additional instructions are appended,
+all using the tmidtemplate.
+(c)ReturningtheFinalResponse : IftheMetaModel’sresponsecontainsafinalanswer(highlighted
+by distinct special markers), the solution is extracted using eretand returned.
+(d)ErrorHandling : Incaseswherethemodelresponse ytcontainsneitherafinalanswernoracall
+to an expert model, an error message appended to the message list Ht. This ensures that our
+procedure is robust and can handle unexpected outputs.
+Meta and Expert Model Specifications. In our setup, we employ the same LM, such as GPT-4, to function in
+both Meta and Expert capacities. Their roles are distinguished by their respective model instructions in their
+prompts, with the Meta Model adhering to a set of instructions provided in Figure 3, and the expert models
+following separate instructions dynamically determined by the Meta Model at inference time .
+3 Experimental Setup
+3.1 Baselines
+We compare meta-prompting with the task-agnostic, zero-shot versions of the following prompting methods:
+•Standard prompting : This represents our most basic baseline wherein an LM is asked to directly yield
+aresponsewithoutanyspecificguidinginput-outputexemplarsoranyadditionalguidinginstructions,
+besides the task description already included in the input query.
+•Zero-shot CoT prompting (Kojima et al ., 2022): Drawing inspirations from the chain-of-thought
+method of Wei et al .(2022b), this zero-shot prompting approach simply appends “Let’s think step by
+step” to the input query, encouraging the model to have a more deliberative and iterative cognition
+before addressing the problem or task at hand.
+•Expertprompting (Xuetal .,2023): Thispromptingapproachfunctionsthroughatwo-stepprocess:
+It first crafts an expert identity tailored to align with the specific context of the input query. It then
+integratesthisgeneratedexpertprofileintotheinputtogenerateawell-informedandauthoritative
+response. Inourexperiments,weconsidertwoversionsofexpertprompting,namely(a) static(i.e.,
+generic)and(b) dynamic(i.e.,adaptive); theformerusesafixedandgenericexpertdescription,whereas
+the latter adaptively designs a new expert identity for each input query.
+•Multi-personaprompting (Duetal .,2023): Alsoknownassolo-performanceprompting(SPP),this
+method instructs an LM to perform the following: (i) Propose a small ensemble of “personas” to
+address the specific task or problem at hand; (ii) let these personas engage in a collective dialogue,
+collaborativelygeneratingpotentialsolutionswhileextendingfeedbacktooneanotherandrefining
+their answers; and (iii) synthesize all the available information and deliver a final response.
+3.2 Datasets and Tasks
+Toevaluatetheefficacyofourproposedmeta-promptingapproachoverotherzero-shotpromptingbaselines,
+weconsiderawiderangeoftasksanddatasetsthatrequirevariousdegreesofmathematicalandalgorithmic
+5
+
+--- PAGE 6 ---
+reasoning, domain-specific knowledge, and literary creativity. These include:
+•(a) TheGame of 24 from (Yao et al ., 2023a) where the goal is to form an arithmetic expression whose
+value is 24 using each of four given numbers exactly once,
+•Three BIG-Bench Hard (BBH; Suzgun et al .(2023b)) tasks—namely, (b) Geometric Shapes , (c)Multi-
+Step Arithmetic Two , and (d) Word Sorting —as well as one reasoning task directly obtained from the
+BIG-Bench suite (BIG-Bench authors, 2023), that is, (e) Checkmate-in-One ;
+•(f)PythonProgrammingPuzzles (P3;Schusteretal .(2021)),acollectionofchallengingprogramming
+puzzles written in Python—with varying difficulty levels;
+•(g)Multilingual Grade School Math (MGSM; Shi et al .(2023)), a multilingual version of the GSM8K
+dataset (Cobbe et al ., 2021) with translations of a subset of examples into ten typologically diverse
+languages, including Bengali, Japanese, and Swahili;
+•(h)ShakespeareanSonnetWriting ,anoveltaskwecreatedwherethegoalistowriteasonnetwith
+strict rhyme scheme “ABAB CDCD EFEF GG,” containing the three provided words verbatim.3
+3.3 Answer Extraction and Evaluation Protocols
+As shown in Figure 3, the system instruction in our proposed meta-prompting method encourages the Meta
+Model to present its final answer in a specific format. This format, designed for consistent and unambiguous
+extraction, requires that the final answer is wrapped within triple quotes and preceded by a distinct marker
+(namely, “ »FINAL ANSWER: ”).
+Once the final answer is extracted from the model and properly post-processed, we also need to evaluate its
+correctness.4Becauseweconsiderawiderangeoftasks,thereisnotasinglemetricthatallowsustomeasure
+accuracy across all. Depending on the nature and formulation of the task, we measure accuracy using one of
+the following three metrics:
+•ExactMatch (EM):Underthisstrictmetric,thecorrectnessofananswerisdeterminedbyitsprecise
+alignment with the ground-truth label(s). An answer is deemed correct only if it is identical to a
+provided reference.
+•Soft Match (SM): This metric offers a more lenient approach than EM. For an answer to be deemed
+correct,itissufficientforaground-truthlabeltobepresentwithinthemodel’soutput,regardlessof
+any additional textual content.
+•FunctionallyCorrect (FC):Thismetricascertainswhethertheanswerisfunctionallycorrect,meaning
+that it adheres to task-specific constraints.
+WeuseEMforGeometricShapes,Multi-StepArithmeticTwo,andCheckmate-in-One;SMforMGSMand
+Word Sorting,; and FC for Game of 24, Python Programming Puzzles, and Shakespearean Sonnet Writing.
+3.4 Models and Inference
+Inourmainexperiments,weconcentrateon GPT-4(gpt-4-32k ),whichisaccessiblethroughMicrosoft’s
+AzureOpenAIService. Additionally,inoursupplementaryexperiments,weinclude GPT-3.5 (gpt-35-turbo ).
+BothGPT-3.5 andGPT-4are modelsfine-tunedfor followinginstructions, thoughGPT-4has demonstrated
+significantly better reasoning and content generation abilities than GPT-3.5.5
+3While all the other tasks and datasets were previously introduced by other studies, we present this task for the first time.
+4Wehavedevelopedsuitablepipelinesforanswerextractionandprocessingtailoredtoeachtask. Specificimplementationdetails
+can be found in our codebase.
+5In our preliminary experiments, we also tested other OpenAI models such as text-davinci-003 and code-davinci-002, but we
+discovered that our meta-prompting approach yielded consequential results when applied to GPT-3.5 and GPT-4.
+6
+
+--- PAGE 7 ---
+In all of our experiments, we consistently applied the same parameters and system instructions to the Meta
+Model. We set the temperature value at 0, the top-p value at 0.95, and the maximum token count at 1024.6
+You are Meta-Expert, an extremely clever expert with the unique ability to collaborate with multiple experts (such as Expert 
+Problem Solver , Expert Mathematician, Expert Essayist, etc.) to tackle any task and solve any complex problems. Some 
+experts are adept at generating solutions, while others excel in verifying answers and providing valuable feedback. 
+Note that you also have special access to Expert Python, which has the unique ability to generate and execute Python code 
+given natural-language instructions. Expert Python is highly capable of crafting code to perform complex calculations when 
+given clear and precise directions. You might therefore want to use it especially for computational tasks. 
+As Meta-Expert, your role is to oversee the communication between the experts, effectively using their skills to answer a 
+given question while applying your own critical thinking and veriﬁcation abilities. 
+To communicate with a expert, type its name (e.g., "Expert Linguist" or "Expert Puzzle Solver"), followed by a colon ":", and 
+then provide a detailed instruction enclosed within triple quotes. For example: 
+Expert Mathematician: 
+"""
+You are a mathematics expert, specializing in the ﬁelds of geometry and algebra. 
+Compute the Euclidean distance between the points (-2, 5) and (3, 7). 
+"""
+Ensure that your instructions are clear and unambiguous, and include all necessary information within the triple quotes. You 
+can also assign personas to the experts (e.g., "You are a physicist specialized in..."). 
+Interact with only one expert at a time, and break complex problems into smaller , solvable tasks if needed. Each interaction 
+is treated as an isolated event, so include all relevant details in every call. 
+If you or an expert ﬁnds a mistake in another expert's solution, ask a new expert to review the details, compare both 
+solutions, and give feedback. You can request an expert to redo their calculations or work, using input from other experts. 
+Keep in mind that all experts, except yourself, have no memory! Therefore, always provide complete information in your 
+instructions when contacting them. Since experts can sometimes make errors, seek multiple opinions or independently 
+verify the solution if uncertain. Before providing a ﬁnal answer , always consult an expert for conﬁrmation. Ideally, obtain or 
+verify the ﬁnal solution with two independent experts. However , aim to present your ﬁnal answer within 15 rounds or fewer . 
+Refrain from repeating the very same questions to experts. Examine their responses carefully and seek clariﬁcation if 
+required, keeping in mind they don't recall past interactions. 
+Present the ﬁnal answer as follows: 
+>> FINAL ANSWER: 
+"""
+[ﬁnal answer] 
+"""
+For multiple-choice questions, select only one option. Each question has a unique answer , so analyze the provided 
+information carefully to determine the most accurate and appropriate response. Please present only one solution if you 
+come across multiple options. Meta Model Instruction
+Figure 3: The instructions given to the Meta Model using the “system message” parameter in the GPT-4 API.
+6Thetemperaturevalue,whichusuallyrangesbetween0and1,controlshowmuchrandomnessorcreativitythemodelexhibits.
+Ideally, a temperature of 0 should lead to the model producing the same output when presented with the same input. However,
+bothGPT-3.5andGPT-4haveshownatendencytogeneratevariedresponsesevenatthissetting. Thismeansthatreproducingour
+exactresultsmightbechallengingunderidenticalexperimentalconditions. Toaddressthisissue,wearereleasingallmodelinputs,
+interactions, and outputs in our GitHub repository.
+7
+
+--- PAGE 8 ---
+Basic Expert SPP Meta ∆
+Task Standard 0-CoT Static Dynamic Multi-Persona -Python +Python (M-S)
+Checkmate-in-One 36.4 32.8 39.6 33.2 17.2 57.2 57.2 +20.8
+Game of 24 3.0 11.0 3.0 2.0 25.0 11.0 67.0 +64.0
+Geometric Shapes 56.8 69.255.2 53.6 57.6 58.4 59.2 +2.4
+MGSM (avg) 84.4 85.5 83.0 85.0 85.7 85.4 84.8 +0.4
+Multi-Step Arithmetic 84.0 83.2 83.2 78.8 91.6 84.8 90.0 +6.0
+Python Prog. Puzzles 31.1 36.3 33.8 25.0 32.5 32.7 45.8 +14.7
+Sonnet Writing 62.0 71.2 74.0 74.0 73.2 77.6 79.6 +17.6
+Word Sorting 80.4 83.6 83.2 85.2 79.2 84.0 99.6 +19.2
+Average (macro) 54.8 59.1 56.9 54.6 57.7 61.4 72.9 +18.1
+Table 1: Comparison of baselines with meta-prompting across tasks. Without a Python interpreter, meta-prompting
+significantly outperforms other methods on the Checkmate-in-One and Sonnet Writing tasks and is on par on most
+other tasks except Geometric Shapes. Meta-prompting can leverage the Python interpreter in a task-agnostic manner to
+improve performance significantly across many tasks.
+4 Main Results and Discussion
+The resultsof our experiments, summarizedin Table 1,demonstrate the superior effectivenessof our meta-
+prompting approachcompared to the standardzero-shot prompting methods. Whenwe look at theoverall
+performance across all tasks, there is a notable increase in accuracy with meta-prompting, especially when it
+isaugmentedwith aPythoninterpreter. Specifically, meta-promptingoutperformsstandardpromptingby
+17.1%, expert (dynamic) prompting by 17.3%, and multipersona prompting by 15.2%. Below, we delve into
+four key insights that emerged from our empirical analysis.
+4.1 Overall Performance
+The meta-prompting approach, particularly when augmented with a Python interpreter, consistently outper-
+forms conventional zero-shot prompting across various tasks. This approach proves to be especially effective
+intacklingtasksthatareheavilyreliantonheuristicoriterativetrial-and-errorproblem-solvingstrategies.
+IntheGameof24challenge,weseeanaccuracyimprovementofover60%comparedtothebasicstandard
+prompting method (highlighted in pink), about a 15% gain in Python Programming Puzzles, and close to an
+18% increase in accuracy for Sonnet Writing. These tasks require complex, iterative, and heuristic search
+strategies, where conventional single-shot prompting falls short. Conversely, meta-prompting leverages the
+collective intelligence of various expert personas to iteratively navigate towards a solution, thus fostering a
+more dynamic and effective problem-solving ecosystem.
+Expanding upon its capabilities, meta-prompting appears to be effective in creative writing tasks as well.
+In the Shakespearean Sonnet Writing task, for instance, which demands linguistic precision and creative
+conformityto specificpoeticstructures, meta-promptingnotablyenhancesperformance. Whilestandard
+promptingmethodsyielda62%accuracyrate,meta-promptingachieves79.6%and77.6%accuracy,withand
+without a Python interpreter, respectively.
+InMGSMandGeometricShapes,thebenefitsofmeta-promptingovertheotherpromptingapproachesseem
+minimal based on the first impression. Nonetheless,meta-prompting does provide 4-6% gains in Bengali and
+Telugu, two underrepresented languages with the lowest baseline performances. In Geometric Shapes,7we
+had expected that GPT-4 to identify the shapes of objects by generating and executing appropriate codes
+undermeta-prompting,butthisdidnothappen. Meta-promptingyieldedonlyamodest2.4%gaininthis
+7This task involves naming a shape from its SVG path. Note that the LMs we used did not offer visual capabilities at the time.
+8
+
+--- PAGE 9 ---
+geometrictask. We,however,acknowledgethatthezero-shot-CoTbaselineperformedsurprisinglybetter
+than all the other methods, outperforming meta-prompting with a 10% accuracy gap.
+WhilethemostsignificantgainswereobservedusingaPythoninterpreter,wenotethatfortheCheckmate-in-
+Onetask,meta-promptingachieveda20.8%gainevenwithoutit. Overall,ourresultshighlighttheversatility
+ofmeta-promptingandunderscoreitspotentialforbroadapplicationbeyondstrictlycomputationalproblems.
+4.2 Zero-Shot Decomposition, Error Detection, and Aggregation
+The success of our meta-prompting framework lies partly in its strategic use of specialized knowledge, self-
+collaboration, and implicit verification loops. This approach, as well as multipersona prompting, encourages
+multi-turn interactions where different personas collaborate to resolve a problem.
+Toillustratehowtheframeworkcanbebeneficial,considersolvingmultilingualarithmeticproblemsfromthe
+MGSMdataset. GPT-4,underthemeta-promptingmethod,typicallyfollowsathree-phaseapproach: initially
+translatingtheproblemfromthesourcelanguage(e.g.,Bengali)toEnglish,thenapplyingcomputational
+expertise(likecallinganExpertMathematician)tofindasolution,andfinally,conductinganindependentor
+corroborated verification. This unsupervised approach aligns with the multilingual CoT prompting method
+usedbyShietal .(2023)forMGSM,wherethepromptinstructstheLMtofirsttranslatetheproblemand
+then solve it. Meta-prompting performs such translation without explicitly being instructed to do so.
+Ourstructuredapproachembodiestheprincipleofthewisdomofthecrowd(Suzgunetal.,2023a),which
+positsthatacollectiveopinionofadiversesetofcriticalthinkersoftensurpassestheinsightsofindividual
+experts. By harnessing an ensemble of specialized expert models under the guidance of the Meta Model,
+each contributing from different angles of expertise, we achieve more accurate and reliable problem-solving.
+4.3 Fresh Eyes
+Theconceptof fresheyes helpsmitigatethewell-knownproblemofLMsdoubling-downontheirmistakes
+and exhibiting overconfidence (see, e.g., Zhang et al ., 2023b). Fresh eyes are a crucial differentiator between
+meta-prompting and the multipersona prompting, and thus comparing experimental results demonstrates
+the advantage. In meta-prompting, fresh perspectives are introduced by engaging experts—or personas—to
+reassess the problem. This approach provides an opportunity for novel insights and the potential discovery
+of previously unnoticed incorrect solutions.
+Groundedinprinciplesfromcognitivepsychology,freshperspectivescanleadtomorecreativeproblem-
+solving and error detection. When individuals or models approach a problem without preconceived notions,
+theyaremorelikelytoconsideralternativesolutionsandidentifyerrorsthatmighthavebeenoverlooked.
+Fresh eyes may help avoid cognitive biases such as anchoring, confirmation bias, as well as overconfidence.
+Consider the following summary of an execution, which illustrates the benefit of “fresh eyes” in practice.
+Saythetaskisthe24game,e.g.,touseeachofthenumbers6,11,12,and13,exactlyonce,inanarithmetic
+expression whose value is 24. The history may look something like the following:
+1.The Meta Model proposes consulting experts in mathematics, problem-solving, and Python program-
+ming. It emphasizes the need for accuracy and adherence to constraints, suggesting the involvement of
+another expert for review if needed.
+2.Anexpertproposesasolution,whichasecondexpertidentifiestobeincorrect,andtheMetaModel
+suggests writing a Python program to find a valid solution.
+3. A programming expert is consulted to write a program.
+4.Anotherprogrammingexpertidentifiesanerrorinthescript,modifiesit,andthenexecutestherevised
+script.
+9
+
+--- PAGE 10 ---
+5. A mathematics expert is consulted to verify the solution output by the program.
+6. After this verification, the Meta Model outputs it as the final answer.
+This example underscores how meta-prompting, incorporating fresh perspectives at each step (since the
+expert’spromptdoesnotincludethewhole history),notonlyfinds solutionsbutalso effectivelyidentifies
+and corrects errors. The diversity of perspectives, ranging from problem-solving strategies to technical
+execution andverification, demonstrates howdifferent anglesof expertisecontribute toa morerobust and
+reliable problem-solving process.
+4.4 Real-Time Code Execution
+TheintroductionofaPythonexpertforcodegenerationandexecutionwithinourmeta-promptingframework
+leads to significant advancement in tackling algorithmic challenges. This enhancement is evident in Python
+Programming Puzzles, where the integration of the Expert Python into the meta-prompting framework
+elevates the success rate from 32.7% to 45.8%. This improvement primarily arises from the Meta Model’s
+ability to use a Python expert for generating and executing code based on natural-language instructions.
+Real-timecodeexecutionenablesinstantvalidationandoptimizationofsolutions,substantiallyimproving
+both the efficiency and precision of problem-solving.
+This enhancementis notconfined toa single tasktype, however. Intasks suchas the Gameof 24and Word
+Sorting,accuracyratesincreaseby56.0%and15.6%,respectively,withtheintegrationofaPythoninterpreter
+intometa-prompting. (Whencomparedwiththebaselinestandardprompting,theaccuracygainscorrespond
+to 64.0% and 19.2%, respectively.) These improvements highlight the significant role of code generation and
+executioninenhancingtheeffectivenessofthemeta-promptingframework,demonstratingitstransformative
+impactacrossvariouscomputationaltasks. Overall,integratingaPythoninterpreterresultsinanaverage
+performanceimprovementofanadditional11.5%acrossdifferenttaskscomparedtometa-promptingwithout
+a Python interpreter.
+However,theintroductionofreal-timecodeexecutionalsobringsessentialsecurityconsiderations. Estab-
+lishingsuchasystemrequiresasecureandcontrolledenvironmenttomitigateriskssuchasdatabreaches
+andsystemvulnerabilities. Therefore,thedeploymentofaPythoninterpreterwithinthemeta-prompting
+framework should be fortified with a secure sandbox. These measures are crucial to ensure the system’s
+integrityandtheprotectionofuserdata,ensuringthattheadvantagesofimprovedproblem-solvingefficiency
+are not compromised in any way by security and privacy concerns, among other issues.
+Expert Graphic Designer (63.1%) Expert Geometer (15.5%)Expert Mathematician (95.2%)Expert Python (64.3%) Expert Mathematician (15.8%)Expert Poet (50.2%) Expert Essayist (37.6%)Expert Chess Player (48.4%) Expert Chess Analyst (32.1%)Expert Python (73.9%) Expert Linguist (16.8%)Expert Mathematician (41.8%) Expert Python (36.0%) Expert Problem Solver (22.3%)
+0 20 40 60 80 100Geometric ShapesMultistep Arithmetic T woPython Programming PuzzlesSonnet W ritingCheckmate-in-OneWord SortingGame of 24
+Expert Linguist Expert Chess Player 2 Expert Chess Analyst Expert Chess Player Expert Literary Critic Expert Essayist Expert Poet
+Expert Python Programmer Expert Python Expert Problem Solver Expert Mathematician Expert Graphic Designer 2 Expert Geometer Expert Graphic DesignerPercentage (%)
+Figure4: DistributionofexpertsconjuredbytheMetaModelinexperiments involving aPythoninterpreter. Theremaining
+blank space represents a combination of experts that were employed infrequently.
+10
+
+--- PAGE 11 ---
+Expert Graphic Designer (52.1%)Expert Mathematician (59.8%) Expert Arithmetic V erifier (20.7%)Expert Programmer (45.9%) Expert Mathematician (18.7%)Expert Poet (50.1%) Expert Poet Reviewer (25.2%)Expert Chess Player (47.4%) Expert Chess Analyst (38.0%)Expert Linguist (38.9%) Expert Proofreader (21.4%) Expert Essayist (15.9%)Expert Mathematician (51.0%) Expert Problem Solver (44.9%)
+0 20 40 60 80 100Geometric ShapesMultistep Arithmetic T woPython Programming PuzzlesSonnet W ritingCheckmate-in-OneWord SortingGame of 24
+Expert Puzzle Solver Expert Problem Solver Expert Essayist Expert Proofreader Expert Linguist Expert Chess Player 2 Expert Chess Analyst
+Expert Chess Player Expert Literary Critic Expert Poet Reviewer Expert Poet Expert Python Programmer Expert Programmer Expert Arithmetic Checker
+Expert Arithmetic V erifier Expert Mathematician Expert SVG Specialist Expert Graphic Designer 2 Expert Graphic DesignerPercentage (%)Figure 5: Distribution of experts conjured by the Meta Model in experiments withoutthe use of a Python interpreter.
+5 Further Discussion
+5.1 Additional Analysis of Meta Prompting
+AnalysisofExpertTypesUsedinMetaPrompting. TheMetaModel’sdynamicselectionofexperttypes
+distinctly illustrates its adaptability and strategic alignment with specific task requirements. Analyzing tasks
+with and without a Python interpreter offers insightful contrasts in the model’s expert choices, influenced by
+theavailabletoolsandtaskcharacteristics. InscenarioswhereaPythonexpertisexplicitlymentionedfor
+codegenerationandexecution,thereisanoticeablepreferencefortechnicalandcomputationalexpertise.
+Forexample,inPythonProgrammingPuzzles,theMetaModelfrequentlyutilizesExpertPython,Expert
+Mathematician,andseveraltiersofExpertPythonProgrammers. Thispatternrevealsatask-orientedstrategy,
+highlightingafocusonprogrammingandalgorithmicproblem-solving. Similarly,taskssuchasGameof
+24 and Word Sorting prominently feature Expert Python, reinforcing the model’s propensity to rely on
+computational expertise when Python capabilities are accessible.
+In contrast, for meta-prompting without a specific Python expert, the spectrum of experts employed is more
+diverse. Tasks like Geometric Shapes predominantly involve design and geometry experts (e.g., Expert
+Graphic Designer and Expert Geometer), indicating a pivot towards visual and spatial problem-solving
+ratherthancomputationalapproaches. ThistaskillustrateswheretheMetaModelmayhavemadeapoor
+choice of experts, and in particular it might have been more preferable to use an expert in SVG visualizations.
+In Sonnet Writing, the Meta Model naturally leans on literary experts, notably Expert Poet and Expert
+Literary Critic, emphasizing creative and linguistic skills. This pattern demonstrates the Meta Model’s
+ability to dynamically tailor its expert engagement to the demands of the task, utilizing technical experts for
+computational challenges and a varied range of non-computational expertise for creative or abstract tasks.
+NumberofRoundsTakentoReachaSolution. Examiningthemeta-promptingexperimentsinvolvinga
+PythonexpertrevealsthattheaveragenumberofroundsrequiredtoreachasolutionintheMetaModelvaries
+significantly across tasks, indicative of their complexity and specific nature. Simpler tasks, such as Word
+Sorting (3.31 rounds) and Checkmate-in-One (3.48 rounds), typically necessitate fewer rounds, suggesting a
+morelinearandstraightforwardresolutionprocess,likelyduetotheirclearlydefinedparameters. Conversely,
+more algorithmically challenging tasks like Python Programming Puzzles average a higher number of
+rounds at 6.07, reflecting the nuanced and multifaceted aspects of programming tasks that require extensive
+interactionsforthoroughclarificationanditerativerefinement. TheGameof24andMultistepArithmetic
+Two, with averages around 3.5 rounds, meld computational proficiency with logical reasoning, necessitating
+additionalroundsforaccurateandprecisesolutions. Thisobservedcorrelationbetweenthenumberofrounds
+andthetaskcomplexityunderscorestheMetaModel’sproficiencyandadaptability. Itefficientlymanages
+simplertaskswithminimalinteractionswhileskillfullyhandlingthe complexitiesofmorechallengingand
+11
+
+--- PAGE 12 ---
+heuristic-based problems, ensuring precision and efficacy in its solutions. This performance characteristic is
+particularly critical in environments where efficiency and interaction trade-off are key.
+Enhancing Solution Reliability through Systematic Verification. The Meta Model’s systematic verification
+protocol strengthens the reliability and robustness of its solutions. Fundamental to this approach is the
+consistent practice of consulting an expert for validation before finalizing responses, a principle applied
+across diverse tasks. This method is further evidenced by the detailed interaction data. In tasks such as
+Checkmatein One, forinstance, theMeta Modelemploysa two-stepverification strategy. Initially, itconsults
+anExpertChessPlayertocomeupwithasolution,followedbyacriticalverificationfromanExpertChess
+Analyst, ensuring strategic correctness. A similar approach is adopted in Sonnet Writing too, where an
+ExpertPoetdraftsthesonnet,andanExpertPoetReviewerorExpertEssayistreviewsit,makingsurethatthe
+solution adheres to the strict rhyme scheme. This unsupervised but rigorous verification process extends to
+complextaskslikeGameof24andMGSM,involvingbothexternalexpertconsultationsandinternalreviews.
+By integrating this dual verification mechanism, the model significantly enhances solution accuracy and
+reliability, essential for real-world applications where precision is paramount.
+Navigating No-Solution Territories. Meta-prompting enables the Meta Model to acknowledge the absence
+or impossibility of a valid solution or its inability to find one more frequently than other prompting methods.
+In100examples ofthe Gameof 24,themodel reportsno solution9 timeswith ExpertPython and15 times
+without it, compared to the mere 2 instances under standard prompting. In Checkmate, across 250 examples,
+itadmitstonosolution12timeswithoutExpertPythonand10timeswithit,ararityinmultipersonaand
+standard prompting. While there were always solutions, it is arguably preferable to abstain from answering
+rather than provide an incorrect answer. Typically expressed as “No valid solution found” or more explicitly
+as “There is no solution to the 24 game with these numbers given the constraints,” these acknowledgments
+arelikelytheresultofthemodel’sverificationandfeedbackloop,emphasizingaccuracyandconfidenceover
+speculative but incorrect responses.
+Setting the Bar High: GPT-4’s Zero-Shot Task Solving Capabilities. Even without the enhanced capabili-
+ties of meta-prompting, GPT-4 stands out as an effective zero-shot task solver under standard prompting
+conditions. Itsperformanceacrossvarioustasks,includingPythonProgrammingPuzzlesandMGSM,is
+remarkable,particularlywhencomparedtootherLMsashighlightedbyOpenAI(2023). GPT-4excelsas
+a task-agnostic solver, capable of processing and responding to diverse queries effectively. A significant
+attributeofGPT-4isitsproficiencyinfollowinginstructions. Givenclearandunambiguousnatural-language
+instructions, the model demonstrates a high level of compliance and accuracy. This aspect of instruction-
+followingisalsoacornerstoneofourmeta-promptingframework,whereweleverageGPT-4’scapabilities.
+OurexperimentsreinforcethatGPT-4excelsincodegeneration,demonstratesimpressivezero-shotreasoning,
+and engages effectively in role-playing, solidifying its position as a versatile and reliable LM.
+Limited Performance Improvement with GPT-3.5. In comparison toGPT-4, GPT-3.5 demonstratesa more
+limited scope of performance enhancement across various tasks. Although it shows notable improvements
+inspecific taskssuch asSonnet Writingand Checkmate-in-One,its capabilitiesdonotconsistently surpass
+baseline standards or zero-shot CoT prompting methods in other tasks, notably Word Sorting and Multiple
+ArithmeticTwo. OurqualitativeanalysissuggeststhatGPT-3.5maynotbeaseffectiveasGPT-4insimulating
+role-playing scenarios or managing extended context windows. This observation leads us to believe that
+factors such as the scale of the model, the quality and size of the instruction-following corpus may be
+significantly influencing the efficacy of the meta-prompting approach. Furthermore, it appears that the
+advantages offered by meta-prompting may even emerge more prominently at larger model scales.
+5.2 Limitations and Failure Modes of Meta Prompting
+The meta-prompting framework, despite its innovative approach, encounters several notable limitations,
+includingcostefficiency,scalability,operationallinearity,domainrestrictions,informationtransferchallenges,
+and response patterns. A primary limitation is the elevated cost associated with multiple model calls. In our
+setupusingGPT-4,thedualroleoftheMetaModelandtheexperts,distinguishedbyuniqueinstructions,
+incurs substantial costs under the GPT-4 API pricing model. This cost factor diminishes the effectiveness
+12
+
+--- PAGE 13 ---
+of meta-prompting in smaller models like ChatGPT, which lack the comprehensive capabilities of GPT-4.
+Consequently, meta-prompting, though insightful, can become prohibitively expensive due to extensive
+modelinteractionsand lengthy messagehistories. However, these costs willdecrease asthecostsof LMs
+decrease. Note that recent OpenAI API features announced after the experiments were run, namely the
+abilitytoruncodeinasandboxdirectlythroughtheAPI,couldsignificantlydecreasethecostsofoursystem.
+Another critical limitation is the requirement for substantial scale and a considerable context window. GPT-4
+fits this criterion, but smaller models such as ChatGPT fall short. Meta-prompting’s design, characterized by
+extensivemessagehistories,demandsanLMcapableofhandlingandretaininglengthytextualinformation,a
+feature not universally present in all LMs. Operational efficiency is also challenged by the linear (sequential)
+nature of meta-prompting. The framework, in its current form, processes steps one at a time, relying on the
+outcome of preceding calls. This dependency constrains the possibility of parallel processing, impacting the
+speed and efficiency of the system.
+Additionally, our research confined meta-prompting within a closed-domain system. Nevertheless, the
+framework’s potential extends to incorporating external resources such as APIs, specialized finetuned
+models,searchengines,orcomputationaltools. MoreexpansiveimplementationslikeAutoAgents(Chen
+et al., 2023a)and AutoGen(Wuet al ., 2023),which includehigher-levelplanning anddiversecooperation
+mechanisms,offeraglimpseintofuturedirections. Insubsequentversions,theMetaModelcouldbenefit
+fromrefiningorsummarizingitshistorybeforeadvancing,optimizingtherelevanceandefficiencyofthe
+process. There is also untapped potential in concurrently summoning multiple experts or utilizing a single
+expert with varied temperature parameters to synthesize their outputs.
+A practical challenge faced is the Meta Model’s occasional oversight in conveying necessary information to
+experts, forgetting that experts can only access data adhering to a certain format (within triple quotes in our
+system). Thisoversightcanleadtounintendedconfusionandunderscorestheneedforimprovedinformation
+management. Lastly, the Meta Model’s response pattern, particularly in tasks with lower performance, often
+includesapologies,suchas“Apologiesfortheconfusioninmypreviousresponse”or“Iapologizeforthe
+previous incorrect solution.” This behavior likely stems from its training on instruction-following data.
+6 Related Work
+Thissectionseekstocontextualizeourproposedmeta-promptingapproachamidstrecentadvancements
+in prompting strategies and scaffolding techniques. We provide a brief overview of these developments,
+highlighting their relevance and connections to our work.
+Enhancing Reasoning in Language Models through Prompting. Recent efforts in LM scaffolding and
+promptingmethodshavesignificantlyboostedthearithmeticandcommonsensereasoningcapabilitiesof
+LMs. Thechain-of-thought(CoT)prompting(Weietal .,2022b)anditsvariants—includingleast-to-most
+(Zhou et al ., 2023), zero-shot CoT (Kojima et al ., 2022), self-ask (Press et al ., 2022), ask-me-anything (Arora
+et al., 2023), decomposed prompting (Khot et al ., 2023), and auto-CoT (Zhang et al ., 2023d)—have marked a
+paradigmshiftinhowLMsprocesscomplexqueries. ThesemethodsencourageLMstoadopthuman-like,
+sequentialthinkingprocesses, breakingdown intricatequestionsintosimplersubtasksandsystematically
+solvingthembeforepresentingafinalanswer. Multiplestudies(Weietal .,2022a;MadaanandYazdanbakhsh,
+2022; Shi et al ., 2023; Drozdov et al ., 2023; Fu et al ., 2023b; Suzgun et al ., 2023b,inter alia) have shown the
+efficacyofthesepromptingmethodsacrossabroadsetoftasksandbenchmarks. Morerecentinnovations
+such Tree-of-Thought (Yao et al ., 2023a), Graph-of-Thought (Besta et al ., 2023), Program-of-Thought (Chen
+et al., 2023d), and Skeleton-of-Thought (Ning et al ., 2023), have further enriched this domain; these explore
+dynamic,non-linearreasoningpathways,broadeningthecomputationalandheuristiccapabilitiesofLMs.
+However,theycomewithincreasedresourcedemandsandgreatertimecomplexity,requiremultiplemanual
+prompt crafting, and are often specialized for particular types of tasks.
+Iterative Self-FeedbackandRefinementMechanisms. Recentinstruction-followingtechniques anddata-
+collection efforts have expanded the capabilities of LMs to follow instructions, emulate certain aspects of
+humanbehavior,andassistintaskssuchasannotationandevaluation(Haluptzoketal .,2022;Aheretal .,
+13
+
+--- PAGE 14 ---
+2023). LMssuchasGPT-4,PaLM,andLlamaarenowcapableofeffectivelyintegratingself-feedbackand
+refinement mechanisms through prompting and can leverage their own natural-language outputs to guide
+their behaviour and improve decision-making. SayCan (Ahn et al ., 2022) and Inner Monologue (Huang
+et al., 2023) are early examples showcasing the benefits of inner dialogues in a closed-loop system for robotic
+control and action planning. Reflexion (Shinn et al ., 2023) builds upon these studies and focuses on natural-
+language generation and reasoning tasks. It functions as a policy optimization mechanism through natural
+languagefeedback,usingself-feedbackandself-reflectiontoinfluenceandcorrectbehaviorsinLMs,and
+has shown considerable success in preliminary experiments. In a more innovative vein, the Self-Taught
+Reasoner approach (STaR; Zelikman et al ., 2022) iteratively trains an LM on its own outputs to refine initial
+rationales for more accurate solutions, leading to enhanced reasoning skills. Other notable methods such as
+Critic(Gouetal .,2023),IterativeRefinement(Chenetal .,2023b),RCI(Kimetal .,2023),Re3(Yangetal .,
+2022), Refiner(Paul etal ., 2023),Self-Critique (Saunderset al ., 2022),Self-Correction (Wellecket al .,2023),
+Self-Eval,Self-Debug(Chenetal .,2023c),Self-Edit(Zhangetal .,2023a),Self-Evolve(Jiangetal .,2023b),
+Self-TaughtOptimizer(SToP;Zelikmanetal .,2023),andsoforth,illustratehowverbalfeedback,bothinternal
+and external, can significantly improve the accuracy, quality, and robustness of model outputs across various
+tasks and setups.
+ExploringRole-PlayinginLanguageModels. Theintegrationofrole-playingandself-collaborationconcepts
+intoLMs,groundedincognitivepsychologyanddevelopmentaleducationprinciples,hasemergedasauseful
+methodforaugmentingLMs’problem-solvingcapabilitiesandoptimizingtheirinternaldomain-specific
+knowledge and expertise. Recent studies (Parket al ., 2022,2023; Liet al ., 2023;Xu etal ., 2023;Fuet al ., 2023a;
+Deshpandeetal .,2023)haveshownthatendowinginstruction-followingLMswith“expert”personasor
+rolesenhancesthequalityandaccuracyoftheiroutput. Inparticular,approacheslikeCAMEL(Lietal .,2023)
+and Expert Prompting (Xu et al ., 2023), which involve dynamically assigning personas to a single LM, have
+beenshown toyield higherqualityand morereliable responsesthanmodels withoutdesignated personas.
+Furtherinvestigations(Chenetal .,2023a,e;Duetal .,2023;Haoetal .,2023b;Liangetal .,2023;Liuetal .,2023b;
+Jiangetal .,2023a;Xiongetal .,2023;Zhangetal .,2023c)demonstratethatassigningmultipleexpertidentities
+or roles to a single LM, tailored to specific tasks or problems, and prompting it to conduct multi-round
+internal dialogues—similar to a team of experts discussing and refining ideas—amplifies the reliability and
+comprehensiveness oftheLM’sanalysis; thisleads tomore well-rounded andthoroughsolutions. These
+studiesadvocateacomplementaryapproachwhereinmultipleinstancesofanLMpropose,debate,andrefine
+theirindividualresponsesandreasoninginsuccessiverounds,culminatinginaunifiedfinalanswer. This
+role-playingconcepthasshowntosignificantlyimprovemathematicalandstrategicreasoningacrossvarious
+tasks. Moreover,itimprovesthefactualaccuracyofthegeneratedcontent,therebyreducingerroneousor
+fabricated responses.
+Autonomous Decision-Making and Execution in Multi-Agent LM Systems. There has been a growing
+interest in using LMs for autonomous decision-making and task execution. Open-source projects like Auto-
+GPT, Agent-GPT, Baby-AGI, and LangChain are notable efforts developing agent protocols that are capable
+of planning, decision-making, and executing tasks end-to-end, with minimal or no human intervention.
+ThesesystemshighlightthepotentialandrisksofLMs,whichgobeyondperformingpredefinedtasksto
+adapting, learning, and autonomously executing decisions in real time. As discussed by Masa (2023), those
+autonomous models might be exploited by individuals with malicious intents and pose threats to humanity.
+There is also the dilemma of accountability: who bears responsibility when an LM-driven autonomous agent
+producesaninappropriateorcriminalaction? Ensuringsafetyandsecuritywiththeseagentsiscrucial,given
+its potential for mishaps or exploitation by malicious actors, and its vulnerability to cyber-attacks.
+Integration of External Tools and APIs into Language Models. As LMs continue to evolve, the integration
+of external tools is becoming increasingly important. This tool-use integration, often achieved through
+in-contextlearning(e.g.,Caietal .,2023)orfinetuning(e.g.,Schicketal .,2023a),allowsLMstoeffectively
+engagewithreal-worldscenariosandtackleadiverserangeofdynamictasks. Recentadvancements(Cai
+et al., 2023; Gao et al ., 2023; Gou et al ., 2023; Hao et al ., 2023c; Khattab et al ., 2023; Lu et al ., 2023; Qiao
+et al., 2023; Paranjape et al ., 2023; Patil et al ., 2023; Schick et al ., 2023a; Yang et al ., 2023; Yuan et al ., 2023)
+have enabled LMs to perform accurate calculations, retrieve up-to-date information from search engines
+ordatabases,andinteractwithAPIs,makingthemcrucialforcomplex,multimodalreal-worldproblems.
+14
+
+--- PAGE 15 ---
+OpenAI’sincorporationofpredefinedAPIsandpluginsintoChatGPTunderscorestheimportanceofexternal
+integrationindevelopingacomprehensiveLMecosystem. However,mostapproachesoftenlimitthemselves
+toaselectgroupoftoolsordomain-specificresources,posingchallengesinadaptingtonewdomains(Lu
+etal.,2023). Ourmeta-promptingapproach,asdetailedinSection2,treatstheLMasanindependenttooland
+expert,availableon-demandforspecifictasks. Furthermore,incorporatingaPythoninterpreter—through
+Expert Python—to execute and evaluate model-generated code has been instrumental in enhancing both
+accuracy and efficiency in various tasks.
+7 Conclusion
+Inthiswork,wehaveintroducedandexaminedmeta-prompting,asimpleyetpowerfulscaffoldingtechnique
+that enhances the performance of language models in a task-agnostic manner. This approach leverages
+a language model to act as both a central conductor and a group of expert instances, thereby endowing
+traditional models with dynamic, multi-functional capabilities. A noteworthy aspect of meta-prompting
+liesinitsproficiencytodecomposecomplextasks,engagedistinctexpertiseforeachcomponent,andthen
+integratethevariedoutputsseamlessly. Demonstratingsignificant,double-digitimprovementsacrossaseries
+of tasks, ranging from challenging arithmetic puzzles like the Game of 24 to the creative literary exercise of
+ShakespeareanSonnetWriting,meta-promptingpromisestogrowmorepotentandcost-efficientaslanguage
+models continue to evolve, offering exciting prospects for future applications.
+Acknowledgements
+WewouldliketothankFedericoBianchi,AnnabelleCarrell,TayfunGür,DanJurafsky,SuproteemSarkar,
+Scott Duke Kominers, Lester Mackey, Neil Mallinar, Şule Kahraman, Deniz Keleş, Luke Melas-Kyriazi, Drew
+Pendergrass, Faiz Surani, Garrett Tanzer, Michael Wornow, and Eric Zelikman for their valuable comments,
+useful suggestions, and support.
+15
+
+--- PAGE 16 ---
+References
+Gati V Aher, Rosa I. Arriaga, and Adam Tauman Kalai. 2023. Using Large Language Models to Simulate
+MultipleHumansandReplicateHumanSubjectStudies.In Proceedingsofthe40thInternationalConference
+on Machine Learning (Proceedings of Machine Learning Research, Vol. 202) , Andreas Krause, Emma Brunskill,
+Kyunghyun Cho, Barbara Engelhardt, Sivan Sabato, and Jonathan Scarlett (Eds.). PMLR, 337–371. https:
+//proceedings.mlr.press/v202/aher23a.html
+MichaelAhn,AnthonyBrohan,NoahBrown,YevgenChebotar,OmarCortes,ByronDavid,ChelseaFinn,
+Chuyuan Fu, Keerthana Gopalakrishnan, Karol Hausman, et al .2022. Do as i can, not as i say: Grounding
+language in robotic affordances. arXiv preprint arXiv:2204.01691 (2022).
+Rohan Anil, Andrew M Dai, Orhan Firat, Melvin Johnson, Dmitry Lepikhin, Alexandre Passos, Siamak
+Shakeri, Emanuel Taropa, Paige Bailey, Zhifeng Chen, et al .2023. PaLM 2 Technical Report. arXiv preprint
+arXiv:2305.10403 (2023).https://arxiv.org/abs/2305.10403
+Simran Arora, Avanika Narayan, Mayee F Chen, Laurel Orr, Neel Guha, Kush Bhatia, Ines Chami, and
+ChristopherRe.2023. AskMeAnything: Asimplestrategyforpromptinglanguagemodels.In TheEleventh
+International Conference on Learning Representations .https://openreview.net/forum?id=bhUPJnS2g0X
+Maciej Besta, Nils Blach, Ales Kubicek, Robert Gerstenberger, Lukas Gianinazzi, Joanna Gajda, Tomasz
+Lehmann,MichalPodstawski,HubertNiewiadomski,PiotrNyczyk,etal .2023. Graphofthoughts: Solving
+elaborate problems with large language models. arXiv preprint arXiv:2308.09687 (2023).
+BIG-Bench authors. 2023. Beyond the Imitation Game: Quantifying and extrapolating the capabilities of
+language models. Transactions on Machine Learning Research (2023). https://openreview.net/forum?
+id=uyTL5Bvosj
+Tianle Cai, Xuezhi Wang, Tengyu Ma, Xinyun Chen, and Denny Zhou. 2023. Large language models as tool
+makers. arXiv preprint arXiv:2305.17126 (2023).
+GuangyaoChen,SiweiDong,YuShu,GeZhang,JawardSesay,BörjeFKarlsson,JieFu,andYeminShi.2023a.
+AutoAgents: A Framework for Automatic Agent Generation. arXiv preprint arXiv:2309.17288 (2023).
+PinzhenChen,ZhichengGuo,BarryHaddow,andKennethHeafield.2023b. IterativeTranslationRefinement
+with Large Language Models. arXiv preprint arXiv:2306.03856 (2023).
+Wenhu Chen, Xueguang Ma,Xinyi Wang, and William W. Cohen.2023d. Program of Thoughts Prompting:
+Disentangling Computation from Reasoning for Numerical Reasoning Tasks. Transactions on Machine
+Learning Research (2023).https://openreview.net/forum?id=YfZ4ZPt8zd
+WeizeChen,YushengSu,JingweiZuo,ChengYang,ChenfeiYuan,ChenQian,Chi-MinChan,YujiaQin,Yaxi
+Lu,Ruobing Xie,etal .2023e. Agentverse: Facilitatingmulti-agentcollaborationandexploringemergent
+behaviors in agents. arXiv preprint arXiv:2308.10848 (2023).
+Xinyun Chen,Maxwell Lin, NathanaelSchärli, and Denny Zhou. 2023c. Teachinglarge languagemodels to
+self-debug. arXiv preprint arXiv:2304.05128 (2023).
+Karl Cobbe, Vineet Kosaraju, Mohammad Bavarian, Mark Chen, Heewoo Jun, Lukasz Kaiser, Matthias
+Plappert,JerryTworek,JacobHilton,ReiichiroNakano,etal .2021. Trainingverifierstosolvemathword
+problems. arXiv preprint arXiv:2110.14168 (2021).
+AmeetDeshpande, VishvakMurahari,TanmayRajpurohit, AshwinKalyan,and KarthikNarasimhan.2023.
+Toxicity in chatgpt: Analyzing persona-assigned language models. arXiv preprint arXiv:2304.05335 (2023).
+Andrew Drozdov, Nathanael Schärli, Ekin Akyürek, Nathan Scales, Xinying Song, Xinyun Chen, Olivier
+Bousquet, and Denny Zhou. 2023. Compositional Semantic Parsing with Large Language Models. In
+The Eleventh International Conference on Learning Representations .https://openreview.net/forum?id=
+gJW8hSGBys8
+16
+
+--- PAGE 17 ---
+YilunDu,ShuangLi,AntonioTorralba,JoshuaBTenenbaum,andIgorMordatch.2023. ImprovingFactuality
+and Reasoning in Language Models through Multiagent Debate. arXiv preprint arXiv:2305.14325 (2023).
+Yao Fu, Hao Peng, Tushar Khot, and Mirella Lapata. 2023a. Improving language model negotiation with
+self-play and in-context learning from ai feedback. arXiv preprint arXiv:2305.10142 (2023).
+YaoFu,HaoPeng,AshishSabharwal,PeterClark,andTusharKhot.2023b. Complexity-BasedPrompting
+for Multi-step Reasoning. In The Eleventh International Conference on Learning Representations .https:
+//openreview.net/forum?id=yf1icZHC-l9
+Difei Gao, Lei Ji, Luowei Zhou, Kevin Qinghong Lin, Joya Chen, Zihan Fan, and Mike Zheng Shou. 2023.
+AssistGPT: A General Multi-modal Assistant that can Plan, Execute, Inspect, and Learn. arXiv preprint
+arXiv:2306.08640 (2023).
+ZhibinGou,ZhihongShao,YeyunGong,YelongShen,YujiuYang,NanDuan,andWeizhuChen.2023.CRITIC:
+Large language models can self-correct with tool-interactive critiquing. arXiv preprint arXiv:2305.11738
+(2023).
+PatrickHaluptzok,MatthewBowers,andAdamTaumanKalai.2022.LanguageModelsCanTeachThemselves
+to Program Better. In The Eleventh International Conference on Learning Representations .
+Rui Hao, Linmei Hu, Weijian Qi, Qingliu Wu, Yirui Zhang, and Liqiang Nie. 2023b. ChatLLM Network:
+More brains, More intelligence. arXiv preprint arXiv:2304.12998 (2023).
+Shibo Hao, Yi Gu, Haodi Ma, Joshua Jiahua Hong, Zhen Wang, Daisy Zhe Wang, and Zhiting Hu. 2023a.
+Reasoning with language model is planning with world model. arXiv preprint arXiv:2305.14992 (2023).
+ShiboHao, Tianyang Liu,Zhen Wang,and ZhitingHu. 2023c. ToolkenGPT: AugmentingFrozen Language
+Models with Massive Tools via Tool Embeddings. arXiv preprint arXiv:2305.11554 (2023).
+Wenlong Huang, Fei Xia, Ted Xiao, Harris Chan, Jacky Liang, Pete Florence, Andy Zeng, Jonathan Tompson,
+IgorMordatch,YevgenChebotar,etal .2023. InnerMonologue: EmbodiedReasoningthroughPlanning
+with Language Models. In Conference on Robot Learning . PMLR, 1769–1782.
+DongfuJiang,XiangRen,andBillYuchenLin.2023a. LLM-Blender: EnsemblingLargeLanguageModels
+with Pairwise Ranking and Generative Fusion. arXiv preprint arXiv:2306.02561 (2023).
+Shuyang Jiang, Yuhao Wang, and Yu Wang. 2023b. SelfEvolve: A Code Evolution Framework via Large
+Language Models. arXiv preprint arXiv:2306.02907 (2023).
+Omar Khattab, Arnav Singhvi, Paridhi Maheshwari, Zhiyuan Zhang, Keshav Santhanam, Sri Vardhamanan,
+Saiful Haq, Ashutosh Sharma, Thomas T Joshi, Hanna Moazam, et al .2023. DSPy: Compiling Declarative
+Language Model Calls into Self-Improving Pipelines. arXiv preprint arXiv:2310.03714 (2023).
+TusharKhot,HarshTrivedi,MatthewFinlayson,YaoFu,KyleRichardson,PeterClark,andAshishSabhar-
+wal. 2023. Decomposed Prompting: A Modular Approach for Solving Complex Tasks. In The Eleventh
+International Conference on Learning Representations .https://openreview.net/forum?id=_nGgzQjzaRy
+Geunwoo Kim, Pierre Baldi, and Stephen McAleer. 2023. Language models can solve computer tasks. arXiv
+preprint arXiv:2303.17491 (2023).
+Takeshi Kojima, Shixiang (Shane) Gu, Machel Reid, Yutaka Matsuo, and Yusuke Iwasawa. 2022. Large
+LanguageModelsareZero-ShotReasoners.In AdvancesinNeuralInformationProcessingSystems ,Vol.35.
+22199–22213.
+GuohaoLi,HasanAbedAlKaderHammoud,HaniItani,DmitriiKhizbullin,andBernardGhanem.2023.
+Camel: Communicative agents for" mind" exploration of large scale language model society. arXiv preprint
+arXiv:2303.17760 (2023).
+17
+
+--- PAGE 18 ---
+Tian Liang, Zhiwei He, Wenxiang Jiao, Xing Wang, Yan Wang, Rui Wang, Yujiu Yang, Zhaopeng Tu, and
+Shuming Shi. 2023. Encouraging Divergent Thinking in Large Language Models through Multi-Agent
+Debate.arXiv preprint arXiv:2305.19118 (2023).
+Zeyi Liu, Arpit Bahety, and Shuran Song. 2023a. Reflect: Summarizing robot experiences for failure explana-
+tion and correction. arXiv preprint arXiv:2306.15724 (2023).
+Zijun Liu, Yanzhe Zhang, Peng Li, Yang Liu, and Diyi Yang. 2023b. Dynamic LLM-Agent Network: An
+LLM-agent Collaboration Framework with Agent Team Optimization. arXiv preprint arXiv:2310.02170
+(2023).
+PanLu,BaolinPeng,HaoCheng,MichelGalley,Kai-WeiChang,YingNianWu,Song-ChunZhu,andJianfeng
+Gao. 2023. Chameleon: Plug-and-Play Compositional Reasoning with Large Language Models. arXiv
+preprint arXiv:2304.09842 (2023).
+AmanMadaan,NiketTandon,PrakharGupta, SkylerHallinan, LuyuGao,SarahWiegreffe,UriAlon,Nouha
+Dziri,Shrimai Prabhumoye,YimingYang,etal .2023. Self-refine: Iterative refinementwithself-feedback.
+arXiv preprint arXiv:2303.17651 (2023).
+Aman Madaan and Amir Yazdanbakhsh. 2022. Text and patterns: For effective chain of thought, it takes two
+to tango. arXiv preprint arXiv:2209.07686 (2022).
+Masa. 2023. 7 Challenges and Potential Risks of AutoGPT Technology. AutoGPT Official (Apr 2023). https:
+//autogpt.net/challenges-and-potential-risks-of-autogpt-technology/
+Xuefei Ning, Zinan Lin, Zixuan Zhou, Huazhong Yang, and Yu Wang. 2023. Skeleton-of-thought: Large
+language models can do parallel decoding. arXiv preprint arXiv:2307.15337 (2023).
+OpenAI.2023. GPT-4TechnicalReport. arXivpreprintarXiv:2303.08774 (2023).https://arxiv.org/abs/
+2303.08774
+BhargaviParanjape,ScottLundberg,SameerSingh,HannanehHajishirzi,LukeZettlemoyer,andMarcoTulio
+Ribeiro. 2023. ART: Automatic multi-step reasoning and tool-use for large language models. arXiv preprint
+arXiv:2303.09014 (2023).
+Joon Sung Park, Joseph C. O’Brien, Carrie J. Cai, Meredith Ringel Morris, Percy Liang, and Michael S.
+Bernstein. 2023. Generative Agents: Interactive Simulacra of Human Behavior. In In the 36th Annual
+ACM Symposium on User Interface Software and Technology (UIST ’23) (San Francisco, CA, USA) (UIST ’23) .
+Association for Computing Machinery, New York, NY, USA.
+JoonSungPark,LindsayPopowski,CarrieCai,MeredithRingelMorris,PercyLiang,andMichaelSBernstein.
+2022. Social simulacra: Creating populatedprototypes for socialcomputing systems. In Proceedings ofthe
+35th Annual ACM Symposium on User Interface Software and Technology . 1–18.
+Shishir G Patil, Tianjun Zhang, Xin Wang, and Joseph E Gonzalez. 2023. Gorilla: Large language model
+connected with massive apis. arXiv preprint arXiv:2305.15334 (2023).
+Debjit Paul, Mete Ismayilzada, Maxime Peyrard, Beatriz Borges, Antoine Bosselut, Robert West, and Boi
+Faltings.2023. Refiner: Reasoningfeedbackonintermediaterepresentations. arXivpreprintarXiv:2304.01904
+(2023).
+OfirPress,MuruZhang,SewonMin,LudwigSchmidt,NoahASmith,andMikeLewis.2022. Measuring
+and narrowing the compositionality gap in language models. arXiv preprint arXiv:2210.03350 (2022).
+Shuofei Qiao, Honghao Gui, Huajun Chen, and Ningyu Zhang. 2023. Making Language Models Better Tool
+Learners with Execution Feedback. arXiv preprint arXiv:2305.13068 (2023).
+WilliamSaunders,CatherineYeh,JeffWu,StevenBills,LongOuyang,JonathanWard,andJanLeike.2022.
+Self-critiquing models for assisting human evaluators. arXiv preprint arXiv:2206.05802 (2022).
+18
+
+--- PAGE 19 ---
+TimoSchick,JaneDwivedi-Yu,RobertoDessi,RobertaRaileanu,MariaLomeli,LukeZettlemoyer,Nicola
+Cancedda, and Thomas Scialom. 2023a. Toolformer: Language Models Can Teach Themselves to Use
+Tools.
+Timo Schick, Jane A. Yu, Zhengbao Jiang, Fabio Petroni, Patrick Lewis, Gautier Izacard, Qingfei You, Christo-
+foros Nalmpantis,Edouard Grave, andSebastian Riedel. 2023b. PEER: ACollaborative Language Model.
+InThe Eleventh International Conference on Learning Representations .https://openreview.net/forum?id=
+KbYevcLjnc
+Tal Schuster, Ashwin Kalyan, Alex Polozov, and Adam Tauman Kalai. 2021. Programming Puzzles. In
+Thirty-fifth Conference on Neural Information Processing Systems Datasets and Benchmarks Track .https://
+arxiv.org/abs/2106.05784
+Freda Shi, Mirac Suzgun, Markus Freitag, Xuezhi Wang, Suraj Srivats, Soroush Vosoughi, Hyung Won
+Chung,YiTay,SebastianRuder,DennyZhou,DipanjanDas,andJasonWei.2023. Languagemodelsare
+multilingual chain-of-thought reasoners. In The Eleventh International Conference on Learning Representations .
+https://openreview.net/forum?id=fR3wGCk-IXp
+Noah Shinn, Beck Labash, and Ashwin Gopinath. 2023. Reflexion: an autonomous agent with dynamic
+memory and self-reflection. arXiv preprint arXiv:2303.11366 (2023).
+HaotianSun,YuchenZhuang,LingkaiKong,BoDai,andChaoZhang.2023. AdaPlanner: AdaptivePlanning
+from Feedback with Language Models. arXiv preprint arXiv:2305.16653 (2023).
+MiracSuzgun,LukeMelas-Kyriazi,andDanJurafsky.2023a. FollowtheWisdomoftheCrowd: EffectiveText
+Generationvia MinimumBayesRiskDecoding. In Findingsof theAssociationforComputationalLinguistics:
+ACL 2023 , Anna Rogers, Jordan Boyd-Graber, and Naoaki Okazaki (Eds.). Association for Computational
+Linguistics, Toronto, Canada, 4265–4293. https://doi.org/10.18653/v1/2023.findings-acl.262
+MiracSuzgun,NathanScales,NathanaelSchärli,SebastianGehrmann,YiTay,HyungWonChung,Aakanksha
+Chowdhery, Quoc Le, Ed Chi, Denny Zhou, and Jason Wei. 2023b. Challenging BIG-Bench Tasks and
+Whether Chain-of-Thought Can Solve Them. In Findings of the Association for Computational Linguistics: ACL
+2023.AssociationforComputationalLinguistics,Toronto,Canada,13003–13051. https://doi.org/10.
+18653/v1/2023.findings-acl.824
+HugoTouvron,LouisMartin,KevinStone,PeterAlbert,AmjadAlmahairi,YasmineBabaei,NikolayBash-
+lykov, Soumya Batra, Prajjwal Bhargava, Shruti Bhosale, et al .2023. Llama 2: Open foundation and
+fine-tuned chat models. arXiv preprint arXiv:2307.09288 (2023).
+Zhenhailong Wang, Shaoguang Mao, Wenshan Wu, Tao Ge, Furu Wei, and Heng Ji. 2023. Unleashing Cogni-
+tive Synergy in Large Language Models: A Task-Solving Agent through Multi-Persona Self-Collaboration.
+arXiv preprint arXiv:2307.05300 (2023).
+Jason Wei, Yi Tay, Rishi Bommasani, Colin Raffel, Barret Zoph, Sebastian Borgeaud, Dani Yogatama, Maarten
+Bosma,DennyZhou,DonaldMetzler,EdH.Chi,TatsunoriHashimoto,OriolVinyals,PercyLiang,Jeff
+Dean,and WilliamFedus.2022a. EmergentAbilities ofLargeLanguage Models. TransactionsonMachine
+Learning Research (2022).https://openreview.net/forum?id=yzkSU5zdwD Survey Certification.
+Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, brian ichter, Fei Xia, Ed H. Chi, Quoc V Le,
+andDennyZhou.2022b. ChainofThoughtPromptingElicitsReasoninginLargeLanguageModels.In
+Advances in Neural Information Processing Systems , Alice H. Oh, Alekh Agarwal, Danielle Belgrave, and
+Kyunghyun Cho (Eds.). https://openreview.net/forum?id=_VjQlMeSB_J
+Sean Welleck, Ximing Lu, Peter West, Faeze Brahman, Tianxiao Shen, Daniel Khashabi, and Yejin Choi. 2023.
+Generating Sequences by Learning to Self-Correct. In The Eleventh International Conference on Learning
+Representations .https://openreview.net/forum?id=hH36JeQZDaO
+19
+
+--- PAGE 20 ---
+Qingyun Wu, Gagan Bansal, Jieyu Zhang, Yiran Wu, Shaokun Zhang, Erkang Zhu, Beibin Li, Li Jiang,
+XiaoyunZhang,andChiWang.2023. AutoGen: EnablingNext-GenLLMApplicationsviaMulti-Agent
+Conversation Framework. arXiv:2308.08155 [cs.AI]
+KaiXiong,XiaoDing,YixinCao,TingLiu,andBingQin.2023. DivingintotheInter-ConsistencyofLarge
+Language Models: An Insightful Analysis through Debate. arXiv preprint arXiv:2305.11595 (2023).
+Benfeng Xu, An Yang, Junyang Lin, Quan Wang, Chang Zhou, Yongdong Zhang, and Zhendong Mao.
+2023. ExpertPrompting: InstructingLargeLanguageModelstobeDistinguishedExperts. arXivpreprint
+arXiv:2305.14688 (2023).
+Kevin Yang, Yuandong Tian, Nanyun Peng, and Dan Klein. 2022. Re3: Generating Longer Stories With
+Recursive Reprompting and Revision. In Proceedings of the 2022 Conference on Empirical Methods in Natural
+LanguageProcessing , Yoav Goldberg, Zornitsa Kozareva, and Yue Zhang (Eds.).Association forComputa-
+tionalLinguistics,AbuDhabi,UnitedArabEmirates,4393–4479. https://doi.org/10.18653/v1/2022.
+emnlp-main.296
+Rui Yang, Lin Song, Yanwei Li, Sijie Zhao, Yixiao Ge, Xiu Li, and Ying Shan. 2023. Gpt4tools: Teaching large
+language model to use tools via self-instruction. arXiv preprint arXiv:2305.18752 (2023).
+Shunyu Yao, Dian Yu, Jeffrey Zhao, Izhak Shafran, Thomas L Griffiths, Yuan Cao, and Karthik Narasimhan.
+2023a. Tree of thoughts: Deliberate problem solving with large language models. arXiv preprint
+arXiv:2305.10601 (2023).
+Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik Narasimhan, and Yuan Cao. 2023b.
+ReAct: Synergizing Reasoning and Acting in Language Models. In International Conference on Learning
+Representations (ICLR) .
+Lifan Yuan, Yangyi Chen, Xingyao Wang, Yi R Fung, Hao Peng, and Heng Ji. 2023. Craft: Customizing llms
+by creating and retrieving from specialized toolsets. arXiv preprint arXiv:2309.17428 (2023).
+Eric Zelikman, Eliana Lorch, Lester Mackey, and Adam Tauman Kalai. 2023. Self-Taught Optimizer (STOP):
+Recursively Self-Improving Code Generation. arXiv preprint arXiv:2310.02304 (2023).
+Eric Zelikman, Yuhuai Wu, Jesse Mu, and Noah Goodman. 2022. STaR: Bootstrapping Reasoning With
+Reasoning. In Advances in Neural Information Processing Systems , Alice H. Oh, Alekh Agarwal, Danielle
+Belgrave, and Kyunghyun Cho (Eds.). https://openreview.net/forum?id=_3ELRdg2sgI
+Kechi Zhang, Zhuo Li, Jia Li, Ge Li, and Zhi Jin. 2023a. Self-Edit: Fault-Aware Code Editor for Code
+Generation. arXiv preprint arXiv:2305.04087 (2023).
+MuruZhang,OfirPress,WillMerrill,AlisaLiu,andNoahA.Smith.2023b. HowLanguageModelHallu-
+cinationsCanSnowball. ArXivabs/2305.13534(2023). https://api.semanticscholar.org/CorpusID:
+258841857
+Yifan Zhang, Jingqin Yang, Yang Yuan, and Andrew Chi-Chih Yao. 2023c. Cumulative reasoning with large
+language models. arXiv preprint arXiv:2308.04371 (2023).
+ZhuoshengZhang,AstonZhang,MuLi,andAlexSmola.2023d. AutomaticChainofThoughtPrompting
+in Large Language Models. In The Eleventh International Conference on Learning Representations .https:
+//openreview.net/forum?id=5NTt8GFjUHkr
+Denny Zhou, Nathanael Schärli, Le Hou, Jason Wei, Nathan Scales, Xuezhi Wang, Dale Schuurmans, Claire
+Cui, Olivier Bousquet, Quoc V Le, and Ed H. Chi. 2023. Least-to-Most Prompting Enables Complex
+ReasoninginLargeLanguageModels.In TheEleventhInternationalConferenceonLearningRepresentations .
+https://openreview.net/forum?id=WZH7099tgfM
+MingchenZhuge,HaozheLiu,FrancescoFaccio,DylanRAshley,RóbertCsordás,AnandGopalakrishnan,
+AbdullahHamdi,HasanAbedAlKaderHammoud,VincentHerrmann,KazukiIrie,etal .2023.Mindstorms
+in Natural Language-Based Societies of Mind. arXiv preprint arXiv:2305.17066 (2023).
+20

@@ -1,0 +1,1153 @@
+# 2211.16490v1.pdf
+# Converted from PDF to TXT
+# Source path: D:\llm\notebooks\AI-Papers\2211.16490v1.pdf
+# File size: 1996419 bytes
+
+===============================================
+PDF FILE CONTENT
+===============================================
+
+
+--- PAGE 1 ---
+Coder Reviewer Reranking for Code Generation
+Tianyi Zhang1Tao Yu2Tatsunori B. Hashimoto1Mike Lewis3Wen-tau Yih3Daniel Fried4
+Sida I. Wang3
+Abstract
+Sampling diverse programs from a code language
+model and reranking with model likelihood is a
+popular method for code generation but it is prone
+to preferring degenerate solutions. Inspired by
+collaborative programming, we propose Coder-
+Reviewer reranking. We augment Coder language
+models from past work, which generate programs
+given language instructions, with Reviewer mod-
+els, which evaluate the likelihood of the instruc-
+tion given the generated programs. We perform
+an extensive study across six datasets with eight
+models from three model families. Experimental
+results show that Coder-Reviewer reranking leads
+to consistent and signiﬁcant improvement (up to
+17%absolute accuracy gain) over reranking with
+the Coder model only. When combined with ex-
+ecutability ﬁltering, Coder-Reviewer reranking
+can often outperform the minimum Bayes risk
+method. Coder-Reviewer reranking is easy to im-
+plement by prompting, can generalize to different
+programming languages, and works well with off-
+the-shelf hyperparameters.
+1. Introduction
+Recent pretrained language models (PLMs) have demon-
+strated an impressive ability to generate code given natural
+language instructions (Chen et al., 2021; Fried et al., 2022;
+Chowdhery et al., 2022; Nijkamp et al., 2022). One popular
+technique is to use a generative language model trained on
+code, which we call the Coder model, to sample multiple
+code solutions for a single instruction and rerank the so-
+lutions based on the likelihood the Coder model assigns
+to each (Chen et al., 2021). Despite its wide-spread use,
+reranking with the Coder model often mistakenly prefers
+degenerate solutions, e.g., extremely short code or repet-
+*Work done during internship at FAIR1Stanford Uni-
+versity2The University of Hong Kong3Meta AI - FAIR
+4Carnegie Mellon University. Correspondence to: Tianyi Zhang
+<tz58@stanford.edu >, Sida I. Wang <sida@meta.com >.
+0-shot Python Function Completionimport 
+defmath
+ (num: ):
+  get_decimalfloat""" return the decimal part 
+  of the input number 
+  """
+Coder: sample program via p(y|x)frac, whole = math.modf(num)
+ fracreturnReviewer: check program via p(x|y)import 
+def
+defmath
+ (num: ):
+  frac, whole = math.modf(num)
+  return frac
+ (num: ):
+  f
+ffloat
+float# write a docstring for the  
+# above function
+""" return the decimal part 
+  of the input number 
+  """
+Coder -Reviewer  Reranking: sample pr ograms and sort by p(y|x)p(x|y)Figure 1. Given a language instruction x, a Coder model samples
+programsy, and a Reviewer model checks the generated programs
+against the instruction by measuring p(xjy). Coder-Reviewer
+reranking solicits a consensus between Coder and Reviewer by
+ranking with their product p(xjy)p(yjx).
+itive solutions. As a result, reranking performance of-
+ten decreases when the number of candidate program in-
+creases (Figure 2c). These biases are known to arise in
+language models when using mode-seeking inference meth-
+ods such as greedy decoding (Holtzman et al., 2020) or
+beam search (Li et al., 2016; Stahlberg & Byrne, 2019).
+In this work, we take inspiration from collaborative soft-
+ware development. For example, in the standard practice of
+code review, programmers submit implementations given
+speciﬁcations and have the submitted code cross validated
+by other code reviewers. We instantiate this idea by using
+prompting to obtain a Reviewer model, which checks the
+generated programs against the language instruction. For-
+mally, we ﬁrst sample programs ygiven the instruction xvia
+the Coder model p(yjx)and cross check via the Reviewer
+modelp(xjy). The Reviewer model reinforces the language
+instruction by evaluating the likelihood of every word in the
+instruction.
+To obtain a consensus between the Coder and the Reviewer,
+we propose Coder-Reviewer reranking which selects the
+solutions by the product of the reviewer model and the coder
+model,p(xjy)p(yjx). We show that Coder-Reviewer is a
+speciﬁc instantiation of the Maximum Mutual Information
+(MMI) objective (Li et al., 2016), which favors solutions that
+have high mutual information with the instruction and down
+weights generic solutions (where p(y)is high). MMI has
+also been shown to be effective against degenerate solutions
+in many other natural language processing tasks (Yin &
+Neubig, 2019; Lewis & Fan, 2019; Fried et al., 2018).arXiv:2211.16490v1  [cs.LG]  29 Nov 2022
+
+--- PAGE 2 ---
+Coder Reviewer Reranking for Code Generation
+To implement the Reviewer model p(xjy), we propose a
+simple prompting method. After a program yis generated
+by the Coder model p(yjx), we invert the order in which
+the instruction xand the solution yappear in the prompt,
+and query the pretrained language model again to estimate
+p(xjy). Our prompting approach avoids any additional train-
+ing and is easy to generalize to different programming lan-
+guages. Figure 1 shows an example prompt: the Coder
+model generates programs given the function header and the
+docstring; we then extract the generated program and place
+it before the docstring when prompting the Reviewer model.
+We carry out an extensive empirical study on six datasets
+with three different programming languages and experiment
+with seven models from three model families. Compared
+to past works’ approach of ranking with the Coder model
+p(yjx)alone, Coder-Reviewer reranking demonstrates con-
+sistent and effective performance gains (up to 17% absolute
+accuracy gain). When combined with executability ﬁltering,
+Coder-Reviewer reranking can often outperform the mini-
+mum Bayes risk decoding method (Shi et al., 2022), which
+involves more complex aggregation of the executed outputs.
+The code is available on GitHub.1
+2. Related Work
+Code Generation. Many prior works explored code gen-
+eration with neural networks (Allamanis et al., 2015; Ling
+et al., 2016; Iyer et al., 2018; Yin & Neubig, 2017; Yasunaga
+& Liang, 2020) and many benchmarks have been proposed
+to evaluate code model performance (Hendrycks et al., 2021;
+Yu et al., 2018; Lin et al., 2018). Recently, large language
+models pretrained on code have shown unprecedented zero-
+/few-shot ability, and can even perform well in code competi-
+tions that are challenging to programmers (Chowdhery et al.,
+2022; Chen et al., 2021; Austin et al., 2021; Li et al., 2022).
+Our work builds on the impressive ability of pretrained code
+models and achieves additional gains by leveraging a Re-
+viewer model that evaluates the probability of the language
+instruction given generated programs.
+Maximum Mutual Information (MMI) and its variants
+have been shown to be effective in many natural language
+processing tasks, including text classiﬁcation (Min et al.,
+2021), speech processing (Bahl et al., 1986), dialogue (Li
+et al., 2016), instruction following (Fried et al., 2018), ques-
+tion answering (Lewis & Fan, 2019), and semantic pars-
+ing (Yin & Neubig, 2019). In contrast to Maximum Likeli-
+hood which optimizes logp(xjy), MMI optimizes the point-
+wise mutual information logp(x;y)
+p(x)p(y). In practice, it is popu-
+lar to optimize a weighted version of the MMI objective (Li
+et al., 2016). We show in Section 4 that Coder-Reviewer
+1https://github.com/facebookresearch/
+coder_reviewer_rerankingreranking is a speciﬁc instantiation of the weighted MMI
+objective. However, Coder-Reviewer reranking differs from
+this work by leveraging prompting to obtain the Reviewer
+modelp(xjy), rather than training a separate model, and by
+showing that the objective produces substantial beneﬁts for
+the task of code generation. Concurrently, Ye et al. (2022)
+explore a MMI-like prompting approach for reasoning tasks.
+Reranking Methods for Code Generation. Chen et al.
+(2021) point out that the diverse samples from large lan-
+guage models often contain correct programs and they pro-
+pose to rank program samples by the Coder model p(yjx).
+Since then, many methods have been proposed to leverage
+sample consistency (Shi et al., 2022) or training supervised
+rerankers (Inala et al., 2022) In particular, Shi et al. (2022)
+and Li et al. (2022) propose to cluster program surface forms
+using the executed outputs of the generated programs. Chen
+et al. (2022) propose to generate unit tests for Python func-
+tion completion problems and design selection programs
+that validate generated programs and unit tests against each
+other. On the one hand, Coder-Reviewer reranking does
+not require execution, which enables it to be applied in
+more diverse scenarios, and Coder-Reviewer reranking is
+not speciﬁc to any programming languages or packages.
+On the other hand, Coder-Reviewer reranking is orthogonal
+and complementary to methods that incorporate execution
+semantics: in Section 7.1, we show empirical results on
+the beneﬁts of combining Coder-Reviewer reranking with
+execution-based ranking methods.
+3. Background
+Zero-/Few-shot Code Generation. We are interested in
+using pretrained code language models to generate code y
+conditioned on natural language instructions x. In addition,
+we assume access to a context cthat provides useful code
+context such as package imports or data dependencies. In
+the example shown in Figure 1, xis the instruction “return
+decimal part of the input number”, yis the generated func-
+tion body, and cincludes importing the math package. For
+few-shot code generation, we also have ndemonstration
+examples (^x1;^y1;^c1)to(^xn;^yn;^cn).
+To solve this problem, our key leverage is a Coder model
+— a conditional language model p(yjc;x), which can gen-
+erate programs given the instruction and context. In this
+case of few-shot generation, the Coder model also con-
+ditions on the demonstration examples, i.e., we consider
+p(yj^c1;^x1;^y1;:::; ^cn;^xn;^yn;c;x). Throughout this work,
+we implement these conditional models using prompting:
+placing the relevant objects such as candxinto the input
+context of the language model.
+Collecting Program Samples. To obtain programs from
+the Coder model p, we sample autoregressively using a
+
+--- PAGE 3 ---
+Coder Reviewer Reranking for Code Generation
+0 50 100 150 200 250 300
+Lengths of Code Samples |y|60
+40
+20
+0
+Coder log p(y|x)
+(a)
+0 50 100 150 200 250 300
+Lengths of Code Samples |y|1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+Normalized Coder log p(y|x) / |y| (b)
+161116212631364146
+# Samples0.500.520.540.560.580.600-shot Codex 002 on MBPP Sanitized
+Coder
+N. Coder (c)
+Figure 2. 2a and 2b show that the Coder model p(yjx)has a strong dependence on the length of generated code and length normalization
+can introduce additional biases. 2c shows that in practice, Coder-only reranking (Coder) and normalized Coder-only reranking (N. Coder)
+have worse performance when the number of samples becomes large, which can be caused by selecting degenerate solutions.
+temperature-scaled p. If the temperature is low, temper-
+ature scaling increases the probability of sampling well-
+formed programs.
+Coder-Only Reranking. Once we have collected 25-100
+samples, we rerank and select a single program as our out-
+put program. A popular technique in prior work (Chen
+et al., 2021) is to pick the program ythat has the highest
+Coder model likelihood logp(yjx;c). However, the Coder
+model likelihood logp(yjx;c)is biased toward shorter pro-
+grams (Stahlberg & Byrne, 2019). To counter this shortcom-
+ing, Chen et al. (2021) propose to apply length normaliza-
+tion and instead rerank using the average token-level log
+likelihood,1
+jyjlogp(yjc;x).
+Failures of Coder-Only Reranking. Figure 2a and Fig-
+ure 2b plot the Coder logp(yjx)and Normalized Coder
+1
+jyjlogp(yjc;x)values against the lengths of generated pro-
+gramsjyj. From these ﬁgures we can observe that Coder-
+only reranking prefers short solutions; applying length nor-
+malization overcorrects and prefers long solutions. This is a
+known issue of reranking/searching using the likelihood of
+neural language models (Holtzman et al., 2020; Stahlberg &
+Byrne, 2019). In practice, many of these short programs are
+trivial ( e.g.containing only a return orpass statement)
+and many of these long programs contain repetitive code.
+Figure 2c plots the accuracy of ranking with Coder model
+or the length normalized Coder model (N. Coder) versus
+the number of program samples. We observe that accuracy
+degrades as the number of program samples increases, since
+degenerate but high-scoring solutions have an increasing
+chance of appearing as more programs are sampled. This
+demonstrates that both types of Coder likelihood are insufﬁ-
+cient as reranking objectives for code generation. We further
+analyze this behavior in Section 5.
+4. Coder-Reviewer Reranking
+Reviewer Model p(yjx). In real-world professional
+software development, it is common to have program-
+mers review each other’s work. Motivated by this,
+and the previously-demonstrated shortcomings of Coder-
+only reranking, we introduce a Reviewer model. Note
+3 -shot task-agnostic pr omptingCoder Prompt<text> </text>
+<text>Print info of "bash"
+echo $(ls -l /bin/bash)
+... 2 more demonstration examples
+Change the owner of "dir"  
+to "nginx"<code> </code> 
+<code></text>
+Reviewer Prompt<code> </code>
+<code> </code>
+echo $(ls -l /bin/bash)
+Print info of "bash"
+... 2 more demonstration examples 
+chown nginx:nginx dir
+Change the owner of "dir"  
+to "nginx"<text> </text> 
+<text></text>Figure 3. Example task-agnostic prompt on the NL2Bash dataset.
+We invert the order in which language instruction and the generated
+program appear to estimate the Reviewer model p(xjy).
+that we use the same underlying model pfor both
+the Coder and the Reviewer model but prompt differ-
+ently. In the case of few-shot code generation, we will
+havep(xjc;y;^c1;^y1;^x1;:::; ^cn;^yn;^xn). Compared to the
+Coder model, the Reviewer model is tasked with evaluating
+the likelihood of the instruction x. Degenerate programs
+cannot account for the instruction well and therefore will
+often have a low Reviewer model likelihood.
+Prompting for the Reviewer Model. We adopt a
+prompting-based approach to implement the Reviewer
+model. In short, once the program samples yare generated,
+we invert the order in which instruction xand program y
+appear in the input context and query the language model p
+again to obtain their likelihood. Recall that in Figure 1, we
+demonstrate a task-speciﬁc prompt we designed for Python
+function completion datasets. In this prompt, we ﬁrst dupli-
+cate the function header and place the generated program y
+before the instruction docstring x. Additionally, we insert
+a natural language task speciﬁcation “write the docstring
+for the above function” into the prompt to further specify
+the task to the pretrained language model. In Figure 3, we
+give another example of a 3-shot task-agnostic prompt on
+the NL2Bash dataset. Shi et al. (2022) propose this task-
+agnostic Coder model prompt that marks the location of
+instruction and generated programs with html-like tags. For
+prompting the Reviewer model, we swap the language in-
+
+--- PAGE 4 ---
+Coder Reviewer Reranking for Code Generation
+struction and the generated program, along with their tags.
+Importantly, we apply this inversion to both the demonstra-
+tion examples and the last test example.
+Combining Coder and Reviewer. To leverage the infor-
+mation provided by both the Coder and the Reviewer model,
+we propose Coder-Reviewer reranking, which reranks pro-
+grams using the product of the Coder and the Reviewer,
+logp(xjy)p(yjx) = logp(xjy) + logp(yjx)
+(Coder-Reviewer Reranking ):
+Similarly, we can apply Coder-Reviewer reranking when
+using the length normalized Coder score,
+logp(xjy)
+jxj+logp(yjx)
+jyj
+(Normalized Coder-Reviewer Reranking ):
+Here, we normalize the reviewer model score p(xjy)to
+match the scale of the normalized Coder model score.
+Because Coder-Reviewer Reranking combines two models
+by taking their product, Coder-Reviewer Reranking is sen-
+sitive to low probability under either model. As a result,
+Coder-Reviewer reranking seeks out program samples that
+obtain a consensus from both the Coder and the Reviewer.
+In the next section, we illustrate that by seeking a consensus,
+Coder-Reviewer can successfully alleviate the biases from
+each individual component.
+Understanding the Relation between Coder-Reviewer
+Reranking and Maximum Mutual Information. We
+now show that Coder-Reviewer reranking is a special instan-
+tiation of the Maximum Mutual Information objective (Li
+et al., 2016). To avoid notation clutter, we abstract away the
+problem structure speciﬁc to code generation and denote
+task inputxand outputy. The usual Maximum Likelihood
+objective optimizes p(yjx), which is the same as reranking
+with the Coder model. However, Maximum Likelihood has
+the risk of preferring generic or degenerate answers (Holtz-
+man et al., 2020) and Li et al. (2016) propose to optimize
+Mutual Informationp(x;y)
+p(x)p(y). Moreover, Li et al. (2016)
+propose to optimize for a weighted version of the Mutual
+Information objective, using a weighting parameter :
+argmaxylogp(y;x)
+p(x)p(y)(1)
+=argmaxy(1 ) logp(yjx) +logp(xjy) (2)
+=argmaxy(1 ) logp(yjx) +logp(y;x)
+p(x)p(y)(3)
+From (2), we see that Coder-Reviewer reranking is a special
+case of this objective where is set to 0:5(we include a
+derivation in Appendix A). From (3), we see that both can be
+Return
+OnlyRepetition Copy
+Prompt
+Adversarial Cases0.00.20.40.60.81.0Mean Reciprocal RankReviewer
+Coder
+N. Coder
+Coder-Reviewer
+N. Coder-ReviewerFigure 4. Mean Reciprocal Rank of ranking three typical degen-
+erate cases. Coder Reviewer variants alleviate the biases in its
+individual components.
+viewed as interpolating likelihood with a mutual information
+criterion, with strength . In other words, Coder-Reviwer
+reranking favors program samples that have high mutual
+information with the language instruction and therefore can
+ﬁlter out low quality solutions that cannot explain the in-
+struction well. This perspective also motivates exploring
+using hyperparameter to control the mixing ratio between
+the Coder and the Reviewer. In section Appendix C.3, we
+show that the off-the-shelf hyperparameter = 0:5usually
+works well already, and tuning can give a small additional
+gain. Next, we conduct an quantitative analysis to show that
+Coder-Reviewer model can ﬁlter low quality programs.
+5. Analysis of Degenerate Cases
+In this section, we experiment with ranking artiﬁcially cre-
+ated degenerate programs to analyze the preference of dif-
+ferent ranking methods. We experiment with the Codex002
+model (Chen et al., 2021) on the 0-shot sanitized MBPP
+dataset (MBPP-S Austin et al., 2021), which is a Python
+function completion dataset with example prompt struc-
+ture shown in Figure 1. We defer experimental details and
+dataset details to Section 6.
+For each MBPP problem, we sampled 25 programs via the
+Coder model p(yjx). Then, we construct three cases that
+reﬂect common degeneracies and inject them among the
+125 samples. We construct these cases: A. ReturnOnly
+where the function body only contains a return statement
+B.Repetitive where the function body contains print
+statements printing from 1 to 50, with each line containing
+exactly one print statement. C. CopyPrompt where the
+function body only contains a comment that repeats the
+language instruction.
+With these programs, we now compare the reranking
+behavior of Coderp(yjx), normalized Coder ( N.Coder )
+1
+jyjlogp(yjx), and Reviewerp(xjy). We also included
+Coder-Reviewer reranking and the normalized version
+N.Coder-Reviewer into the comparison. Figure 4 plots the
+mean reciprocal rank (MRR) of the three degenerate cases
+
+--- PAGE 5 ---
+Coder Reviewer Reranking for Code Generation
+ranked by different methods, where high MRR suggests
+a bias toward the degenerate case. Figure 4 shows that
+both Coder and Reviewer methods fail on different degen-
+erate programs: Coder favors programs that are effectively
+empty, even though those clearly do not follow the lan-
+guage instructions; Normalized Coder favors programs full
+of repetitions; and Reviewer can be biased toward spurious
+surface form overlap between generated programs and the
+language instruction. In contrast, Coder-Reviewer reranking
+can alleviate the biases in its individual components.
+Degenerate Solutions Rejection. Based on this analy-
+sis, we prescribe three easy-to-implement procedures to
+reject degenerate solutions before reranking takes place. By
+strengthening the Coder and Reviewer baselines, we know
+that any performance gain brought by Coder-Reviewer can-
+not be easily attributed to simple ﬁxes.
+•We ﬁlter empty programs. For Python function com-
+pletion datasets, we also ﬁlter trivial solutions that only
+contain return orpass .
+•We ﬁlter repetitive programs whose zlib compressed
+representation is more than four times shorter than the
+original program.2
+•For all Python code generation problems, we use an
+off-the-shelf canonicalization software pyminifier
+to remove comments, docstrings, and replace all print
+and assertion messages to empty strings. This proce-
+dure helps reduce the spurious surface form overlap
+with the language instruction. For function completion
+problems, we also standardize the function names.
+We analyze the effects of the above procedure in Section 7.3.
+Overall, we ﬁnd that these procedures help improve both the
+baseline Coder methods and our proposed Coder-Reviewer
+methods. Next, we present our extensive empirical study to
+demonstrate that Coder-Reviewer is an effective and consis-
+tent method.
+6. Experimental Setup
+We present an extensive empirical study that spans six
+datasets and three model families. Our evaluation data con-
+sists of both zero-shot and few-shot settings and investigates
+both task-speciﬁc and task-agnostic prompt design, and we
+study eight models whose parameter counts range across
+two orders of magnitude.
+6.1. Datasets
+We provide a brief description of our experimental datasets
+and present a detailed description in Appendix B.1. We
+2This threshold corresponds to Repetitive , which prints
+from 1to50.ﬁrst consider three zero-shot datasets, which all involve gen-
+erating Python code. HumanEval andMBPP-Sanitized
+are two popular Python function completion datasets. On
+these datasets, we generally follow the prompt design in
+Chen et al. (2022) and use the Reviewer prompt presented
+in Figure 1. Plotting is a subset of DS-1000 (Lai et al.,
+2022) and contains 155realistic questions adapted from
+StackOverﬂow about matplotlib . The rest of DS-1000
+cannot be easily handled by left-to-right autoregressive be-
+cause it often introduces additional contexts that are better
+addressed by inﬁlling models. We leave applying Coder-
+Reviewer reranking to inﬁlling models for future work.
+Next, we consider three three-shot datasets, MBPP ,Spider ,
+andNL2Bash , which include programming languages other
+than Python. Our task-agnostic prompts and other experi-
+mental design on these three datasets are all taken from Shi
+et al. (2022) and are similar to the one presented in Figure 3.
+6.2. Models
+Codex (Chen et al., 2021) models are descendants of
+GPT-3 (Brown et al., 2020). We consider three variants of
+the codex model: Codex002 ( codex-davinci-002 ),
+Codex001 ( codex-davinci-001 ), and Codex-
+Cushman ( codex-cushman ). While the exact modeling
+details are not made public, we assume based on their
+codenames that Codex002 and Codex001 are 175B models
+and Codex-Cushman is a 12B model.
+InCoder (Fried et al., 2022) models are trained with the
+causal mask language modeling objective and are capable
+of both inﬁlling and left-to-right generation. In this work,
+we only leverage their autoregressive ability to keep the
+comparison consistent with other model families and leave
+the investigation of its inﬁlling ability for future work. We
+experiment with 6B and 1B models from this family.
+CodeGen (Nijkamp et al., 2022) is a family of autoregres-
+sive language models pretrained on code data. We experi-
+ment with the 16B,6B, and 2B CodeGen models.
+6.3. Implementation Details
+Due to the lack of validation split on the benchmarks we ex-
+perimented with, we restrain ourselves from hyperparameter
+search and rely on a single set of decoding hyperparame-
+ters. On all datasets, we sample with temperature 0:4and
+set the max tokens to be 300. For our main results in Ta-
+ble 1, we sample 125different programs for each problem
+and then bootstrap 50times to report the mean accuracy
+of reranking 25samples. Given the small size of these
+datasets, we ﬁnd bootstrapping to be helpful in reducing
+variance. In Section 7.2, we analyze the impact of decoding
+hyperparameters on the validation accuracy. We apply the
+proposed degenerate solution rejection to all baseline and
+
+--- PAGE 6 ---
+Coder Reviewer Reranking for Code Generation
+Plotting HumanEval MBPP-S MBPP NL2BASH Spider-3%-2%-1%0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%Abs. Acc  : Best Coder-Reviewer  Best Coder-Only
+Codex-002
+Codex-001
+Codex-
+CushmanCodeGen-16B
+CodeGen-6B
+CodeGen-2BIncoder-6B
+Incoder-1B
+Figure 5. Absolute accuracy difference between the best Coder-Reviewer variants (with or without length normalization) and the best
+Coder variants (with or without length normalization). We observe performance gain from applying Coder-Reviewer on 43 out of 48
+dataset cross model pairs.
+proposed methods and study its effect in Section 7.3. Addi-
+tionally, we apply executability ﬁltering to all baseline and
+proposed methods to better compare with state-of-the-art
+methods that rely on execution more heavily. Executability
+ﬁltering (Shi et al., 2022) removes programs that produce
+runtime errors before applying any other ranking methods.
+We present the ranking results without executability ﬁltering
+in Appendix C.1.
+6.4. Reranking Methods
+Baselines. We ﬁrst compare to baseline selection meth-
+ods that are popular in existing work. Random reports the
+percentage of correct programs after degenerate solution
+rejection. Coder selects the program that has the highest
+p(yjx)andN. Coder applies length normalization to the
+Coder likelihood.
+Proposed Methods. We then compare the methods
+proposed in this work. Reviewer selects programs that
+has the highest p(xjy).Coder-Reviewer ranks via the
+product of the Coder and the Reviewer model scores and
+N. Coder-Reviewer applies length normalization to the com-
+ponent model scores before taking the product.
+State-of-the-art Methods. We compare to the competi-
+tive Minimum Bayes Risk method (MBR- EXEC; Shi et al.,
+2022), which compares the executed outputs of the gener-
+ated programs on test inputs and selects programs whose
+outputs are most typical. While for Python function com-
+pletion problems it is straightforward to compare execution
+outputs, this is less obvious when execution results involve
+more complex objects. On the plotting dataset, due to the
+complexity and the multimodal nature of matplotlib3,
+we compare the output ﬁgures directly pixel-by-pixel. On
+3plots with different styles such as colors, fonts, etc. might all
+be correct but it is difﬁcult to aggregate them.HumanEval, we extract the ﬁrst test case appearing in the
+docstring and use the executed output for MBR- EXEC. For
+other datasets, we follow the practices recommended in Shi
+et al. (2022). We compare to MBR- EXEC using the same
+setting with baseline and proposed methods in Table 1.
+We also compare to CodeT (Chen et al., 2022), which gen-
+erates assertions for Python function completion problems
+and proposes a novel graph-based aggregation process for
+selecting programs based on program-test agreement. While
+CodeT is a competitive method, it relies on the ability to gen-
+erate good assertions and cannot be easily used on other pro-
+gramming languages/tasks. For example, models typically
+cannot generate unit tests used in the Plotting dataset be-
+cause good tests involve complicated assertions on the ﬁgure
+object and do not naturally appear in public data. Another
+example is the spider dataset, where generating additional
+unit tests involves creating different input database (Zhong
+et al., 2022), a challenging problem on its own. Therefore,
+we separate CodeT from the rest of the comparison and
+compare to its reported numbers in Table 2.
+7. Experimental Results
+In Section 7.1, we show that Coder-Reviewer reranking is
+either the best performing method or competitive with the
+best performing method across all settings. In Section 7.2
+and Section 7.3, we perform ablation studies for the different
+decisions made in developing Coder-Reviewer reranking
+and show that Coder Reviewer can work well with default
+hyperparameters and is more stable than Coder reranking.
+7.1. Primary Results
+First, we observe that Coder-Reviewer variants consistently
+improves over Coder variants. Figure 5 plots the absolute
+accuracy difference between the best Coder-Reviewer vari-
+
+--- PAGE 7 ---
+Coder Reviewer Reranking for Code Generation
+Plotting HumanEval MBPP-S
+Codex002 InCoder6B CodeGen16B Codex002 InCoder6B CodeGen16B Codex002 InCoder6B CodeGen16B
+Random 57:6 21:9 36 :7 49:2 16:0 32 :2 58:8 25:4 45 :7
+Reviewer 65:2 35:5 46 :5 61:2 17:6 37 :3 59:5 28:8 43 :6
+Coder 57:7 15:5 38 :6 45:1 20:1 33 :5 59:8 28:1 50 :3
+Coder-Reviewer 58:3 16:4 41 :7 56:7 23:5 40 :0 64:4 33:7 47:4
+N.Coder 59:4 22:6 37 :4 60:2 19:2 38 :5 60:5 27:1 48 :6
+N.Coder-Reviewer 68:0 32:8 45:9 62:5 22:0 39:6 61:6 31:1 45:8
+MBR-E XEC 60:9 21:0 37 :0 50:5 20:7 35 :8 63:9 30:9 53:5
+MBPP NL2BASH Spider
+Codex002 InCoder6B CodeGen16B Codex002 InCoder6B CodeGen16B Codex002 InCoder6B CodeGen16B
+Random 58:1 19:6 39 :3 60:0 49:8 35 :7 65:2 29:4 25 :6
+Reviewer 66:9 24:4 44 :1 63:3 55:3 28:1 67:5 38:4 28 :8
+Coder 60:2 23:4 41 :5 57:4 48:8 31 :7 74:1 38:9 33:7
+Coder-Reviewer 66:4 26:1 46:2 61:9 55:0 37 :0 74:5 41:5 31:7
+N.Coder 60:7 20:2 41 :9 61:3 41:5 37:8 69:9 38:2 31 :1
+N.Coder-Reviewer 66:2 24:1 45 :4 63:7 55:9 29:5 71:0 40:3 29:9
+MBR-E XEC 63:0 26:7 47 :3 57:4 48:8 32 :4 75:2 38:2 30 :6
+Table 1. Bootstrapped reranking results with 25 samples. Bolded numbers indicate the best results on each column and Underlined
+numbers indicate the second best results. In each subsection, we compare including or not including Reviewer reranking (Random vs.
+Reviewer, Coder vs. Coder-Reviewer, etc.). Coder-Reviewer variants mostly outperform Coder variants, and often outperforms the
+competitive MBR- EXEC method. Across all columns except one, a Coder-Reviewer variant is either the best or the second best method.
+ant (with and without length normalization) and the best
+Coder variant. Overall, we observe that Coder Reviewer
+leads to a consistent and signiﬁcant improvement with very
+few exceptions. In certain settings, e.g.for InCoder mod-
+els on the plotting dataset, Coder-Reviewer leads to more
+than10% improvement. The only 5 exceptions out of 48
+model cross dataset pair where Coder-Reviewer is worse
+than Coder all involve CodeGen models. We suspect that
+difference in pretraining can cause a difference in the ca-
+pability to estimate the Reviewer model p(xjy)using the
+prompt we employ in this work.
+Second, in Table 1, we present the ranking results on the
+largest models from each model family along with com-
+parison to other methods. From Table 1 we ﬁnd a Coder-
+Reviewer variant to be the best method most of the time and
+even when it is not, it is often the second best method. Ana-
+lyzing across all data, we ﬁnd that Coder-Reviewer variants
+are the best method 62:5%of the time, Reviewer 12:5%
+of the time, and MBR- EXEC 20:83% of the time. How-
+ever, Reviewer and MBR- EXEC both have scenarios where
+they trail behind Coder-Reviewer signiﬁcantly. For example
+when applied to the Codex002 model, MBR- EXEC is more
+than10% worse than normalized Coder-Reviewer on Hu-
+manEval and 8%worse on Plotting. In practice, we ﬁnd that
+MBR- EXEC works better when the quality of the test inputs
+that it executes on is high and when it is easy to aggregate
+the execution outputs. Compare HumanEval and MBPP-S,which have very simlar format, MBR-Exec performs much
+better on MBPP-S than on HumanEval. We ascribe this
+failure to the lower quality of the test inputs in HumanEval.
+Third, Table 2 shows the performance of CodeT and Coder-
+Reviewer in the same setting of reranking 100samples on
+HumanEval and MBPP-S. Here the results of CodeT are
+not strictly comparable to those of Coder-Reviewer. Recall
+that CodeT generates additional test cases for these Python
+function completion problems so CodeT does not execute
+any test cases provided in the input docstring. In contrast,
+we follow the setup in Shi et al. (2022) and execute the ﬁrst
+test case to perform executbaility ﬁltering. Still, Table 2
+shows that Coder-Reviewer can achieve very competitive
+performance while being a more general method that can be
+applied to datasets where generating test cases is difﬁcult.
+In summary, our experimental results show that Coder-
+Reviewer reranking consistently improves performance over
+Coder-only reranking from past work across a diverse set
+of model families and datasets. In the following sections,
+we carry out ablation studies to understand the impact of
+design decisions and sensitivity to hyperparameters.
+7.2. Understanding Hyperparameters
+We explore the effect of different hyperparameters, includ-
+ing the number of samples and the mixing ratio between
+Coder and Reviewer. We start by plotting the ranking accu-
+
+--- PAGE 8 ---
+Coder Reviewer Reranking for Code Generation
+HumanEval MBPP-S
+Codex002 InCoder6B CodeGen16B Codex002 InCoder6B CodeGen16B
+CodeT 65:8 20:6 36 :7 67:7 34:4 49 :5
+Coder-Reviewer 57:9 24:3 42 :6 64:7 35:8 50 :3
+N. Coder-Reviewer 66:9 22:9 40 :5 61:0 30:2 46 :1
+Table 2. Bootstrapped reranking results with 100samples. CodeT numbers are cited from Chen et al. (2022) and not strictly comparable:
+Coder-Reviewer variants use the ﬁrst unit test in the docstring for executability ﬁltering whereas CodeT generated its own unit tests. That
+being said, this comparison shows that Coder-Reviewer can achieve strong performance on the Python function completion datasets while
+being easier to generalize to other language/packages.
+161116212631364146
+# Samples0.550.560.570.580.590.600.610.620.630.640.650-shot Codex 002 on MBPP Sanitized
+Coder
+ReviewerCoder-Reviewer
+Figure 6. Accuracy versus number of ranking samples. Coder-
+Reviewer is more stable and robust to degenerate solutions than its
+individual components.
+racy of Coder, Reviewer, and Coder-Reviewer on the 0-shot
+MBPP-S dataset with Codex002 in Figure 6 (Figure 7 in
+Appendix C.2 includes plots on more methods and datasets).
+We observe that in contrast to its components Coder and
+Reviewer, Coder-Reviewer is more stable in ranking more
+sample programs, suggesting that it is more robust against
+potential degenerate solutions when compared to ranking
+with Coder or Reviewer model only.
+In addition, recall that we can introduce a hyperparameter
+to control the mixing ratio between Coder and Reviewer
+and have the objective (1 ) logp(xjy) +logp(yjx).
+In Coder-Reviewer reranking, we ﬁx at0:5for simplic-
+ity although the weighted objective is also popular in prior
+work (Li et al., 2016). From Figure 8 in Appendix C.3,
+we observe that the improvement from tuning is typi-
+cally less than 1%, with a few exceptions with the CodeGen
+models where tuning can lead to more signiﬁcant improve-
+ments. Finally, we explore a alternate formulation of the
+Maximum Mutual Information objective and show that it
+performs generally worse than Coder-reviewer reranking in
+Appendix C.4.
+7.3. Understanding Degenerate Solution Rejection
+We start our analysis by removing the proposed degener-
+ate solution rejection on Codex002’s generated programs
+on HumanEval and MBPP-S. Table 3 shows the ranking
+results along with the performance degradation compared
+to applying the proposed rejection. We observe that degen-
+erate solution rejection improves all of the baselines andHumanEval MBPP-S
+Random 48:0 1:2 58:1 0:7
+Coder 38:1 7:1 55:3 4:5
+N.Coder 59:7 0:5 60:0 0:5
+Reviewer 57:7 3:5 55:8 3:7
+Coder-Reviewer 53:2 3:5 60:5 3:9
+Norm. Coder-Reviewer 61:5 1:0 60:8 0:7
+Table 3. Ranking results of Codex002 without applying degenerate
+solution rejection. Numbers in subscripts showing the performance
+degradation compared to applying programmatic rejection. We see
+that degeneration solution rejection is helpful for all methods and
+unnormalized Coder beneﬁts from the rejection most signiﬁcantly.
+Coder-Reviewer variants, with the most signiﬁcant effect
+on Coder. Importantly, we see that the improvement from
+rejection is larger on Coder, Reviewer, and Coder-Reviewer
+than on Random, suggesting that these ranking methods
+have biases toward the degenerate solutions that we reject.
+On these two datasets, the effect of rejection is less obvious
+on normalized Coder and normalized Coder Reviewer but
+we ﬁnd the rejection to be important for these methods on
+NL2Bash where it is more likely to have egregious repeti-
+tions in the program samples. Finally, these ablation results
+suggest that Coder-Reviewer still provides a beneﬁt on top
+of degenerate solution rejection. Overall, we recommend
+the usage of our rejection methods because they are easy to
+implement and can effectively remove the most egregious
+degeneration programs targeting each ranking method.
+8. Conclusion
+We propose Coder-Reviewer reranking for code genera-
+tion, which leads to a consistent and signiﬁcant improve-
+ment over the Coder only reranking proposed in prior
+work. When combined with executability ﬁltering, Coder-
+Reviewer reranking can often outperform the MBR- EXEC
+method. Coder-Reviewer is easy to implement with prompt-
+ing, can generalize to different programming languages, and
+works well with off-the-shelf hyperparameter.
+
+--- PAGE 9 ---
+Coder Reviewer Reranking for Code Generation
+References
+Allamanis, M., Barr, E. T., Bird, C., and Sutton, C. Suggest-
+ing accurate method and class names. In Proceedings of
+the 2015 10th Joint Meeting on Foundations of Software
+Engineering , 2015.
+Austin, J., Odena, A., Nye, M., Bosma, M., Michalewski,
+H., Dohan, D., Jiang, E., Cai, C., Terry, M., Le, Q., and
+Sutton, C. Program synthesis with large language models.
+arXiv preprint arXiv:2108.07732 , 2021.
+Bahl, L. R., Brown, P. F., de Souza, P. V ., and Mercer,
+R. L. Maximum mutual information estimation of hidden
+markov model parameters for speech recognition. IEEE
+International Conference on Acoustics, Speech, and Sig-
+nal Processing , 1986.
+Brown, T., Mann, B., Ryder, N., Subbiah, M., Kaplan, J. D.,
+Dhariwal, P., Neelakantan, A., Shyam, P., Sastry, G.,
+Askell, A., et al. Language models are few-shot learners.
+Advances in neural information processing systems , 33:
+1877–1901, 2020.
+Chen, B., Zhang, F., Nguyen, A., Zan, D., Lin, Z., Lou, J.-
+G., and Chen, W. Codet: Code generation with generated
+tests. ArXiv , abs/2207.10397, 2022.
+Chen, M., Tworek, J., Jun, H., Yuan, Q., Ponde, H., Kaplan,
+J., Edwards, H., Burda, Y ., Joseph, N., Brockman, G.,
+Ray, A., Puri, R., Krueger, G., Petrov, M., Khlaaf, H.,
+Sastry, G., Mishkin, P., Chan, B., Gray, S., Ryder, N.,
+Pavlov, M., Power, A., Kaiser, L., Bavarian, M., Winter,
+C., Tillet, P., Such, F. P., Cummings, D. W., Plappert, M.,
+Chantzis, F., Barnes, E., Herbert-V oss, A., Guss, W. H.,
+Nichol, A., Babuschkin, I., Balaji, S. A., Jain, S., Carr, A.,
+Leike, J., Achiam, J., Misra, V ., Morikawa, E., Radford,
+A., Knight, M. M., Brundage, M., Murati, M., Mayer, K.,
+Welinder, P., McGrew, B., Amodei, D., McCandlish, S.,
+Sutskever, I., and Zaremba, W. Evaluating large language
+models trained on code. ArXiv , abs/2107.03374, 2021.
+Chowdhery, A., Narang, S., Devlin, J., Bosma, M., Mishra,
+G., Roberts, A., Barham, P., Chung, H. W., Sutton, C.,
+Gehrmann, S., Schuh, P., Shi, K., Tsvyashchenko, S.,
+Maynez, J., Rao, A. B., Barnes, P., Tay, Y ., Shazeer,
+N. M., Prabhakaran, V ., Reif, E., Du, N., Hutchinson,
+B. C., Pope, R., Bradbury, J., Austin, J., Isard, M., Gur-
+Ari, G., Yin, P., Duke, T., Levskaya, A., Ghemawat, S.,
+Dev, S., Michalewski, H., Garc ´ıa, X., Misra, V ., Robin-
+son, K., Fedus, L., Zhou, D., Ippolito, D., Luan, D., Lim,
+H., Zoph, B., Spiridonov, A., Sepassi, R., Dohan, D.,
+Agrawal, S., Omernick, M., Dai, A. M., Pillai, T. S., Pel-
+lat, M., Lewkowycz, A., Moreira, E., Child, R., Polozov,
+O., Lee, K., Zhou, Z., Wang, X., Saeta, B., D ´ıaz, M., Fi-
+rat, O., Catasta, M., Wei, J., Meier-Hellstern, K. S., Eck,D., Dean, J., Petrov, S., and Fiedel, N. Palm: Scaling lan-
+guage modeling with pathways. ArXiv , abs/2204.02311,
+2022.
+Fried, D., Hu, R., Cirik, V ., Rohrbach, A., Andreas, J.,
+Morency, L.-P., Berg-Kirkpatrick, T., Saenko, K., Klein,
+D., and Darrell, T. Speaker-follower models for vision-
+and-language navigation. In NeurIPS , 2018.
+Fried, D., Aghajanyan, A., Lin, J., Wang, S. I., Wallace, E.,
+Shi, F., Zhong, R., Yih, W.-t., Zettlemoyer, L., and Lewis,
+M. Incoder: A generative model for code inﬁlling and
+synthesis. ArXiv , abs/2204.05999, 2022.
+Hendrycks, D., Basart, S., Kadavath, S., Mazeika, M., Arora,
+A., Guo, E., Burns, C., Puranik, S., He, H., Song, D., and
+Steinhardt, J. Measuring coding challenge competence
+with APPS. In NeurIPS Datasets and Benchmarks Track ,
+2021.
+Holtzman, A., Buys, J., Du, L., Forbes, M., and Choi, Y .
+The curious case of neural text degeneration. In ICLR ,
+2020.
+Inala, J. P., Wang, C., Yang, M., Codas, A., Encarnaci’on,
+M., Lahiri, S. K., Musuvathi, M., and Gao, J. Fault-aware
+neural code rankers. ArXiv , abs/2206.03865, 2022.
+Iyer, S., Konstas, I., Cheung, A., and Zettlemoyer, L. Map-
+ping language to code in programmatic context. In
+EMNLP , 2018.
+Lai, Y ., Li, C., Wang, Y ., Zhang, T., Zhong, R., Zettlemoyer,
+L., tau Yih, S. W., Fried, D., Wang, S., and Yu, T. Ds-
+1000: A natural and reliable benchmark for data science
+code generation. ArXiv , abs/2211.11501, 2022.
+Lewis, M. and Fan, A. Generative question answering:
+Learning to answer the whole question. In ICLR , 2019.
+Li, J., Galley, M., Brockett, C., Gao, J., and Dolan, B. A
+diversity-promoting objective function for neural conver-
+sation models. In NAACL , 2016.
+Li, Y ., Choi, D., Chung, J., Kushman, N., Schrittwieser, J.,
+Leblond, R., Eccles, T., Keeling, J., Gimeno, F., Lago,
+A. D., et al. Competition-level code generation with
+alphacode. arXiv preprint arXiv:2203.07814 , 2022.
+Lin, X. V ., Wang, C., Zettlemoyer, L., and Ernst, M. D.
+NL2Bash: A corpus and semantic parser for natural lan-
+guage interface to the linux operating system. In LREC ,
+2018.
+Ling, W., Blunsom, P., Grefenstette, E., Hermann, K. M.,
+Koˇcisk´y, T., Wang, F., and Senior, A. Latent predictor
+networks for code generation. In ACL, 2016.
+
+--- PAGE 10 ---
+Coder Reviewer Reranking for Code Generation
+Min, S., Lewis, M., Hajishirzi, H., and Zettlemoyer, L.
+Noisy channel language model prompting for few-shot
+text classiﬁcation. ArXiv , abs/2108.04106, 2021.
+Nijkamp, E., Pang, B., Hayashi, H., Tu, L., Wang, H., Zhou,
+Y ., Savarese, S., and Xiong, C. Codegen: An open large
+language model for code with multi-turn program synthe-
+sis. 2022.
+Shi, F., Fried, D., Ghazvininejad, M., Zettlemoyer, L., and
+Wang, S. I. Natural language to code translation with
+execution. In EMNLP , 2022.
+Stahlberg, F. and Byrne, B. On nmt search errors and
+model errors: Cat got your tongue? arXiv preprint
+arXiv:1908.10090 , 2019.
+Yasunaga, M. and Liang, P. Graph-based, self-supervised
+program repair from diagnostic feedback. In ICML , 2020.
+Ye, S., Kim, D., Jang, J., Shin, J., and Seo, M. Guess
+the instruction! ﬂipped learning makes language models
+stronger zero-shot learners. ArXiv , abs/2210.02969, 2022.
+Yin, P. and Neubig, G. A syntactic neural model for general-
+purpose code generation. In ACL, 2017.
+Yin, P. and Neubig, G. Reranking for neural semantic
+parsing. In ACL, 2019.
+Yu, T., Zhang, R., Yang, K., Yasunaga, M., Wang, D., Li,
+Z., Ma, J., Li, I., Yao, Q., Roman, S., Zhang, Z., and
+Radev, D. Spider: A large-scale human-labeled dataset
+for complex and cross-domain semantic parsing and text-
+to-SQL task. In EMNLP , 2018.
+Zhong, R., Snell, C., Klein, D., and Eisner, J. Active
+programming by example with a natural language prior.
+ArXiv , 2022.
+A. Understanding the Relation between
+Coder-Reviewer Reranking and Maximum
+Mutual Information.
+We include the derivation from Li et al. (2016) to show that
+Coder-Reviewer reranking is a special instantiation of the
+Maximum Mutual Information objective. We can show
+argmaxylogp(y;x)
+p(x)p(y)
+=argmaxy(1 ) logp(yjx) logp(x) +logp(xjy)
+=argmaxy(1 ) logp(yjx) +logp(xjy)
+=argmaxy(1 ) logp(yjx) +logp(y;x)
+p(x)p(y);by using the fact that p(x)is a constant and removing/adding
+it does not change the optimziation objective.
+Alternatively, Li et al. (2016) propose another way to instan-
+tiate this objective,
+argmaxylogp(y;x)
+p(x)p(y)
+=argmaxylogp(yjx) logp(y):
+We show in Appendix C.4 that this alternate formulation
+leads to worse performance, which is a similar conclusion
+to the original ﬁnding in Li et al. (2016).
+B. Additional Experimental details
+B.1. Detailed Dataset Descriptions
+HumanEval (Chen et al., 2021) contains 164hand-written
+Python programming questions Chen et al. (2021). We use
+the prompts released by Chen et al. (2022), which removes
+the input-output cases present in the original prompts. This
+dataset evaluates the generated function by multiple asser-
+tions on the input-output relations.
+MBPP-Sanitized (Austin et al., 2021) contains 427crowd-
+sourced Python programming questions. Chen et al. (2022)
+adapts each problem into having a function header and re-
+locate the natural language instructions into function doc-
+strings, similar to the format of HumanEval. We use this
+prompt format for our experiment.
+MBPP (Austin et al., 2021) original version consists of
+974python questions, with 500of them used for testing and
+the rest for few-shot prompting. The prompt taken from Shi
+et al. (2022) uses one input-output assertion as additional
+context to help make the language instruction more speciﬁc.
+Unlike the 0-shot sanitized version of MBPP, this 3-shot
+setting requires the models to deﬁne the desired function
+name on its own.
+Spider (Yu et al., 2018) is a benchmark of natural language
+to SQL query generation. There are 7000 examples for
+training/demonstration and 1034 questions for testing. The
+prompt taken from Shi et al. (2022) prepends the database
+schema as the program context. The generated SQL com-
+mands are evaluated with execution accuracy, comparing the
+database return values to the ones queried by ground-truth
+SQL commands.
+NL2Bash (Lin et al., 2018) is a benchmark of translating
+natural language to bash commands. Because it is difﬁcult
+to obtain executable enviroments for bash commands, this
+dataset evaluates character-level BLEU-4 score.
+
+--- PAGE 11 ---
+Coder Reviewer Reranking for Code Generation
+1 611 16 21 26 31 36 41 46
+# Samples0.5500.5750.6000.6250.6500.6750-shot Codex 002 on Plotting
+1 611 16 21 26 31 36 41 46
+# Samples0.450.500.550.600.650-shot Codex 002 on HumanEval
+1 611 16 21 26 31 36 41 46
+# Samples0.560.580.600.620.640-shot Codex 002 on MBPP-S
+Coder
+N. Coder
+Reviewer
+Coder-Reviewer
+N. Coder-Reviewer
+Figure 7. Accuracy versus number of ranking samples. Coder-Reviewer is more stable and robust to degenerate solutions than its individual
+components.
+Plotting
+HumanEval
+MBPP-S
+MBPP
+NL2BASH
+Spider0.00%1.00%2.00%3.00%4.00%5.00%6.00%7.00%Improvement from tuning  on the best Coder-Reviewer variant
+Codex-002
+Codex-001
+Codex-
+CushmanCodeGen-16B
+CodeGen-6B
+CodeGen-2BIncoder-6B
+Incoder-1B
+Figure 8. Accuracy improvement from grid searching ensemble mixing ratio . Setting= 0:5(i.e., Coder-Reviewer) usually performs
+well already and further grid searching mostly only lead to a 1-2%improvement. In few settings (CodeGen- 16B on NL2Bash and
+Incoder- 6B on Plotting), tuning leads to a signiﬁcant improvement.
+C. Additional Results
+C.1. Results from All Models
+Table 5 to Table 10 plot ranking results on all eight models
+we experimented with and it also shows the results of not ap-
+plying executability ﬁltering. Analyzing across all data, we
+ﬁnd that a Coder-Reviewer variant is the best method 62:5%
+of the time, Reviewer 12:5%of the time, and MBR- EXEC
+20:83% of the time. Notably, a Coder-Reviewer variant is
+almost always the best method for Codex models with only
+two exceptions (Codex002 on Spider and MBPP). Even
+when none of Coder-Reviewer variants is the best method,
+a Coder-Reviewer variant is mostly the second best method.
+Overall, executability ﬁltering improves most methods and
+does not change the comparison between different ranking
+methods.
+C.2. Analyzing the Effect of Number of Program
+Samples
+Figure 7 plots the performance of Coder-Reviewer variants,
+Coder variants, and Reviewer on all three 0-shot datasets
+we experimented with. Similar to Figure 6, Figure 7 showsthat compared to Coder variants, Coder-Reviewer variants
+perform more consistently across the number of program
+samples being reranked. Here we plot the performance after
+applying degeneration solutions rejection. Still, on all three
+datasets, the performance of Coder starts to degrade after
+ﬁve or ten samples. Normalized Coder is more stable on
+HumanEval and MBPP-S but also does worse with more
+program samples on Plotting.
+C.3. Analyzing the Effect of Tuning Mixing Ratio 
+In addition, recall that we can introduce a hyperparameter
+to control the mixing ratio, between Coder and Reviewer
+and have the objective (1 ) logp(xjy) +logp(yjx).
+Coder-Reviewer reranking is equivalent to ﬁxing at0:5
+although the weighted objective is also popular in prior
+work (Li et al., 2016). To explore the beneﬁts of tuning
+this additional hyperparameter of , we grid search be-
+tweenf0:1;0:2;:::; 0:9gacross all experimental settings.
+From Figure 8 in Appendix C.3, we observe that the im-
+provement from tuning is typically less than 1%, with a
+few exceptions (Incoder- 6B on Plotting and CodeGen- 16B
+on NL2Bash) where tuning can lead to more signiﬁcant
+
+--- PAGE 12 ---
+Coder Reviewer Reranking for Code Generation
+HumanEval MBPP-S
+Coder-Reviewer 56:7 64:4
+N. Coder-Reviewer 62:5 61:6
+Alternate 55:30 63 :0
+N. Alternate 50:73 62 :4
+Table 4. Ranking results of the alternate formulation of Maximum
+Mutual Information (Appendix C.4), which we observe underper-
+forms Coder-Reviewer.
+improvements. Given the lack of validation split in most
+benchmarks we experimented with, we do not include the
+result of tuning as our main results. However, for practi-
+tioners who have access to validation data, we recommend
+that they can grid search over in case tuning leads to
+additional gain.
+C.4. Alternate Formulation
+In Section 4, we show that Coder-Reviewer is related to
+pointwise mutual information regularization, when the regu-
+larization strength is set to 0:5. There is another formula-
+tion of this objective that is also common in literature. With
+derivation shown in Appendix A, we can observe that
+argmaxy(1 ) logp(yjx) +logp(xjy)
+=argmaxylogp(yjx) logp(y):
+Here we compare to this alternate formulation ( Alternate )
+on the 0-shot Python function completion datasets. We use
+prompting to estimate p(y)by removing the docstring be-
+neath the function header and record the probability of the
+function body. To apply this formulation with length normal-
+ization, we modify the regularization term as1
+jyjlogp(y).
+From Table 4 we observe that the alternate formulation
+generally underperforms Coder-Reviewer.
+
+--- PAGE 13 ---
+Coder Reviewer Reranking for Code Generation
+Exec. Filter Method Codex002 Codex001 Codex-Cushman InCoder6B InCoder1B CodeGen16B CodeGen6B CodeGen2B
+NoRandom 53:7 34:7 38 :8 19 :9 11:6 28:1 20 :4 20:8
+Reviewer 60:7 53:0 47 :5 35:5 22:3 40:2 31 :0 25:7
+Coder 55:4 47:8 43 :2 14 :4 8:8 31 :0 21 :9 23:2
+Coder-Reviewer 63:0 54:2 50 :3 33 :7 21:6 40:3 25 :9 25:9
+N.Coder 57:1 44:8 39 :4 20 :8 9:6 28 :9 21 :8 23:6
+N.Coder-Reviewer 64:9 53:4 49 :6 32 :8 21:5 41:0 27 :7 24:5
+YesRandom 57:6 46:8 41 :0 21 :9 13:4 36:7 25 :8 28:9
+Reviewer 65:2 57:1 50:9 35:5 30:3 46:5 32 :6 32:9
+Coder 57:7 51:1 45 :8 15 :5 8:9 38 :6 25 :6 30:1
+Coder-Reviewer 58:3 51:9 46 :0 16 :4 10:7 41:7 25 :4 30:1
+N.Coder 59:4 47:8 41 :8 22 :6 11:0 37:4 26 :3 28:8
+N.Coder-Reviewer 68:0 57:1 52 :0 32:8 27:9 45:9 30:4 30:7
+MBR-E XEC 60:9 46:6 46 :4 21 :0 8:1 37 :0 25 :3 30:0
+Table 5. Ranking results on the Plotting dataset. We observe that N.Coder-Reviewer and Reviewer alternate to be the best performing
+method. Executability ﬁltering improves most methods and does not change the comparison between methods.
+Exec. Filter Method Codex002 Codex001 Codex-Cushman InCoder6B InCoder1B CodeGen16B CodeGen6B CodeGen2B
+NoRandom 44:0 34:6 32 :5 14 :1 8:2 30 :2 25 :1 22:6
+Reviewer 53:4 42:9 36 :0 14 :7 8:4 35 :6 29 :9 23:3
+Coder 38:7 29:0 30 :4 18 :5 10:5 31:6 27 :5 25:1
+Coder-Reviewer 50:6 41:6 33 :9 21 :1 10:6 37:3 31 :0 27:2
+N.Coder 56:5 44:2 39 :7 17 :6 9:2 36 :1 29 :8 26:0
+N.Coder-Reviewer 57:8 49:5 39:7 20 :1 10:5 37:8 31 :3 26:1
+YesRandom 49:2 38:1 35 :1 16 :0 9:5 32 :2 26 :4 24:2
+Reviewer 61:2 47:0 41 :3 17 :6 9:5 37 :3 31 :3 25:2
+Coder 45:1 32:7 33 :0 20 :1 10:8 33:5 28 :3 26:3
+Coder-Reviewer 56:7 46:2 39 :1 23:5 12:0 40:0 32 :5 28:5
+N.Coder 60:2 47:2 42 :1 19:2 10:2 38:5 30 :9 26:6
+N.Coder-Reviewer 62:5 52:1 43 :8 22:0 11:5 39:6 32:2 27:4
+MBR-E XEC 50:5 36:5 35 :6 20 :7 10:9 35:8 30 :6 27:2
+Table 6. Ranking results on the HumanEval dataset. We observe that N.Coder-Reviewer works the best on Codex model families and
+Coder-Reviewer works the best on CodeGen and Incoder models. Executability ﬁltering improves most methods and does not change the
+comparison between methods.
+
+--- PAGE 14 ---
+Coder Reviewer Reranking for Code Generation
+Exec. Filter Method Codex002 Codex001 Codex-Cushman InCoder6B InCoder1B CodeGen16B CodeGen6B CodeGen2B
+NoRandom 55:6 50:0 44 :0 22 :6 16:7 43:5 40 :1 34:1
+Reviewer 56:3 51:0 45 :4 25 :6 17:7 42:0 41 :3 38:3
+Coder 55:9 52:3 44 :7 26 :0 20:8 49:2 45 :1 36:9
+Coder-Reviewer 61:5 56:9 51 :0 31 :7 23:4 46:1 44 :9 41:5
+N.Coder 58:3 53:6 48 :7 24 :8 21:0 47:5 44 :0 38:2
+N.Coder-Reviewer 59:6 55:6 51 :6 28 :8 20:0 44:4 43 :2 40:1
+YesRandom 58:8 53:3 46 :7 25 :4 19:3 45:7 42 :7 36:5
+Reviewer 59:5 54:7 48 :2 28 :8 21:0 43:6 43 :5 40:3
+Coder 59:8 55:9 47 :5 28 :1 23:4 50:3 47:3 39:3
+Coder-Reviewer 64:4 60:3 53 :9 33 :7 25:8 47:4 47 :1 43:3
+N.Coder 60:5 55:5 49 :8 27 :1 22:6 48:6 45 :3 40:3
+N.Coder-Reviewer 61:6 57:7 53 :1 31:1 22:6 45:8 44 :7 41:9
+MBR-E XEC 63:9 59:4 50:7 30 :9 26:2 53:5 48 :3 43:7
+Table 7. Ranking results on the MBPP-S dataset. We observe that Coder-Reviewer works the best on Codex model families and MBR-
+EXEC is usually the best on CodeGen and Incoder models. Executability ﬁltering improves most methods and usually does not change the
+comparison between methods.
+Exec. Filter Method Codex002 Codex001 Codex-Cushman InCoder6B InCoder1B CodeGen16B CodeGen6B CodeGen2B
+NoRandom 53:6 46:9 35 :1 14 :8 9:1 33 :5 28 :5 24:1
+Reviewer 63:3 53:1 41 :5 20 :8 13:2 40:5 32 :7 28:4
+Coder 55:4 49:8 38 :8 19 :7 12:3 36:1 32 :7 28:9
+Coder-Reviewer 62:6 55:2 45 :0 23 :3 14:8 42:2 34 :6 30:5
+N.Coder 55:5 50:6 35 :1 15 :9 9:3 36 :9 32 :4 27:9
+N.Coder-Reviewer 62:5 54:5 42 :2 20 :9 13:2 41:4 33 :4 29:3
+YesRandom 58:1 51:6 40 :8 19 :6 13:1 39:3 34 :2 28:2
+Reviewer 66:9 57:4 46 :7 24 :4 15:7 44:1 39 :4 31:7
+Coder 60:2 55:1 44 :7 23 :4 16:0 41:5 37 :9 31:9
+Coder-Reviewer 66:4 59:4 48 :9 26:1 17:1 46:2 40:3 33:2
+N.Coder 60:7 54:8 40 :8 20 :2 13:3 41:9 37 :5 31:0
+N.Coder-Reviewer 66:2 58:4 46 :3 24 :1 15:8 45:4 39 :8 32:3
+MBR-E XEC 63:0 58:6 48:3 26:7 18:3 47:3 41 :1 35:5
+Table 8. Ranking results on the MBPP dataset. We observe that Coder-Reviewer usually works the best on Codex model families;
+MBR- EXEC is usually the best on CodeGen and Incoder models and Coder-Reviewer is usually the second best performing method.
+Executability ﬁltering improves most methods and usually does not change the comparison between methods.
+
+--- PAGE 15 ---
+Coder Reviewer Reranking for Code Generation
+Exec. Filter Method Codex002 Codex001 Codex-Cushman InCoder6B InCoder1B CodeGen16B CodeGen6B CodeGen2B
+NoRandom 60:0 55:2 55 :2 49 :7 41:0 35:6 33 :2 25:4
+Reviewer 63:3 58:4 59 :9 55 :4 43:3 28:3 29 :4 19:5
+Coder 57:4 48:0 50 :8 48 :7 42:6 31:3 25 :2 25:6
+Coder-Reviewer 61:9 57:7 58 :4 55 :0 50:8 37:3 40:3 37:0
+N.Coder 61:0 49:9 48 :2 40 :8 37:5 36:8 32 :9 25:4
+N.Coder-Reviewer 63:7 59:9 60:0 56:0 42:8 29:1 31 :0 20:8
+YesRandom 60:0 55:2 55 :3 49 :8 41:1 35:7 33 :2 25:7
+Reviewer 63:3 58:5 60 :2 55:3 43:3 28:1 29 :2 19:9
+Coder 57:4 48:1 50 :9 48 :8 42:6 31:7 25 :4 25:9
+Coder-Reviewer 61:9 57:8 58 :5 55 :0 50:9 37:0 39 :8 36:7
+N.Coder 61:3 49:9 48 :8 41 :5 38:0 37:8 33:1 25:6
+N.Coder-Reviewer 63:7 59:9 60 :4 55:9 43:1 29:5 30 :8 21:1
+MBR-E XEC 57:4 48:3 51 :0 48 :8 42:6 32:4 25 :8 26:3
+Table 9. Ranking results on the NL2Bash dataset. We observe that Coder-Reviewer works the best on Codex model families and
+MBR- EXEC is usually the best on CodeGen and Incoder models. Executability ﬁltering is implemented with simulated execution via
+parsing the generated bash code and does not lead to a consistent improvement.
+Exec. Filter Method Codex002 Codex001 Codex-Cushman InCoder6B InCoder1B CodeGen16B CodeGen6B CodeGen2B
+NoRandom 62:8 46:0 40 :2 19 :0 11:7 13:6 21 :1 11:9
+Reviewer 62:9 50:0 44 :2 27 :3 16:8 16:0 22 :4 13:1
+Coder 71:5 56:8 51 :8 32 :4 21:4 27:6 30 :4 21:5
+Coder-Reviewer 71:6 56:5 52 :8 32 :8 22:1 23:8 28 :6 17:4
+N.Coder 67:4 56:5 44 :0 29 :5 17:2 22:4 26 :9 17:0
+N.Coder-Reviewer 68:0 54:7 48 :3 30 :7 20:6 18:9 24 :8 14:9
+YesRandom 65:2 57:1 50 :8 29 :4 18:8 25:6 32 :7 22:4
+Reviewer 67:5 60:0 54 :7 38 :4 26:8 28:8 36 :8 23:1
+Coder 74:1 64:3 58:8 38 :9 26:9 33:7 37:3 27:5
+Coder-Reviewer 74:5 65:3 60 :4 41 :5 29:8 31:7 38:8 24:8
+N.Coder 69:9 63:2 54 :1 38 :2 26:8 31:1 36 :8 25:7
+N.Coder-Reviewer 71:0 62:6 57 :6 40 :3 29:0 29:9 37 :3 23:6
+MBR-E XEC 75:2 63:2 59 :0 38:2 27:3 30:6 37 :0 26:1
+Table 10. Ranking results on the Spider dataset. We observe that Coder-Reviewer usually works the best. Executability ﬁltering improves
+most methods and usually does not change the comparison between methods.

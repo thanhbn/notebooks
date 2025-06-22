@@ -1,0 +1,1286 @@
+# 2502.14862v1.pdf
+# Converted from PDF to TXT
+# Source path: D:\llm\notebooks\AI-Papers\2502.14862v1.pdf
+# File size: 628017 bytes
+
+===============================================
+PDF FILE CONTENT
+===============================================
+
+
+--- PAGE 1 ---
+Interpretable Text Embeddings and Text Similarity Explanation: A Primer
+Juri Opitz1Lucas Möller2Andrianos Michail1Simon Clematide1
+1University of Zurich, Switzerland
+2IMS at University of Stuttgart, Germany
+1{jurialexander.opitz,andrianos.michail,simon.clematide}@uzh.ch
+2lucas.moeller@ims.uni-stuttgart.de
+Abstract
+Text embeddings and text embedding models
+are a backbone of many AI and NLP systems,
+particularly those involving search. However,
+interpretability challenges persist, especially in
+explaining obtained similarity scores, which is
+crucial for applications requiring transparency.
+In this paper, we give a structured overview
+of interpretability methods specializing in ex-
+plaining those similarity scores, an emerging re-
+search area. We study the methods’ individual
+ideas and techniques, evaluating their potential
+for improving interpretability of text embed-
+dings and explaining predicted similarities.
+1 Introduction
+Embedding models (Reimers and Gurevych, 2019;
+Gao et al., 2021) are indispensable across numer-
+ous NLP tasks in both academia and industry.
+Applications range from semantic search and in-
+formation retrieval (Ye et al., 2016; Guo et al.,
+2020; Muennighoff, 2022; Hambarde and Proenca,
+2023; Alatrash et al., 2024) to text classification
+(Schopf et al., 2022), topic modeling (Grooten-
+dorst, 2022), NLG evaluation (Celikyilmaz et al.,
+2020; Uhrig et al., 2021; Sai et al., 2022; Lari-
+onov et al., 2023; Chollampatt et al., 2025), knowl-
+edge graph construction (Plenz et al., 2023), and
+retrieval-augmented generation (RAG)—a specific
+form of information retrieval leveraging embed-
+ding similarity to identify evidence from a large
+corpus and summarize it using generative Large
+Language Models (LLMs, Lewis et al., 2020; Gao
+et al., 2023). Furthermore, advances in base models
+(Günther et al., 2023; Wang et al., 2024a), context
+size (Li et al., 2023), and scalable training infras-
+tructure (Wang et al., 2022) have steadily enhanced
+the capabilities of embeddings.
+However, an urgent challenge persists: the prob-
+lem of interpretability . For example, when a set of
+most similar documents is retrieved in response toa query, we would like to articulate why these doc-
+uments were selected as the most similar , or why a
+particular document was omitted. Similarity vari-
+ables are also highly conflated: Were the obtained
+similarity ratings based on semantic similarity, re-
+latedness, paraphrasticity, relevance—subtly dis-
+tinct concepts (Budanitsky and Hirst, 2006; Kolb,
+2009; Michail et al., 2025)—or were they influ-
+enced mainly by superficial characteristics such as
+token overlap? And such questions are not just
+theoretical; they have significant practical implica-
+tions. For instance, embedding systems deployed
+in sensitive domains may need to justify outputs,
+perhaps even in a legal context.
+Fortunately, recent research has begun address-
+ing this interpretability gap. Our paper aims to
+serve as a primer for researchers and practitioners
+that seek to understand embedding-based similarity
+models and measurements. By presenting a struc-
+tured overview of interpretability approaches, we
+hope to ease entry into this area and inspire fur-
+ther innovations. Understanding how similarity is
+computed—and how it can be explained—not only
+enhances transparency but may also pave the way
+for improved methods and applications.
+2 Setting the Stage
+We study explainability in neural text embed-
+dings andtheir induced similarity. We distinguish
+this from common approaches to classification-
+explanation like ‘LIME’ (Ribeiro et al., 2016), or
+‘Shapley values’, see also Calderon and Reichart
+(2024)’s survey. Similarity is not based on a single
+input but rather the interaction of two inputs, hence
+the need for specialized methods.
+Notation. Assume a (tokenized) input text =
+[t1, ..., t n], and two neural networks F, G consist-
+ing of Llayers, each representing a function, e.g.,
+in the case of F:F=fL◦...◦f1. Typically F=G,
+i.e., the weights of the two networks are shared,
+1arXiv:2502.14862v1  [cs.CL]  20 Feb 2025
+
+--- PAGE 2 ---
+layer f1 layer f...  layer fL  
+layer g1 layer g...layer gL
+ ∑ =simsim
+reduce
+  ∑ ≈sim
+∈Rd x 1∈Rd x 1Set-based
+Attributions
+Input: n tokens of Text X Input: m tokens of Text Yreduce
+∈Rd x m ∈Rd x nFeat 1
+Feat 2
+...
+Space-
+shaping
+Token
+alignmentbox
+Figure 1: Three explanation perspectives.
+also called Siamese network (Koch et al., 2015);
+if not mentioned otherwise, we thus only speak of
+F. The first layer maps tokens to real valued em-
+beddings: E1=f1(text)∈Rd×m, whereas the
+consecutive neural layers perform non-linear oper-
+ations to transform and refine the representation.
+Oftentimes, there is a last (optional) layer L+ 1
+that has a special goal: producing a vectorized
+fixed-size representation independent of document
+length, i.e., eL+1=reduce (EL)∈Rd×1. This
+layer would perform averaging, or max-pooling
+across the individual token embedding dimensions.
+Finally, we can efficiently match two texts x, y
+through their embeddings ex=F(x), ey=
+F(y)by calculating a similarity function sim:
+sim(ex, ey)∈R; in the simplest case, this can
+be the dot product sim(ex, ey) :=eT
+xey, possibly
+normalized by length lx,y=|ex|2· |ey|2to achieve
+the (practically strongly correlated) ‘cosine sim-
+ilarity’. Importantly, such a value quantifies the
+similarity relationship between texts, and thus we
+can rank texts according to their similarity.
+Approach categorization and paper structure.
+Our definition of text embedding and similarity
+allows us to distinguish different types of explain-
+ability approaches (Figure 1).
+First we will visit space shaping approaches
+(§3). They aim at shaping the projected embedding
+spaces, infusing some useful structure. E.g., the
+embedding space could be made up of different
+features , which would equate to a sim that we can
+decompose and better understand (Figure 1: Feat 1 ,
+Feat 2 ...). Alternatively, we can shape the space to
+be more expressive. E.g., we observe approaches
+that represent text as a high-dimensional box, or a
+random variable (Figure 1, box, Nd(µ,Σ)).
+Another class of approaches are set-based ap-proaches (§4) . They do not base their sim on two
+embeddings but on two sets of embeddings. These
+embeddings typically relate to human interpretable
+units (i.e., tokens), often it’s the last layer’s output
+fL(x), fL(y). Set-theoretic operators can then be
+applied (e.g., intersection). We can also retrieve an
+alignment between the embeddings, adding another
+layer of transparency as to what is sim made up
+from (Figure 1, Token alignment).
+The third category of approaches we denote as
+attribution-based approaches (§5) . These aim at
+attributing sim directly to the inputs, or pairs of
+inputs, given the representations that are consumed
+by certain neural network layers (Figure 1, Attribu-
+tions: For a particular layer, a pairwise similarity
+matrix is built that approximates the sim).
+We conclude the presentation of the three classes
+of approaches with a discussion (§6) , outlining
+pertinent challenges. Finally, we give an overview
+ofrelated studies (§7) , as well as datasets that
+elicit human similarity explanations.
+3 Shaping Interpretable Spaces
+3.1 Idea
+These approaches aim at structuring the embedding
+space such that it becomes more interpretable. E.g.,
+the space can be shaped to express aspects, inter-
+pretable geometries or probabilistic distributions.
+3.2 Approaches
+3.2.1 Feature Decomposition
+Traditional methods for text similarity often relied
+on explicit “bag-of-words” feature representation.
+While this provides great transparency in repre-
+sentation and similarity calculation, it lacks the
+representational power of neural embeddings, can-
+not match paraphrases, and thus result in relatively
+poor performance on standard benchmarks. Re-
+cent efforts aim to combine the interpretability of
+features with the power of neural embeddings.
+Q/A features. This approach involves framing
+embedding generation as answering a set of pre-
+defined questions about a text and encoding the
+answers as features, enabling interpretability. For
+this, we first need to find a suitable set of questions
+about texts, and create training data that elicits an-
+swers to these questions. Afterwards, we can distill
+an efficient and interpretable text embedding model
+using this training data. Specifically, Benara et al.
+(2024) let an LLM answer “Yes”/“No” questions
+2
+
+--- PAGE 3 ---
+0.000.250.500.751.00
+OVERALL Concepts Negations Focus Coreference QuantifierFigure 2: How the overall sim emerges from different
+aspectual similarites, via (S3BERT) space decomposi-
+tion. The example is shortened to a selection of features.
+about a text (e.g., is the text about sports?, Does
+the text express a command?), building prompts
+based on dataset description. For predicting fMRI
+responses to language stimuli their method outper-
+forms several baselines. On the other hand, Sun
+et al. (2024) first build a concept space from a
+dataset by clustering word embeddings, and intro-
+duce two constraints, namely that the Q/A prompt
+be based on focal concepts. Also, for positive text
+pairs, all questions should be answered with “Yes”,
+while for negative text pairs all questions be an-
+swered with “No”, to sharpen the boundary be-
+tween similar and non-similar texts.
+Sub-embeddings. An embedding space can be
+decomposed into multi-dimensional subspaces ,
+each isolating a certain semantic aspect. This en-
+ables the overall similarity between texts be broken
+down into similarity scores for different aspects.
+An example for this is the approach by Opitz and
+Frank (2022, S3BERT : Semantically Structured
+SBERT). The method requires a user to define a
+set of metrics that measure interpretable similarity
+aspects of two text (e.g., Is the focus of the texts the
+same? ). Since such aspects often are implicit in the
+texts, they leverage abstract meaning representation
+graphs (Banarescu et al., 2013) that encode aspects
+such as number, focus, semantic roles, negation;
+and use graph matching metrics (Opitz, 2023) on
+aspectual subgraphs. They fine-tune a reference
+embedding model such that the similarity of as-
+pectual sub-embeddings regresses to the aspectual
+graph metrics. A consistency loss and residual sub-
+embedding helps tie the overall similarities to the
+original reference. Lastly, an explanation can look
+as follows (Figure 2): Two men are singing is simi-
+lar to Three men are singing by a value of 0.76. Thesimilarity of concepts increases the value, while the
+dissimilarity of quantificational structure lowers it.
+Similar approaches do not leverage a consis-
+tency loss and wish to induce entirely new decom-
+posed spaces: We can learn “multi-facet” embed-
+dings (Risch et al., 2021, with graph metric ground
+truth) or “specialized-aspect” embeddings (Osten-
+dorff et al., 2022; Schopf et al., 2023, with aspect-
+specific transformer encoders).
+A more coarse decomposition is induced by Pon-
+witayarat et al. (2024), who construct two spaces,
+one for texts that are only vaguely similar (lower
+range), and the other to capture finer text similarity
+between already highly similar texts (upper range).
+This idea was based on their linguistic analysis of
+theSemantic Textual Similarity dataset ( STS, Cer
+et al., 2017), finding that one continuous similarity
+range is not expressive enough, motivating their de-
+composition into two continua. To decompose, they
+use a classification loss (high-range vs. low-range),
+and learn the representation of positive examples
+only in the “upper range part” of the space.
+3.2.2 Non-Euclidean Geometry
+Certain text relationships are inherently asymmet-
+ric. For instance, a natural relation between texts
+isentailment : A given hypothesis follows from a
+premise. Some embedding geometries offer a way
+to model these relationships.
+An interesting example are box-embeddings:
+Consider all two-dimensional boxes centered at
+zero with their left bottom corner. For two such
+boxes aandbwe have their size sa=a1·a2,
+sb=b1·b2, and their overlap oa,b=min(a1, b1)·
+min(a2, b2). We arrive, e.g., at a similarity
+oa,b/(sa+sb−oa,b), and interesting asymmetric
+relationships like the containment or entailment of,
+e.g.,ainb:oa,b/sb— it’s exactly 1ifais fully con-
+tained/entailed in/by b. The challenge is to learn
+such objects in high dimensionality: To see a ma-
+jor bottleneck, consider that box size and overlap
+approach zero in high dimensionality, since they
+involve a large product. To alleviate such learning
+problems, Chheda et al. (2021) propose to adopt a
+probabilistic soft box overlap formulation based on
+Gumbel random variables (Dasgupta et al., 2020).
+On the other hand, Huang et al. (2023)
+learn interpretable composition operators, such as
+union/fusion, or difference, by modeling the oper-
+ators with neural networks, and retraining the em-
+bedding models such that their space is shaped for
+operator allowance. Evaluation shows little loss on
+3
+
+--- PAGE 4 ---
+standard similarity accuracy, but greatly improved
+performance for compositional generation tasks.
+Another line of research investigates probabilis-
+tic text embeddings , viewing a text as a random vari-
+able (RV). Intuitively, this provides us with a model
+of multiple interpretation, which seems appealing
+due to natural language ambiguity: A text can have
+multiple interpretations, and only some of these
+interpretation can map to those of another similar
+text. But how to build such a probabilistic space?
+Shen et al. (2023) model a text as a Gaussian RV
+Nd(µ,Σ)by estimating “Model uncertainty” via
+Monte Carlo Dropout (Gal and Ghahramani, 2016),
+and data uncertainty via smaller linguistic pertur-
+bations (e.g., dropping a word). The covariance
+matrix ( ˆΣ) is then efficiently approximated through
+banding estimator (Jacob Bien and Xiao, 2016).
+For increased efficiency, Yoda et al. (2024) learn to
+directly predict mean ( ˆµ) and covariance ( ˆΣ).
+3.2.3 Combining Token Embeddings
+Combination-based approaches build a new em-
+bedding space by aggregating token-level repre-
+sentations with explicit weights that reflect their
+importance. E.g., Wang and Kuo (2020) estimate
+token importance and novelty using variance across
+transformer layers, constructing weighted embed-
+dings. On the other hand, Seo et al. (2022) train
+models to learn token weights directly, using a re-
+construction loss to prevent catastrophic forgetting.
+Alternatively, we can create static embeddings for
+all tokens in the vocabulary, using one transformer
+forward pass (for each token), and then calculate
+a simple average that is informed by Zipf token
+statistics (Tulkens and van Dongen, 2024).
+3.3 Challenges and Opportunities
+Q/A approaches can outperform certain baselines,
+but they do not (yet) fully seem to match the per-
+formance of reference embedding models with dis-
+tributed features, probably since it is difficult to
+find a generalizable set of questions.1
+Similarly, the sub-embedding decomposition ap-
+proaches requires the definition of custom aspects,
+and the features are not directly interpretable on
+their own —only their similarity value is.
+On one hand, crafting the right features (through
+questions or interpretable metrics) can be seen as
+a drawback of the feature based approaches. How-
+1In experiments, they are compared mainly against base-
+lines like bag-of-words (Sun et al., 2024), or they are built for
+a specific domain (Benara et al., 2024).ever, it is also an interesting opportunity, since it
+allows for exploring custom spaces.
+Finally, non-euclidean geometry based methods
+and combination-based ones leave ample space for
+exploration. Modeling embeddings as, e.g., boxes,
+allows application of interpretable operators align-
+ing with semantic relationships (e.g., entailment).
+4 Set-based Interpretability
+4.1 Idea
+Set-based approaches to similarity explainability
+rely on matching two sets , rather than two points.
+These sets typically consist of human-interpretable
+items, e.g., tokens. Aligning these, we may be
+provided with insight into how different text parts
+relate to each other. Sets also offer inherent in-
+terpretability through set-theoretic operations that
+may align naturally with some interesting semantic
+text relationships (e.g., entailment as subset).
+4.2 Approaches
+4.2.1 Embedding Set Interpretability
+Alignment-based methods derive similarity by
+aligning token embeddings from one text with
+those of another. These approaches typically use
+embeddings from the last layer of a model. Two
+focal techniques in this category are “ColBERT”
+and “BERTscore”. The ColBERT approach (Khat-
+tab and Zaharia, 2020; Santhanam et al., 2022,
+Figure 3) computes an asymmetric alignment by
+viewing xas the query and yas the candidate
+(aka “passage”) using two encoders; in our no-
+tation, F:=QandG:=C. For each indi-
+vidual token embedding in the embedded query
+Ex=Q(x), we search in the embedded candi-
+date tokens Ey=C(y)for the best match and
+sum over those. For computing a similarity score,
+both methods rely on a greedy max-matching, for-
+mally, sim(x, y) =P
+t∈xmax([Q(x)TC(y)]t).
+The BERTscore approach, which is used in the eval-
+uation of machine translation (Zhang et al., 2020),
+further computes a symmetric harmonic mean (F1
+score) as HM(1
+|x|sim(x, y),1
+|y|sim(y, x)).
+While the asymmetry in ColBERT is also
+achieved through the different encoders, the asym-
+metry in BERTscore is achieved by the calculation
+of precision and recall, hence their different appli-
+cation cases (IR vs. evaluation). In their potential
+forexplainability , both approaches appear similar:
+Their similarity score can be seen as constructed
+from an interpretable alignment from one docu-
+4
+
+--- PAGE 5 ---
+Figure 3: An example of a late-interaction matrix be-
+tween query and passage token embeddings in the Col-
+BERTv2.0 model. The overall sim is 0.965. Red boxes
+indicate the sum of row-wise maxima (alignment).
+ment to another, and the contributions of single
+token embedding pairs can be clearly highlighted.2
+4.2.2 Explicit Multi-Interpretation
+Most set-based approaches use token embeddings,
+but some extend the concept to text embeddings.
+The first class of methods generates sets of text
+embeddings by either hypothesizing about a text or
+decomposing it into smaller parts. In particular, we
+can use a generative model to construct hypotheses
+about a text (Hoyle et al., 2023), or decomposing it
+into smaller statements or descriptions (Ravfogel
+et al., 2024). Having deconstructed a text xinto
+smaller parts {x1, ...x n}, we call our text embed-
+ding model exactly ntimes, and thus construct a set
+ofnrespective text embeddings {e1, ...en}that can
+be matched to explain similarity of facts contained
+in a text, also with different abstractness levels.3
+An interesting variation of such a multi-text set-
+based approach is proposed by Liu et al. (2024).
+To compute the similarity of two texts, they sample
+sets of possible continuation from an LLM, and
+calculate the average (i.e., expected) difference in
+log-likelihood between the two input texts that are
+continued with a randomly sampled continuation.
+2For refined alignment, optimal transport can replace
+greedy max-matching (Kusner et al., 2015; Lee et al., 2022).
+3An example for different abstractness levels from Ravfo-
+gel et al. (2024): Given “ On July 2, concurrent with the Battle
+of Gettysburg in neighboring Adams County, Captain Ulric
+Dahlgren’s Federal cavalry patrol galloped into Greencastle’s
+town square, where they surprised and captured several Con-
+federate cavalrymen carrying vital correspondence from Rich-
+mond. ”, the description 1 is: “Military personnel thwarting an
+enemy’s attempt to convey vital documents.” The description
+2 is: “The disruption of a communication exchange in a rural
+area.” The description 3 is: “A dramatic, unexpected event
+occurring in a town square during a battle.”Liu and Soatto (2024) multi-modally calculate
+similarity values between texts through the respec-
+tive imagery they evoke, using denoising through
+Stochastic Differential Equations (Song et al.,
+2021). Essentially, the idea is that two texts are
+more similar if they evoke more similar imagery,
+allowing for visual interpretation of the score.
+4.3 Challenges and Opportunities
+Set-based approaches allow an interpretable align-
+ment of token-level embeddings. This alone has
+useful applications; for instance, to elicit token-
+level semantic differences between related docu-
+ments (Vamvas and Sennrich, 2023). Sets also
+allow an intuitive view on asymmetric text relation-
+ships, increasing their explanation appeal in asym-
+metric tasks like NLI. However, it is crucial to note
+that token embedding alignment does not equate
+to input token alignment, as the contextualization
+steps may obscure the actual contributions of input
+tokens and any thereupon based explanation.
+We also saw that we can abstract from sets of to-
+ken embeddings to sets of text embeddings, e.g., by
+decomposing a text into smaller statements, before
+generating embeddings. At the cost of a greater
+number of inferences, the interpretability potential
+of this class of explicit multi-interpretation based
+approaches is that they can deliver evidence about
+which statements conveyed by the texts are actually
+matching and contributing to the overall similarity.
+5 Attribution-based Interpretabilty
+5.1 Idea
+Attribution-based approaches aim at attributing a
+model prediction onto input or intermeditate fea-
+ture representations. In other words: they assign
+importance values to features for how much they
+contribute to a given prediction. However, a special
+characteristic of similarity models is that their pre-
+dictions do not depend on individual features, due
+to the multiplicative interaction between the two in-
+puts’ embeddings in sim. Thus first-order methods
+do not suffice (Sundararajan et al., 2020; Janizek
+et al., 2021). Instead, second-order methods are re-
+quired to attribute predictions of similarity models.
+5.2 Approaches
+Two lines of work have addressed this issue in
+text similarity models: integrated Jacobians, an
+extension of the theory behind integrated gradients
+to Siamese models (Moeller et al., 2023, 2024) and
+5
+
+--- PAGE 6 ---
+Figure 4: Interaction-attributions between two sentences
+computed with the IG method. The sim is 0.618 and
+the attribution error is 0.001 for N=50 integration steps.
+BiLRP that uses layer-wise relevance propagation
+for this model class (Vasileiou and Eberle, 2024).
+5.2.1 Integrated Jacobians
+Integrated gradients (IG) attributes a scalar model
+prediction back onto individual input features by in-
+tegrating over a number of interpolations between
+the actual input and an uninformative reference in-
+put (Sundararajan et al., 2017). The method can
+provide a closed-form solution to explaining the
+difference in the model prediction between the ref-
+erence and the actual input. Its output takes the
+form of a vector with importance values for all in-
+put features. Moeller et al. (2023) have applied
+the underlying theory of IG to Siamese encoders,
+enabling the attribution of similarity predictions
+onto feature-interactions between the two inputs.
+Different from IG, the output takes the form of a
+feature-pair attribution matrix. For text encoder
+models it can be reduced to a token-token matrix,
+showing the contribution of token interactions to
+thesim (Figure 4). The authors provide an exact
+version of their attributions, which guarantees that
+the sum over the attribution matrix must exactly
+equal the predicted similarity score. This version
+also enables the quantification of an attribution er-
+ror, however, it requires an adjustment of the mod-
+els through fine-tuning. Alternatively, approximate
+attributions can be calculated for any off-the-shelf
+model without a need to adjust it (Moeller et al.,
+2024). The approximation has been shown to cor-
+relate sufficiently with the exact variant.5.2.2 BiLRP
+Layer-wise relevance propagation (LRP) is a frame-
+work to propagate feature-importance values for a
+model prediction back through the model in a layer-
+wise fashion (Bach et al., 2015; Montavon et al.,
+2019). Propagation rules are derived for individ-
+ual layers based on first-order Taylor expansion of
+the underlying function. Thus, the approach es-
+sentially linearly approximates all computations
+in a model’s graph around a given reference input.
+BiLRP extends the LRP framework to Siamese sim-
+ilarity models by computing LRP values for each
+embedding dimension of the two encoders sepa-
+rately and subsequently taking their matrix product.
+Thus, the computation also takes the form of a prod-
+uct between two Jacobian-like matrices. Whereas,
+integrated Jacobians constructs these matrices by
+integrating over interpolated inputs, in BiLRP they
+originate from the layer-wise propagation rules.
+The method was originally proposed in the com-
+puter vision domain (Eberle et al., 2020) and has
+recently also been applied to Siamese text encoder
+models (Vasileiou and Eberle, 2024).
+5.3 Challenges and Opportunities
+Attribution approaches need to build Jacobian ma-
+trices, coming at a temporal complexity of 2×D
+independent backward passes, Dbeing the model’s
+embedding dimensionality. The resulting Jacobians
+have a quadratic spatial complexity of D×Din.
+WithDinbeing a sequential representation, the re-
+quired memory can grow quickly for higher Dor
+long inputs, requiring large GPUs to compute the
+associated matrix multiplications efficiently.
+Inspite of these computational costs, attribution
+based methods have the advantage of being model
+agnostic, not requiring additional design choices
+on model architectures or training objectives. In
+contrast to (last-layer-embedding-)set based ap-
+proaches like ColBERT, they also relate more di-
+rectly to the actual input tokens. Different from
+space shaping approaches they also do not pose
+any constraints on embeddings during training.
+6 Discussion
+6.1 Summary and Overview of Approaches
+We identify general features that allow for sum-
+marizing and comparing similarity interpretability
+approaches from a broader perspective. We pro-
+pose the following key features for categorization:
+6
+
+--- PAGE 7 ---
+Paper Type Subtype Train Approx. Inf. Cost code
+Sun et al. (2024) space-shaping QA-feature yes no O(n) github
+Benara et al. (2024) space-shaping QA-feature yes no O(n) github
+Opitz and Frank (2022) space-shaping sub-embedding yes yes O(n) github
+Risch et al. (2021) space shaping sub-embedding yes no O(n) github
+Schopf et al. (2023) space shaping sub-embedding yes no O(nk) NA
+Ponwitayarat et al. (2024) space-shaping sub-embedding yes no O(n) github
+Huang et al. (2023) space-shaping non-Euclidean space yes yes O(n2) github
+Chheda et al. (2021) space-shaping non-Euclidean space yes no O(n) github
+Shen et al. (2023) space-shaping non-Euclidean space no yes O(nk) NA
+Yoda et al. (2024) space-shaping non-Euclidean space yes no O(n) github
+Wang and Kuo (2020) space-shaping combination no no O(n) github
+Seo et al. (2022) space-shaping combination yes no O(n) NA
+Moeller et al. (2023, 2024) token-attribution integrated gradients no yes O(n2) github
+Vasileiou and Eberle (2024) token-attribution relevance propagation no yes O(n2) github
+Khattab and Zaharia (2020); Santhanam et al. (2022) set-based token-set no yes O(nk) github
+Hoyle et al. (2023) set-based text-set no no O(nk) github
+Ravfogel et al. (2024) set-based text-set no no O(nk) github
+Liu et al. (2024) set-based text set no no O(nk) github
+Liu and Soatto (2024) set-based image-set yes no O(nk) NA
+Table 1: Overview and broader differentiation of approaches.
+•Type : The three overarching categories that we
+used to structure the interpretability landscape.
+•Subtype: Our finer sub-classification.
+•Train : If the method requires training.
+•Approx(imative) : Refers to whether a method
+approximates the similarity score of a reference
+embedding model. This ensures the interpretabil-
+ity method’s similarities are predictable.
+•Inf(erence) Cost : An estimate of computational
+cost in terms for inferring pairwise explanations
+in a data set of size n. We use kto denote other
+potential relevant parameters, e.g., the maximum
+size of encountered token sets, the number of
+encoder calls (if not one).
+A classification of the visited approaches according
+to this taxonomy is shown in Table 1.
+6.2 Pertinent Challenges
+Mitigate tradeoffs. Methods differ in their con-
+ceptualization of interpretability, computational
+cost, fidelity to input tokens, and eventual depen-
+dencies to a specific model as their basis. Space
+shaping is highly adaptive and allows to express
+different semantic aspects of interest, or model in-
+tuitive relations with non-Euclidean spaces —but
+tends to require custom training and definitions
+that may not generalize. Then, methods that com-
+pute the similarity from two sets of embeddings
+(token embeddings, or text embeddings) can pro-
+duce a visually inspectable alingment and allow
+for interpretable asymmetric matching with set-
+operators —but the last layer’s embeddings are
+highly contextualized and thus are technically nolonger bound to the input tokens at the given posi-
+tion, limiting the interpretability and even bearing
+the risk for potential deceptions from alignment
+inspection. Given the above limitations, space-
+shaping and set-based approaches, however, result
+in inherently interpretable models as opposed to re-
+quiring post-hoc explainability to gain insights into
+their prediction mechanisms (Rudin, 2019). In con-
+trast, attribution-based methods can mitigate the
+contextualization issue as they attribute predictions
+to earlier representations. They also generalize to
+arbitrary models as long as they are differentiable
+and do not require modification and training of
+models. Different from other explainability meth-
+ods, they can provide a set of theoretical guarantees
+(Sundararajan et al., 2017; Janizek et al., 2021), e.g.
+that attributions must sum to the prediction score
+(Moeller et al., 2023). However, it has been shown
+that nevertheless there remain fundamental limi-
+tations in their faithfulness (Bilodeau et al., 2024)
+coming at a trade-off between higher computational
+expenses but general applicability to any model.
+What’s the “right” explanation? Unfortunately
+there may be no straightforward answer to this
+question. Given the above trade-offs, no method
+can be seen to be guaranteed faithful (Murdoch
+et al., 2019). Therefore, none of these approaches
+should be interpreted as true and unique explana-
+tions for model predictions. At the same time all of
+them provide insights into similarity models going
+beyond a single scalar similarity score. We argue,
+that while we cannot conclude individual methods
+7
+
+--- PAGE 8 ---
+to be unambiguous, we can still use them to gain
+deeper insights into model mechanisms which may
+lead to hypotheses about where these models fail
+and how they may be improved (Wiegreffe and Pin-
+ter, 2019). Rather than competing for the best ex-
+planation, which may not exist, we suggest to take
+individual methods as independent pieces of evi-
+dence for a given phenomenon. By now, we have,
+for instance, multiple pieces of evidence for the
+hypothesis that text similarity models do not suf-
+ficiently account for negation (Weller et al., 2024;
+Moeller et al., 2024; Nikolaev and Padó, 2023).
+Which method to consult will also depend on
+the context in which a model is used. Higher-level
+human interpretable aspects of similarity may be
+best explained by the abstract meaning represen-
+tations in an “S3BERT” model (Opitz and Frank,
+2022). Quickly accessible information about which
+parts of a query and a document are matched in an
+IR model without requiring back propagation, may
+be best achieved by a set-based ColBERT model
+(Santhanam et al., 2022). However, if we require
+dense representations to build a memory-efficient
+vector-index that enables approximate search and
+we don’t want to constrain the model otherwise, an
+attribution-based approach like BiLRP may be the
+right choice (Vasileiou and Eberle, 2024). If, addi-
+tionally, we require a statement of how trustworthy
+the explanations are the exact variant of IJ would
+be an apt choice (Moeller et al., 2023).
+Other challenges. As models become capable of
+ingesting longer context (Zhang et al., 2024; Xiong
+et al., 2024), we may wonder if interpretability ap-
+proaches transfer to explaining the similarity of
+long documents . We speculate that some patterns
+may indeed generalize, especially more abstract
+ones, like the topics that occur in them. Other axes
+of similarity may be style-related (“both books are
+written in 18th century British English”), or stance
+related (“both arguments are in favor of green en-
+ergy”). Fine-grained explanations like token attri-
+butions may necessitate a meta explanation step.
+The embedding research landscape has also
+found another recent focus in multi-linguality
+(Wang et al., 2024b). Since many facets of text
+semantics appear universal, from coarser attributes
+like entities or topics, to finer ones, like semantic
+roles and polarity, we see a fruitful venue in study-
+ing language phenomena cross-lingually through
+the eyes of interpretable embedding models, or test-
+ing hypotheses about universal semantics.7 More Explanations and Related Work
+In this last section, we study related work on simi-
+larity interpretability. We want to focus on evalua-
+tion studies and datasets that elicit explanations.
+Datasets. Lopez-Gazpio et al. (2017) release
+the i(nterpretable)STS data set that elicits rela-
+tions and similarities between individual segments
+of texts. Deshpande et al. (2023) propose the
+C(onditional)STS dataset that elicits similarity val-
+ues for specific aspect of interest. The theory that
+underlies iSTS aligns with attribution or set-based
+approaches, while CSTS is motivated by a more
+abstract multi-aspect view akin to what is sought
+by feature-based explainability methods.
+The STS3k data set (Fodor et al., 2024) con-
+sists of systematically controlled pairs of sentences
+rated for semantic similarity by human participants.
+Through experiments on STS3k they find that
+“state-of-the-art transformers poorly capture the pat-
+tern of human semantic similarity judgments.”
+Datasets might also be repurposed for inter-
+pretability studies. E.g., evaluation data that high-
+light error spans (Freitag et al., 2021; Leiter et al.,
+2023), or explained interactions between text spans
+in NLI (Ray Choudhury et al., 2023).
+Similarity interpretability studies. Nikolaev
+and Padó (2023) construct sets of sentences with
+pre-defined lexical and syntactic structures. Their
+study reveals that model-assigned similarities are
+more strongly determined by the overlap in the set
+of their noun participants than by having the same
+predicates, lengthy nominal modifiers, or adjuncts.
+Weller et al. (2024) ask similarity models to
+rank documents that differ only by negation. They
+find that most current information retrieval models
+do not consider negation, performing similarly or
+worse than randomly ranking.
+Nastase and Merlo (2024) track linguistic in-
+formation in embedding models via specialized
+datasets that test for grammatical and semantic
+agreement, finding that aspectual semantic knowl-
+edge can be localized in certain embedding regions.
+8 Conclusion
+What makes two texts similar in the eyes of a
+model? We gave an introduction and overview
+of an emerging branch of text embedding models:
+The challenge of similarity interpretability and ex-
+planation. We hope that our work can be a handy
+resource and entrance point for future research.
+8
+
+--- PAGE 9 ---
+Limitations
+Capturing the full breadth of the emerging area
+of interpretable text embeddings and their similar-
+ity cost us some depth and exactness. Particularly
+in §6 where we summarized the methods over all
+three general interpretability approaches, we intro-
+duced some fuzzy and coarse concepts, e.g., “token-
+set” (rather: token-embedding set [from the last
+layer]); kin inference cost (sometimes the size of
+encountered token or embedding sets, sometimes
+it’s model encoder calls), etc. Nevertheless, the
+slight fuzziness also helped us to discuss and com-
+pare the diverse methods that have varying degrees
+of complexity—simple set matching to second-
+order attribution methods based on Jacobians of
+encoders—from a thousand foot view. There is
+also a chance that we missed some papers, hence
+we suggest viewing our primer as a guide and a sur-
+vey that is representative of the area, but possibly
+not fully exhaustive.
+About the three examples shown in our paper:
+They are selected to outline the idea behind three
+different types of approaches. We selected different
+text pairs to highlight these ideas, in order to avoid
+any possible potential for invoking example read-
+ings that favor one method over the other, which
+is not possible based on a single example, anyway.
+We leave deeper qualitative comparison of provided
+explanations to future work, and discussed the need
+for this in §6.2.
+Acknowledgments
+Three authors received funding from the Swiss Na-
+tional Science Foundation (SNSF 213585) and the
+Luxembourg National Research Fund (17498891)
+through the Impresso research project.
+References
+Rawaa Alatrash, Mohamed Amine Chatti, Qurat Ul Ain,
+Yipeng Fang, Shoeb Joarder, and Clara Siepmann.
+2024. Conceptgcn: Knowledge concept recommen-
+dation in moocs based on knowledge graph convolu-
+tional networks and sbert. Computers and Education:
+Artificial Intelligence , 6:100193.
+Sebastian Bach, Alexander Binder, Grégoire Montavon,
+Frederick Klauschen, Klaus-Robert Müller, and Wo-
+jciech Samek. 2015. On pixel-wise explanations
+for non-linear classifier decisions by layer-wise rele-
+vance propagation. PloS one , 10(7):e0130140.
+Laura Banarescu, Claire Bonial, Shu Cai, Madalina
+Georgescu, Kira Griffitt, Ulf Hermjakob, KevinKnight, Philipp Koehn, Martha Palmer, and Nathan
+Schneider. 2013. Abstract Meaning Representation
+for sembanking. In Proceedings of the 7th Linguistic
+Annotation Workshop and Interoperability with Dis-
+course , pages 178–186, Sofia, Bulgaria. Association
+for Computational Linguistics.
+Vinamra Benara, Chandan Singh, John X Morris,
+Richard Antonello, Ion Stoica, Alexander G Huth,
+and Jianfeng Gao. 2024. Crafting interpretable em-
+beddings by asking llms questions. arXiv preprint
+arXiv:2405.16714 .
+Blair Bilodeau, Natasha Jaques, Pang Wei Koh, and
+Been Kim. 2024. Impossibility theorems for feature
+attribution. Proceedings of the National Academy of
+Sciences , 121(2):e2304406120.
+Alexander Budanitsky and Graeme Hirst. 2006. Eval-
+uating wordnet-based measures of lexical semantic
+relatedness. Computational linguistics , 32(1):13–47.
+Nitay Calderon and Roi Reichart. 2024. On behalf of
+the stakeholders: Trends in nlp model interpretability
+in the era of llms. arXiv preprint arXiv:2407.19200 .
+Asli Celikyilmaz, Elizabeth Clark, and Jianfeng Gao.
+2020. Evaluation of text generation: A survey. arXiv
+preprint arXiv:2006.14799 .
+Daniel Cer, Mona Diab, Eneko Agirre, Iñigo Lopez-
+Gazpio, and Lucia Specia. 2017. SemEval-2017
+task 1: Semantic textual similarity multilingual and
+crosslingual focused evaluation. In Proceedings
+of the 11th International Workshop on Semantic
+Evaluation (SemEval-2017) , pages 1–14, Vancouver,
+Canada. Association for Computational Linguistics.
+Tejas Chheda, Purujit Goyal, Trang Tran, Dhruvesh
+Patel, Michael Boratko, Shib Sankar Dasgupta, and
+Andrew McCallum. 2021. Box embeddings: An
+open-source library for representation learning using
+geometric structures. In Proceedings of the 2021
+Conference on Empirical Methods in Natural Lan-
+guage Processing: System Demonstrations , pages
+203–211, Online and Punta Cana, Dominican Repub-
+lic. Association for Computational Linguistics.
+Shamil Chollampatt, Minh Quang Pham, Sathish Reddy
+Indurthi, and Marco Turchi. 2025. Cross-lingual eval-
+uation of multilingual text generation. In Proceed-
+ings of the 31st International Conference on Compu-
+tational Linguistics , pages 7766–7777, Abu Dhabi,
+UAE. Association for Computational Linguistics.
+Shib Dasgupta, Michael Boratko, Dongxu Zhang, Luke
+Vilnis, Xiang Li, and Andrew McCallum. 2020. Im-
+proving local identifiability in probabilistic box em-
+beddings. Advances in Neural Information Process-
+ing Systems , 33:182–192.
+Ameet Deshpande, Carlos Jimenez, Howard Chen,
+Vishvak Murahari, Victoria Graf, Tanmay Rajpuro-
+hit, Ashwin Kalyan, Danqi Chen, and Karthik
+Narasimhan. 2023. C-STS: Conditional semantic
+9
+
+--- PAGE 10 ---
+textual similarity. In Proceedings of the 2023 Con-
+ference on Empirical Methods in Natural Language
+Processing , pages 5669–5690, Singapore. Associa-
+tion for Computational Linguistics.
+Oliver Eberle, Jochen Büttner, Florian Kräutli, Klaus-
+Robert Müller, Matteo Valleriani, and Grégoire Mon-
+tavon. 2020. Building and interpreting deep similar-
+ity models. IEEE Transactions on Pattern Analysis
+and Machine Intelligence , 44(3):1149–1161.
+James Fodor, Simon De Deyne, and Shinsuke Suzuki.
+2024. Compositionality and sentence meaning: Com-
+paring semantic parsing and transformers on a chal-
+lenging sentence similarity dataset. Computational
+Linguistics , pages 1–52.
+Markus Freitag, George Foster, David Grangier, Viresh
+Ratnakar, Qijun Tan, and Wolfgang Macherey. 2021.
+Experts, errors, and context: A large-scale study of
+human evaluation for machine translation. Transac-
+tions of the Association for Computational Linguis-
+tics, 9:1460–1474.
+Yarin Gal and Zoubin Ghahramani. 2016. Dropout as
+a bayesian approximation: Representing model un-
+certainty in deep learning. In Proceedings of The
+33rd International Conference on Machine Learn-
+ing, volume 48 of Proceedings of Machine Learning
+Research , pages 1050–1059, New York, New York,
+USA. PMLR.
+Tianyu Gao, Xingcheng Yao, and Danqi Chen. 2021.
+SimCSE: Simple contrastive learning of sentence em-
+beddings. In Proceedings of the 2021 Conference
+on Empirical Methods in Natural Language Process-
+ing, pages 6894–6910, Online and Punta Cana, Do-
+minican Republic. Association for Computational
+Linguistics.
+Yunfan Gao, Yun Xiong, Xinyu Gao, Kangxiang Jia,
+Jinliu Pan, Yuxi Bi, Yi Dai, Jiawei Sun, and Haofen
+Wang. 2023. Retrieval-augmented generation for
+large language models: A survey. arXiv preprint
+arXiv:2312.10997 .
+Maarten Grootendorst. 2022. Bertopic: Neural topic
+modeling with a class-based tf-idf procedure. arXiv
+preprint arXiv:2203.05794 .
+Michael Günther, Louis Milliken, Jonathan Geuter,
+Georgios Mastrapas, Bo Wang, and Han Xiao. 2023.
+Jina embeddings: A novel set of high-performance
+sentence embedding models. In Proceedings of the
+3rd Workshop for Natural Language Processing Open
+Source Software (NLP-OSS 2023) , pages 8–18, Sin-
+gapore. Association for Computational Linguistics.
+Jiafeng Guo, Yixing Fan, Liang Pang, Liu Yang,
+Qingyao Ai, Hamed Zamani, Chen Wu, W. Bruce
+Croft, and Xueqi Cheng. 2020. A deep look into
+neural ranking models for information retrieval. In-
+formation Processing & Management , 57(6):102067.
+Kailash A Hambarde and Hugo Proenca. 2023. Infor-
+mation retrieval: recent advances and beyond. IEEE
+Access .Alexander Hoyle, Rupak Sarkar, Pranav Goel, and
+Philip Resnik. 2023. Natural language decompo-
+sitions of implicit content enable better text repre-
+sentations. In Proceedings of the 2023 Conference
+on Empirical Methods in Natural Language Process-
+ing, pages 13188–13214, Singapore. Association for
+Computational Linguistics.
+James Y . Huang, Wenlin Yao, Kaiqiang Song, Hong-
+ming Zhang, Muhao Chen, and Dong Yu. 2023.
+Bridging continuous and discrete spaces: Inter-
+pretable sentence representation learning via com-
+positional operations. In Proceedings of the 2023
+Conference on Empirical Methods in Natural Lan-
+guage Processing , pages 14584–14595, Singapore.
+Association for Computational Linguistics.
+Florentina Bunea Jacob Bien and Luo Xiao. 2016. Con-
+vex banding of the covariance matrix. Journal of the
+American Statistical Association , 111(514):834–845.
+PMID: 28042189.
+Joseph D Janizek, Pascal Sturmfels, and Su-In Lee.
+2021. Explaining explanations: Axiomatic feature
+interactions for deep networks. Journal of Machine
+Learning Research , 22(104):1–54.
+Omar Khattab and Matei Zaharia. 2020. Colbert: Effi-
+cient and effective passage search via contextualized
+late interaction over bert. In Proceedings of the 43rd
+International ACM SIGIR Conference on Research
+and Development in Information Retrieval , SIGIR
+’20, page 39–48, New York, NY , USA. Association
+for Computing Machinery.
+Gregory Koch, Richard Zemel, Ruslan Salakhutdinov,
+et al. 2015. Siamese neural networks for one-shot
+image recognition. In ICML deep learning workshop ,
+1, pages 1–30. Lille.
+Peter Kolb. 2009. Experiments on the difference be-
+tween semantic similarity and relatedness. In Pro-
+ceedings of the 17th Nordic conference of computa-
+tional linguistics (NODALIDA 2009) , pages 81–88.
+Matt Kusner, Yu Sun, Nicholas Kolkin, and Kilian Wein-
+berger. 2015. From word embeddings to document
+distances. In International conference on machine
+learning , pages 957–966. PMLR.
+Daniil Larionov, Jens Grünwald, Christoph Leiter, and
+Steffen Eger. 2023. EffEval: A comprehensive eval-
+uation of efficiency for MT evaluation metrics. In
+Findings of the Association for Computational Lin-
+guistics: EMNLP 2023 , pages 78–96, Singapore. As-
+sociation for Computational Linguistics.
+Seonghyeon Lee, Dongha Lee, Seongbo Jang, and
+Hwanjo Yu. 2022. Toward interpretable semantic tex-
+tual similarity via optimal transport-based contrastive
+sentence learning. In Proceedings of the 60th Annual
+Meeting of the Association for Computational Lin-
+guistics (Volume 1: Long Papers) , pages 5969–5979,
+Dublin, Ireland. Association for Computational Lin-
+guistics.
+10
+
+--- PAGE 11 ---
+Christoph Leiter, Juri Opitz, Daniel Deutsch, Yang Gao,
+Rotem Dror, and Steffen Eger. 2023. The eval4nlp
+2023 shared task on prompting large language models
+as explainable metrics. In Proceedings of the 4th
+Workshop on Evaluation and Comparison of NLP
+Systems , pages 117–138.
+Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio
+Petroni, Vladimir Karpukhin, Naman Goyal, Hein-
+rich Küttler, Mike Lewis, Wen-tau Yih, Tim Rock-
+täschel, Sebastian Riedel, and Douwe Kiela. 2020.
+Retrieval-augmented generation for knowledge-
+intensive nlp tasks. In Advances in Neural Infor-
+mation Processing Systems , volume 33, pages 9459–
+9474. Curran Associates, Inc.
+Zehan Li, Xin Zhang, Yanzhao Zhang, Dingkun Long,
+Pengjun Xie, and Meishan Zhang. 2023. Towards
+general text embeddings with multi-stage contrastive
+learning. arXiv preprint arXiv:2308.03281 .
+Tian Yu Liu and Stefano Soatto. 2024. Conjuring se-
+mantic similarity. arXiv preprint arXiv:2410.16431 .
+Tian Yu Liu, Matthew Trager, Alessandro Achille, Pra-
+muditha Perera, Luca Zancato, and Stefano Soatto.
+2024. Meaning representations from trajectories in
+autoregressive models. In The Twelfth International
+Conference on Learning Representations .
+I. Lopez-Gazpio, M. Maritxalar, A. Gonzalez-Agirre,
+G. Rigau, L. Uria, and E. Agirre. 2017. Interpretable
+semantic textual similarity: Finding and explaining
+differences between sentences. Knowledge-Based
+Systems , 119:186–199.
+Andrianos Michail, Simon Clematide, and Juri Opitz.
+2025. PARAPHRASUS: A comprehensive bench-
+mark for evaluating paraphrase detection models. In
+Proceedings of the 31st International Conference on
+Computational Linguistics , pages 8749–8762, Abu
+Dhabi, UAE. Association for Computational Linguis-
+tics.
+Lucas Moeller, Dmitry Nikolaev, and Sebastian Padó.
+2023. An attribution method for Siamese encoders.
+InProceedings of the 2023 Conference on Empiri-
+cal Methods in Natural Language Processing , pages
+15818–15827, Singapore. Association for Computa-
+tional Linguistics.
+Lucas Moeller, Dmitry Nikolaev, and Sebastian Padó.
+2024. Approximate attributions for off-the-shelf
+Siamese transformers. In Proceedings of the 18th
+Conference of the European Chapter of the Associa-
+tion for Computational Linguistics (Volume 1: Long
+Papers) , pages 2059–2071, St. Julian’s, Malta. Asso-
+ciation for Computational Linguistics.
+Grégoire Montavon, Alexander Binder, Sebastian
+Lapuschkin, Wojciech Samek, and Klaus-Robert
+Müller. 2019. Layer-wise relevance propagation: an
+overview. Explainable AI: interpreting, explaining
+and visualizing deep learning , pages 193–209.Niklas Muennighoff. 2022. Sgpt: Gpt sentence
+embeddings for semantic search. arXiv preprint
+arXiv:2202.08904 .
+W James Murdoch, Chandan Singh, Karl Kumbier,
+Reza Abbasi-Asl, and Bin Yu. 2019. Definitions,
+methods, and applications in interpretable machine
+learning. Proceedings of the National Academy of
+Sciences , 116(44):22071–22080.
+Vivi Nastase and Paola Merlo. 2024. Tracking linguis-
+tic information in transformer-based sentence embed-
+dings through targeted sparsification. In Proceedings
+of the 9th Workshop on Representation Learning for
+NLP (RepL4NLP-2024) , pages 203–214, Bangkok,
+Thailand. Association for Computational Linguistics.
+Dmitry Nikolaev and Sebastian Padó. 2023. Represen-
+tation biases in sentence transformers. In Proceed-
+ings of the 17th Conference of the European Chap-
+ter of the Association for Computational Linguistics ,
+pages 3701–3716, Dubrovnik, Croatia. Association
+for Computational Linguistics.
+Juri Opitz. 2023. SMATCH++: Standardized and ex-
+tended evaluation of semantic graphs. In Findings
+of the Association for Computational Linguistics:
+EACL 2023 , pages 1595–1607, Dubrovnik, Croatia.
+Association for Computational Linguistics.
+Juri Opitz and Anette Frank. 2022. SBERT studies
+meaning representations: Decomposing sentence em-
+beddings into explainable semantic features. In Pro-
+ceedings of the 2nd Conference of the Asia-Pacific
+Chapter of the Association for Computational Lin-
+guistics and the 12th International Joint Conference
+on Natural Language Processing (Volume 1: Long
+Papers) , pages 625–638, Online only. Association for
+Computational Linguistics.
+Malte Ostendorff, Till Blume, Terry Ruas, Bela Gipp,
+and Georg Rehm. 2022. Specialized document em-
+beddings for aspect-based similarity of research pa-
+pers. In Proceedings of the 22nd ACM/IEEE Joint
+Conference on Digital Libraries , JCDL ’22, New
+York, NY , USA. Association for Computing Machin-
+ery.
+Moritz Plenz, Juri Opitz, Philipp Heinisch, Philipp Cimi-
+ano, and Anette Frank. 2023. Similarity-weighted
+construction of contextualized commonsense knowl-
+edge graphs for knowledge-intense argumentation
+tasks. In Proceedings of the 61st Annual Meeting of
+the Association for Computational Linguistics (Vol-
+ume 1: Long Papers) , pages 6130–6158, Toronto,
+Canada. Association for Computational Linguistics.
+Wuttikorn Ponwitayarat, Peerat Limkonchotiwat,
+Ekapol Chuangsuwanich, and Sarana Nutanong.
+2024. Space decomposition for sentence embedding.
+InFindings of the Association for Computational Lin-
+guistics: ACL 2024 , pages 11227–11239, Bangkok,
+Thailand. Association for Computational Linguistics.
+Shauli Ravfogel, Valentina Pyatkin, Amir David Nissan
+Cohen, Avshalom Manevich, and Yoav Goldberg.
+11
+
+--- PAGE 12 ---
+2024. Description-based text similarity. In First
+Conference on Language Modeling .
+Sagnik Ray Choudhury, Pepa Atanasova, and Isabelle
+Augenstein. 2023. Explaining interactions between
+text spans. In Proceedings of the 2023 Conference
+on Empirical Methods in Natural Language Process-
+ing, pages 12709–12730, Singapore. Association for
+Computational Linguistics.
+Nils Reimers and Iryna Gurevych. 2019. Sentence-
+BERT: Sentence embeddings using Siamese BERT-
+networks. In Proceedings of the 2019 Conference on
+Empirical Methods in Natural Language Processing
+and the 9th International Joint Conference on Natu-
+ral Language Processing (EMNLP-IJCNLP) , pages
+3982–3992, Hong Kong, China. Association for Com-
+putational Linguistics.
+Marco Tulio Ribeiro, Sameer Singh, and Carlos
+Guestrin. 2016. " why should i trust you?" explaining
+the predictions of any classifier. In Proceedings of
+the 22nd ACM SIGKDD international conference on
+knowledge discovery and data mining , pages 1135–
+1144.
+Julian Risch, Philipp Hager, and Ralf Krestel. 2021.
+Multifaceted domain-specific document embeddings.
+InProceedings of the 2021 Conference of the North
+American Chapter of the Association for Computa-
+tional Linguistics: Human Language Technologies:
+Demonstrations , pages 78–83, Online. Association
+for Computational Linguistics.
+Cynthia Rudin. 2019. Stop explaining black box ma-
+chine learning models for high stakes decisions and
+use interpretable models instead. Nature machine
+intelligence , 1(5):206–215.
+Ananya B. Sai, Akash Kumar Mohankumar, and
+Mitesh M. Khapra. 2022. A survey of evaluation
+metrics used for nlg systems. ACM Comput. Surv. ,
+55(2).
+Keshav Santhanam, Omar Khattab, Jon Saad-Falcon,
+Christopher Potts, and Matei Zaharia. 2022. Col-
+BERTv2: Effective and efficient retrieval via
+lightweight late interaction. In Proceedings of the
+2022 Conference of the North American Chapter of
+the Association for Computational Linguistics: Hu-
+man Language Technologies , pages 3715–3734, Seat-
+tle, United States. Association for Computational
+Linguistics.
+Tim Schopf, Daniel Braun, and Florian Matthes. 2022.
+Evaluating unsupervised text classification: zero-shot
+and similarity-based approaches. In Proceedings
+of the 2022 6th International Conference on Natu-
+ral Language Processing and Information Retrieval ,
+pages 6–15.
+Tim Schopf, Emanuel Gerber, Malte Ostendorff, and
+Florian Matthes. 2023. AspectCSE: Sentence em-
+beddings for aspect-based semantic textual similarity
+using contrastive learning and structured knowledge.
+InProceedings of the 14th International Conferenceon Recent Advances in Natural Language Processing ,
+pages 1054–1065, Varna, Bulgaria. INCOMA Ltd.,
+Shoumen, Bulgaria.
+Jaejin Seo, Sangwon Lee, Ling Liu, and Wonik Choi.
+2022. Ta-sbert: Token attention sentence-bert for
+improving sentence representation. IEEE Access ,
+10:39119–39128.
+Lingfeng Shen, Haiyun Jiang, Lemao Liu, and Shum-
+ing Shi. 2023. Sen2Pro: A probabilistic perspective
+to sentence embedding from pre-trained language
+model. In Proceedings of the 8th Workshop on Repre-
+sentation Learning for NLP (RepL4NLP 2023) , pages
+315–333, Toronto, Canada. Association for Compu-
+tational Linguistics.
+Yang Song, Jascha Sohl-Dickstein, Diederik P Kingma,
+Abhishek Kumar, Stefano Ermon, and Ben Poole.
+2021. Score-based generative modeling through
+stochastic differential equations. In International
+Conference on Learning Representations .
+Yiqun Sun, Qiang Huang, Yixuan Tang, Anthony KH
+Tung, and Jun Yu. 2024. A general framework for
+producing interpretable semantic text embeddings.
+arXiv preprint arXiv:2410.03435 .
+Mukund Sundararajan, Kedar Dhamdhere, and Ashish
+Agarwal. 2020. The shapley taylor interaction in-
+dex. In International conference on machine learn-
+ing, pages 9259–9268. PMLR.
+Mukund Sundararajan, Ankur Taly, and Qiqi Yan. 2017.
+Axiomatic attribution for deep networks. In Interna-
+tional conference on machine learning , pages 3319–
+3328. PMLR.
+Stephan Tulkens and Thomas van Dongen. 2024.
+Model2vec: The fastest state-of-the-art static em-
+beddings in the world. GitHub Repositories .
+Sarah Uhrig, Yoalli Garcia, Juri Opitz, and Anette Frank.
+2021. Translate, then parse! a strong baseline for
+cross-lingual AMR parsing. In Proceedings of the
+17th International Conference on Parsing Technolo-
+gies and the IWPT 2021 Shared Task on Parsing
+into Enhanced Universal Dependencies (IWPT 2021) ,
+pages 58–64, Online. Association for Computational
+Linguistics.
+Jannis Vamvas and Rico Sennrich. 2023. Towards un-
+supervised recognition of token-level semantic dif-
+ferences in related documents. In Proceedings of the
+2023 Conference on Empirical Methods in Natural
+Language Processing , pages 13543–13552, Singa-
+pore. Association for Computational Linguistics.
+Alexandros Vasileiou and Oliver Eberle. 2024. Explain-
+ing text similarity in transformer models. In Proceed-
+ings of the 2024 Conference of the North American
+Chapter of the Association for Computational Lin-
+guistics: Human Language Technologies (Volume
+1: Long Papers) , pages 7859–7873, Mexico City,
+Mexico. Association for Computational Linguistics.
+12
+
+--- PAGE 13 ---
+Bin Wang and C.-C. Jay Kuo. 2020. Sbert-wk: A sen-
+tence embedding method by dissecting bert-based
+word models. IEEE/ACM Transactions on Audio,
+Speech, and Language Processing , 28:2146–2157.
+Liang Wang, Nan Yang, Xiaolong Huang, Binxing
+Jiao, Linjun Yang, Daxin Jiang, Rangan Majumder,
+and Furu Wei. 2022. Text embeddings by weakly-
+supervised contrastive pre-training. arXiv preprint
+arXiv:2212.03533 .
+Liang Wang, Nan Yang, Xiaolong Huang, Linjun Yang,
+Rangan Majumder, and Furu Wei. 2024a. Improv-
+ing text embeddings with large language models. In
+Proceedings of the 62nd Annual Meeting of the As-
+sociation for Computational Linguistics (Volume 1:
+Long Papers) , pages 11897–11916, Bangkok, Thai-
+land. Association for Computational Linguistics.
+Liang Wang, Nan Yang, Xiaolong Huang, Linjun Yang,
+Rangan Majumder, and Furu Wei. 2024b. Multilin-
+gual e5 text embeddings: A technical report. arXiv
+preprint arXiv:2402.05672 .
+Orion Weller, Dawn Lawrie, and Benjamin Van Durme.
+2024. NevIR: Negation in neural information re-
+trieval. In Proceedings of the 18th Conference of the
+European Chapter of the Association for Computa-
+tional Linguistics (Volume 1: Long Papers) , pages
+2274–2287, St. Julian’s, Malta. Association for Com-
+putational Linguistics.
+Sarah Wiegreffe and Yuval Pinter. 2019. Attention is not
+not explanation. In Proceedings of the 2019 Confer-
+ence on Empirical Methods in Natural Language Pro-
+cessing and the 9th International Joint Conference
+on Natural Language Processing (EMNLP-IJCNLP) ,
+pages 11–20, Hong Kong, China. Association for
+Computational Linguistics.
+Wenhan Xiong, Jingyu Liu, Igor Molybog, Hejia Zhang,
+Prajjwal Bhargava, Rui Hou, Louis Martin, Rashi
+Rungta, Karthik Abinav Sankararaman, Barlas Oguz,
+Madian Khabsa, Han Fang, Yashar Mehdad, Sharan
+Narang, Kshitiz Malik, Angela Fan, Shruti Bhosale,
+Sergey Edunov, Mike Lewis, Sinong Wang, and Hao
+Ma. 2024. Effective long-context scaling of founda-
+tion models. In Proceedings of the 2024 Conference
+of the North American Chapter of the Association for
+Computational Linguistics: Human Language Tech-
+nologies (Volume 1: Long Papers) , pages 4643–4663,
+Mexico City, Mexico. Association for Computational
+Linguistics.
+Xin Ye, Hui Shen, Xiao Ma, Razvan Bunescu, and
+Chang Liu. 2016. From word embeddings to docu-
+ment similarities for improved information retrieval
+in software engineering. In Proceedings of the 38th
+international conference on software engineering ,
+pages 404–415.
+Shohei Yoda, Hayato Tsukagoshi, Ryohei Sasano, and
+Koichi Takeda. 2024. Sentence representations via
+Gaussian embedding. In Proceedings of the 18th
+Conference of the European Chapter of the Associa-
+tion for Computational Linguistics (Volume 2: ShortPapers) , pages 418–425, St. Julian’s, Malta. Associa-
+tion for Computational Linguistics.
+Tianyi Zhang, Varsha Kishore, Felix Wu, Kilian Q.
+Weinberger, and Yoav Artzi. 2020. Bertscore: Eval-
+uating text generation with bert. In International
+Conference on Learning Representations .
+Xin Zhang, Yanzhao Zhang, Dingkun Long, Wen Xie,
+Ziqi Dai, Jialong Tang, Huan Lin, Baosong Yang,
+Pengjun Xie, Fei Huang, Meishan Zhang, Wenjie
+Li, and Min Zhang. 2024. mGTE: Generalized long-
+context text representation and reranking models for
+multilingual text retrieval. In Proceedings of the 2024
+Conference on Empirical Methods in Natural Lan-
+guage Processing: Industry Track , pages 1393–1412,
+Miami, Florida, US. Association for Computational
+Linguistics.
+13

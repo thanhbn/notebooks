@@ -1,0 +1,1141 @@
+# 2407.08275v1.pdf
+# Converted from PDF to TXT
+# Source path: D:\llm\notebooks\AI-Papers\2407.08275v1.pdf
+# File size: 1593972 bytes
+
+===============================================
+PDF FILE CONTENT
+===============================================
+
+
+--- PAGE 1 ---
+Beyond Benchmarks: Evaluating Embedding Model Similarity for
+Retrieval Augmented Generation Systems
+Laura Caspari
+laura.caspari@uni-passau.de
+University of Passau
+Passau, GermanyKanishka Ghosh Dastidar
+kanishka.ghoshdastidar@uni-
+passau.de
+University of Passau
+Passau, GermanySaber Zerhoudi
+saber.zerhoudi@uni-passau.de
+University of Passau
+Passau, Germany
+Jelena Mitrovic
+jelena.mitrovic@uni-passau.de
+University of Passau
+Passau, GermanyMichael Granitzer
+michael.granitzer@uni-passau.de
+University of Passau
+Passau, Germany
+ABSTRACT
+The choice of embedding model is a crucial step in the design of
+Retrieval Augmented Generation (RAG) systems. Given the sheer
+volume of available options, identifying clusters of similar models
+streamlines this model selection process. Relying solely on bench-
+mark performance scores only allows for a weak assessment of
+model similarity. Thus, in this study, we evaluate the similarity of
+embedding models within the context of RAG systems. Our assess-
+ment is two-fold: We use Centered Kernel Alignment to compare
+embeddings on a pair-wise level. Additionally, as it is especially
+pertinent to RAG systems, we evaluate the similarity of retrieval
+results between these models using Jaccard and rank similarity. We
+compare different families of embedding models, including pro-
+prietary ones, across five datasets from the popular Benchmark
+Information Retrieval (BEIR). Through our experiments we identify
+clusters of models corresponding to model families, but interest-
+ingly, also some inter-family clusters. Furthermore, our analysis
+of top-𝑘retrieval similarity reveals high-variance at low 𝑘values.
+We also identify possible open-source alternatives to proprietary
+models, with Mistral exhibiting the highest similarity to OpenAI
+models.
+CCS CONCEPTS
+•Information systems →Evaluation of retrieval results ;Re-
+trieval models and ranking ;Language models .
+KEYWORDS
+Large language model, Retrieval-augmented generation, Model
+similarity
+1 MOTIVATION
+Retrieval-Augmented Generation (RAG) is an emerging paradigm
+that helps mitigate the problems of factual hallucination [ 13] and
+outdated training data [ 27] of large language models (LLMs) by
+providing these models with access to an external, non-parametric
+knowledge source (e.g. a document corpus). Central to the func-
+tioning of RAG frameworks is the retrieval step, wherein a small
+subset of candidate documents is retrieved from the document cor-
+pus, specific to the input query or prompt. This retrieval process,
+known as dense-retrieval, hinges on text embeddings. Typically, thegeneration of these embeddings is assigned to an LLM, for which
+there are several options due to the rapid evolution of the field.
+Consequently, selecting the most suitable embedding model from
+an array of available choices emerges as a critical aspect in the
+development of RAG systems. The information to guide this choice
+is currently primarily limited to architectural details (which are
+also on occasion scarce due to the prevalence of closed models)
+and performance benchmarks such as the Massive Text Embedding
+Benchmark (MTEB) [28].
+We posit that an analysis of the similarity of the embeddings gen-
+erated by these models would significantly aid this model selection
+process. Given the large number of candidates and ever increas-
+ing scale of the models, a from-scratch empirical evaluation of the
+embedding quality of these LLMs on a particular task can incur
+significant costs. This challenge becomes especially pronounced
+when dealing with large-scale corpora comprising potentially mil-
+lions of documents. While the relative performance scores of these
+models on benchmark datasets offer the simplified perspective of
+comparing a single scalar value on an array of downstream tasks,
+such a view of model similarity might overlook the nuances of the
+relative behaviour of the models [ 15]. As an example, the absolute
+difference in precision@k between two retrieval systems only pro-
+vides a weak indication of the overlap of retrieved results. We argue
+that identifying clusters of models with similar behaviour would
+allow practitioners to construct smaller, yet diverse candidate pools
+of models to evaluate. Beyond model selection, as highlighted by
+Klabunde et al., [ 14], such an analysis also facilitates the identi-
+fication of common factors contributing to strong performance,
+easier model ensembling, and detection of potential instances of
+unauthorized model reuse.
+In this paper, we analyze different LLMs in terms of the simi-
+larities of the embeddings they generate. Our similarity analysis
+serves as an unsupervised evaluation framework for these embed-
+ding models, in contrast to performance benchmarks that require
+labelled data. We do this from a dual perspective - we directly com-
+pare the embeddings using representational similarity measures.
+Additionally, we evaluate model similarity specifically in terms of
+their functional impact on RAG systems i.e. we look at how sim-
+ilar the retrieved results are. Our evaluation focuses on several
+prominent model families, to analyze similarities both within and
+across them. We also compare proprietary models (such as those byarXiv:2407.08275v1  [cs.IR]  11 Jul 2024
+
+--- PAGE 2 ---
+Caspari et al.
+OpenAI or Cohere) to open-sourced ones in order to identify the
+most similar alternatives. Our experiments are carried out on five
+popular benchmark datasets to determine if similarities between
+models are influenced by the choice of data. Our code is available
+at https://github.com/casparil/embedding-model-similarity.
+2 RELATED WORK
+Studies evaluating similarities of neural networks fall into two
+main categories: the first involves comparing activations of dif-
+ferent models generated at any pair of layers for a specific input
+(representational similarity), while the second compares the model
+outputs (functional similarity). Raghu et al. [ 33] and Morcos et al.
+[26] propose measures building on Canonical Correlation Analysis
+(CCA) [ 11], a statistical technique used to find the linear relation-
+ship between two sets of variables by maximizing their correlation.
+Such comparisons using CCA or variants thereof can be found in
+several works [ 6], [42], [4]. Beyond CCA-based measures, other
+works have also explored computing correlations [ 21] and the mu-
+tual information [ 20] between neurons across networks. Kornblith
+et al. [ 16] propose Centered Kernel Alignment (CKA), which they
+show improves over several similarity measures in identifying corre-
+sponding layers of identical networks with different initializations.
+A diverse range of functional similarity evaluations have also been
+explored in the literature. A few examples include model-stitching
+[2], [18], [1], disagreement measures between output classes [ 25],
+[41], and quantifying the similarity between the class-wise out-
+put probabilities [ 22]. We would point the reader to the survey by
+Klabunde et al. [ 15] for a detailed overview of representational and
+functional similarity measures.
+Recently, a few works have also focused on specifically evaluat-
+ing the similarity of LLMs. While Wu et al. [ 39] evaluate language
+models along several perspectives, such as their representational
+and neuron-level similarities, their evaluation pre-dates the intro-
+duction of the recent wave of large scale models. Freestone and
+Santu [ 9] consider similarities of word embeddings, and evaluate
+if LLMs differ significantly to classical encoding models in terms
+of their representations. The works by Klabunde et al. [ 14] and
+Brown et al. [ 3] are more recent, and evaluate the representational
+similarity of LLMs, with the latter also considering the similarities
+between models of different sizes in the same model family.
+Much of the literature on evaluation of LLM embeddings focuses
+on their performance on downstream tasks, with benchmarks such
+as BEIR [ 35] (for retrieval specifically) and MTEB [ 28] providing a
+unified view of embedding quality across metrics and datasets. The
+metrics used here mostly include typical information retrieval met-
+rics such as precision, recall, and mean reciprocal rank at certain
+cutoffs. Some works specifically evaluate the retrieval components
+in a RAG context, where they either use a dataset outside of those in-
+cluded in the benchmarks [ 8] or where the evaluation encompasses
+other aspects of the retriever beyond the embedding model being
+used [ 34]. Another approach, that does not rely on ground-truth
+labels, is given by the Retrieval Augmented Generation Assessment
+(RAGAS) framework, which uses an LLM to determine the ratio of
+sentences in the retrieved context that are relevant to the answer
+being generated [ 7]. To the best of our knowledge, there are noTable 1: The datasets used for generating embeddings with
+their number of queries and corpus size.
+Dataset Name Queries Corpus
+TREC-COVID 50 171k
+NFCorpus 323 3.6k
+FiQA-2018 648 57k
+ArguAna 1406 8.67k
+SciFact 300 5k
+works that evaluate the similarity of embedding models from a
+retrieval perspective.
+3 METHODS
+We evaluate embedding model similarity using two approaches. The
+first directly compares the embeddings of text chunks generated
+by the models. The second approach is specific to the RAG context,
+where we evaluate the similarity of retrieved results for a given
+query. These approaches are discussed in detail in the following
+sections.
+3.1 Pair-wise Embedding Similarity
+There are several metrics defined in the literature that measure
+representational similarity [ 15]. Many of these metrics require the
+representation spaces of the embeddings to be compared to be
+aligned and/or the dimensionality of the embeddings across the
+models to be identical. To avoid these constraints, we pick Centered
+Kernel Alignment (CKA) [ 16] with a linear kernel as our similarity
+measure.
+The measure computes similarity between two sets of embed-
+dings in two steps. First, for a set of embeddings, the pair-wise
+similarity scores between all entries within this set are computed
+using the kernel function. Thus, row kof the resulting similarity
+matrix contains entries representing the similarity between embed-
+ding kand all other embeddings, including itself. Computing two
+such embedding similarity matrices for different models with the
+same number of embeddings then leads to two matrices E and E’ of
+matching dimensions. These are compared directly in the second
+step with the Hilbert-Schmidt Independence Criterion (HSIC) [ 10]
+using the following formula:
+𝐶𝐾𝐴(𝐸,𝐸′)=𝐻𝑆𝐼𝐶(𝐸,𝐸′)√︁
+𝐻𝑆𝐼𝐶(𝐸,𝐸)𝐻𝑆𝐼𝐶(𝐸′,𝐸′)(1)
+The resulting similarity scores are bounded in the interval [0,
+1] with a score of 1 indicating equivalent representations. CKA
+assumes that representations are mean-centered.
+3.2 Retrieval Similarity
+While a pair-wise comparison of embeddings offers insights into
+the similarities of the representations learned by these models, it
+does not suffice to quantify the similarities in outcomes when these
+embedding models are deployed for specific tasks. Therefore, in
+context of RAG systems, we consider the similarity of retrieved text
+chunks for a given query, when different embedding models are
+used. As a first step, for a given dataset, we generate embeddings of
+
+--- PAGE 3 ---
+Beyond Benchmarks: Evaluating Embedding Model Similarity for Retrieval Augmented Generation Systems
+Table 2: We compare a diverse set of open source models from different families as well as proprietary models with varying
+performance on MTEB.
+Model Embedding dimension Max. Tokens MTEB Average Open Source
+SFR-Embedding-Mistral 4096 32768 67.56 ✓
+mxbai-embed-large-v1 1024 512 64.68 ✓
+UAE-Large-V1 1024 512 64.64 ✓
+text-embedding-3-large 3072 8191 64.59 ✗
+Cohere embed-english-v3.0 1024 512 64.47 ✗
+bge-large-en-v1.5 1024 512 64.23 ✓
+bge-base-en-v1.5 768 512 63.55 ✓
+gte-large 1024 512 63.13 ✓
+gte-base 768 512 62.39 ✓
+text-embedding-3-small 1536 8191 62.26 ✗
+e5-large-v2 1024 512 62.25 ✓
+bge-small-en-v1.5 384 512 62.17 ✓
+e5-base-v2 768 512 61.5 ✓
+gte-small 384 512 61.36 ✓
+e5-small-v2 384 512 59.93 ✓
+gtr-t5-large 768 512 58.28 ✓
+sentence-t5-large 768 512 57.06 ✓
+gtr-t5-base 768 512 56.19 ✓
+sentence-t5-base 768 512 55.27 ✓
+queries and document chunks with each of the embedding models.
+We then retrieve the 𝑘most similar embeddings in terms of the
+cosine similarity for a particular query. As these embeddings cor-
+respond to specific chunks of text, we derive the sets of retrieved
+chunks C and C’ for a pair of models. To measure the similarity of
+these sets, we use the Jaccard similarity coefficient as follows:
+𝐽𝑎𝑐𝑐𝑎𝑟𝑑(𝐶,𝐶′)=|𝐶∩𝐶′|
+|𝐶∪𝐶′|(2)
+Here,|𝐶∩𝐶′|corresponds to the overlap in text chunks by
+counting how often the two models retrieved the same chunks.
+Similarly, we can compute the union |𝐶∪𝐶′|, which corresponds
+to all retrieved text chunks, counting chunks present in both sets
+only once. The resulting score is bounded in the interval [0, 1] with
+1 indicating that both models retrieved the same set of text chunks.
+While Jaccard similarity computes the percentage to which two
+sets overlap, it ignores the order in the sets. Rank similarity [ 36],
+on the other hand, considers the order of common elements, with
+closer elements having a higher impact on the score. The measure
+assigns ranks to common text chunks according to their similarity
+to the query, i.e. 𝑟𝐶(𝑗)=𝑛if chunk𝑗was the top- 𝑛retrieved result
+for the query. Ranks are then compared using:
+𝑅𝑎𝑛𝑘(𝑟𝐶(𝑗),𝑟𝐶′(𝑗))=2
+(1+|𝑟𝐶(𝑗)−𝑟𝐶′(𝑗)|)(𝑟𝐶(𝑗)+𝑟𝐶′(𝑗))(3)
+With this, rank similarity for two sets of retrieved text chunks
+C, C’ is calculated as:
+𝑅𝑎𝑛𝑘𝑆𝑖𝑚(𝐶,𝐶′)=1
+𝐻(|𝐶∩𝐶′|)∑︁
+𝑗∈|𝐶∩𝐶′|𝑅𝑎𝑛𝑘(𝑟𝐶(𝑗),𝑟𝐶′(𝑗))(4)with𝐻(|𝐶∩𝐶′|)=Í𝐾=|𝐶∩𝐶′|
+𝑘=11
+𝑘denoting the K-th harmonic
+number, normalizing the score. Like the other measures, rank sim-
+ilarity is bounded in the interval [0, 1] with 1 indicating that all
+ranks are identical.
+4 EXPERIMENTAL SETUP
+The following paragraphs describe our choice of datasets and mod-
+els, along with details of the implementation of our experiments.
+As we focus on the retrieval component of RAG systems, we
+select five publicly available datasets from the BEIR benchmark [ 35].
+As generating embeddings for large datasets is a time-intensive
+process, especially for a larger number of models, we opt for five of
+the smaller datasets from the benchmark. This approach allows us
+to compare embeddings generated by a variety of models while at
+the same time allowing us to evaluate embedding similarity accross
+datasets. An overview of the datasets is shown in Table 1. For each
+dataset, we create embeddings by splitting documents into text
+chunks such that each chunk contains 256 tokens. The embedding
+vectors are stored with Chroma DB [ 12], an open source embedding
+database. For each vector, we additionally store information about
+the document and text chunk ids it encodes to be able to match
+embeddings generated by different models for evaluation.
+For model selection, we primarily use publicly available models
+from the MTEB leaderboard [ 28]. We do not simply pick the best
+performing models on the leaderboard; instead, our choices are
+influenced by several factors. Firstly, we focus on analyzing similar-
+ities within and across model families and pick models belonging to
+the e5 [ 37], t5 [ 29,30], bge [ 40], and gte [ 23] families. Secondly, we
+recognize that it might be of interest to users to avoid pay-by-token
+policies of proprietary models by identifying similar open-source al-
+ternatives. Therefore, we pick high-performing proprietary models,
+
+--- PAGE 4 ---
+Caspari et al.
+gtr-t5-base
+gtr-t5-large
+mxbai-embed-large-v1
+UAE-Large-V1
+bge-large-en-v1.5
+bge-small-en-v1.5
+gte-small
+gte-large
+bge-base-en-v1.5
+gte-base
+sentence-t5-base
+sentence-t5-large
+SFR-Embedding-Mistral
+text-embedding-3-large
+text-embedding-3-small
+e5-large-v2
+embed-english-v3.0
+e5-base-v2
+e5-small-v2gtr-t5-base
+gtr-t5-large
+mxbai-embed-large-v1
+UAE-Large-V1
+bge-large-en-v1.5
+bge-small-en-v1.5
+gte-small
+gte-large
+bge-base-en-v1.5
+gte-base
+sentence-t5-base
+sentence-t5-large
+SFR-Embedding-Mistral
+text-embedding-3-large
+text-embedding-3-small
+e5-large-v2
+embed-english-v3.0
+e5-base-v2
+e5-small-v21.00 0.81 0.64 0.63 0.64 0.64 0.61 0.63 0.65 0.62 0.71 0.66 0.67 0.68 0.70 0.63 0.67 0.66 0.63
+0.81 1.00 0.67 0.67 0.67 0.66 0.64 0.66 0.68 0.64 0.70 0.74 0.72 0.72 0.74 0.68 0.71 0.69 0.66
+0.64 0.67 1.00 0.99 0.98 0.86 0.85 0.93 0.88 0.86 0.73 0.73 0.78 0.80 0.80 0.76 0.79 0.78 0.74
+0.63 0.67 0.99 1.00 0.99 0.84 0.82 0.90 0.86 0.83 0.71 0.72 0.76 0.78 0.78 0.75 0.78 0.77 0.73
+0.64 0.67 0.98 0.99 1.00 0.84 0.81 0.89 0.85 0.82 0.71 0.72 0.76 0.78 0.78 0.76 0.79 0.77 0.74
+0.64 0.66 0.86 0.84 0.84 1.00 0.93 0.86 0.86 0.85 0.72 0.71 0.74 0.76 0.77 0.72 0.76 0.75 0.75
+0.61 0.64 0.85 0.82 0.81 0.93 1.00 0.90 0.86 0.91 0.72 0.71 0.75 0.77 0.78 0.71 0.76 0.74 0.73
+0.63 0.66 0.93 0.90 0.89 0.86 0.90 1.00 0.89 0.92 0.74 0.74 0.78 0.81 0.81 0.75 0.81 0.76 0.73
+0.65 0.68 0.88 0.86 0.85 0.86 0.86 0.89 1.00 0.94 0.73 0.72 0.77 0.80 0.81 0.76 0.81 0.79 0.74
+0.62 0.64 0.86 0.83 0.82 0.85 0.91 0.92 0.94 1.00 0.72 0.71 0.77 0.79 0.80 0.73 0.79 0.76 0.72
+0.71 0.70 0.73 0.71 0.71 0.72 0.72 0.74 0.73 0.72 1.00 0.87 0.71 0.74 0.76 0.70 0.73 0.71 0.70
+0.66 0.74 0.73 0.72 0.72 0.71 0.71 0.74 0.72 0.71 0.87 1.00 0.73 0.76 0.77 0.71 0.75 0.72 0.69
+0.67 0.72 0.78 0.76 0.76 0.74 0.75 0.78 0.77 0.77 0.71 0.73 1.00 0.87 0.84 0.76 0.79 0.76 0.73
+0.68 0.72 0.80 0.78 0.78 0.76 0.77 0.81 0.80 0.79 0.74 0.76 0.87 1.00 0.90 0.78 0.81 0.77 0.74
+0.70 0.74 0.80 0.78 0.78 0.77 0.78 0.81 0.81 0.80 0.76 0.77 0.84 0.90 1.00 0.78 0.82 0.78 0.75
+0.63 0.68 0.76 0.75 0.76 0.72 0.71 0.75 0.76 0.73 0.70 0.71 0.76 0.78 0.78 1.00 0.93 0.83 0.79
+0.67 0.71 0.79 0.78 0.79 0.76 0.76 0.81 0.81 0.79 0.73 0.75 0.79 0.81 0.82 0.93 1.00 0.81 0.78
+0.66 0.69 0.78 0.77 0.77 0.75 0.74 0.76 0.79 0.76 0.71 0.72 0.76 0.77 0.78 0.83 0.81 1.00 0.81
+0.63 0.66 0.74 0.73 0.74 0.75 0.73 0.73 0.74 0.72 0.70 0.69 0.73 0.74 0.75 0.79 0.78 0.81 1.000.70.80.91.0
+Figure 1: Mean CKA similarity across all five datasets. Models
+tend to be most similar to models belonging to their own
+family, though some interesting inter-family patterns are
+visible as well.
+two from OpenAI (text-embedding-3-large and -small) [ 31] and one
+from Cohere (Cohere embed-english-v3.0) [ 5]. We also compare the
+mxbai-embed-large-v1 (mxbai) [ 17] and UAE-Large-V1 (UAE) [ 19]
+models, that not only report very similar performances on MTEB,
+but also identical embedding dimensions, model size and memory
+usage. Finally, we include SFR-Embedding-Mistral (Mistral) [ 24] as
+the best-performing model on the leaderboard at the time of our
+experiments. A detailed overview of all selected models can be seen
+in Table 2.
+To compare embedding similarity across models and datasets,
+we employ different strategies depending on the similarity measure.
+We apply CKA by retrieving all embeddings created by a model,
+matching embeddings using their document and text chunk ids and
+then computing their similarity for each of the five datasets. For
+Jaccard and rank similarity, we use sklearn’s NearestNeighbor class
+[32] to determine the the top- 𝑘retrieval results. We compute Jaccard
+and rank scores per dataset, averaging over 25 queries. For the
+NFCorpus dataset, we calculate retrieval similarity for all possible
+𝑘, i.e. using all embeddings generated for the dataset. As calculating
+similarity for each possible 𝑘is computationally expensive, we did
+not repeat this for the remaining datasets and chose a smaller 𝑘
+value instead. Furthermore, as only a limited number of results
+are to be provided as context to the generative model, analyzing
+retrieval similarity at low 𝑘values for e.g. top-10 is of most interest.
+As we are interested in identifying clusters of similar models, we
+also perform a hierarchical clustering on heatmap values using
+Seaborn [ 38]. The following section describes the results of our
+evaluation for the different measures.
+0 1000 2000 3000 4000 5000 60000.10.20.30.40.50.6
+0 10 20 30 40 500.00.20.40.6gte-large_vs_SFR-Embedding-Mistral
+gte-large_vs_UAE-Large-V1
+gte-large_vs_bge-base-en-v1.5
+gte-large_vs_bge-large-en-v1.5
+gte-large_vs_bge-small-en-v1.5
+gte-large_vs_e5-base-v2
+gte-large_vs_e5-large-v2
+gte-large_vs_e5-small-v2
+gte-large_vs_embed-english-v3.0gte-large_vs_gte-base
+gte-large_vs_gte-small
+gte-large_vs_gtr-t5-base
+gte-large_vs_gtr-t5-large
+gte-large_vs_mxbai-embed-large-v1
+gte-large_vs_sentence-t5-base
+gte-large_vs_sentence-t5-large
+gte-large_vs_text-embedding-3-large
+gte-large_vs_text-embedding-3-smallFigure 2: Rank similarity over all 𝑘on NFCorpus, comparing
+gte-large to all other models. Scores are highest and vary
+most for small 𝑘, but then drop quickly before stabilizing for
+larger𝑘.
+5 RESULTS
+To evaluate how similar embeddings generated by different models
+are, we will first consider model families, checking if their pairwise
+and top-k similarity scores are highest within their family. Subse-
+quently, we will identify the open source models which are most
+similar to our chosen proprietary models.
+5.1 Intra- and Inter-Family Clusters
+Comparing embeddings directly with CKA shows high similarity
+across most of the models, albeit with some variance. These scores
+allow us to identify certain clusters of models. Figure 1 shows
+the pair-wise CKA scores of all models averaged across the five
+datasets. As expected, scores for most models are highest within
+their own family. This holds true for the gtr-t5, sentence-t5 and text-
+embedding-3 (OpenAI) models. Although the sentence-t5 and gtr-t5
+models are closely related, they do not exhibit significantly higher
+similarity with each other compared to the remaining models.
+From an inter-family perspective, we observe high similarity
+between the bge and gte models. For some models in these two fam-
+ilies, interestingly, the highest similarity scores rather correspond
+to inter-family counterparts with matching embedding dimensions
+than with models in the same family. Specifically, gte-small reports
+the highest similarity to bge-small and gte-base to bge-base. On the
+other hand, gte-large shows slightly higher similarity to bge-base
+than bge-large and thus to a model with a lower embedding dimen-
+sion. Another inter-family cluster is formed by the three models
+with the highest CKA scores overall, namely UAE, mxbai and bge-
+large, whose scores suggest almost perfect embedding similarity. In
+
+--- PAGE 5 ---
+Beyond Benchmarks: Evaluating Embedding Model Similarity for Retrieval Augmented Generation Systems
+0 1000 2000 3000 4000 5000 60000.20.40.60.81.0
+0 10 20 30 40 500.00.20.40.60.8bge-large-en-v1.5_vs_SFR-Embedding-Mistral
+bge-large-en-v1.5_vs_UAE-Large-V1
+bge-large-en-v1.5_vs_bge-base-en-v1.5
+bge-large-en-v1.5_vs_bge-small-en-v1.5
+bge-large-en-v1.5_vs_e5-base-v2
+bge-large-en-v1.5_vs_e5-large-v2
+bge-large-en-v1.5_vs_e5-small-v2
+bge-large-en-v1.5_vs_embed-english-v3.0
+bge-large-en-v1.5_vs_gte-basebge-large-en-v1.5_vs_gte-large
+bge-large-en-v1.5_vs_gte-small
+bge-large-en-v1.5_vs_gtr-t5-base
+bge-large-en-v1.5_vs_gtr-t5-large
+bge-large-en-v1.5_vs_mxbai-embed-large-v1
+bge-large-en-v1.5_vs_sentence-t5-base
+bge-large-en-v1.5_vs_sentence-t5-large
+bge-large-en-v1.5_vs_text-embedding-3-large
+bge-large-en-v1.5_vs_text-embedding-3-small
+(a)
+0 1000 2000 3000 4000 5000 60000.20.40.60.81.0
+0 10 20 30 40 500.00.10.20.30.40.50.6gte-large_vs_SFR-Embedding-Mistral
+gte-large_vs_UAE-Large-V1
+gte-large_vs_bge-base-en-v1.5
+gte-large_vs_bge-large-en-v1.5
+gte-large_vs_bge-small-en-v1.5
+gte-large_vs_e5-base-v2
+gte-large_vs_e5-large-v2
+gte-large_vs_e5-small-v2
+gte-large_vs_embed-english-v3.0gte-large_vs_gte-base
+gte-large_vs_gte-small
+gte-large_vs_gtr-t5-base
+gte-large_vs_gtr-t5-large
+gte-large_vs_mxbai-embed-large-v1
+gte-large_vs_sentence-t5-base
+gte-large_vs_sentence-t5-large
+gte-large_vs_text-embedding-3-large
+gte-large_vs_text-embedding-3-small (b)
+Figure 3: Jaccard similarity over all 𝑘on NFCorpus, comparing bge-large (a) and gte-large (b) to all other models. While bge-large
+shows high similarity to UAE-Large-v1 and mxbai-embed-large-v1, scores for gte-large are clustered much closer. Jaccard
+similarity seems to be most unstable for small values of 𝑘, which would commonly be chosen for retrieval tasks.
+fact, the similarity score of bge-large to these two models is much
+higher than to other bge models.
+Shifting our attention to top- 𝑘retrieval similarity, clusters vary
+depending on the 𝑘value. Figure 3 illustrates how Jaccard similarity
+evolves over 𝑘on NFCorpus. The first plot displays Jaccard scores
+between bge-large and all other models, while the second plot
+illustrates the scores for gte-large. For extremely low 𝑘, we observe
+some peaks for nearly all models, followed by a noticeable drop
+in similarity. Of course, for larger 𝑘, the scores converge to one.
+Re-affirming our earlier observations with the CKA metric, bge-
+large demonstrates high retrieval similarity with UAE and mxbai.
+Similarity to the remaining models is much lower, with the highest
+scores for bge-base and bge-small for larger 𝑘. However, especially
+for small𝑘, there is high variance in similarity score, with models
+from other families, e.g. Mistral or gte-large sometimes achieving
+higher scores than the bge models. A similar pattern can also be
+observed in the second plot, where Jaccard similarity for gte-large is
+highest within its family for larger 𝑘, but models like mxbai or bge-
+base sometimes reporting higher similarity for small 𝑘. Therefore,
+the clusters we identified through our CKA analysis are only truly
+reflected in these plots for large values of 𝑘. This suggest that in real-
+world use cases, where the top- 𝑘are crucial, such representational
+similarity measures might not provide the full picture. The plots
+for other model families provide nearly identical insights as those
+in the second plot in Figure 3 and thus we do not present them for
+sake of brevity.For rank similarity, scores peak for small 𝑘and then quickly
+start to drop until they approach a low stable score for larger 𝑘as
+shown in Figure 2 for gte-large. Once again, the bge/UAE/mxbai
+inter-family cluster shows the highest similarity. In contrast to
+Jaccard similarity, the clusters that could be observed for CKA do
+not always show for rank similarity. As can be seen in Figure 2,
+the model with the highest rank similarity to gte-large is mxbai,
+rather than another gte model. Even so, the previously observed
+clusters also tend to appear for rank similarity, though they vary
+more depending on the models and dataset. Generally, scores for
+nearly all models are rather small for larger 𝑘, indicating low rank
+similarity. For small 𝑘, results vary more and differences between
+individual models are more pronounced.
+As retrieval similarity at small 𝑘is of most interest from a prac-
+tical perspective, we take a closer look at top-10 Jaccard similarity.
+The heatmaps in Figures 4-6 show the top-10 Jaccard similarity
+between models across datasets. A striking insight here is that even
+the most similar models only report a Jaccard similarity of higher
+than 0.6, with the majority less than 0.5. This is of great relevance
+to practitioners, as it would imply that even using embeddings
+from models that report high representational similarity scores
+may yield little overlap in retrieved text chunks. As earlier, the
+cluster of UAE/mxbai/bge-large is the most prominent one with
+the highest scores. Intra-family scores tend to be the highest for
+most models, i.e. t5 and OpenAI. Depending on the dataset, this also
+applies to gte and e5 models, although Jaccard similarity to models
+from other families is sometimes higher. We also note that for the
+
+--- PAGE 6 ---
+Caspari et al.
+bge-large-en-v1.5
+UAE-Large-V1
+mxbai-embed-large-v1
+bge-small-en-v1.5
+gte-small
+gte-large
+bge-base-en-v1.5
+gte-base
+text-embedding-3-small
+embed-english-v3.0
+SFR-Embedding-Mistral
+text-embedding-3-large
+e5-base-v2
+e5-large-v2
+e5-small-v2
+gtr-t5-base
+gtr-t5-large
+sentence-t5-base
+sentence-t5-largebge-large-en-v1.5
+UAE-Large-V1
+mxbai-embed-large-v1
+bge-small-en-v1.5
+gte-small
+gte-large
+bge-base-en-v1.5
+gte-base
+text-embedding-3-small
+embed-english-v3.0
+SFR-Embedding-Mistral
+text-embedding-3-large
+e5-base-v2
+e5-large-v2
+e5-small-v2
+gtr-t5-base
+gtr-t5-large
+sentence-t5-base
+sentence-t5-large1.00 0.68 0.60 0.24 0.25 0.33 0.30 0.27 0.26 0.29 0.30 0.29 0.26 0.23 0.18 0.16 0.23 0.20 0.22
+0.68 1.00 0.83 0.25 0.28 0.42 0.35 0.32 0.28 0.29 0.28 0.30 0.28 0.24 0.20 0.17 0.24 0.21 0.22
+0.60 0.83 1.00 0.26 0.31 0.47 0.37 0.36 0.30 0.30 0.28 0.31 0.29 0.25 0.21 0.18 0.26 0.22 0.22
+0.24 0.25 0.26 1.00 0.31 0.25 0.26 0.22 0.19 0.18 0.19 0.20 0.23 0.18 0.17 0.14 0.16 0.16 0.17
+0.25 0.28 0.31 0.31 1.00 0.38 0.29 0.35 0.29 0.27 0.24 0.26 0.28 0.25 0.18 0.16 0.19 0.20 0.20
+0.33 0.42 0.47 0.25 0.38 1.00 0.36 0.41 0.30 0.27 0.25 0.30 0.26 0.25 0.17 0.15 0.22 0.22 0.20
+0.30 0.35 0.37 0.26 0.29 0.36 1.00 0.46 0.32 0.28 0.28 0.29 0.30 0.24 0.20 0.19 0.23 0.25 0.22
+0.27 0.32 0.36 0.22 0.35 0.41 0.46 1.00 0.33 0.32 0.29 0.30 0.27 0.22 0.17 0.18 0.21 0.24 0.23
+0.26 0.28 0.30 0.19 0.29 0.30 0.32 0.33 1.00 0.36 0.32 0.42 0.30 0.30 0.23 0.21 0.27 0.23 0.23
+0.29 0.29 0.30 0.18 0.27 0.27 0.28 0.32 0.36 1.00 0.39 0.40 0.30 0.33 0.21 0.23 0.27 0.21 0.24
+0.30 0.28 0.28 0.19 0.24 0.25 0.28 0.29 0.32 0.39 1.00 0.42 0.29 0.22 0.18 0.22 0.23 0.19 0.23
+0.29 0.30 0.31 0.20 0.26 0.30 0.29 0.30 0.42 0.40 0.42 1.00 0.30 0.30 0.23 0.21 0.24 0.22 0.25
+0.26 0.28 0.29 0.23 0.28 0.26 0.30 0.27 0.30 0.30 0.29 0.30 1.00 0.37 0.29 0.18 0.24 0.21 0.22
+0.23 0.24 0.25 0.18 0.25 0.25 0.24 0.22 0.30 0.33 0.22 0.30 0.37 1.00 0.29 0.16 0.22 0.18 0.18
+0.18 0.20 0.21 0.17 0.18 0.17 0.20 0.17 0.23 0.21 0.18 0.23 0.29 0.29 1.00 0.16 0.21 0.17 0.14
+0.16 0.17 0.18 0.14 0.16 0.15 0.19 0.18 0.21 0.23 0.22 0.21 0.18 0.16 0.16 1.00 0.38 0.20 0.22
+0.23 0.24 0.26 0.16 0.19 0.22 0.23 0.21 0.27 0.27 0.23 0.24 0.24 0.22 0.21 0.38 1.00 0.21 0.24
+0.20 0.21 0.22 0.16 0.20 0.22 0.25 0.24 0.23 0.21 0.19 0.22 0.21 0.18 0.17 0.20 0.21 1.00 0.34
+0.22 0.22 0.22 0.17 0.20 0.20 0.22 0.23 0.23 0.24 0.23 0.25 0.22 0.18 0.14 0.22 0.24 0.34 1.00
+0.20.40.60.81.0
+(a)
+sentence-t5-base
+sentence-t5-large
+gtr-t5-base
+gtr-t5-large
+bge-small-en-v1.5
+bge-base-en-v1.5
+bge-large-en-v1.5
+UAE-Large-V1
+mxbai-embed-large-v1
+gte-large
+gte-base
+gte-small
+e5-base-v2
+text-embedding-3-small
+SFR-Embedding-Mistral
+embed-english-v3.0
+text-embedding-3-large
+e5-large-v2
+e5-small-v2sentence-t5-base
+sentence-t5-large
+gtr-t5-base
+gtr-t5-large
+bge-small-en-v1.5
+bge-base-en-v1.5
+bge-large-en-v1.5
+UAE-Large-V1
+mxbai-embed-large-v1
+gte-large
+gte-base
+gte-small
+e5-base-v2
+text-embedding-3-small
+SFR-Embedding-Mistral
+embed-english-v3.0
+text-embedding-3-large
+e5-large-v2
+e5-small-v21.00 0.43 0.29 0.32 0.24 0.35 0.26 0.24 0.27 0.32 0.28 0.31 0.34 0.35 0.28 0.30 0.31 0.26 0.28
+0.43 1.00 0.28 0.34 0.24 0.30 0.28 0.27 0.26 0.21 0.29 0.28 0.37 0.32 0.32 0.34 0.36 0.29 0.28
+0.29 0.28 1.00 0.40 0.26 0.31 0.27 0.27 0.25 0.26 0.25 0.24 0.29 0.31 0.32 0.31 0.30 0.21 0.20
+0.32 0.34 0.40 1.00 0.29 0.31 0.28 0.27 0.30 0.26 0.28 0.30 0.36 0.37 0.39 0.35 0.34 0.27 0.25
+0.24 0.24 0.26 0.29 1.00 0.46 0.38 0.42 0.43 0.35 0.32 0.35 0.37 0.26 0.32 0.27 0.28 0.28 0.32
+0.35 0.30 0.31 0.31 0.46 1.00 0.48 0.52 0.49 0.43 0.44 0.42 0.45 0.37 0.39 0.40 0.40 0.36 0.36
+0.26 0.28 0.27 0.28 0.38 0.48 1.00 0.62 0.59 0.39 0.39 0.39 0.39 0.32 0.36 0.33 0.33 0.33 0.31
+0.24 0.27 0.27 0.27 0.42 0.52 0.62 1.00 0.74 0.42 0.43 0.42 0.41 0.33 0.34 0.30 0.34 0.32 0.32
+0.27 0.26 0.25 0.30 0.43 0.49 0.59 0.74 1.00 0.46 0.44 0.43 0.45 0.35 0.35 0.30 0.34 0.35 0.34
+0.32 0.21 0.26 0.26 0.35 0.43 0.39 0.42 0.46 1.00 0.43 0.42 0.34 0.31 0.35 0.29 0.34 0.30 0.31
+0.28 0.29 0.25 0.28 0.32 0.44 0.39 0.43 0.44 0.43 1.00 0.46 0.37 0.32 0.34 0.39 0.35 0.36 0.28
+0.31 0.28 0.24 0.30 0.35 0.42 0.39 0.42 0.43 0.42 0.46 1.00 0.39 0.30 0.29 0.31 0.28 0.33 0.29
+0.34 0.37 0.29 0.36 0.37 0.45 0.39 0.41 0.45 0.34 0.37 0.39 1.00 0.43 0.42 0.48 0.42 0.43 0.44
+0.35 0.32 0.31 0.37 0.26 0.37 0.32 0.33 0.35 0.31 0.32 0.30 0.43 1.00 0.44 0.42 0.49 0.34 0.36
+0.28 0.32 0.32 0.39 0.32 0.39 0.36 0.34 0.35 0.35 0.34 0.29 0.42 0.44 1.00 0.50 0.46 0.31 0.28
+0.30 0.34 0.31 0.35 0.27 0.40 0.33 0.30 0.30 0.29 0.39 0.31 0.48 0.42 0.50 1.00 0.52 0.34 0.38
+0.31 0.36 0.30 0.34 0.28 0.40 0.33 0.34 0.34 0.34 0.35 0.28 0.42 0.49 0.46 0.52 1.00 0.38 0.39
+0.26 0.29 0.21 0.27 0.28 0.36 0.33 0.32 0.35 0.30 0.36 0.33 0.43 0.34 0.31 0.34 0.38 1.00 0.38
+0.28 0.28 0.20 0.25 0.32 0.36 0.31 0.32 0.34 0.31 0.28 0.29 0.44 0.36 0.28 0.38 0.39 0.38 1.00
+0.40.60.81.0 (b)
+Figure 4: Jaccard (a) and rank similarity (b) for the top-10 retrieved text chunks averaged over 25 queries on NFCorpus. The
+clusters vary slightly depending on the measure, as do the scores. Models tend to be most similar to models from their own
+family. However, some inter-family clusters are visible as well.
+two larger datasets FiQA-2018 and TREC-COVID, the similarity
+scores are generally substantially lower, as can be seen in Figure
+6. For the smaller datasets, Jaccard similarity is generally higher,
+though results differ depending on the data (see Figures 4 and 5).
+Similar observations can be made for rank similarity, although the
+appearance of family clusters is more dependent on the dataset.
+Larger datasets also lead to lower scores. These results illustrate
+that while family clusters can still be perceived at small 𝑘, they are
+not as prominent as they are for larger 𝑘. Furthermore, the top-10
+retrieved results differ substantially for most models and datasets
+and their similarity might be dependent on the dataset itself.
+5.2 Open Source Alternatives to Proprietary
+Models
+We explicitly included proprietary models in our analysis to check
+which open source models are the best - which in our case means
+the most similar - alternative. The CKA scores in Figure 1 indicate
+that embeddings generated by OpenAI’s models (text-embedding-
+3-large/-small) are highly similar to those generated by Mistral,
+while the Cohere model (embed-english-v3.0) demonstrates high
+similarity to e5-large-v2.
+These observations do not entirely extend to retrieval similarity,
+especially for Cohere. While Mistral is still the most similar model
+to OpenAI’s for larger 𝑘across all datasets, there is no consistently
+most similar model for Cohere. Rather, the model varies depending
+on the dataset and measure - Jaccard and rank similarity - sometimes
+showing highest similarity to e5-large-v2, but sometimes also toother models like Mistral. Taking a closer look at top-10 similarity,
+Mistral still largely exhibits the highest similarity to the OpenAI
+models, especially to text-embedding-3-large. For text-embedding-
+3-small, scores on all datasets are rather close to those of other
+models. In absolute terms, however, retrieval similarity between
+Mistral and OpenAI models is only low to moderate. On smaller
+datasets, the highest Jaccard similarity to text-embedding-3-large
+only reaches about 0.6(see Figure 5), while on TREC-COVID, the
+largest dataset, Jaccard similarity goes down to merely 0.18(see
+Figure 6). For Cohere’s model, the most similar model for top-10
+Jaccard similarity is different for each dataset, with the highest
+scores of 0.51occurring on ArguAna shwon in Figure 5. For all
+proprietary models, even the best retrieval similarity at top-10
+still suggests that the embeddings that would be presented to an
+LLM can differ notably. Once again, we could also observe dataset-
+dependent variance in scores, with lower retrieval similarity on
+larger datasets.
+6 DISCUSSION
+While a pair-wise comparison of embeddings using CKA shows
+intra- and inter-family model clusters, retrieval similarity over dif-
+ferent𝑘offers a more nuanced picture. Especially for small 𝑘, which
+are of most interest from a practical perspective, retrieval similarity
+varies. When comparing the top-10 retrieved text chunks, the low
+Jaccard similarity scores indicate little overlap in retrieved chunks,
+even when CKA scores are high. Especially for the two larger
+datasets FiQA-2018 and TREC-COVID, these scores are extremely
+
+--- PAGE 7 ---
+Beyond Benchmarks: Evaluating Embedding Model Similarity for Retrieval Augmented Generation Systems
+SFR-Embedding-Mistral
+UAE-Large-V1
+bge-base-en-v1.5
+bge-large-en-v1.5
+bge-small-en-v1.5
+e5-base-v2
+e5-large-v2
+e5-small-v2
+embed-english-v3.0
+gte-base
+gte-large
+gte-small
+gtr-t5-base
+gtr-t5-large
+mxbai-embed-large-v1
+sentence-t5-base
+sentence-t5-large
+text-embedding-3-large
+text-embedding-3-smallSFR-Embedding-Mistral
+UAE-Large-V1
+bge-base-en-v1.5
+bge-large-en-v1.5
+bge-small-en-v1.5
+e5-base-v2
+e5-large-v2
+e5-small-v2
+embed-english-v3.0
+gte-base
+gte-large
+gte-small
+gtr-t5-base
+gtr-t5-large
+mxbai-embed-large-v1
+sentence-t5-base
+sentence-t5-large
+text-embedding-3-large
+text-embedding-3-small1.00 0.29 0.32 0.30 0.21 0.29 0.24 0.19 0.34 0.32 0.26 0.24 0.22 0.28 0.30 0.13 0.16 0.47 0.38
+0.29 1.00 0.36 0.59 0.23 0.27 0.23 0.19 0.35 0.35 0.36 0.28 0.18 0.21 0.76 0.12 0.14 0.31 0.29
+0.32 0.36 1.00 0.33 0.26 0.28 0.24 0.19 0.37 0.44 0.30 0.29 0.18 0.20 0.35 0.13 0.12 0.32 0.34
+0.30 0.59 0.33 1.00 0.24 0.23 0.22 0.16 0.35 0.35 0.31 0.25 0.18 0.20 0.59 0.10 0.13 0.30 0.30
+0.21 0.23 0.26 0.24 1.00 0.19 0.17 0.13 0.26 0.25 0.21 0.26 0.13 0.16 0.25 0.10 0.10 0.23 0.20
+0.29 0.27 0.28 0.23 0.19 1.00 0.34 0.24 0.34 0.27 0.26 0.25 0.18 0.23 0.27 0.12 0.14 0.29 0.32
+0.24 0.23 0.24 0.22 0.17 0.34 1.00 0.24 0.30 0.22 0.24 0.22 0.15 0.17 0.25 0.10 0.13 0.23 0.25
+0.19 0.19 0.19 0.16 0.13 0.24 0.24 1.00 0.19 0.17 0.18 0.16 0.13 0.14 0.19 0.10 0.10 0.22 0.21
+0.34 0.35 0.37 0.35 0.26 0.34 0.30 0.19 1.00 0.30 0.29 0.26 0.21 0.23 0.37 0.12 0.14 0.33 0.36
+0.32 0.35 0.44 0.35 0.25 0.27 0.22 0.17 0.30 1.00 0.43 0.38 0.16 0.21 0.37 0.12 0.14 0.33 0.33
+0.26 0.36 0.30 0.31 0.21 0.26 0.24 0.18 0.29 0.43 1.00 0.38 0.17 0.20 0.41 0.10 0.12 0.29 0.28
+0.24 0.28 0.29 0.25 0.26 0.25 0.22 0.16 0.26 0.38 0.38 1.00 0.17 0.19 0.32 0.09 0.11 0.25 0.23
+0.22 0.18 0.18 0.18 0.13 0.18 0.15 0.13 0.21 0.16 0.17 0.17 1.00 0.35 0.19 0.11 0.12 0.24 0.22
+0.28 0.21 0.20 0.20 0.16 0.23 0.17 0.14 0.23 0.21 0.20 0.19 0.35 1.00 0.23 0.10 0.14 0.28 0.25
+0.30 0.76 0.35 0.59 0.25 0.27 0.25 0.19 0.37 0.37 0.41 0.32 0.19 0.23 1.00 0.12 0.14 0.34 0.30
+0.13 0.12 0.13 0.10 0.10 0.12 0.10 0.10 0.12 0.12 0.10 0.09 0.11 0.10 0.12 1.00 0.25 0.14 0.13
+0.16 0.14 0.12 0.13 0.10 0.14 0.13 0.10 0.14 0.14 0.12 0.11 0.12 0.14 0.14 0.25 1.00 0.16 0.17
+0.47 0.31 0.32 0.30 0.23 0.29 0.23 0.22 0.33 0.33 0.29 0.25 0.24 0.28 0.34 0.14 0.16 1.00 0.44
+0.38 0.29 0.34 0.30 0.20 0.32 0.25 0.21 0.36 0.33 0.28 0.23 0.22 0.25 0.30 0.13 0.17 0.44 1.000.20.40.60.81.0
+(a)
+SFR-Embedding-Mistral
+UAE-Large-V1
+bge-base-en-v1.5
+bge-large-en-v1.5
+bge-small-en-v1.5
+e5-base-v2
+e5-large-v2
+e5-small-v2
+embed-english-v3.0
+gte-base
+gte-large
+gte-small
+gtr-t5-base
+gtr-t5-large
+mxbai-embed-large-v1
+sentence-t5-base
+sentence-t5-large
+text-embedding-3-large
+text-embedding-3-smallSFR-Embedding-Mistral
+UAE-Large-V1
+bge-base-en-v1.5
+bge-large-en-v1.5
+bge-small-en-v1.5
+e5-base-v2
+e5-large-v2
+e5-small-v2
+embed-english-v3.0
+gte-base
+gte-large
+gte-small
+gtr-t5-base
+gtr-t5-large
+mxbai-embed-large-v1
+sentence-t5-base
+sentence-t5-large
+text-embedding-3-large
+text-embedding-3-small1.00 0.45 0.47 0.43 0.39 0.47 0.52 0.50 0.44 0.43 0.42 0.36 0.49 0.52 0.44 0.50 0.49 0.61 0.55
+0.45 1.00 0.55 0.84 0.43 0.42 0.42 0.41 0.41 0.53 0.56 0.44 0.42 0.43 0.89 0.41 0.39 0.50 0.46
+0.47 0.55 1.00 0.52 0.51 0.47 0.45 0.49 0.46 0.59 0.50 0.46 0.46 0.49 0.56 0.51 0.51 0.56 0.53
+0.43 0.84 0.52 1.00 0.42 0.42 0.38 0.41 0.42 0.50 0.50 0.42 0.41 0.43 0.80 0.41 0.39 0.47 0.44
+0.39 0.43 0.51 0.42 1.00 0.42 0.38 0.43 0.41 0.50 0.48 0.63 0.41 0.42 0.45 0.51 0.43 0.46 0.45
+0.47 0.42 0.47 0.42 0.42 1.00 0.56 0.56 0.49 0.44 0.40 0.37 0.45 0.47 0.43 0.43 0.43 0.54 0.53
+0.52 0.42 0.45 0.38 0.38 0.56 1.00 0.54 0.49 0.39 0.39 0.34 0.48 0.50 0.40 0.42 0.47 0.53 0.54
+0.50 0.41 0.49 0.41 0.43 0.56 0.54 1.00 0.51 0.40 0.38 0.37 0.46 0.50 0.41 0.43 0.45 0.54 0.52
+0.44 0.41 0.46 0.42 0.41 0.49 0.49 0.51 1.00 0.39 0.35 0.36 0.45 0.43 0.41 0.38 0.37 0.48 0.49
+0.43 0.53 0.59 0.50 0.50 0.44 0.39 0.40 0.39 1.00 0.55 0.56 0.43 0.43 0.56 0.48 0.43 0.53 0.50
+0.42 0.56 0.50 0.50 0.48 0.40 0.39 0.38 0.35 0.55 1.00 0.54 0.40 0.40 0.57 0.44 0.45 0.48 0.47
+0.36 0.44 0.46 0.42 0.63 0.37 0.34 0.37 0.36 0.56 0.54 1.00 0.37 0.37 0.47 0.46 0.40 0.44 0.44
+0.49 0.42 0.46 0.41 0.41 0.45 0.48 0.46 0.45 0.43 0.40 0.37 1.00 0.63 0.43 0.47 0.49 0.51 0.50
+0.52 0.43 0.49 0.43 0.42 0.47 0.50 0.50 0.43 0.43 0.40 0.37 0.63 1.00 0.44 0.47 0.51 0.53 0.53
+0.44 0.89 0.56 0.80 0.45 0.43 0.40 0.41 0.41 0.56 0.57 0.47 0.43 0.44 1.00 0.44 0.42 0.50 0.47
+0.50 0.41 0.51 0.41 0.51 0.43 0.42 0.43 0.38 0.48 0.44 0.46 0.47 0.47 0.44 1.00 0.61 0.54 0.51
+0.49 0.39 0.51 0.39 0.43 0.43 0.47 0.45 0.37 0.43 0.45 0.40 0.49 0.51 0.42 0.61 1.00 0.55 0.53
+0.61 0.50 0.56 0.47 0.46 0.54 0.53 0.54 0.48 0.53 0.48 0.44 0.51 0.53 0.50 0.54 0.55 1.00 0.66
+0.55 0.46 0.53 0.44 0.45 0.53 0.54 0.52 0.49 0.50 0.47 0.44 0.50 0.53 0.47 0.51 0.53 0.66 1.000.40.50.60.70.80.91.0
+ (b)
+Figure 5: Jaccard similarity for the top-10 retrieved text chunks averaged over 25 queries on SciFact (a) and ArguAna (b). The
+UAE and mxbai models show high levels of similarity along with bge-large. The remaining models tend to show the highest
+similarity within their own family with the exception of the bge/gte inter-family cluster.
+low. As RAG systems usually operate on millions of embeddings,
+our datasets are comparatively small. Therefore, should a general
+trend of larger datasets leading to lower retrieval similarity exist,
+text chunks retrieved by different models in a regular use case might
+be nearly distinct for small 𝑘. Overall, our results suggest that even
+though embeddings seem rather similar when compared directly,
+retrieval performance can still vary substantially, is most unsta-
+ble for𝑘values that are commonly used in RAG systems and also
+dataset-dependent. Retrieved text chunks at small 𝑘show the least
+overlap, often leading to high differences in the data that would be
+presented to an LLM as additional context.
+Our analysis demonstrates that although models tend to be most
+similar to models from their own family, inter-family clusters exist.
+The most prominent of these clusters is formed by the models bge-
+large-en-v1.5, UAE-Large-V1 and mxbai-embed-large-v1, which
+demonstrate high similarity even for retrieval at low 𝑘. Never-
+theless, the high variance of retrieval similarity of the remaining
+clusters for small 𝑘means that while the identified clusters might
+provide some measure of orientation when choosing an embedding
+model, the choice still remains a non-trivial task. Identifying suit-
+able alternatives to proprietary models is likewise not as simple.
+While we were able to determine SFR-Embedding-Mistral as the
+model being most similar to OpenAI’s embedding models, Jaccard
+similarity at top-10 for larger datasets shows a low overlap in re-
+trieved text chunks. Furthermore, for Cohere’s embedding model,
+we were unable to find a single most similar model, as this model
+varied across datasets for small 𝑘values.7 CONCLUSION
+In this paper we evaluated the similarity of embedding models on
+different datasets. Given the large number of available models, iden-
+tifying clusters or families of models with similar embeddings can
+simplify the model selection process. While previous work on LLM
+similarity exists, to the best of the authors’ knowledge, it so far
+lacks a clear focus on embedding models specifically in the context
+of RAG. We therefore analyzed the similarity of embeddings gener-
+ated by 19 different models using CKA for pairwise comparison as
+well as Jaccard and rank similarity to compare retrieval behavior
+at top-𝑘across five datasets. Comparing embeddings with CKA
+generally showed intra- and inter-family clusters across datasets.
+These clusters also appeared when evaluating top- 𝑘retrieval simi-
+larity with large 𝑘values. However, scores for low 𝑘values, which
+would commonly be chosen in RAG systems, show high variance
+and much lower similarity, especially on larger datasets. Although
+we were able to identify some model clusters, our results suggest
+that choosing the optimal model remains a non-trivial task that
+requires careful consideration.
+Still, we argue that a better understanding of how similarly dif-
+ferent embedding models behave is an important research topic
+that requires further attention. There are a plethora of real-world
+scenarios where RAG systems can potentially be deployed. One
+such scenario, for example, is to retrieve relevant web content in re-
+sponse to a query. As large corpora of such data are available in the
+form of Web ARChive (WARC) files, evaluating embedding model
+similarity on such large, uncleaned datasets would perhaps lead to
+a better estimation of model similarity for a realistic RAG use case.
+
+--- PAGE 8 ---
+Caspari et al.
+SFR-Embedding-Mistral
+UAE-Large-V1
+bge-base-en-v1.5
+bge-large-en-v1.5
+bge-small-en-v1.5
+e5-base-v2
+e5-large-v2
+e5-small-v2
+gte-base
+gte-large
+gte-small
+gtr-t5-base
+gtr-t5-large
+mxbai-embed-large-v1
+sentence-t5-base
+sentence-t5-large
+text-embedding-3-large
+text-embedding-3-smallSFR-Embedding-Mistral
+UAE-Large-V1
+bge-base-en-v1.5
+bge-large-en-v1.5
+bge-small-en-v1.5
+e5-base-v2
+e5-large-v2
+e5-small-v2
+gte-base
+gte-large
+gte-small
+gtr-t5-base
+gtr-t5-large
+mxbai-embed-large-v1
+sentence-t5-base
+sentence-t5-large
+text-embedding-3-large
+text-embedding-3-small1.00 0.11 0.11 0.12 0.09 0.13 0.13 0.10 0.14 0.12 0.12 0.12 0.15 0.12 0.11 0.11 0.25 0.18
+0.11 1.00 0.20 0.52 0.16 0.12 0.11 0.10 0.21 0.35 0.22 0.12 0.11 0.64 0.13 0.09 0.15 0.17
+0.11 0.20 1.00 0.17 0.19 0.13 0.11 0.09 0.26 0.20 0.16 0.10 0.10 0.20 0.11 0.07 0.11 0.14
+0.12 0.52 0.17 1.00 0.12 0.13 0.10 0.09 0.19 0.28 0.17 0.12 0.11 0.49 0.12 0.10 0.15 0.17
+0.09 0.16 0.19 0.12 1.00 0.10 0.10 0.11 0.14 0.14 0.24 0.11 0.10 0.15 0.08 0.06 0.10 0.10
+0.13 0.12 0.13 0.13 0.10 1.00 0.19 0.18 0.15 0.13 0.13 0.10 0.10 0.13 0.09 0.08 0.14 0.15
+0.13 0.11 0.11 0.10 0.10 0.19 1.00 0.16 0.10 0.09 0.09 0.10 0.11 0.10 0.08 0.06 0.11 0.13
+0.10 0.10 0.09 0.09 0.11 0.18 0.16 1.00 0.07 0.08 0.09 0.07 0.08 0.09 0.07 0.07 0.07 0.08
+0.14 0.21 0.26 0.19 0.14 0.15 0.10 0.07 1.00 0.29 0.24 0.12 0.11 0.25 0.12 0.10 0.15 0.18
+0.12 0.35 0.20 0.28 0.14 0.13 0.09 0.08 0.29 1.00 0.27 0.12 0.10 0.40 0.14 0.10 0.17 0.19
+0.12 0.22 0.16 0.17 0.24 0.13 0.09 0.09 0.24 0.27 1.00 0.10 0.10 0.24 0.12 0.08 0.16 0.17
+0.12 0.12 0.10 0.12 0.11 0.10 0.10 0.07 0.12 0.12 0.10 1.00 0.27 0.12 0.16 0.12 0.14 0.14
+0.15 0.11 0.10 0.11 0.10 0.10 0.11 0.08 0.11 0.10 0.10 0.27 1.00 0.13 0.13 0.14 0.16 0.15
+0.12 0.64 0.20 0.49 0.15 0.13 0.10 0.09 0.25 0.40 0.24 0.12 0.13 1.00 0.15 0.12 0.16 0.18
+0.11 0.13 0.11 0.12 0.08 0.09 0.08 0.07 0.12 0.14 0.12 0.16 0.13 0.15 1.00 0.21 0.13 0.13
+0.11 0.09 0.07 0.10 0.06 0.08 0.06 0.07 0.10 0.10 0.08 0.12 0.14 0.12 0.21 1.00 0.11 0.12
+0.25 0.15 0.11 0.15 0.10 0.14 0.11 0.07 0.15 0.17 0.16 0.14 0.16 0.16 0.13 0.11 1.00 0.31
+0.18 0.17 0.14 0.17 0.10 0.15 0.13 0.08 0.18 0.19 0.17 0.14 0.15 0.18 0.13 0.12 0.31 1.000.20.40.60.81.0
+(a)
+SFR-Embedding-Mistral
+UAE-Large-V1
+bge-base-en-v1.5
+bge-large-en-v1.5
+bge-small-en-v1.5
+e5-base-v2
+e5-large-v2
+e5-small-v2
+gte-base
+gte-large
+gte-small
+gtr-t5-base
+gtr-t5-large
+mxbai-embed-large-v1
+sentence-t5-base
+sentence-t5-large
+text-embedding-3-large
+text-embedding-3-smallSFR-Embedding-Mistral
+UAE-Large-V1
+bge-base-en-v1.5
+bge-large-en-v1.5
+bge-small-en-v1.5
+e5-base-v2
+e5-large-v2
+e5-small-v2
+gte-base
+gte-large
+gte-small
+gtr-t5-base
+gtr-t5-large
+mxbai-embed-large-v1
+sentence-t5-base
+sentence-t5-large
+text-embedding-3-large
+text-embedding-3-small1.00 0.08 0.12 0.10 0.08 0.12 0.06 0.04 0.09 0.07 0.08 0.09 0.11 0.08 0.05 0.05 0.18 0.18
+0.08 1.00 0.23 0.54 0.25 0.11 0.07 0.04 0.13 0.21 0.14 0.12 0.11 0.71 0.10 0.08 0.09 0.10
+0.12 0.23 1.00 0.18 0.20 0.14 0.08 0.05 0.24 0.19 0.16 0.09 0.11 0.24 0.11 0.10 0.12 0.15
+0.10 0.54 0.18 1.00 0.21 0.10 0.06 0.03 0.12 0.14 0.12 0.13 0.13 0.51 0.09 0.07 0.09 0.11
+0.08 0.25 0.20 0.21 1.00 0.11 0.09 0.05 0.12 0.18 0.20 0.11 0.09 0.23 0.09 0.05 0.09 0.09
+0.12 0.11 0.14 0.10 0.11 1.00 0.22 0.16 0.09 0.12 0.11 0.09 0.10 0.12 0.08 0.05 0.13 0.15
+0.06 0.07 0.08 0.06 0.09 0.22 1.00 0.22 0.04 0.08 0.07 0.04 0.05 0.07 0.05 0.03 0.07 0.06
+0.04 0.04 0.05 0.03 0.05 0.16 0.22 1.00 0.02 0.05 0.05 0.04 0.04 0.05 0.05 0.03 0.04 0.05
+0.09 0.13 0.24 0.12 0.12 0.09 0.04 0.02 1.00 0.23 0.21 0.08 0.08 0.15 0.09 0.05 0.12 0.17
+0.07 0.21 0.19 0.14 0.18 0.12 0.08 0.05 0.23 1.00 0.28 0.07 0.07 0.23 0.10 0.06 0.12 0.13
+0.08 0.14 0.16 0.12 0.20 0.11 0.07 0.05 0.21 0.28 1.00 0.07 0.08 0.17 0.10 0.07 0.11 0.12
+0.09 0.12 0.09 0.13 0.11 0.09 0.04 0.04 0.08 0.07 0.07 1.00 0.26 0.13 0.10 0.09 0.09 0.10
+0.11 0.11 0.11 0.13 0.09 0.10 0.05 0.04 0.08 0.07 0.08 0.26 1.00 0.12 0.08 0.08 0.10 0.14
+0.08 0.71 0.24 0.51 0.23 0.12 0.07 0.05 0.15 0.23 0.17 0.13 0.12 1.00 0.12 0.09 0.09 0.11
+0.05 0.10 0.11 0.09 0.09 0.08 0.05 0.05 0.09 0.10 0.10 0.10 0.08 0.12 1.00 0.23 0.07 0.07
+0.05 0.08 0.10 0.07 0.05 0.05 0.03 0.03 0.05 0.06 0.07 0.09 0.08 0.09 0.23 1.00 0.06 0.07
+0.18 0.09 0.12 0.09 0.09 0.13 0.07 0.04 0.12 0.12 0.11 0.09 0.10 0.09 0.07 0.06 1.00 0.29
+0.18 0.10 0.15 0.11 0.09 0.15 0.06 0.05 0.17 0.13 0.12 0.10 0.14 0.11 0.07 0.07 0.29 1.000.20.40.60.81.0
+ (b)
+Figure 6: Jaccard similarity for the top-10 retrieved text chunks averaged over 25 queries on FiQA-2018 (a) and TREC-COVID
+(b). Most models seem to retrieve almost completely distinct text chunks. Only the bge/UAE/mxbai cluster still shows a notable
+level of similarity, while the scores of the remaining clusters indicate only moderate to low levels of similarity.
+Additionally, as documents often need to be chunked into smaller
+parts to fit into the models, the effect of chunking strategies such as
+token-based or semantic chunking on embedding similarity could
+be explored. Furthermore, our evaluation focused on a small sample
+of similarity measures, with their own definition about which crite-
+ria make models similar. Introducing more measures with different
+perspectives could improve our understanding on which factors
+influence model similarity. Finally, our focus was on identifying
+clusters or families of models, which for our initial experiments led
+us to choosing families of embedding models with varying perfor-
+mance on MTEB. With the frequent appearance of new models on
+the leaderboard and the focus on good MTEB performance, it would
+be of interest to compare the best performing models on MTEB
+and check if their relative difference in performance correlates with
+how similar these models are.
+ACKNOWLEDGMENTS
+This work has received funding from the European Union’s Hori-
+zon Europe research and innovation program under grant agree-
+ment No 101070014 (OpenWebSearch.EU, https://doi.org/10.3030/
+101070014).
+REFERENCES
+[1]András Balogh and Márk Jelasity. 2023. On the Functional Similarity of Ro-
+bust and Non-Robust Neural Representations. In Proceedings of the 40th In-
+ternational Conference on Machine Learning (Proceedings of Machine Learning
+Research, Vol. 202) , Andreas Krause, Emma Brunskill, Kyunghyun Cho, Bar-
+bara Engelhardt, Sivan Sabato, and Jonathan Scarlett (Eds.). PMLR, 1614–1635.
+https://proceedings.mlr.press/v202/balogh23a.html[2]Yamini Bansal, Preetum Nakkiran, and Boaz Barak. 2021. Revisiting
+Model Stitching to Compare Neural Representations. In Advances in Neu-
+ral Information Processing Systems , M. Ranzato, A. Beygelzimer, Y. Dauphin,
+P.S. Liang, and J. Wortman Vaughan (Eds.), Vol. 34. Curran Associates,
+Inc., 225–236. https://proceedings.neurips.cc/paper_files/paper/2021/file/
+01ded4259d101feb739b06c399e9cd9c-Paper.pdf
+[3] Davis Brown, Charles Godfrey, Nicholas Konz, Jonathan Tu, and Henry Kvinge.
+2023. Understanding the Inner Workings of Language Models Through Repre-
+sentation Dissimilarity. arXiv:2310.14993 [cs.LG]
+[4]Wei Chen, Zichen Miao, and Qiang Qiu. 2024. Inner Product-based Neural
+Network Similarity. Advances in Neural Information Processing Systems 36 (2024).
+[5] Cohere. 2024. Embeddings - Text Embeddings with Advanced Language Models.
+Cohere Homepage. https://cohere.com/embeddings
+[6] Frances Ding, Jean-Stanislas Denain, and Jacob Steinhardt. 2021. Grounding rep-
+resentation similarity through statistical testing. Advances in Neural Information
+Processing Systems 34 (2021), 1556–1568.
+[7]Shahul Es, Jithin James, Luis Espinosa-Anke, and Steven Schockaert.
+2023. RAGAS: Automated Evaluation of Retrieval Augmented Generation.
+arXiv:2309.15217 [cs.CL]
+[8] Paulo Finardi, Leonardo Avila, Rodrigo Castaldoni, Pedro Gengo, Celio Larcher,
+Marcos Piau, Pablo Costa, and Vinicius Caridá. 2024. The Chronicles of RAG:
+The Retriever, the Chunk and the Generator. arXiv:2401.07883 [cs.LG]
+[9] Matthew Freestone and Shubhra Kanti Karmaker Santu. 2024. Word Embeddings
+Revisited: Do LLMs Offer Something New? arXiv:2402.11094 [cs.CL]
+[10] Arthur Gretton, Olivier Bousquet, Alex Smola, and Bernhard Schölkopf. 2005.
+Measuring Statistical Dependence with Hilbert-Schmidt Norms. In Algorith-
+mic Learning Theory , Sanjay Jain, Hans Ulrich Simon, and Etsuji Tomita (Eds.).
+Springer Berlin Heidelberg, Berlin, Heidelberg, 63–77.
+[11] David R Hardoon, Sandor Szedmak, and John Shawe-Taylor. 2004. Canonical
+correlation analysis: An overview with application to learning methods. Neural
+computation 16, 12 (2004), 2639–2664.
+[12] Chroma Inc. 2024. Chroma. Chroma Homepage. https://docs.trychroma.com/
+[13] Ziwei Ji, Nayeon Lee, Rita Frieske, Tiezheng Yu, Dan Su, Yan Xu, Etsuko Ishii,
+Ye Jin Bang, Andrea Madotto, and Pascale Fung. 2023. Survey of hallucination in
+natural language generation. Comput. Surveys 55, 12 (2023), 1–38.
+[14] Max Klabunde, Mehdi Ben Amor, Michael Granitzer, and Florian Lemmerich.
+2023. Towards Measuring Representational Similarity of Large Language Models.
+arXiv preprint arXiv:2312.02730 (2023).
+
+--- PAGE 9 ---
+Beyond Benchmarks: Evaluating Embedding Model Similarity for Retrieval Augmented Generation Systems
+[15] Max Klabunde, Tobias Schumacher, Markus Strohmaier, and Florian Lemmerich.
+2023. Similarity of neural network models: A survey of functional and represen-
+tational measures. arXiv preprint arXiv:2305.06329 (2023).
+[16] Simon Kornblith, Mohammad Norouzi, Honglak Lee, and Geoffrey Hinton. 2019.
+Similarity of Neural Network Representations Revisited. In Proceedings of the 36th
+International Conference on Machine Learning (Proceedings of Machine Learning
+Research, Vol. 97) , Kamalika Chaudhuri and Ruslan Salakhutdinov (Eds.). PMLR,
+3519–3529. https://proceedings.mlr.press/v97/kornblith19a.html
+[17] Sean Lee, Amir Shakir, Darius Koenig, and Julius Lipp. 2024. Open Source Strikes
+Bread - New Fluffy Embeddings Model . https://www.mixedbread.ai/blog/mxbai-
+embed-large-v1
+[18] Karel Lenc and Andrea Vedaldi. 2015. Understanding image representations
+by measuring their equivariance and equivalence. In Proceedings of the IEEE
+conference on computer vision and pattern recognition . 991–999.
+[19] Xianming Li and Jing Li. 2023. AnglE-optimized Text Embeddings. arXiv preprint
+arXiv:2309.12871 (2023).
+[20] Yixuan Li, Jason Yosinski, Jeff Clune, Hod Lipson, and John Hopcroft. 2015. Con-
+vergent Learning: Do different neural networks learn the same representations?.
+InProceedings of the 1st International Workshop on Feature Extraction: Modern
+Questions and Challenges at NIPS 2015 (Proceedings of Machine Learning Research,
+Vol. 44) , Dmitry Storcheus, Afshin Rostamizadeh, and Sanjiv Kumar (Eds.). PMLR,
+Montreal, Canada, 196–212. https://proceedings.mlr.press/v44/li15convergent.
+html
+[21] Yixuan Li, Jason Yosinski, Jeff Clune, Hod Lipson, and John Hopcroft. 2016. Con-
+vergent Learning: Do different neural networks learn the same representations?
+arXiv:1511.07543 [cs.LG]
+[22] Yuanchun Li, Ziqi Zhang, Bingyan Liu, Ziyue Yang, and Yunxin Liu. 2021. Mod-
+elDiff: testing-based DNN similarity comparison for model reuse detection. In
+Proceedings of the 30th ACM SIGSOFT International Symposium on Software Testing
+and Analysis (ISSTA ’21) . ACM. https://doi.org/10.1145/3460319.3464816
+[23] Zehan Li, Xin Zhang, Yanzhao Zhang, Dingkun Long, Pengjun Xie, and Meishan
+Zhang. 2023. Towards general text embeddings with multi-stage contrastive
+learning. arXiv preprint arXiv:2308.03281 (2023).
+[24] Rui Meng, Ye Liu, Shafiq Rayhan Joty, Caiming Xiong, Yinbo Zhou, and Semih
+Yavuz. 2024. SFR-Embedding-Mistral:Enhance Text Retrieval with Transfer
+Learning. Salesforce AI Research Blog. https://blog.salesforceairesearch.com/sfr-
+embedded-mistral/
+[25] Mahdi Milani Fard, Quentin Cormier, Kevin Canini, and Maya Gupta. 2016.
+Launch and iterate: Reducing prediction churn. Advances in Neural Information
+Processing Systems 29 (2016).
+[26] Ari Morcos, Maithra Raghu, and Samy Bengio. 2018. Insights on representational
+similarity in neural networks with canonical correlation. Advances in neural
+information processing systems 31 (2018).
+[27] Seyed Mahed Mousavi, Simone Alghisi, and Giuseppe Riccardi. 2024. Is Your LLM
+Outdated? Benchmarking LLMs & Alignment Algorithms for Time-Sensitive
+Knowledge. arXiv:2404.08700 [cs.CL]
+[28] Niklas Muennighoff, Nouamane Tazi, Loïc Magne, and Nils Reimers. 2023. MTEB:
+Massive Text Embedding Benchmark. arXiv:2210.07316 [cs.CL]
+[29] Jianmo Ni, Chen Qu, Jing Lu, Zhuyun Dai, Gustavo Hernández Ábrego, Ji Ma,
+Vincent Y. Zhao, Yi Luan, Keith B. Hall, Ming-Wei Chang, and Yinfei Yang. 2021.
+Large Dual Encoders Are Generalizable Retrievers. arXiv:2112.07899 [cs.IR]
+[30] Jianmo Ni, Gustavo Hernández Ábrego, Noah Constant, Ji Ma, Keith B. Hall,
+Daniel Cer, and Yinfei Yang. 2021. Sentence-T5: Scalable Sentence Encoders from
+Pre-trained Text-to-Text Models. arXiv:2108.08877 [cs.CL]
+[31] OpenAI. 2024. New embedding models with lower pricing. OpenAI Blog. https:
+//openai.com/blog/new-embedding-models-and-api-updates
+[32] F. Pedregosa, G. Varoquaux, A. Gramfort, V. Michel, B. Thirion, O. Grisel, M.
+Blondel, P. Prettenhofer, R. Weiss, V. Dubourg, J. Vanderplas, A. Passos, D. Cour-
+napeau, M. Brucher, M. Perrot, and E. Duchesnay. 2011. Scikit-learn: Machine
+Learning in Python. Journal of Machine Learning Research 12 (2011), 2825–2830.
+[33] Maithra Raghu, Justin Gilmer, Jason Yosinski, and Jascha Sohl-Dickstein. 2017.
+Svcca: Singular vector canonical correlation analysis for deep learning dynamics
+and interpretability. Advances in neural information processing systems 30 (2017).
+[34] Kunal Sawarkar, Abhilasha Mangal, and Shivam Raj Solanki. 2024. Blended RAG:
+Improving RAG (Retriever-Augmented Generation) Accuracy with Semantic
+Search and Hybrid Query-Based Retrievers. arXiv:2404.07220 [cs.IR]
+[35] Nandan Thakur, Nils Reimers, Andreas Rücklé, Abhishek Srivastava, and Iryna
+Gurevych. 2021. BEIR: A Heterogenous Benchmark for Zero-shot Evaluation of
+Information Retrieval Models. arXiv:2104.08663 [cs.IR]
+[36] Chenxu Wang, Wei Rao, Wenna Guo, Pinghui Wang, Jun Liu, and Xiaohong
+Guan. 2022. Towards Understanding the Instability of Network Embedding.
+IEEE Transactions on Knowledge and Data Engineering 34, 2 (2022), 927–941.
+https://doi.org/10.1109/TKDE.2020.2989512
+[37] Liang Wang, Nan Yang, Xiaolong Huang, Binxing Jiao, Linjun Yang, Daxin Jiang,
+Rangan Majumder, and Furu Wei. 2022. Text Embeddings by Weakly-Supervised
+Contrastive Pre-training. arXiv preprint arXiv:2212.03533 (2022).[38] Michael L. Waskom. 2021. seaborn: statistical data visualization. Journal of Open
+Source Software 6, 60 (2021), 3021. https://doi.org/10.21105/joss.03021
+[39] John M. Wu, Yonatan Belinkov, Hassan Sajjad, Nadir Durrani, Fahim Dalvi,
+and James Glass. 2020. Similarity Analysis of Contextual Word Representation
+Models. arXiv:2005.01172 [cs.CL]
+[40] Shitao Xiao, Zheng Liu, Peitian Zhang, and Niklas Muennighoff. 2023.
+C-Pack: Packaged Resources To Advance General Chinese Embedding.
+arXiv:2309.07597 [cs.CL]
+[41] Xiaofei Xie, Lei Ma, Haijun Wang, Yuekang Li, Yang Liu, and Xiaohong Li. 2019.
+Diffchaser: Detecting disagreements for deep neural networks. International
+Joint Conferences on Artificial Intelligence Organization.
+[42] Marco Zullich, Felice Pellegrino, Eric Medvet, Alessio Ansuini, et al .2020. On
+the similarity between hidden layers of pruned and unpruned convolutional
+neural networks. In Proceedings of the 9th International Conference on Pattern
+Recognition Applications and Methods . Scitepress, 52–59.

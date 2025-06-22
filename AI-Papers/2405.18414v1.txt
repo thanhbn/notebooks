@@ -1,0 +1,961 @@
+# 2405.18414v1.pdf
+# Converted from PDF to TXT
+# Source path: D:\llm\notebooks\AI-Papers\2405.18414v1.pdf
+# File size: 1142668 bytes
+
+===============================================
+PDF FILE CONTENT
+===============================================
+
+
+--- PAGE 1 ---
+Don’t Forget to Connect!
+Improving RAG with Graph-based Reranking
+Jialin Dong
+UCLABahare Fatemi
+Google ResearchBryan Perozzi
+Google ResearchLin F. Yang
+UCLAAnton Tsitsulin
+Google Research
+Abstract
+Retrieval Augmented Generation (RAG) has greatly improved the performance of
+Large Language Model (LLM) responses by grounding generation with context
+from existing documents. These systems work well when documents are clearly
+relevant to a question context. But what about when a document has partial
+information, or less obvious connections to the context? And how should we reason
+about connections between documents? In this work, we seek to answer these two
+core questions about RAG generation. We introduce G-RAG, a reranker based
+on graph neural networks (GNNs) between the retriever and reader in RAG. Our
+method combines both connections between documents and semantic information
+(via Abstract Meaning Representation graphs) to provide a context-informed ranker
+for RAG. G-RAG outperforms state-of-the-art approaches while having smaller
+computational footprint. Additionally, we assess the performance of PaLM 2 as a
+reranker and find it to significantly underperform G-RAG. This result emphasizes
+the importance of reranking for RAG even when using Large Language Models.
+1 Introduction
+Retrieval Augmented Generation (RAG) [ 35] has brought improvements to many problems in text
+generation. One example is Open-Domain Question Answering (ODQA) [ 40] which involves
+answering natural language questions without limiting the domain of the answers. RAG merges
+the retrieval and answering processes, which improves the ability to effectively collect knowledge,
+extract useful information, and generate answers. Even though it is successful in fetching relevant
+documents, RAG is not able to utilize connections between documents. In the ODQA setting, this
+leads to the model disregarding documents containing answers, a.k.a. positive documents , with less
+apparent connections to the question context. We can identify these documents if we connect them
+with positive documents whose context is strongly relevant to the question context.
+To find connections between documents and select highly relevant ones, the reranking process plays
+a vital role in further effectively filtering retrieved documents. A robust reranker also benefits the
+reading process by effectively identifying positive documents and elevating them to prominent ranking
+positions. When the reader’s output perfectly matches one of the gold standard answers, it leads
+to an increase in exact-match performance metrics. Given our paper’s emphasis on the reranking
+aspect, our performance metrics primarily focus on ranking tasks, specifically Mean Tied Reciprocal
+Ranking and MHits@10. Thus, our paper focuses on using reranking to improve RAG – as it is a
+fundamental bridge between the retrieval and reading processes.
+Pre-trained langauge models (LMs) like BERT [ 6], RoBERTa [ 23], and BART [ 19] have been widely
+used to enhance reranking performance by estimating the relevant score between questions and
+documents. Recently, the Abstract Meaning Representation (AMR) graph has been integrated with
+a LM to enhance the system’s ability to comprehend complex semantics [ 42]. While the current
+rerankers exhibit admirable performance, certain limitations persist.
+Preprint. Under review.arXiv:2405.18414v1  [cs.CL]  28 May 2024
+
+--- PAGE 2 ---
+………
+…………
+…Q&PAMRs
+findconnectionsestablishGNNDocumentGraphReranker
+…Figure 1: G-RAG uses two graphs for re-ranking documents: The Abstract Meaning Representation
+(AMR) graph is used as features for the document-level graph. Document graph is then used for
+document reranking.
+Firstly, as mentioned above, most of the current works fail to capture important connections between
+different retrieved documents. Some recent work [ 46] tries to incorporate external knowledge graphs
+to improve the performance of the reading process in RAG but at the cost of significant memory
+usage for knowledge graph storage. The connection between documents has not been considered
+in the reranking process yet. Secondly, even though the AMR graph improves the understanding of
+the complex semantics, state-of-the-art [ 42] work integrates redundant AMR information into the
+pre-trained language models. This extra information can cause potential overfitting, in addition to
+increases of in computational time and GPU cost. Thirdly, current papers utilize common pre-trained
+language models as rerankers which are insufficient given the fast pace of LLM development. With
+the recent breakthroughs from LLM, researchers are curious about how LLMs without perform
+(without fine-tuning) on the reranking task.
+To address these challenges and limitations, we propose a method based on document graphs, where
+each node represents a document, and each edge represents that there are common concepts between
+two documents. We incorporate the connection information between different documents into the
+edge features and update the edge features through the message-passing mechanism. For node
+features, even though we aim to add AMR information to compose a richer understanding of complex
+semantics, we won’t overwhelmingly add all AMR-related tokens as node-level features. Instead, we
+investigate the determining factor that facilitates the reranker to identify more relevant documents
+and encode this key factor to node features.
+Moreover, instead of using the cross-entropy loss function during the training, we apply pairwise
+ranking loss in consideration of the essential aim of ranking. We also investigate the performance
+of a publicly available LLM, i.e., PaLM 2 [ 9] with different versions, as a reranker on an ODQA.
+According to the moderate performance of PaLM 2 on reranking tasks, we provide several potential
+reasons and emphasize the irreplaceable role of reranker model design to improve RAG. The frame-
+work of graph-based reranking in the proposed G-RAG is illustrated in Fig 1.To provide a clearer
+illustration of our method’s pipeline, please refer to Fig 4 in the Appendix.
+Our contributions can be summarized as follows:
+1.To improve RAG for ODQA, we propose a document-graph-based reranker that leverages
+connections between different documents. When the documents share similar information
+with their neighbor nodes, it helps the reranker to successfully identify the documents
+containing answer context that is only weakly connected to the question.
+2.We introduce new metrics to assess a wide range of ranking scenarios, including those
+with tied ranking scores. The metrics effectively evaluate this scenario by diminishing the
+optimistic effect brought by tied rankings. Based on these metrics, our proposed method
+outperforms state-of-the-art and requires fewer computational resources.
+3.We assess the performance of a publicly available LLM (PaLM 2 [ 9]) as a reranker, exploring
+variations across different model sizes. We find that excessive ties within the generated
+ranking scores hinder the effectiveness of pre-trained large language models in improving
+RAG through reranking.
+2
+
+--- PAGE 3 ---
+2 Related Work
+RAG in ODQA. RAG [ 20,35] combines information retrieval (via Dense Passage Retrieval, DPR
+[16]) and a reading process in a differentiable manner for ODQA. A line of literature focuses on
+developing rerankers for further improving RAG. Approaches like monoT5 [ 30] and monoELECTRA
+[34] use proposed pre-trained models. Moreover, Zhuang et al. [47] propose a fine-tuned T5 version
+as a reranker. More recently, Park et al. [33] develop a reranker module by fine-tuning the reader’s
+neural networks through a prompting method. However, the above approaches neglect to investigate
+the connections among documents and fail to leverage this information during the reranking process.
+These methods are prone to fail to identify the documents containing gold answers that may not
+exhibit obvious connections to the question context. To address this issue, our proposed method
+is based on document graphs and is more likely to identify valuable information contained in a
+document if most of its neighboring document nodes in the graph share similar information.
+Graphs in ODQA. Knowledge graphs, which represent entities and their relations, have been
+leveraged in ODQA [ 46,15,1,5] to improve the performance of RAG. However, KG-based methods
+require large external knowledge bases and entity mapping from documents to the entities in the
+knowledge graph, which would increase the memory cost. Our proposed method does not depend on
+external knowledge graphs. While recent work by Wang et al. [42] uses AMR graphs generated from
+questions and documents to construct embeddings, their focus remains on text-level relations within
+single document. In contrast, our approach uniquely leverages document graphs to characterize
+cross-document connections, a novel application within the RAG reranking process.
+Abstract Meaning Representation (AMR). AMR [ 4] serves as a promising tool for representing
+textual semantics through a rooted, directed graph. In the AMR graph, nodes represent basic semantic
+units like entities and concepts, while edges denote the connections between them. AMR graphs have
+more structured semantic information compared to the general form of natural language [ 2,29]. A
+line of literature has integrated AMR graphs into learning models. Recently, Wang et al. [42] have
+applied AMR to ODQA to deal with complex semantic information. Even though the performance
+of the reranker and the reader is improved in [ 42], their method also increases the computational
+time and GPU memory cost. This issue may arise by integrating all tokens of AMR nodes and edges
+without conscientiously selecting the key factors. To address this issue, our method aims to investigate
+the graph structure of AMR graphs and identify the key factors that improve the performance of the
+reranker.
+LLMs in Reranking. LLMs such as ChatGPT [ 31], PaLM 2 [ 9], LLaMA [ 38], and GPT4 [ 32], have
+proven to be capable of providing answers to a broad range of questions due to their vast knowledge
+repositories and chain-of-thought reasoning capability. With this breakthrough, researchers are
+seeking to explore potential improvements that LLMs can bring to improve RAG in ODQA, such as
+[12,26]. At the same time, several studies [ 41,37] have scrutinized the efficacy of LLMs in Question-
+Answering. Wang et al. [41] indicates the superiority of the DPR [ 16] + FiD [ 13] approach over LLM
+in ODQA. While some papers have demonstrated improvements in LLM reranking performance, it’s
+essential to note that these enhancements often involve additional techniques such as augmented query
+generation [ 36] or conditional ranking tasks [ 11], which may not directly align with our zero-shot
+setting. The recent paper [ 28] demonstrates that LLM is a good few-shot reranker and investigates
+different scenarios where zero-shot LLMs perform poorly. It also provides efforts to address these
+challenges by combining various techniques, such as employing smaller language models. Despite
+these investigations, the potential of LLMs without fine-tuning as rerankers to improve RAG remains
+unexplored, as existing studies often take pre-trained language models such as BERT [ 6], RoBERTa
+[23], and BART [19] in the reranker role.
+3 Proposed Method: G-RAG
+G-RAG leverages the rich structural and semantic information provided by the AMR graphs to
+enhance document reranking. Section 3.1 details how we use AMR graph information and build a
+graph structure among the retrieved documents. Section 3.2 outlines the design of our graph neural
+network architecture for reranking documents.
+3
+
+--- PAGE 4 ---
+3.1 Establishing Document Graphs via AMR
+In ODQA datasets we consider, one document is a text block of 100 words that come from the
+text corpus. For each question-document pair, we concatenate the question qand document pas
+“question:<question text><document text> ”and then exploit AMRBART [ 3] to parse the sequence
+into a singular AMR graph. The AMR graph for question qand document pis denoted as Gqp=
+{V, E}, where VandEare nodes and edges, respectively. Each node is a concept, and each edge
+is denoted as e= (s, r, d )where s, r, d represent the source node, relation, and the destination
+node, respectively. Our reranker aims to rank among the top 100 documents retrieved by DPR [ 16].
+Thus, given one question qand documents {p1,···, pn}withn= 100 , we establish the undirected
+document graph Gq={V,E}based on AMRs {Gqp1,···, Gqpn}. For each node vi∈ V, it
+corresponds to the document pi. For vi, vj∈ V,i̸=j, if the corresponding AMR GqpiandGqpj
+have common nodes, there will be an undirected edge between viandvj(with a slight abuse in
+notation) denoted as eij= (vi, vj)∈ E. We remove isolated nodes in Gq. In the following, we will
+construct the graph neural networks based on the document graphs to predict whether the document
+is relevant to the question. Please refer to Appendix A for AMR graph statistics, i.e., the number of
+nodes and edges in AMR graphs, of the common datasets in ODQA.
+3.2 Graph Neural Networks for Reranking
+Following Section 3.1, we construct a graph among the n= 100 retrieved documents denoted as
+Gqgiven the question q. We aim to exploit both the structural information and the AMR semantic
+information to rerank the retrieved documents. To integrate the semantic information of documents,
+the pre-trained language models such as BERT [ 6], and RoBERTa [ 23] are powerful tools to encode
+the document texts as node features in graph neural networks. Even though Wang et al. [42] integrate
+AMR information into LMs, it increases computational time and GPU memory usage. To address
+this, we proposed node and edge features for graph neural networks, which simultaneously exploit
+the structural and the semantic information of AMR but avoid adding redundant information.
+3.2.1 Generating Node Features
+Our framework applies a pre-trained language model to encode all the nretrieved documents in
+{p1, p2,···, pn}given a question q. The document embedding is denoted as ˜X∈Rn×dwhere dis
+the hidden dimension, and each row of ˜Xis given by
+˜xi= Encode( pi)fori∈ {1,2,···n}. (1)
+Since AMR brings more complex and useful semantic information, we intend to concatenate doc-
+ument text and corresponding AMR information as the input of the encoder. However, if we
+integrate all the information into the embedding process as the previous work [ 42] did, it would
+bring high computational costs and may lead to overfitting. To avoid this, we investigate the de-
+termining factor that facilitates the reranker to identify more relevant documents. By studying the
+structure of AMRs for different documents, we note that almost every AMR has the node “ques-
+tion”, where the word “question" is included in the input of the AMR parsing model, given by
+“question:<question text><document text> ”. Thus, we can find the single source shortest path start-
+ing from the node “question". When listing every path, the potential connection from the question to
+the answer becomes much clearer. By looking into the nodes covered in each path, both the structural
+and semantic information can be collected. The embedding enables us to utilize that information to
+identify the similarity between question and document context.
+To better illustrate the structure of the shortest path, we also conduct some experiments to show the
+statistic of the shortest path, see Fig 3 in Appendix. We study the shortest single source paths (SSSPs)
+starting from “question” in the AMR graphs of documents from the train set of Natural Question
+(NQ) [ 18] and TriviaQA (TQA)[ 14] dataset. The analysis shows that certain negative documents
+cannot establish adequate connections to the question context within their text. Moreover, negative
+documents encounter another extreme scenario where paths contain an abundance of information
+related to the question text but lack valuable information such as the gold answers. This unique
+pattern provides valuable insight that can be utilized during the encoding process to improve the
+reranker performance.
+4
+
+--- PAGE 5 ---
+Thus, the proposed document embedding is given by X∈Rn×dand each row of Xcan be given by,
+fori∈ {1,2,···n}:
+xi= Encode(concat( pi, ai)), (2)
+where aiis a sequence of words, representing the AMR information concerning the document pi.
+There are two steps to get the representation of ai: 1) Path Identification: Firstly, the shortest single
+source paths (SSSPs) are determined starting from the node labeled "question" in the AMR graph
+Gqpi. Each path identified should not be a subset of another. For instance, consider the following
+paths composed of node concepts: [‘question’, ‘cross’, ‘world-region’, ‘crucifix’, ‘number’, ‘be-
+located-at’, ‘country’, ‘Spain’], [‘question’, ‘cross’, ‘religion’, ‘Catholicism’, ‘belief’, ‘worship’]; 2)
+Node Concept Extraction: Subsequently, the node concepts along these identified paths are extracted
+to construct ai. In the example provided, aiis formed as follows: "question cross world-region
+crucifix number be-located-at country Spain religion Catholicism belief worship". X∈Rn×d(2)
+will be the initial node representation of graph neural networks.
+3.2.2 Edge Features
+Besides the node features, we also adequately leverage edge features associated with undirected
+edges in AMR {Gqp1,···, Gqpn}. Let ˆE∈Rn×n×ldenote the edge features of the graph. Then,
+ˆEij·∈Rlrepresents the l-dimensional feature vector of the edge between the node viand node vj
+i̸=j, and ˆEijkdenotes the k-th dimension of the edge feature in ˆEij·. In our framework, l= 2and
+ˆEis given by:
+
+
+ˆEij·= 0,no connection between GqpiandGqpj,
+ˆEij1=# common nodes between GqpiandGqpj,
+ˆEij2=# common edges between GqpiandGqpj.(3)
+We then normalize the edge feature ˆEto avoid the explosive scale of output node features when
+being multiplied by the edge feature in graph convolution operations. Thus, our derived feature E
+is normalized on the first and second dimension, respectively. Similar edge normalization has also
+been considered in the paper [ 8].E∈Rn×n×lwill be the initial edge representation of graph neural
+networks.
+3.2.3 Representation Update
+Based on the above initial node and edge representations, we arrive at updating representations in
+the graph neural networks. Given a document graph G(V,E)with|V|=n, the input feature of node
+v∈ V is denoted as x0
+v∈Rd, and the initial representation of the edge between node vanduis given
+bye0
+uv∈Rlwithl= 2. LetN(v)denote the neighbor nodes of the node v∈ V. The representation
+of node v∈ V at layer ℓcan be derived from a GNN model given by:
+xℓ
+v=g(xℓ−1
+v,[
+u∈N(v)f(xℓ−1
+u,eℓ−1
+uv)), (4)
+where f,Sandgare functions for computing feature, aggregating data, and updating node repre-
+sentations, respectively. Specifically, the function fapplies different dimensional edge features as
+weights to the node features, given by
+f(xℓ−1
+u,eℓ−1
+uv) =lX
+m=1eℓ−1
+uv(m)xℓ−1
+u. (5)
+We choose mean aggregator [ 17] as the operationS. The parameterized function gis a non-
+linear learnable function that aggregates the representation of the node and its neighbor nodes.
+Simultaneously, the representation of edge starting from v∈ V at layer ℓis given by:
+eℓ
+v·=g(eℓ−1
+v·,[
+u∈N(v)eℓ−1
+u·). (6)
+5
+
+--- PAGE 6 ---
+3.2.4 Reranking Score and Training Loss
+Given a question qand its document graph Gq={V,E}, we have the output node representations of
+GNN, i.e., xL
+v, where Lis the number of GNN layers. With the same encoder in (2), the question qis
+embedded as
+y= Encode( q). (7)
+The reranking score for each node vi∈ V corresponding the document piis calculated by
+si=y⊤xL
+vi, (8)
+fori= 1,···, nand|V|=n. The cross-entropy training loss of document ranking for the given
+question qis:
+Lq=−nX
+i=1yilog 
+exp(si)Pn
+j=1exp(sj)!
+(9)
+where yi= 1ifpiis the positive document, and 0for the negative document. The cross-entropy loss
+may fail to deal with the unbalanced data in ODQA where the number of negative documents is much
+greater than the number of positive documents. Besides the cross-entropy loss function, the pairwise
+loss function has been a powerful tool for ranking [ 21]. Given a pair of scores siandsj, the ranking
+loss is given by :
+RLq(si, sj, r) = max (0 ,−r(si−sj) + 1) , (10)
+where r= 1if document ishould be ranked higher than document j, and vice-versa for r=−1. We
+conduct experiments based on both loss functions and emphasize the advantage of the ranking loss
+(10) over the cross-entropy loss (9).
+4 Experiments
+4.1 Setting
+Datasets. We conduct experiments on two representative ODQA datasets Natural Ques-
+tions (NQ) [ 18] and and TriviaQA (TQA) [ 14]. NQ is derived from Google Search Queries and TQA
+includes questions from trivia and quiz-league websites. Detailed dataset statistics are presented
+in Table 4 in Appendix A. Note that the gold answer lists in dataset NQ usually have much fewer
+elements than the dataset TQA, which leads to a much smaller number of positive documents for
+each question.
+We use DPR [ 16] to retrieve 100documents for each question and generate the AMR graph for each
+question-document pair using AMRBART [ 3]. The dataset with AMR graphs is provided by [ 42]1.
+Please refer to Appendix A for more details on the AMR statistic information. We conducted our
+experiments on a Tesla A100 40GB GPU, demonstrating the low computational needs of G-RAG.
+Model Details. For the GNN-based reranking models, we adopt a 2-layer Graph Convolutional
+Network [ 17] with hidden dimension chosen from {8,64,128}via hyperparameter-tuning. The
+dropout rate is chosen from {0.1,0.2,0.4}. We initialize the GNN node features using pre-trained
+models, e.g, BERT [ 6], GTE [ 22], BGE [ 44], Ember [ 24]. We base our implementaion of the
+embedding model on the HuggingFace Transformers library [ 43]. For training our framework, we
+adopt the optimizer AdamW [ 25] with the learning rate chosen from {5e−5,1e−4,5e−4}. Batch
+size is set to 5. We set the learning rate warm-up with 1,000steps. The number of total training steps
+is50k, and the model is evaluated every 10k steps.
+4.1.1 Metrics
+Even though Top-K accuracy, where the ground-truth ranking is based on DPR scores [ 16], is com-
+monly used in the measurement of reranking [ 7,13], this metric is unsuitable for indicating the overall
+reranking performance for all positive documents. Moreover, with the promising development of LLM
+1https://github.com/wangcunxiang/Graph-aS-Tokens/tree/main
+6
+
+--- PAGE 7 ---
+in learning the relevance between texts, DPR scores may lose their advantage and fairness. To address
+this issue, other metrics such as Mean Reciprocal Rank (MRR) and Mean Hits@10 (MHits@10)
+are used for measuring the reranking performance [ 42]. To be specific, The Mean Reciprocal Rank
+(MRR) score of positive document is given by MRR =1
+|Q|P
+q∈Q(1
+|P+|P
+p∈P+1
+rp),whereQis the
+question set from the evaluating dataset, P+is the set of positive documents, and rpis the rank of
+document pestimated by the reranker. The MHits@10 indicates the percentage of positive documents
+that are ranked in the Top 10, given by MHits@10 =1
+|Q|P
+q∈Q(1
+|P+|P
+p∈P+I(rp<= 10)) ,where
+the indication I(A) = 0 if the event Ais true, otherwise 0.
+The above metrics work well for most cases, however, they may fail to fairly characterize the ranking
+performance when there are ties in ranking scores, which is common in relevant scores generated by
+LLMs such as ChatGPT [ 31], PaLM 2 [ 9], LLaMA [ 38], and GPT4 [ 32]. Please refer to Fig 5 in the
+Appendix for the detailed prompt and results of relevant scores between questions and documents.
+To address ties in the ranking scores, we propose variants of MRR and MHits@10. Denote r(t)
+pas the
+rank of the document pwithtties. In other words, the relevant score between the question and the
+document pis the same as other t−1documents. The variant of MRR for tied ranking is named
+Mean Tied Reciprocal Ranking (MTRR), represented as
+MTRR =1
+|Q|X
+q∈Q1
+|P+|X
+p∈P+1
+r(t)
+pI(t= 1)
++2
+r(t)
+p+r(t)
+p+t−1I(t >1)
+. (11)
+The metric MTRR addresses the tied rank r(t)
+pestimated by the reranker via averaging the optimistic
+rankr(t)
+pand the pessimistic rank r(t)
+p+t−1. The metrics MRR and MTRR are the same when there
+is no ranking tie. The variant of MHits@10 for tied ranking is Tied Mean Hits@10 (TMHit@10).
+Denote H(p)as the set that includes all the ranks {r(ti)
+pi}that are higher than the rank of document p,
+i.e.,r(τ)
+p. Based on these notations, we present the new metric as:
+TMHits@10 =1
+|Q|X
+q∈Q
+1
+|P+|X
+p∈P+Hits@10( p)
+, (12)
+where Hits@10( p)is defined as
+
+
+0,ifP
+iti>10for∀r(ti)
+pi∈ H(p),
+(10−P
+iti)/τ,if0<P
+iti<10
+for∀r(ti)
+pi∈ H(p)andτ >1,
+10/τ,ifH(p) =∅andτ >10,
+1,otherwise .
+If there are ties in the Top-10 ranking, the metric TMHit@10 diminishing the optimistic effect via
+dividing the hit-number (no greater than 10) by the number of ties.
+4.2 Comparing Reranker Systems
+We compare our proposed algorithm with baselines as follows with fixed hyper-parameters and no
+fine-tuning, where the hidden dimension is 8, the dropout rate is 0.1, and the learning rate is 1e-4.
+w/o reranker: Without an additional reranker, the ranking score is based on the retrieval scores
+provided by DPR [ 16].BART: The pre-trained language model BART [ 19] serves as the reranker.
+BART-GST: This method integrates graph-as-token into the pre-trained model [ 42]. For each dataset,
+we use the best performance provided in the paper. RGCN-S [42] stacks the RGCN model on the
+top of the transformer. Even though this method is based on graph neural networks, it doesn’t
+rely on the document graphs, but construct nodes in the graph model based on the text alignment
+in question-document pairs. MLP: The initial node features are only based on document text as
+described in (1) with the BERT [ 6] encoder. After the node features go through MLP, we get the
+relevant scores via (8) and take the cross-entropy function (9) as training loss. GCN: Besides updating
+node representations via GCN, the rest setting is the same as MLP. We also conduct experiments with
+7
+
+--- PAGE 8 ---
+different GNN models. Please refer to Appendix B for details. G-RAG: The initial node features
+are based on document text and AMR information as described in (2). The rest of the setting is the
+same as GCN. G-RAG-RL: Using the ranking loss function and keep the other setting the same as
+G-RAG.
+NQ TQA
+strategy MRR MH MRR MH
+w/o reranker 20.2 18.0 37.9 34.6 12.1 12.3 25.5 25.9
+BART 25.7 23.3 49.3 45.8 16.9 17.0 37.7 38.0
+BART-GST 28.4 25.0 53.2 48.7 17.5 17.6 39.1 39.5
+RGCN-S 26.1 23.1 49.5 46.0 — — — —
+MLP 19.2 17.8 40.0 38.8 17.6 17.1 34.0 31.4
+GCN 22.6 22.4 47.6 44.2 18.2 17.4 38.0 37.0
+G-RAG 25.1 24.2 49.1 47.2 18.5 18.3 38.5 39.1
+G-RAG-RL 27.3 25.7 49.2 47.4 19.8 18.3 42.9 39.4
+Table 1: Results on the dev/test set of NQ and TQA without hyperparameter fine-tuning.
+The results on MRR and MHits@10 on the NQ and TQA datasets are provided in Table 1. Note that
+the results on NQ always outperform the results on TQA, this is due to a smaller number of positive
+documents making it easy to put most of the positive documents into the Top 10. Generally speaking,
+TQA is a more complex and robust dataset than NQ. Models with graph-based approaches, such as
+GCN and G-RAG, show competitive performance across metrics. These methods have advantages
+over the baseline models, i.e., without reranker and MLP. In conclusion, based on the simulation
+results, the proposed method G-RAG-RL emerges as a strong model, indicating the effectiveness of
+graph-based strategies and the benefit of pairwise ranking loss on identifying positive documents. To
+highlight the advantages of the proposed G-RAG over state-of-the-art benchmarks, we conducted
+experiments across various embedding models with fine-tuning parameter in the next section.
+NQ TQA
+strategy MRR MH MRR MH
+w/o reranker 20.2 18.0 37.9 34.6 12.1 12.3 25.5 25.9
+BART 25.7 23.3 49.3 45.8 16.9 17.0 37.7 38.0
+PaLM 2 XS 14.9 14.0 34.1 34.2 11.6 12.5 29.1 31.6
+PaLM 2 L 18.6 17.9 40.7 39.7 12.7 12.9 34.7 35.6
+G-RAG-RL 27.3 25.7 49.2 47.4 19.8 18.3 42.9 39.4
+Table 2: Results of PaLM 2 being the reranker. Small embedding models outperform LLMs in this
+setting. In comparison, G-RAG-RL considerably improves the results compared to both language
+model types by leveraging connection information across documents. We use Tied Mean Hits@10.
+4.3 Using different LLMs as Embedding Models
+The feature encoder always plays a vital role in NLP tasks. Better embedding models are more likely
+to fetch similarities across contexts and help identify highly relevant context. Besides the BERT
+model used in the state-of-the-art reranker, many promising embedding models have been proposed
+recently. To evaluate the effectiveness of different embedding models, i.e., BERT [ 6], GTE [ 22], BGE
+[44], Ember [ 24], we conduct the experiments under the same setting as G-RAG-RL. The results are
+presented in Table 3. For convenience, we directly add two results from Section 4.2: BART-GST
+and BERT. Ember performs consistently well across all evaluations. In conclusion, Ember appears
+to be the top-performing model, followed closely by GTE and BGE, while BART-GST and BERT
+show slightly lower performance across the evaluated metrics. Thus our fine-tuning result is based
+on G-RAG-RL with Ember as the embedding model. The grid search setting for hyperparameter is
+introduced in Section 4.1. We only run 10k iterations for each setting and pick up the one with the
+best MRR. The result with hyperparameter tuning, i.e., Ember (HPs-T), is added in Table 3. Even
+though BART-GST demonstrates competitive performance in some scenarios, it is prone to overfitting
+8
+
+--- PAGE 9 ---
+especially in terms of MRR on the NQ dataset. However, the proposed methods, i.e., Ember and
+Ember (HPs-T), are more likely to avoid overfitting and achieve the highest score across all test sets.
+NQ TQA
+embedding MRR MH MRR MH
+BART-GST 28.4 25.0 53.2 48.7 17.5 17.6 39.1 39.5
+BERT 27.3 25.7 49.2 47.4 19.8 18.3 42.9 39.4
+GTE 29.9 26.3 52.6 47.7 19.2 19.3 41.8 40.3
+BGE 28.7 27.4 52.1 48.2 18.7 18.3 43.4 40.7
+Ember 9.0 26.1 52.9 48.0 19.8 18.6 44.3 42.0
+Ember (HPs-T) 28.9 27.7 51.1 50.0 20.0 19.4 41.6 41.4
+Table 3: G-RAG with changing the embedding model.
+4.4 Investigating PaLM 2 Scores
+To evaluate the performance of large language models on the reranking task, we conduct zero-short
+experiments on the dev & test sets of the NQ and TQA datasets. An example of LLM-generated
+relevance score is illustrated in Figure 5 in the Appendix.
+In general, we observe that scores generated by PaLM 2 are integers between 0 and 100 that are
+divisible by 5. This often leads to ties in documents rankings. To address the ties in the ranking score,
+we use the proposed metrics MTRR (Eq. 11) and TMHits@10 (Eq. 12) to evaluate the performance of
+reranker based on PaLM 2 [ 9]. For the convenience of comparison, we copy w/o rerank , BART,
+and G-RAG results from Section 4.2. Since there is no tied ranking provided by w/o rerank and
+BART, the MRR and MHits@10 have the same values as MTRR and TMhits@10, respectively.
+The performance results are provided in Table 2. The results demonstrate that LLMs with zero-shot
+learning does not do well in reranking tasks. This may be caused by too many ties in the relevance
+scores, especially for small-size LLM where there are more of them. This result emphasizes the
+importance of reranking model design in RAG even in the LLM era. More qualitative examples based
+on PaLM 2 are provided in Appendix C.
+We compare the results of both approaches with G-RAG which brings additional perspective to these
+results. Leveraging the information about connections of entities across documents and documents
+themselves brings significant improvements up to 7 percentage points.
+5 Conclusions
+Our proposed model, G-RAG, addresses limitations in existing ODQA methods by leveraging
+implicit connections between documents and strategically integrating AMR information. Our method
+identifies documents with valuable information significantly better even when this information is
+only weakly connected to the question context. This happens because documents connected by
+the document graph share information that is relevant for the final answer. We integrate key AMR
+information to improve performance without increasing computational cost. We also proposed two
+metrics to fairly evaluate the performance of a wide range of ranking scenarios including tied ranking
+scores. Furthermore, our investigation into the performance of PaLM 2 as a reranker emphasizes
+the significance of reranker model design in RAG, as even an advanced pre-trained LLM might face
+challenges in the reranking task.
+Recently, papers such as [ 27,36] introduced methods for reranking listwise documents using LLMs.
+Despite this, our proposed metric MTRR remains valid for comparison with their approaches mea-
+sured by MRR (mentioned in paper [ 27]). Thus our method has potential for broader adoption and
+comparison with existing approaches. Additionally, we’re enthusiastic about investigating more
+advanced techniques to efficiently resolve ties in ranking scores produced by LLMs. There are more
+directions for future study. For instance, designing more sophisticated models to better process
+AMR information and integrating this information into node & edge features will bring further
+improvements in reranking. Further, while a pre-trained LLM does not have impressive performance
+as a reranker itself, fine-tuning it may be extremely useful for enhancing the performance of RAG
+systems.
+9
+
+--- PAGE 10 ---
+References
+[1]Akari Asai, Kazuma Hashimoto, Hannaneh Hajishirzi, Richard Socher, and Caiming Xiong.
+Learning to retrieve reasoning paths over wikipedia graph for question answering. In 8th
+International Conference on Learning Representations, ICLR 2020, Addis Ababa, Ethiopia,
+April 26-30, 2020 . OpenReview.net, 2020. URL https://openreview.net/forum?
+id=SJgVHkrYDH . Cited on page 3.
+[2]Xuefeng Bai, Yulong Chen, Linfeng Song, and Yue Zhang. Semantic representation for di-
+alogue modeling. In Proceedings of the 59th Annual Meeting of the Association for Com-
+putational Linguistics and the 11th International Joint Conference on Natural Language
+Processing (Volume 1: Long Papers) , pages 4430–4445, Online, August 2021. Associa-
+tion for Computational Linguistics. doi: 10.18653/v1/2021.acl-long.342. URL https:
+//aclanthology.org/2021.acl-long.342 . Cited on page 3.
+[3]Xuefeng Bai, Yulong Chen, and Yue Zhang. Graph pre-training for AMR parsing and generation.
+InProceedings of the 60th Annual Meeting of the Association for Computational Linguistics
+(Volume 1: Long Papers) , pages 6001–6015, Dublin, Ireland, May 2022. Association for Com-
+putational Linguistics. URL https://aclanthology.org/2022.acl-long.415 .
+Cited on pages 4 and 6.
+[4]Laura Banarescu, Claire Bonial, Shu Cai, Madalina Georgescu, Kira Griffitt, Ulf Hermjakob,
+Kevin Knight, Philipp Koehn, Martha Palmer, and Nathan Schneider. Abstract Meaning
+Representation for sembanking. In Proceedings of the 7th Linguistic Annotation Workshop and
+Interoperability with Discourse , pages 178–186, Sofia, Bulgaria, August 2013. Association for
+Computational Linguistics. URL https://aclanthology.org/W13-2322 . Cited on
+page 3.
+[5]Jose Ortiz Costa and Anagha Kulkarni. Leveraging knowledge graph for open-domain question
+answering. In 2018 IEEE/WIC/ACM International Conference on Web Intelligence (WI) , pages
+389–394. IEEE, 2018. Cited on page 3.
+[6]Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. BERT: Pre-training of
+deep bidirectional transformers for language understanding. In Proceedings of the 2019 Confer-
+ence of the North American Chapter of the Association for Computational Linguistics: Human
+Language Technologies, Volume 1 (Long and Short Papers) , pages 4171–4186, Minneapolis,
+Minnesota, June 2019. Association for Computational Linguistics. doi: 10.18653/v1/N19-1423.
+URL https://www.aclweb.org/anthology/N19-1423 . Cited on pages 1, 3, 4, 6,
+7, and 8.
+[7]Michael Glass, Gaetano Rossiello, Md Faisal Mahbub Chowdhury, Ankita Naik, Pengshan Cai,
+and Alfio Gliozzo. Re2G: Retrieve, rerank, generate. In Proceedings of the 2022 Conference
+of the North American Chapter of the Association for Computational Linguistics: Human
+Language Technologies , pages 2701–2715, Seattle, United States, July 2022. Association
+for Computational Linguistics. doi: 10.18653/v1/2022.naacl-main.194. URL https://
+aclanthology.org/2022.naacl-main.194 . Cited on page 6.
+[8]Liyu Gong and Qiang Cheng. Exploiting edge features for graph neural networks. In Proceed-
+ings of the IEEE/CVF conference on computer vision and pattern recognition , pages 9211–9219,
+2019. Cited on page 5.
+[9]Google, Rohan Anil, Andrew M. Dai, Orhan Firat, Melvin Johnson, Dmitry Lepikhin, Alexandre
+Passos, Siamak Shakeri, Emanuel Taropa, Paige Bailey, Zhifeng Chen, Eric Chu, Jonathan H.
+Clark, Laurent El Shafey, Yanping Huang, Kathy Meier-Hellstern, Gaurav Mishra, Erica
+Moreira, Mark Omernick, Kevin Robinson, Sebastian Ruder, Yi Tay, Kefan Xiao, Yuanzhong
+Xu, Yujing Zhang, Gustavo Hernandez Abrego, Junwhan Ahn, Jacob Austin, Paul Barham,
+Jan Botha, James Bradbury, Siddhartha Brahma, Kevin Brooks, Michele Catasta, Yong Cheng,
+Colin Cherry, Christopher A. Choquette-Choo, Aakanksha Chowdhery, Clément Crepy, Shachi
+Dave, Mostafa Dehghani, Sunipa Dev, Jacob Devlin, Mark Díaz, Nan Du, Ethan Dyer, Vlad
+Feinberg, Fangxiaoyu Feng, Vlad Fienber, Markus Freitag, Xavier Garcia, Sebastian Gehrmann,
+Lucas Gonzalez, Guy Gur-Ari, Steven Hand, Hadi Hashemi, Le Hou, Joshua Howland, Andrea
+Hu, Jeffrey Hui, Jeremy Hurwitz, Michael Isard, Abe Ittycheriah, Matthew Jagielski, Wenhao
+10
+
+--- PAGE 11 ---
+Jia, Kathleen Kenealy, Maxim Krikun, Sneha Kudugunta, Chang Lan, Katherine Lee, Benjamin
+Lee, Eric Li, Music Li, Wei Li, YaGuang Li, Jian Li, Hyeontaek Lim, Hanzhao Lin, Zhongtao
+Liu, Frederick Liu, Marcello Maggioni, Aroma Mahendru, Joshua Maynez, Vedant Misra,
+Maysam Moussalem, Zachary Nado, John Nham, Eric Ni, Andrew Nystrom, Alicia Parrish,
+Marie Pellat, Martin Polacek, Alex Polozov, Reiner Pope, Siyuan Qiao, Emily Reif, Bryan
+Richter, Parker Riley, Alex Castro Ros, Aurko Roy, Brennan Saeta, Rajkumar Samuel, Renee
+Shelby, Ambrose Slone, Daniel Smilkov, David R. So, Daniel Sohn, Simon Tokumine, Dasha
+Valter, Vijay Vasudevan, Kiran V odrahalli, Xuezhi Wang, Pidong Wang, Zirui Wang, Tao Wang,
+John Wieting, Yuhuai Wu, Kelvin Xu, Yunhan Xu, Linting Xue, Pengcheng Yin, Jiahui Yu,
+Qiao Zhang, Steven Zheng, Ce Zheng, Weikang Zhou, Denny Zhou, Slav Petrov, and Yonghui
+Wu. Palm 2 technical report, 2023. Cited on pages 2, 3, 7, and 9.
+[10] Will Hamilton, Zhitao Ying, and Jure Leskovec. Inductive representation learning on large
+graphs. Advances in neural information processing systems , 30, 2017. Cited on page 15.
+[11] Yupeng Hou, Junjie Zhang, Zihan Lin, Hongyu Lu, Ruobing Xie, Julian McAuley, and
+Wayne Xin Zhao. Large language models are zero-shot rankers for recommender systems. In
+European Conference on Information Retrieval , pages 364–381. Springer, 2024. Cited on page
+3.
+[12] Dengrong Huang, Zizhong Wei, Aizhen Yue, Xuan Zhao, Zhaoliang Chen, Rui Li, Kai Jiang,
+Bingxin Chang, Qilai Zhang, Sijia Zhang, et al. Dsqa-llm: Domain-specific intelligent question
+answering based on large language model. In International Conference on AI-generated Content ,
+pages 170–180. Springer, 2023. Cited on page 3.
+[13] Gautier Izacard and Édouard Grave. Leveraging passage retrieval with generative models for
+open domain question answering. In Proceedings of the 16th Conference of the European
+Chapter of the Association for Computational Linguistics: Main Volume , pages 874–880, 2021.
+Cited on pages 3 and 6.
+[14] Mandar Joshi, Eunsol Choi, Daniel Weld, and Luke Zettlemoyer. TriviaQA: A large scale
+distantly supervised challenge dataset for reading comprehension. In Regina Barzilay and
+Min-Yen Kan, editors, Proceedings of the 55th Annual Meeting of the Association for Com-
+putational Linguistics (Volume 1: Long Papers) , pages 1601–1611, Vancouver, Canada,
+July 2017. Association for Computational Linguistics. doi: 10.18653/v1/P17-1147. URL
+https://aclanthology.org/P17-1147 . Cited on pages 4 and 6.
+[15] Mingxuan Ju, Wenhao Yu, Tong Zhao, Chuxu Zhang, and Yanfang Ye. Grape: Knowledge
+graph enhanced passage reader for open-domain question answering. In Findings of Empirical
+Methods in Natural Language Processing , 2022. Cited on page 3.
+[16] Vladimir Karpukhin, Barlas Oguz, Sewon Min, Patrick Lewis, Ledell Wu, Sergey Edunov,
+Danqi Chen, and Wen-tau Yih. Dense passage retrieval for open-domain question answering.
+InProceedings of the 2020 Conference on Empirical Methods in Natural Language Process-
+ing (EMNLP) , pages 6769–6781, Online, 2020. Association for Computational Linguistics.
+doi: 10.18653/v1/2020.emnlp-main.550. URL https://aclanthology.org/2020.
+emnlp-main.550 . Cited on pages 3, 4, 6, 7, and 16.
+[17] Thomas N Kipf and Max Welling. Semi-supervised classification with graph convolutional
+networks. In ICLR , 2017. Cited on pages 5, 6, and 15.
+[18] Tom Kwiatkowski, Jennimaria Palomaki, Olivia Redfield, Michael Collins, Ankur Parikh, Chris
+Alberti, Danielle Epstein, Illia Polosukhin, Jacob Devlin, Kenton Lee, et al. Natural questions: a
+benchmark for question answering research. Transactions of the Association for Computational
+Linguistics , 7:453–466, 2019. Cited on pages 4 and 6.
+[19] Mike Lewis, Yinhan Liu, Naman Goyal, Marjan Ghazvininejad, Abdelrahman Mohamed, Omer
+Levy, Veselin Stoyanov, and Luke Zettlemoyer. BART: Denoising sequence-to-sequence pre-
+training for natural language generation, translation, and comprehension. In Proceedings of
+the 58th Annual Meeting of the Association for Computational Linguistics , pages 7871–7880,
+Online, July 2020. Association for Computational Linguistics. doi: 10.18653/v1/2020.acl-main.
+703. URL https://www.aclweb.org/anthology/2020.acl-main.703 . Cited
+on pages 1, 3, and 7.
+11
+
+--- PAGE 12 ---
+[20] Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin, Naman
+Goyal, Heinrich Küttler, Mike Lewis, Wen-tau Yih, Tim Rocktäschel, et al. Retrieval-augmented
+generation for knowledge-intensive nlp tasks. NeurIPS , 33:9459–9474, 2020. Cited on page 3.
+[21] Yuncheng Li, Yale Song, and Jiebo Luo. Improving pairwise ranking for multi-label image clas-
+sification. In Proceedings of the IEEE conference on computer vision and pattern recognition ,
+pages 3617–3625, 2017. Cited on page 6.
+[22] Zehan Li, Xin Zhang, Yanzhao Zhang, Dingkun Long, Pengjun Xie, and Meishan Zhang.
+Towards general text embeddings with multi-stage contrastive learning, 2023. Cited on pages 6
+and 8.
+[23] Yinhan Liu, Myle Ott, Naman Goyal, Jingfei Du, Mandar Joshi, Danqi Chen, Omer Levy, Mike
+Lewis, Luke Zettlemoyer, and Veselin Stoyanov. Roberta: A robustly optimized bert pretraining
+approach. arXiv preprint arXiv:1907.11692 , 2019. Cited on pages 1, 3, and 4.
+[24] Zheng Liu and Yingxia Shao. RetroMAE: Pre-training retrieval-oriented transformers via
+masked auto-encoder. arXiv preprint arXiv:2205.12035 , 2022. Cited on pages 6 and 8.
+[25] Ilya Loshchilov and Frank Hutter. Decoupled weight decay regularization. In 7th International
+Conference on Learning Representations, ICLR 2019, New Orleans, LA, USA, May 6-9, 2019 .
+OpenReview.net, 2019. URL https://openreview.net/forum?id=Bkg6RiCqY7 .
+Cited on page 6.
+[26] Xueguang Ma, Liang Wang, Nan Yang, Furu Wei, and Jimmy Lin. Fine-tuning llama for
+multi-stage text retrieval. arXiv preprint arXiv:2310.08319 , 2023. Cited on page 3.
+[27] Xueguang Ma, Xinyu Zhang, Ronak Pradeep, and Jimmy Lin. Zero-shot listwise document
+reranking with a large language model. arXiv preprint arXiv:2305.02156 , 2023. Cited on page
+9.
+[28] Yubo Ma, Yixin Cao, Yong Hong, and Aixin Sun. Large language model is not a good few-shot
+information extractor, but a good reranker for hard samples! In Findings of the Association for
+Computational Linguistics: EMNLP 2023 , pages 10572–10601, 2023. Cited on page 3.
+[29] Tahira Naseem, Austin Blodgett, Sadhana Kumaravel, Timothy J. O’Gorman, Young-Suk
+Lee, Jeffrey Flanigan, Ramón Fernández Astudillo, Radu Florian, Salim Roukos, and Nathan
+Schneider. Docamr: Multi-sentence amr representation and evaluation. In North American
+Chapter of the Association for Computational Linguistics , 2021. Cited on page 3.
+[30] Rodrigo Nogueira, Zhiying Jiang, Ronak Pradeep, and Jimmy Lin. Document ranking with
+a pretrained sequence-to-sequence model. In Findings of the Association for Computational
+Linguistics: EMNLP 2020 , pages 708–718, 2020. Cited on page 3.
+[31] OpenAI. ChatGPT. https://openai.com/research/chatgpt. , . Cited on pages 3
+and 7.
+[32] OpenAI. GPT-4. https://openai.com/gpt-4 , . Cited on pages 3 and 7.
+[33] Eunhwan Park, Sung-Min Lee, Dearyong Seo, Seonhoon Kim, Inho Kang, and Seung-Hoon Na.
+Rink: reader-inherited evidence reranker for table-and-text open domain question answering. In
+Proceedings of the AAAI Conference on Artificial Intelligence , volume 37, pages 13446–13456,
+2023. Cited on page 3.
+[34] Ronak Pradeep, Yuqi Liu, Xinyu Zhang, Yilin Li, Andrew Yates, and Jimmy Lin. Squeezing
+water from a stone: a bag of tricks for further improving cross-encoder effectiveness for
+reranking. In European Conference on Information Retrieval , pages 655–670. Springer, 2022.
+Cited on page 3.
+[35] Shamane Siriwardhana, Rivindu Weerasekera, Elliott Wen, Tharindu Kaluarachchi, Rajib
+Rana, and Suranga Nanayakkara. Improving the domain adaptation of retrieval augmented
+generation (rag) models for open domain question answering. Transactions of the Association
+for Computational Linguistics , 11:1–17, 2023. Cited on pages 1 and 3.
+12
+
+--- PAGE 13 ---
+[36] Weiwei Sun, Lingyong Yan, Xinyu Ma, Shuaiqiang Wang, Pengjie Ren, Zhumin Chen, Dawei
+Yin, and Zhaochun Ren. Is chatgpt good at search? investigating large language models as
+re-ranking agents. In Proceedings of the 2023 Conference on Empirical Methods in Natural
+Language Processing , pages 14918–14937, 2023. Cited on pages 3 and 9.
+[37] Yiming Tan, Dehai Min, Yu Li, Wenbo Li, Nan Hu, Yongrui Chen, and Guilin Qi. Can chatgpt
+replace traditional kbqa models? an in-depth analysis of the question answering performance of
+the gpt llm family. In International Semantic Web Conference , pages 348–367. Springer, 2023.
+Cited on page 3.
+[38] Hugo Touvron, Thibaut Lavril, Gautier Izacard, Xavier Martinet, Marie-Anne Lachaux, Timo-
+thée Lacroix, Baptiste Rozière, Naman Goyal, Eric Hambro, Faisal Azhar, et al. Llama: Open
+and efficient foundation language models. arXiv preprint arXiv:2302.13971 , 2023. Cited on
+pages 3 and 7.
+[39] Petar Veli ˇckovi ´c, Guillem Cucurull, Arantxa Casanova, Adriana Romero, Pietro Liò, and Yoshua
+Bengio. Graph attention networks. In International Conference on Learning Representations ,
+2018. Cited on page 15.
+[40] Ellen M. V oorhees and Dawn M. Tice. The TREC-8 question answering track. In M. Gavrilidou,
+G. Carayannis, S. Markantonatou, S. Piperidis, and G. Stainhauer, editors, Proceedings of
+the Second International Conference on Language Resources and Evaluation (LREC’00) ,
+Athens, Greece, May 2000. European Language Resources Association (ELRA). URL http:
+//www.lrec-conf.org/proceedings/lrec2000/pdf/26.pdf . Cited on page 1.
+[41] Cunxiang Wang, Sirui Cheng, Zhikun Xu, Bowen Ding, Yidong Wang, and Yue Zhang. Evalu-
+ating open question answering evaluation. arXiv preprint arXiv:2305.12421 , 2023. Cited on
+page 3.
+[42] Cunxiang Wang, Zhikun Xu, Qipeng Guo, Xiangkun Hu, Xuefeng Bai, Zheng Zhang, and Yue
+Zhang. Exploiting Abstract Meaning Representation for open-domain question answering. In
+Anna Rogers, Jordan Boyd-Graber, and Naoaki Okazaki, editors, Findings of the Association
+for Computational Linguistics: ACL 2023 , pages 2083–2096, Toronto, Canada, July 2023.
+Association for Computational Linguistics. doi: 10.18653/v1/2023.findings-acl.131. URL
+https://aclanthology.org/2023.findings-acl.131 . Cited on pages 1, 2, 3,
+4, 6, and 7.
+[43] Thomas Wolf, Lysandre Debut, Victor Sanh, Julien Chaumond, Clement Delangue, Anthony
+Moi, Pierric Cistac, Tim Rault, Rémi Louf, Morgan Funtowicz, et al. Huggingface’s transform-
+ers: State-of-the-art natural language processing. arXiv preprint arXiv:1910.03771 , 2019. URL
+https://arxiv.org/abs/1910.03771 . Cited on page 6.
+[44] Shitao Xiao, Zheng Liu, Peitian Zhang, and Niklas Muennighoff. C-pack: Packaged resources
+to advance general chinese embedding, 2023. Cited on pages 6 and 8.
+[45] Keyulu Xu, Weihua Hu, Jure Leskovec, and Stefanie Jegelka. How powerful are graph neural
+networks? In International Conference on Learning Representations , 2018. Cited on page 15.
+[46] Donghan Yu, Chenguang Zhu, Yuwei Fang, Wenhao Yu, Shuohang Wang, Yichong Xu, Xiang
+Ren, Yiming Yang, and Michael Zeng. KG-FiD: Infusing knowledge graph in fusion-in-
+decoder for open-domain question answering. In ACL, pages 4961–4974, Dublin, Ireland, May
+2022. Association for Computational Linguistics. doi: 10.18653/v1/2022.acl-long.340. URL
+https://aclanthology.org/2022.acl-long.340 . Cited on pages 2 and 3.
+[47] Honglei Zhuang, Zhen Qin, Rolf Jagerman, Kai Hui, Ji Ma, Jing Lu, Jianmo Ni, Xuanhui Wang,
+and Michael Bendersky. Rankt5: Fine-tuning t5 for text ranking with ranking losses. In SIGIR ,
+pages 2308–2313, 2023. Cited on page 3.
+13
+
+--- PAGE 14 ---
+Train Dev Test
+Natural Questions 79168 8757 3610
+TriviaQA 78785 8837 11313
+Table 4: Dataset Statistics.
+A Dataset Statistics
+In Fig. 2, we illustrate the AMR graph statistics in the datasets Natural Questions (NQ) and TriviaQA.
+To better illustrate the structure of the shortest path, we also conduct some experiments to show
+the statistic of the shortest path in the AMR graph, see Fig 3. We analyze the shortest single
+source paths (SSSPs) in the AMR graphs of documents and try to establish the connection between
+question contexts and document contexts. The analysis reveals a notable trend in the AMR graphs of
+documents, indicating that certain negative documents cannot establish adequate connections to the
+question context within their text. This pattern brings insights into the encoding process to enhance
+reranking performance.
+(a) NQ-train
+ (b) NQ-train
+ (c) NQ-dev
+ (d) NQ-dev
+(e) NQ-test
+ (f) NQ-test
+ (g) TQA-train
+ (h) TQA-train
+(i) TQA-dev
+ (j) TQA-dev
+ (k) TQA-test
+ (l) TQA-test
+Figure 2: Number of nodes and edges in AMR graphs in train/dev/test set of dataset NQ and TQA.
+14
+
+--- PAGE 15 ---
+(a) NQ-Positive
+ (b) NQ-Negative
+ (c) TQA-Positive
+ (d) TQA-Negative
+Figure 3: Number of SSSPs AMR graphs in train set of dataset NQ and TQA.
+Figure 4: The pipeline of G-RAG.
+B Simulation Results with Different GNN Models.
+Besides the GCN [ 17] model considered in the main manuscript, we compare the simulation results
+with different GNN models in this section. Specifically, under the same setting as the GCN model in
+Ember (HPs-T) from Table 3, we use GAT [ 39] with additional parameter number of heads being 8,
+GraphSage [ 10] with the aggregation choice being ‘lstm’, and GIN [ 45] with the aggregation choice
+being ‘mean’. The comparison results are illustrated in Table 5. For the convenience of comparison,
+we directly add two results from Section 4.2, i.e., BART-GST and GCN (i.e., Ember (HPs-T) in Table
+3). It shows that the GCN model still outperforms in most cases. This may be due to the document
+graphs considered in our paper being very small, while the advanced GNN model usually targets
+handling thousands, or millions of nodes in the graph. Besides, our model has already taken the edge
+feature into consideration, which may lead to overfitting if introducing more weight parameters.
+NQ TQA
+Embedding
+/MetricMRR_dev MRR_test MH_dev MH_test MRR_dev MRR_test MH_dev MH_test
+BART-GST 28.4 25.0 53.2 48.7 17.5 17.6 39.1 39.5
+GCN 28.9 27.7 51.1 50.0 20.0 19.4 41.6 41.4
+GAT 28.1 27.1 52.3 47.2 19.1 18.9 43.0 41.0
+GraphSage 29.8 26.5 52.3 47.2 19.6 18.4 42.9 39.7
+GIN 28.4 27.8 50.2 48.5 19.7 18.9 42.2 39.3
+Table 5: Results of G-RAG with different GNN models. We use Mean Hits @ 10.
+C Qualitative Examples
+We take the ranking scores given by palm 2 L as a baseline to investigate how the graph-based model
+brings benefits to reranking in Open-Domain Question Answering. Since TQA is a much more
+complex dataset with more positive documents, we take an example from TQA.
+15
+
+--- PAGE 16 ---
+Question: Ol’ Blue Eyes is the nickname of?
+Gold Answer: [‘Sinatra (film)’, ‘Biography of Frank Sinatra’, ‘Columbus Day Riot’, ‘Life
+of Frank Sinatra’, ‘A V oice in Time: 1939–1952’, ‘Sinatra’, ‘Biography of frank sinatra’,
+‘Ol’ Blue Eyes’, ‘A V oice in Time: 1939-1952’, ‘Political beliefs of frank sinatra’, ‘Franck
+Sinatra’, ‘Old Blue Eyes’, ‘Frank Sinatra’, ‘Frank Sinatra I’, ‘Francis Albert Frank Sinatra’,
+‘Francis A. Sinatra’, ‘Frank Sinatra, Sr.’, ‘Francis Albert Sinatra’, ‘Political beliefs of Frank
+Sinatra’, ‘Old blue eyes’, ‘Frank sanatra’, ‘Frank sinatra’, ‘Frank senatra’, ‘FBI Files on
+Frank Sinatra’, ‘Francis Sinatra’]
+Number of Positive documents: 24 positive documents out of 100 documents
+The following are Top-10 documents given by the proposed GNN-based reranker. Each document
+is accompanied by relevant information about its AMR graph, including the number of nodes and
+edges, as well as the count of single-source shortest paths (SSSPs) originating from the node labeled
+“question". If the node “question" is not present in the AMR graph, the SSSPs count is noted as 0.
+Additionally, we present the corresponding score assigned by palm 2-L and its rank based on the
+palm 2 reranker. The ranking assigned by the retriever DPR is also provided for reference. [16].
+1st: Sinatra in 1998, for example, the building was bathed in blue light to represent the
+singer’s nickname "Ol’ Blue Eyes". After actress Fay Wray, who starred in "King Kong",
+died in September 2004, the building lights were extinguished for 15 minutes. The floodlights
+bathed the building in red, white, and blue for several months after the destruction of the
+World Trade Center in September 2001, then reverted to the standard schedule. On June 4,
+2002, the Empire State Building donned purple and gold (the royal colors of Elizabeth II), in
+thanks for the United Kingdom playing the Star Spangled Banner
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+AMR graph information: # nodes: 51, # edges 82, # SSSP: 32
+Score by palm 2: 50/100, Rank by palm 2: 9/100
+Rank by DPR: 5/100
+2nd: and actively campaigned for presidents such as Harry S. Truman, John F. Kennedy and
+Ronald Reagan. In crime, the FBI investigated Sinatra and his alleged relationship with the
+Mafia. While Sinatra never learned how to read music, he had an impressive understanding of
+it, and he worked very hard from a young age to improve his abilities in all aspects of music.
+A perfectionist, renowned for his dress sense and performing presence, he always insisted
+on recording live with his band. His bright blue eyes earned him the popular nickname "Ol’
+Blue Eyes". Sinatra led a colorful personal life, and
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+AMR graph information: # nodes: 53, # edges 75, # SSSP: 34
+Score by palm 2: 100/100, Rank by palm 2: 1/100
+Rank by DPR: 1/100
+3rd: claimed that Sinatra had grown "tired of entertaining people, especially when all they
+really wanted were the same old tunes he had long ago become bored by". While he was
+in retirement, President Richard Nixon asked him to perform at a Young V oters Rally in
+anticipation of the upcoming campaign. Sinatra obliged and chose to sing "My Kind of
+Town" for the rally held in Chicago on October 20, 1972. In 1973, Sinatra came out of his
+short-lived retirement with a television special and album. The album, entitled "Ol’ Blue
+Eyes Is Back", arranged by Gordon Jenkins and Don Costa,
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+AMR graph information: # nodes: 52, # edges 85, # SSSP: 19
+Score by palm 2: 20/100, Rank by palm 2: 27/100
+Rank by DPR: 8/100
+16
+
+--- PAGE 17 ---
+4th: State Police would attend, searching for organized crime members in the audience.
+During a 1979 appearance in Providence, Mayor Buddy Cianci named Sinatra an honorary
+fire chief, complete with a helmet bearing the name "F. SINA TRA" with nickname "Ol’ Blue
+Eyes" beneath. David Bowie’s concert on May 5, 1978 was one of three recorded for his live
+album "Stage". The Bee Gees performed two sold-out concerts here on August 28–29, 1979
+as part of their Spirits Having Flown Tour. The Kinks recorded much of their live album and
+video, "One for the Road" at the Civic Center September 23, 1979.
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+AMR graph information: # nodes: 54, # edges 67, # SSSP: 0
+Score by palm 2: 50/100, Rank by palm 2: 9/100
+Rank by DPR: 6/100
+5th: illness). Pasetta was the producer of the Elvis Presley concert special, "Aloha from
+Hawaii Via Satellite" in January 1973. The show still holds the record for the most watched
+television special in history; viewing figures are between 1 and 1.5 billion live viewers
+worldwide. 1973 also saw Pasetta direct "Magnavox Presents Frank Sinatra" (also known as
+"Ol’ Blue Eyes IsBack"), the television special that marked Frank Sinatra’s comeback from
+retirement. Pasetta died in a 2015 single-car accident. The vehicle driven by Keith Stewart
+collided with Pasetta shortly after Stewart had allowed his passengers to disembark. Marty
+Pasetta Martin Allen
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+AMR graph information: # nodes: 39, # edges 59, # SSSP: 39
+Score by palm 2: 50/100, Rank by palm 2: 9/100
+Rank by DPR: 3/100
+6th: him feel wealthy and important, and that he was giving his very best to the audience.
+He was also obsessed with cleanliness—while with the Tommy Dorsey band he developed
+the nickname "Lady Macbeth", because of frequent showering and switching his outfits. His
+deep blue eyes earned him the popular nickname "Ol’ Blue Eyes". For Santopietro, Sinatra
+was the personification of America in the 1950s: "cocky, eye on the main chance, optimistic,
+and full of the sense of possibility". Barbara Sinatra wrote, "A big part of Frank’s thrill was
+the sense of danger that he exuded, an underlying, ever-present tension only
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+AMR graph information: # nodes: 44, # edges 81, # SSSP: 30
+Score by palm 2: 100/100, Rank by palm 2: 1/100
+Rank by DPR: 2/100
+7th: where his suite and those of his entourage were on the 23rd floor. His tour, his first in
+Australia in 15 years and billed as "Ol’ Blue Eyes Is Back," was scheduled to include two
+shows in Melbourne, followed by three in Sydney. In his first show, according to news reports
+from 1974, Sinatra referred on stage to the media as "parasites" and "bums" and to women
+specifically as "the broads of the press, the hookers of the press," then adding, "I might offer
+them a buck and a half, I’m not sure." The character of Rod Blue in the
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+AMR graph information: # nodes: 32, # edges 61, # SSSP: 32
+Score by PaLM 2: 50/100, Rank by palm 2: 9/100
+Rank by DPR: 11/100
+17
+
+--- PAGE 18 ---
+8th: RLPO, BBC Concert Orchestra (for "Friday Night Is Music Night"), Lahti Symphony
+Orchestra, Northern Sinfonia, the Melbourne Symphony Orchestra, the Adelaide Symphony
+Orchestra for the Adelaide Cabaret Festival and the RTÉ Concert Orchestra. His most popular
+show is the interactive " Sinatra Jukebox" where, "instead of an hour of songs and anecdote,
+halfway through members of the audience were invited to fill in request forms". Reviewing
+the show, "Cabaret Scenes" said, "I can think of no other singer to better pay homage to Ol’
+Blue Eyes on his 100th birthday." In 2014 he performed on BBC Radio 2 with the BBC
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+AMR graph information: # nodes: 51, # edges 57, # SSSP: 20
+Score by palm 2: 20/100, Rank by palm 2: 27/100
+Rank by DPR: 14/100
+9th: as his tribute to "The Great American Songbook". The album has Oleg’s vocals and
+arrangements by a big band leader Patrick Williams (a late period Frank Sinatra recording
+associate) and sound engineering by Al Schmitt, whose 60-year career yielded 150 gold
+and platinum albums, 20 Grammy awards and who also recorded Ol’Blue Eyes. "Bring
+Me Sunshine" was produced at the legendary Capitol Records studios in Hollywood, CA.
+Songwriter, Charles Strouse quoted: ""The Great American Songbook, to which I am proud
+to be a contributor, is one of our greatest cultural exports, Oleg is a living example of what an
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+AMR graph information: # nodes: 52, # edges 68, # SSSP: 12
+Score by palm 2: 50/100, Rank by palm 2: 9/100
+Rank by DPR: 27/100
+10th: first place wins The Founding Director is Ben Ferris (2004+). Sydney Film School
+runs two courses: The Diploma of Screen & Media and The Advanced Diploma of Screen
+& Media. Some of the accolades afforded to Sydney Film School graduates for their work
+include: Best Student Documentary Film at Antenna Film Festival: "Ol’ Blue Eyes", Matt
+Cooney Finalist at Bondi Short Film Festival: "Letters Home", Neilesh Verma Industry
+Advisory Board (IAB) Pitch Competition winner: "Lotus Sonny", Gary Sofarelli Opening
+Night screening; Best Australian Animation & Best Australian Composer at World of Women
+WOW Film Festival, 2012: "Camera Obscura", Marta Maia
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+AMR graph information: # nodes: 58, # edges 69, # SSSP: 35
+Score by palm 2: 0/100, Rank by palm 2: 30/100
+Rank by DPR: 39/100
+By analyzing the above result, we note that documents (such as 1st, 2nd, and 4th) containing exact
+words from the question (i.e., these words are “Ol’ Blue Eyes" and “nickname" in our example) are
+prioritized at the top by most rankers. However, if a document includes word variations or lacks
+sufficient keywords, it poses a challenge for the baseline reranker to identify its relevance, see the 9th
+and 10th documents. To address this issue, the AMR graph of documents is used in our method to
+comprehend more intricate semantics. The SSSPs from the ‘question’ node in the AMR graph also
+play the crucial role in uncovering the underlying connections between the question and the words in
+the documents.
+Another challenging scenario for the baseline reranker arises when several keywords or even gold
+answers are present in the documents but are weakly connected, making recognition difficult. For
+example, in the 7th, 8th, and 9th documents there are both “Ol’ Blue Eyes" and “Sinatra" which are
+gold answers, yet these words are not directly linked as the sentence: “Ol’ Blue Eyes is the nickname
+of “Sinatra". Instead, the connection between these two words is very loose. Luckily, the 7th, 8th, and
+9th documents are connected to the 1st document in the document graph due to common nodes like
+’Sinatra’ and ’Ol Blue Eyes.’ The 1st document stands out as more easily identifiable as a positive
+document, given its incorporation of all keywords from the questions. These words not only have a
+strong connection but also collectively contribute to a cohesive answer to the question. Leveraging
+this information and employing a message-passing mechanism, we can enable the 7th, 8th, and 9th
+18
+
+--- PAGE 19 ---
+document to adeptly discern potential keywords. Consequently, this approach enhances their ranking,
+based on the insights derived from the well-connected and information-rich 1st document.
+D Examples of LLM-generate Relevant Score
+Some examples of LLM-generate relevant score are illustrated in Fig 5.
+To what extent is the following passage relevant to the given question? Please provide a score on a scale of 0 to 100.Question: who sings does he love me with rebaText: Red Sandy Spikadress of Reba McEntire … during a duet performance of "Does He Love You" with Linda Davis…won entertainer of the yearInput:
+Output:75To what extent is the following passage relevant to the given question? Please provide a score on a scale of 0 to 100.Question: where do the great lakes meet the oceanText: nations maintain coast guard vessels in the Great Lakes. During settlement… canals an all-inland water route was provided between New York CityInput:
+Output:40To what extent is the following passage relevant to the given question? Please provide a score on a scale of 0 to 100.Question: what is the smallest prime number that is greater than 30Text: Euclid number …the first three primes are 2, 3, 5; their product is 30… celebrated proof of the infinitude.Input:
+Output:20
+Figure 5: Examples of LLM-generate relevant score.
+19

@@ -1,0 +1,1288 @@
+# 2407.15462v4.pdf
+# Converted from PDF to TXT
+# Source path: D:\llm\notebooks\AI-Papers\2407.15462v4.pdf
+# File size: 1515870 bytes
+
+===============================================
+PDF FILE CONTENT
+===============================================
+
+
+--- PAGE 1 ---
+Retrieval with Learned Similarities
+Bailu Ding∗
+badin@microsoft.com
+Microsoft Research
+Redmond, Washington, USAJiaqi Zhai∗
+jiaqi@jiaqizhai.com
+Meta
+Bellevue, Washington, USA
+Abstract
+Retrieval plays a fundamental role in recommendation systems,
+search, and natural language processing (NLP) by efficiently find-
+ing relevant items from a large corpus given a query. Dot products
+have been widely used as the similarity function in such tasks, en-
+abled by Maximum Inner Product Search (MIPS) algorithms for effi-
+cient retrieval. However, state-of-the-art retrieval algorithms have
+migrated to learned similarities. These advanced approaches encom-
+pass multiple query embeddings, complex neural networks, direct
+item ID decoding via beam search, and hybrid solutions. Unfortu-
+nately, we lack efficient solutions for retrieval in these state-of-the-
+art setups. Our work addresses this gap by investigating efficient
+retrieval techniques with expressive learned similarity functions.
+We establish Mixture-of-Logits (MoL) as a universal approximator
+of similarity functions, demonstrate that MoL’s expressiveness can
+be realized empirically to achieve superior performance on diverse
+retrieval scenarios, and propose techniques to retrieve the approx-
+imate top-𝑘results using MoL with tight error bounds. Through
+extensive experimentation, we show that MoL, enhanced by our
+proposed mutual information-based load balancing loss, sets new
+state-of-the-art results across heterogeneous scenarios, including
+sequential retrieval models in recommendation systems and finetun-
+ing language models for question answering; and our approximate
+top-𝑘algorithms outperform baselines by up to 66×in latency while
+achieving >.99recall rate compared to exact algorithms.1
+CCS Concepts
+•Information systems →Similarity measures ;Top-k retrieval
+in databases ;Learning to rank ;Probabilistic retrieval mod-
+els;Question answering ;Recommender systems ;Personalization ;•
+Computing methodologies →Natural language processing .
+Keywords
+Nearest Neighbor Search, Learned Similarities, Top-K Retrieval,
+Vector Databases, Recommendation Systems, Question Answering
+ACM Reference Format:
+Bailu Ding and Jiaqi Zhai. 2025. Retrieval with Learned Similarities. In
+Proceedings of the ACM Web Conference 2025 (WWW ’25), April 28-May 2,
+2025, Sydney, NSW, Australia. ACM, New York, NY, USA, 12 pages. https:
+//doi.org/10.1145/3696410.3714822
+∗Equal contribution.
+1Our code and model checkpoints are available at https://github.com/bailuding/rails.
+This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 Interna-
+tional License.
+WWW ’25, Sydney, NSW, Australia
+©2025 Copyright held by the owner/author(s).
+ACM ISBN 979-8-4007-1274-6/25/04
+https://doi.org/10.1145/3696410.37148221 Introduction
+Retrieval requires efficient storing, indexing, and querying relevant
+candidate items represented by high-dimensional vectors. Retrieval
+is widely used as the initial preprocessing stage for internet appli-
+cations such as recommendations, search, question answering, and
+natural language processing that operate over corpus with up to
+billions of items [ 5,10,16,28,33,35]. In many concrete use cases,
+such as vector databases [ 26], the query- and the item- embeddings
+are learned with deep neural networks in a dual-encoder setup,
+and dot products are applied on top of such embeddings as the
+similarity function for measuring relevance.
+Despite the popularity of dot products and numerous work done
+to improve their efficiency [ 9,25,37,51], state-of-the-art retrieval
+algorithms have long moved to various learned similarity func-
+tions. Their most basic versions preserve some dot product-related
+structures, but turn either the query or the item into multiple em-
+beddings, and rely on a max operator to combine those similar-
+ity values [ 29,35]. As another example, Probabilistic Label Trees
+(PLTs) [ 23] and Tree-based Deep Models (TDMs) [ 62,64] map
+items to leaf nodes in a tree, and reduce retrieval to beam search
+by making decisions sequentially using learned classifiers while
+traversing trees from root to leaf. More recent work on generative
+retrieval directly map the query to the item ids in sequence-to-
+sequence or decoder-only setups [ 4,11,53,55,57]. Combinations
+of these approaches have also been studied, with some performing
+coarse-grained retrieval with generative approaches, followed by
+re-ranking using dot products [ 15]. Finally, the similarity function
+can be directly parameterized by carefully designed deep neural
+networks that take various forms [21, 48, 58, 59].
+Supporting efficient retrieval with these diverse learned simi-
+larities is challenging. Learned similarity functions are generally
+expensive to compute; with learned index structures, traversing a
+binary tree with 4 million items requires running beam search for
+20 non-parallelizable steps [ 62], while recommendation and NLP
+deployments commonly need to handle billions of items [ 6,13,35]
+with a latency budget of tens of milliseconds. When an arbitrary
+deep neural network is employed, it’s no longer clear how to per-
+form top-𝐾retrieval other than through brute-force [ 21] or heuris-
+tics [ 59]. While graph-based methods can be used to prune the
+search space [ 24,37,43,56], such methods tend to be much slower
+compared with MIPS algorithms leveraging quantization at high
+recall rates [ 1,19], and their performance can degrade when the
+similarity function is not a distance metric [ 39]. What is worse,
+these algorithms vary significantly in terms of their exact formu-
+lations, and the lack of a universal interface makes it even more
+difficult to design a general solution for efficient retrieval.
+Taking a step back, our key insight is that learned similarity
+approaches are but different ways to increase the expressiveness ofarXiv:2407.15462v4  [cs.IR]  25 Jan 2025
+
+--- PAGE 2 ---
+WWW ’25, April 28-May 2, 2025, Sydney, NSW, Australia Bailu Ding and Jiaqi Zhai
+Notation Description
+𝑞(𝑄,|𝑄|) query (set of queries, number of queries)
+𝑥(𝑋,|𝑋|) item (set of items, number of items)
+𝜙(𝑞,𝑥) the learned similarity function, i.e., Mixture-of-Logits (MoL).
+𝑃(𝑃𝑞,𝑃𝑥)MoL uses𝑃pairs of low-rank embeddings ("component-level embeddings") to represent 𝑞and𝑥. With the (batched)
+outer product form of MoL, 𝑃𝑞and𝑃𝑥are the numbers of embeddings for 𝑞and𝑥, respectively; 𝑃=𝑃𝑞×𝑃𝑥.
+𝜋𝑝(𝑞,𝑥)(𝜋𝑝𝑞,𝑝𝑥(𝑞,𝑥))weight for the 𝑝-th (or𝑝𝑞-th by𝑝𝑥-th with outer product) embedding set for (𝑞,𝑥).
+𝑓(𝑞)(𝑓𝑝(𝑞)) learned embedding for the query ( 𝑝-th component-level query embedding)
+𝑔(𝑥)(𝑔𝑝(𝑥)) learned embedding for the item ( 𝑝-th component-level item embedding)
+𝑑𝑃 dimensionality of low-rank (component-level) embeddings. 𝑓𝑝(𝑞),𝑔𝑝(𝑞)∈R𝑑𝑃.
+⟨𝑓(𝑞),𝑔(𝑥)⟩ the dot product similarity function: 𝑔(𝑥)𝑇𝑓(𝑞).⟨𝑓𝑝(𝑞),𝑔𝑝(𝑥)⟩denotes the dot product for the 𝑝𝑡ℎembedding pair.
+Table 1: Table of Notations.
+the retrieval stage. Formally, for a query 𝑞and an item 𝑥, the expres-
+siveness of the similarity function boils down to deriving alternative
+parameterizations of 𝑝(𝑥|𝑞)matrices, with full rank matrices being
+the most expressive among them. Dot products, on the other hand,
+induces a low-rank bottleneck due to the dimensionality of the em-
+bedding, i.e., ln𝑝(𝑥|𝑞)∝⟨𝑓(𝑞),𝑔(𝑥)⟩(𝑓(𝑞),𝑔(𝑥)∈R𝑑). This can-
+not be alleviated by simply increasing the embedding dimension 𝑑,
+due to memory bandwidth being the main bottleneck in modern dot-
+product based retrieval systems, such as vector databases [ 9,26,59],
+and overfitting issues that come with larger embedding dimensions
+due to the common need to co-train or finetune query- and item-
+encoders from data [10, 15, 28, 35, 40, 41, 60].
+This insight enables us to support efficient retrieval with ex-
+pressive learned similarity functions by approximating them with
+Mixture-of-Logits (MoL). To the best of our knowledge, this is the
+first work that tackles the problem of efficient retrieval with univer-
+sal learned similarities, while setting new state-of-the-art results
+across heterogeneous scenarios. We first show that Mixture-of-Logits
+is a universal approximator as it can express 𝑝(𝑥|𝑞)matrices of
+arbitrary high rank, and hence approximate alllearned similarity
+functions (Section 2.1). Our work lays theoretical foundations for
+MoL’s empirical impressive performance gains of 20%-30% across
+Hit Rate@50-400 on web-scale corpus with hundreds of millions to
+billions of items [ 6,59], and further enables MoL to be effectively
+applied across diverse retrieval scenarios, from large-scale recom-
+mendation systems to finetuning language models for question
+answering (Section 2.2). We next propose techniques to retrieve
+the approximate top- 𝐾results using MoL with a tight error bound
+(Section 3). Our solution leverages the existing widely used APIs
+of vector databases like top-K queries, thus benefiting from prior
+work on efficient vector search like MIPS [ 19,25,26,51]. We empir-
+ically compare our techniques with existing approaches, showing
+that MoL sets new state-of-the-art results on recommendation re-
+trieval and question answering tasks, and our approximate top-k
+retrieval with learned similarities outperforms baselines by up to
+66×in latency, while achieving >.99recall rate of exact algorithms
+(Section 4). Importantly, our approach with learned similarities effi-
+ciently utilizes modern accelerators due to MoL’s higher arithmetic
+intensity [ 59], which results in MIPS-level inference latency and
+throughput. Overall, our work provides strong theoretical and prac-
+tical justifications to migrate away from the broadly adopted MIPS
+solution in vector databases to Retriev al with Learned Similarities
+(RAILS) on GPUs.2 Mixture of Logits
+In this section, we describe Mixture of Logits (MoL), propose a load
+balancing loss to improve conditional computations in MoL, prove
+that MoL is expressive enough to represent any learned similarity
+function, and demonstrate how to apply MoL to diverse retrieval
+tasks. Table 1 summarizes the notations in this paper.
+We first describe Mixture of Logits (MoL).
+Mixture of Logits (MoL). MoL [ 59] assumes that the query 𝑞
+and the item 𝑥are already mapped to 𝑃pairs of low-rank embed-
+dings (“component-level embeddings”), 𝑓𝑝(𝑞),𝑔𝑝(𝑥)∈R𝑑𝑃, where
+𝑓𝑝(𝑞),𝑔𝑝(𝑥)are parameterized with some neural networks based
+on query and item features, respectively, and 𝑑𝑃is the dimensional-
+ity of the low-rank embeddings. MoL then calculates the similarity
+between the query 𝑞and the item 𝑥by applying adaptive gating
+weights,𝜋𝑝(𝑞,𝑥)∈[ 0,1], to the inner products of these 𝑃pairs
+of low-rank embeddings, or ⟨𝑓𝑝(𝑞),𝑔𝑝(𝑥)⟩s. Note that prior work
+assumes that∑︁
+𝑝𝜋𝑝(𝑞,𝑥)=1[6,59], but this does not affect our
+analyses in this paper. Following [59]:
+𝜙(𝑞,𝑥)=𝑃∑︂
+𝑝=1𝜋𝑝(𝑞,𝑥)⟨𝑓𝑝(𝑞),𝑔𝑝(𝑥)⟩ (1)
+To extend this to large-scale datasets and to enable hardware-
+efficient implementations on accelerators like GPUs, Equation 1
+was further modified by decomposing those 𝑃dot products as
+(batched) outer products of 𝑃𝑞query-side and 𝑃𝑥item-side embed-
+dings, where 𝑃𝑞×𝑃𝑥=𝑃, and applying l2-norm to the embeddings:
+𝜙(𝑞,𝑥)=𝑃𝑞∑︂
+𝑝𝑞=1𝑃𝑥∑︂
+𝑝𝑥=1𝜋𝑝𝑞,𝑝𝑥(𝑞,𝑥)⟨︄
+𝑓𝑝𝑞(𝑞)
+||𝑓𝑝𝑞(𝑞)||2,𝑔𝑝𝑥(𝑥)
+||𝑔𝑝𝑥(𝑥)||2⟩︄
+(2)
+We use Equation 1 and 2 interchangeably as the MoL form to ana-
+lyze throughout the rest of this paper, given that the embedding
+normalization for 𝑓𝑝𝑞(𝑞)s and𝑔𝑝𝑥(𝑥)s can be precomputed.
+Mixture of Logits (MoL) with load balancing regularization loss.
+We further observe 𝜋𝑝(𝑞,𝑥)defines conditional computation to be
+performed over the 𝑝low-rank embedding pairs, or (𝑓𝑝(𝑞),𝑔𝑝(𝑥))s.
+𝜋𝑝(𝑞,𝑥)should hence satisfy two conditions:
+•Globally, the 𝑝low-rank embedding pairs, or (𝑓𝑝(𝑞),𝑔𝑝(𝑥))s,
+should receive a similar number of training examples even when
+𝑝is large and 𝜋𝑝(𝑞,𝑥)is sparse, with load distributed evenly
+across the𝑝pairs. One way to do this is to maximize the entropy
+𝐻(𝑝)over these embedding pairs.
+
+--- PAGE 3 ---
+Retrieval with Learned Similarities WWW ’25, April 28-May 2, 2025, Sydney, NSW, Australia
+...
+...Embedding f pq(q)Embedding f1(q)
+Pq × Px logits
+(outer products)πpq,px(q, x)
+(query- & item-
+dependent weights)·φ(q, x) (" Mixture-of-Logits")
+Embedding g px(x)Embedding g1(x)Query
+encoder
+Item 
+encoderQuery
+features (q)
+Item
+features (x)
+Figure 1: Mixture-of-logits (MoL) learned similarity.
+•The low-rank embedding pairs used to compute a particular
+𝜙(𝑞,𝑥)should be non-uniform and ideally sparse; e.g., it’s desir-
+able to avoid the degenerate solution where 𝜋𝑝(𝑞,𝑥)=1
+𝑝. One
+way to do this is to minimize the conditional entropy 𝐻(𝑝|(𝑞,𝑥))
+of𝑝given (query, item) pairs.
+Given these two desired conditions, we propose a mutual information-
+based regularization loss for load balancing, defined as
+L𝑀𝐼=−𝐻(𝑝)+𝐻(𝑝|(𝑞,𝑥)) (3)
+with the overall training loss as
+−logexp(𝜙(𝑞,𝑥))
+exp(𝜙(𝑞,𝑥))+∑︁
+𝑥′∈Xexp(𝜙(𝑞,𝑥′))+𝛼L𝑀𝐼 (4)
+where the first part of Equation 4 is the sampled softmax loss used
+in [59], and the second part adjusts the weight for the mutual
+information-based load balancing loss with a hyperparameter 𝛼.
+2.1 Expressiveness of Mixture of Logits
+Now we show that any high-rank matrix can be decomposed into a
+mixture of logits based on low-rank matrices, i.e., MoL is a universal
+approximator for all similarity functions. Without loss of generality,
+we prove the following:
+Theorem 1. MoL decomposition : Let𝐴be a matrix of 𝑛×𝑚,
+where𝑛≤𝑚. There exists 𝜋1,𝐵1,𝜋2,𝐵2,···,𝜋𝑝,𝐵𝑝such that|𝐴−∑︁𝑃
+𝑝=1𝜋𝑝◦𝐵𝑖|<𝜖, where𝜖is a small positive number. Here 𝐵𝑖is a
+matrix of𝑛×𝑚with rank equal to or less than 𝑑, and𝜋1,𝜋2,···,𝜋𝑃
+are𝑛×𝑚matrices that together define a probability distribution over
+each(𝑖,𝑗)tuple, such that∑︁𝑃
+𝑝=1𝜋𝑝(𝑖,𝑗)=1,0≤𝜋𝑝(𝑖,𝑗)≤1for
+any1≤𝑖≤𝑛,1≤𝑗≤𝑚,1≤𝑝≤𝑃.
+We can think about 𝑛as the number of queries and 𝑚the number
+of items (or vice versa). First, the theorem trivially holds if the rank
+of𝐴is less than or equal to 𝑑(𝑑≤𝑛):
+Lemma 1. MoL decomposition when 𝑅𝑎𝑛𝑘(𝐴)≤𝑑: Let𝐴be
+a matrix as defined in Theorem 1. If the rank of 𝐴is less than or
+equal to𝑑, then we have 𝐴=𝜋◦𝐴, where𝜋(𝑖,𝑗)=1for any
+1≤𝑖≤𝑛,1≤𝑗≤𝑚.
+Then we prove for the case where the rank of 𝐴is greater than
+𝑑. Without loss of generality, we prove the case where the matrix
+has full rank, i.e., 𝑅𝑎𝑛𝑘(𝐴)=𝑛:
+Lemma 2. MoL decomposition when 𝑅𝑎𝑛𝑘(𝐴)=𝑛: Let𝐴be a
+matrix as defined in Theorem 1. Then there exists 𝜋,𝐵 1,𝐵2such that
+|𝐴−(𝜋◦𝐵1+(1−𝜋)◦𝐵2)|<𝜖, where𝑅𝑎𝑛𝑘(𝐵1)≤𝑑,𝑅𝑎𝑛𝑘(𝐵2)≤𝑑,
+and0≤𝜋(𝑖,𝑗)≤1for1≤𝑖≤𝑛,1≤𝑗≤𝑚.Proof. Because𝐴is a matrix of rank 𝑛, it can be rewritten
+as𝐴=𝑈𝐼𝑛𝑉, where𝐼𝑛is an identity matrix with rank 𝑛. Thus,
+𝐴𝑖𝑗=∑︁𝑛
+𝑘=1𝑈𝑖𝑘𝑉𝑘𝑗,1≤𝑖≤𝑛,1≤𝑗≤𝑚. Let𝐴′be a matrix of
+𝑛×𝑚, where𝐴′
+𝑖𝑗=𝜆𝑖𝑗·∑︁𝑑
+𝑘=1𝑈𝑖𝑘𝑉𝑘𝑗for1≤𝑖≤𝑛,1≤𝑗≤𝑚.
+Here,𝜆𝑖𝑗=1+∑︁𝑛
+𝑘=𝑑+1𝑈𝑖𝑘𝑉𝑘𝑗∑︁𝑑
+𝑘=1𝑈𝑖𝑘𝑉𝑘𝑗if∑︁𝑑
+𝑘=1𝑈𝑖𝑘𝑉𝑘𝑗≠0, otherwise 𝜆𝑖𝑗=
+1+∑︁𝑛
+𝑘=𝑑+1𝑈𝑖𝑘𝑉𝑘𝑗
+𝜖. Thus, we have|𝐴−𝐴′|≤𝜖.
+Let𝜆𝑚𝑖𝑛=min𝜆𝑖𝑗, and𝜆𝑚𝑎𝑥=max𝜆𝑖𝑗. Let𝐵1=𝜆𝑚𝑖𝑛𝑈𝐷𝑛,𝑑𝑉,
+𝐵2=𝜆𝑚𝑎𝑥𝑈𝐷𝑛,𝑑𝑉, where𝐷𝑛,𝑑denotes an𝑛-by-𝑛diagonal matrix
+with the first 𝑑elements of the diagonal being 1s and the rest being
+0s. We have𝐴′
+𝑖𝑗=𝜆𝑖𝑗∑︁𝑑
+𝑘=1𝑈𝑖𝑘𝑉𝑘𝑗=𝜋(𝑖,𝑗)·𝐵1𝑖𝑗+(1−𝜋(𝑖,𝑗))·𝐵2𝑖𝑗,
+where𝜋(𝑖,𝑗)=𝜆𝑚𝑎𝑥−𝜆𝑖𝑗
+𝜆𝑚𝑎𝑥−𝜆𝑚𝑖𝑛. Because𝜆𝑚𝑖𝑛≤𝜆𝑖𝑗≤𝜆𝑚𝑎𝑥, we have
+0≤𝜋(𝑖,𝑗)≤1.
+Thus, we have constructed 𝐵1,𝐵2,𝜋such that|𝐴−(𝜋◦𝐵1+(1−
+𝜋)◦𝐵2)|=|𝐴−𝐴′|≤𝜖. □
+Remark Here, we have shown that any high-rank matrix can be
+expressed as a mixture of logits of two low-rank matrices. Note
+that our decomposition is not intended to be used as a distillation
+of the original high-rank matrix. It is likely prohibitively expensive
+to populate the full matrix with a learned similarity function. In
+addition, our proof also does not indicate that having two mixture
+components is sufficient to train the embeddings and the learned
+similarity function. It is well-known that overparameterization is
+often necessary to enable efficient and performant training.
+2.2 Applying MoL to Heterogeneous Use Cases
+We now discuss how to apply MoL to retrieval tasks in different
+domains. Parameterization of the low-rank, component-level em-
+beddings, or 𝑓𝑝(𝑞),𝑔𝑝(𝑥)∈R𝑑𝑃, plays an important role in realiz-
+ing MoL’s theoretical expressiveness in practice, as suggested by
+prior work [ 6]. We discuss two scenarios on the opposite end of the
+spectrum, one with a large number of heterogeneous features – re-
+trieval in large-scale recommendation systems, followed by another
+with a single homogeneous feature – finetuning language models for
+question answering and related NLP use cases, shown in Figure 2.
+Retrieval in Large-scale Recommendation Systems. Recommen-
+dation systems are characterized by the large number of heteroge-
+neous features they use [ 10,52,60]. This naturally enables some of
+those features to be utilized on the query- (user-) or on the item-side.
+For instance, embeddings can be constructed based on cluster ids on
+both the query-side and the item-side [ 6]. For common benchmark
+
+--- PAGE 4 ---
+WWW ’25, April 28-May 2, 2025, Sydney, NSW, Australia Bailu Ding and Jiaqi Zhai
+X1 X2 ... XPX SP1 SP2 SP3 ... SPNItem Encoder: Finetuned Language Model (e.g., T5)Parameterized Pooling: (D,) -> (max_seq_len, PX)f1(x) f2(x) ... fPX(x)
+Sequential Encoder
+(RNNs/T ransformers)
+Φ1 Φ2 Φ3 ... ΦNg1(q) g2(q) ... gPQ(q)
+Query MLPSide information, e.g.,
+user embeddings
+Rich, h eterogeneous features (Recommendations) Single, homogeneous feature (Language Models )
+Figure 2: Illustration of how to apply Mixture-of-logits (MoL) learned similarity to various retrieval scenarios, with a language
+model finetuning use case (characterized by a single homogeneous feature) shown on the left, and a recommendation use case
+(characterized by a large number of heterogeneous features) shown on the right. More details can be found in Appendix A.2.
+datasets, User ID-based one-hot embeddings [ 30] represent another
+possible𝑔𝑝(𝑞)to use, which we evaluate in Section 4.
+Finetuning Language Models for Question Answering. In contrast,
+language models are characterized by their use of homogeneous
+semantic features, such as wordpieces and sentencepieces [ 31]. We
+observe that MoL can be similarly adopted for those use cases. To
+obtain the𝑃𝑋item embeddings for MoL, we expand the tokenizer’s
+vocabulary with 𝑃𝑋special aggregation tokens 𝑋1,...,𝑋𝑃𝑋, and
+append those 𝑃𝑋tokens at the beginning of every tokenized se-
+quence,𝑆𝑃1,...,𝑆𝑃𝑁, as illustrated in Figure 21. These𝑃𝑋special
+tokens play similar roles as the CLS token in BERT [ 12], and dur-
+ing finetuning of the language model, are co-trained to aggregate
+different aspects of information as inputs for MoL. Additionally, we
+can design a learned pooling function to adapt pooling policy at an
+example-level (“Parameterized Pooling”) to improve model quality,
+which we discuss further in Appendix A.2.
+3 Retrieval Algorithms
+In this section, we describe the problem of retrieving the top 𝐾items
+with MoL as well as exact and approximate retrieval algorithms.
+Formally, we define the top 𝐾retrieval problem as follows:
+Definition 1. Top𝐾with MoL : Let𝑞be a query and 𝑋be a
+set of items, where both the query 𝑞and each item 𝑥∈𝑋are asso-
+ciated with𝑃embeddings. Together we have 𝑃pairs of embeddings,
+(𝑓𝑝(𝑞),𝑔𝑝(𝑥)),1≤𝑝≤𝑃. Let𝜙(𝑞,𝑥)=∑︁𝑃
+𝑝=1𝜋𝑝(𝑞,𝑥)⟨𝑓𝑝(𝑞),𝑔𝑝(𝑥)⟩
+be the similarity score of 𝑞,𝑥, where𝑥∈𝑋. The top𝐾query with
+MoL returns the 𝐾items from𝑋with the highest 𝜙(𝑞,𝑥)s.
+For approximate top 𝐾retrieval with MoL, we define the gap of
+the approximate and exact top 𝐾results as follows:
+Definition 2. Gap of approximate top 𝐾:Let𝑞be a query and
+𝑋𝐾be the set of exact top 𝐾items for the query 𝑞from a set of items
+𝑋. Let𝑋∗be the set of approximate top 𝐾results, where 𝑋∗⊆𝑋. Let
+𝑆=min{𝜙(𝑞,𝑥),𝑥∈𝑋∗}and𝑆′=max{𝜙(𝑞,𝑥),𝑥∈𝑋𝐾\𝑋∗}. We
+call𝑆Δ=𝑆′−𝑆thegapof the top𝐾with𝑋∗.
+3.1 Exact algorithm
+The brute-force algorithm to retrieve the exact top 𝐾with MoL is to
+evaluate𝜙(𝑞,𝑥)for each query 𝑞and item𝑥. This algorithm can be
+1Note that many question answering scenarios [ 11,28,41,53,57] utilize bidirectional
+language models for retrieval, like BERT [ 12] or T5 [ 44]; for recent unidirectional
+language models, we can add 𝑋1,...,𝑋𝑃𝑋to the end of the input sequence instead.prohibitively expensive if the number of items is large. Instead, we
+describe a more efficient two-pass algorithm to retrieve the exact
+top𝐾items as shown in Algorithm 1 (example in Appendix B).
+Algorithm 1 Exact top𝐾algorithm.
+Input: query𝑞, a set of items 𝑋,𝑓𝑝(·),𝑔𝑝(·)for constructing the
+component-level embeddings 𝑓𝑝(𝑞),𝑔𝑝(𝑥)
+Output: exact top𝐾items
+1:𝐺←∅
+2:for𝑝∈𝑃do
+3:𝑋𝑝←{𝑔𝑝(𝑥),𝑥∈𝑋} ⊲Can be preprocessed.
+4:𝐺←𝐺∪𝑇𝑜𝑝𝐾𝐷𝑜𝑡𝑃𝑟𝑜𝑑𝑢𝑐𝑡 (𝑓𝑝(𝑞),𝑋𝑝)⊲Retrieve top 𝐾items
+for each pair of embeddings.
+5:𝑆𝑚𝑖𝑛←∞
+6:for𝑥∈𝐺do
+7:𝑠←𝑀𝑜𝐿(𝑞,𝑥)
+8: if𝑠<𝑆𝑚𝑖𝑛then𝑆𝑚𝑖𝑛←𝑠
+9:𝐺′←∅
+10:for𝑝∈𝑃do
+11:𝐺′←𝐺′∪𝑅𝑎𝑛𝑔𝑒𝐷𝑜𝑡𝑃𝑟𝑜𝑑𝑢𝑐𝑡 (𝑓𝑝(𝑞),𝑆𝑚𝑖𝑛,𝑋𝑝)⊲Retrieve all
+items𝑥∈𝑋𝑃with⟨𝑓𝑝(𝑞),𝑥⟩≥𝑆𝑚𝑖𝑛.
+12:return𝐵𝑟𝑢𝑡𝑒𝐹𝑜𝑟𝑐𝑒𝑇𝑜𝑝𝐾𝑀𝑜𝐿 (𝑞,𝐺′) ⊲Retrieve the top 𝐾items
+from𝐺′with MoL.
+We start by retrieving the top 𝐾items with the highest dot
+product scores for each group of embeddings as the initial candidate
+set𝐺(line 1-4). Then we evaluate the MoL scores of the items in 𝐺
+and find the minimal MoL score 𝑆𝑚𝑖𝑛(line 5-8). Next we retrieve all
+items within a distance of 𝑆𝑚𝑖𝑛with the query 𝑞as the candidate
+set𝐺′(line 9-11). Finally, we evaluate the MoL scores of the items
+in𝐺′, and return the top 𝐾items with the highest scores (line 12).
+We argue that Algorithm 1 retrieves the exact top 𝐾items with
+MoL. Let𝑋𝐾be the set of the exact top 𝐾items and𝑋′be the result
+of Algorithm 1. Let 𝑥∈𝑋𝐾and𝜙(𝑞,𝑥)be the MoL score of𝑥and
+𝑞. Since𝑥has the highest top 𝐾score with MoL,𝜙(𝑞,𝑥)≥𝑆𝑚𝑖𝑛.
+Since the MoL score is a weighted score over the dot product scores,
+we have max{⟨𝑓𝑝(𝑞),𝑔𝑝(𝑥)⟩,1≤𝑝≤𝑃}≥𝜙(𝑞,𝑥)≥𝑆𝑚𝑖𝑛. Since
+Algorithm 1 retrieves all the items with a dot product higher than
+or equal to𝑆𝑚𝑖𝑛of𝑞for each embedding 𝑞𝑝(line 9-11), we have
+𝑥∈𝐺′. Thus,𝑥∈𝑋′. So we have shown that 𝑋𝐾=𝑋′.
+3.2 Approximate algorithms
+In the exact algorithm shown in Algorithm 1, we need to retrieve
+all the items with a dot product higher than or equal to a threshold.
+
+--- PAGE 5 ---
+Retrieval with Learned Similarities WWW ’25, April 28-May 2, 2025, Sydney, NSW, Australia
+Algorithm 2 Approximate top- 𝑘algorithms.
+Input: a query𝑞, a set of items 𝑋
+Output: approximate top 𝐾items
+1:function ApproxTopK (𝑞,𝑋,𝐾,𝐾′)
+2:𝐺←𝑇𝑜𝑝𝐾𝐶𝑎𝑛𝑑𝑖𝑑𝑎𝑡𝑒(𝑞,𝑋,𝐾′)⊲Retrieve the top 𝐾′candidates.
+3: return𝐵𝑟𝑢𝑡𝑒𝐹𝑜𝑟𝑐𝑒𝑇𝑜𝑝𝐾𝑀𝑜𝐿 (𝑞,𝐺,𝐾) ⊲Retrieve the top 𝐾
+items from𝐺with MoL.
+Input: a query𝑞, a set of items 𝑋,𝑓𝑝(·),𝑔𝑝(·)for constructing the 𝑃
+component-level embedding pairs 𝑓𝑝(𝑞),𝑔𝑝(𝑥)
+Output: union of top 𝐾items over𝑃embedding pairs by dot product
+4:function TopKPerEmbedding (𝑞,𝑋,𝐾 )
+5:𝐺←∅
+6: for𝑝∈𝑃do
+7:𝑋𝑝←{𝑔𝑝(𝑥),𝑥∈𝑋} ⊲Can be preprocessed.
+8:𝐺←𝐺∪𝑇𝑜𝑝𝐾𝐷𝑜𝑡𝑃𝑟𝑜𝑑𝑢𝑐𝑡 (𝑓𝑝(𝑞),𝑋𝑝,𝐾)⊲Retrieve the top
+𝐾items by dot product for the 𝑝-th embedding pair.
+9: return𝐺⊲Dedup’ed set of the top 𝐾item for each of the 𝑃queries
+Input: a query𝑞, a set of items 𝑋,𝑓𝑝(·),𝑔𝑝(·)for constructing the
+component-level embeddings 𝑓𝑝(𝑞),𝑔𝑝(𝑥)
+Output: top𝐾items with averaged dot product,∑︁
+𝑝⟨𝑓𝑝(𝑞),𝑔𝑝(𝑥)⟩/𝑃
+10:function TopKAvg (𝑞,𝑋,𝐾 )
+11:𝑞′←∑︁𝑃
+𝑝=1𝑓𝑝(𝑞)
+12:𝑋′←{∑︁𝑃
+𝑝=1𝑔𝑝(𝑥)/𝑃,𝑥∈𝑋} ⊲Can be preprocessed.
+13: return𝑇𝑜𝑝𝐾𝐷𝑜𝑡𝑃𝑟𝑜𝑑𝑢𝑐𝑡 (𝑞′,𝑋′,𝐾)
+When the threshold is a loose filter of the item set, which may
+happen when the dot products are skewed, 𝐺′can be large, and the
+evaluation of MoL over a large number of candidates can be expen-
+sive. Here, we describe two heuristics to approximately retrieve the
+top𝐾items and analyze their gap against the exact algorithm.
+In both heuristics, we perform a two-stage retrieval as shown
+in Algorithm 2. In the first stage, we retrieve a set of 𝐾′candidate
+items that are potentially high in MoL score by using dot products
+(line 2). Note that 𝐾′can be larger than 𝐾, e.g., due to oversampling.
+In the second stage, we evaluate the MoL scores of the candidate
+items and return the top 𝐾items (line 3).
+Here, we describe two heuristics to retrieve the candidate items:
+Top𝐾per embedding. Given a query 𝑞and a set of items 𝑋, for
+each of the𝑝embedding pairs, retrieve top 𝐾items𝑋𝐾,𝑝based on
+dot product (⟨𝑓𝑝(𝑞),𝑔𝑝(𝑥)⟩). Return the union across 𝑃queries.
+The top𝐾per embedding heuristic returns the union of the top 𝐾
+items for each embedding pair (group) by dot product. We analyze
+the gap of this approach as follows:
+Theorem 2. Upper bound of the gap of top 𝐾per embed-
+ding: Let𝑋𝐾,𝑝be the top𝐾items of the embedding set 𝑝and𝑆=
+max{⟨𝑓𝑝(𝑞),𝑔𝑝(𝑥)⟩,𝑥∈𝑋𝐾+1,𝑝\𝑋𝐾,𝑝,∀𝑝}. Let𝑆𝐾be the𝐾𝑡ℎlargest
+MoL score of the items in ∪𝑝𝑋𝐾,𝑝, then we have 𝑆Δ≤𝑆−𝑆𝐾.
+Remark This gap (error bound) bounds the maximal difference
+between the 𝐾𝑡ℎlargest MoL score from the set of items retrieved by
+the heuristic and the actual 𝐾𝑡ℎlargest MoL score. In addition, any
+retrieved item 𝑥with𝜙(𝑞,𝑥)≥𝑆belongs to the actual top 𝐾items.
+Note that there exists an MoL such that𝑆Δ=𝑆−𝑆𝐾, i.e., when
+𝜋𝑝(𝑞,𝑥)=1for𝑥,𝑝=arg max𝑥,𝑝{⟨𝑓𝑝(𝑞),𝑔𝑝(𝑥)⟩,𝑥∈𝑋𝐾+1,𝑝\
+𝑋𝐾,𝑝,∀𝑝}. Thus, the upper bound of 𝑆Δis tight. In practice, we can
+calculate a looser bound with the items retrieved by per embedding
+top𝐾, i.e., from𝑋𝐾,𝑝. We provide an example in Appendix B.Top𝐾average. Given a query 𝑞and a set of items 𝑋, return
+the top𝐾items with the highest average dot product defined as∑︁
+𝑝⟨𝑓𝑝(𝑞),𝑔𝑝(𝑥)⟩/𝑃.
+Note that the top 𝐾average heuristic returns the exact top 𝐾
+items when the gating weight distribution in MoL,𝜋, is uniform.
+This heuristic is interesting for two reasons. First, the items re-
+trieved by this heuristic are likely to be the top 𝐾items of MoL
+when the weight distribution is more balanced. This complements
+the heuristic that retrieves top 𝐾per embedding. Second, in the
+setup where the set of embedding pairs is constructed as the outer
+product of the embeddings of a query and those of an item (Equa-
+tion 2), the average dot product can be efficiently preprocessed
+and materialized for the items, and the computation of the top 𝐾
+average is then agnostic to the number of embedding pairs.
+Formally, let 𝑃=𝑃𝑞×𝑃𝑥be the number of embedding pairs,
+where𝑃𝑞is the number of embeddings of a query 𝑞and𝑃𝑥is that
+of an item𝑥. The average dot product can be computed as
+1
+𝑃·𝑃∑︂
+𝑝=1⟨𝑓𝑝(𝑞),𝑔𝑝(𝑥)⟩=1
+𝑃·𝑃𝑞∑︂
+𝑝𝑞=1𝑃𝑥∑︂
+𝑝𝑥=1⟨𝑓𝑝𝑞(𝑞),𝑔𝑝𝑥(𝑥)⟩ (5)
+=1
+𝑃·⟨︄𝑃𝑞∑︂
+𝑝𝑞=1𝑓𝑝𝑞(𝑞),𝑃𝑥∑︂
+𝑝𝑥=1𝑔𝑝𝑥(𝑥)⟩︄
+(6)
+Thus, we can preprocess the embeddings of the items and the
+query, so the number of embeddings accessed is 1per item for a
+given query, regardless of the overall number of component-level
+embeddings used by MoL, i.e.,𝑃.
+Finally, we can combine the candidates retrieved from top 𝐾per
+embedding group and the top 𝐾average as the following:
+Combined top 𝐾.Given a query 𝑞, a set of items 𝑋, and𝐾, return
+the union of the items from the top 𝐾per embedding group across
+the𝑃groups and the top 𝐾items from the top 𝐾average.
+Theorem 3. Upper bound of the gap of combined top 𝐾.Let
+𝑋𝐾,𝑝be the top𝐾items of the embedding set 𝑝and𝑆𝐾as defined
+in Theorem 2. Let 𝑋′
+𝐾be the top𝐾items from top 𝐾average. Let
+𝑆′=max{⟨𝑓𝑝(𝑞),𝑔𝑝(𝑥)⟩,𝑥∈𝑋\(𝑋𝐾,𝑝∪𝑋′
+𝐾),∀𝑝}. Then the gap
+𝑆Δsatisfies𝑆Δ≤𝑆′−𝑆𝐾.
+Remark Similar to Theorem 2, the upper bound of this gap is
+tight. In practice, we can configure the 𝐾to be different for the two
+heuristics, i.e., 𝐾1and𝐾2. For example, when the weight distribu-
+tion𝜋is more balanced, 𝐾2can be configured to be larger as the
+top𝐾average approach approximates MoL well while being more
+computationally efficient.
+4 Evaluation
+In this section, we evaluate the performance of MoL based learned
+similarity with the proposed load balancing loss, and the efficiency
+of retrieval algorithms discussed in Section 3. Our code and model
+checkpoints are available at https://github.com/bailuding/rails.
+4.1 Workloads
+We benchmark MoL with the proposed load balancing loss L𝑀𝐼, on
+top of state-of-the-art baselines in recommendation systems and
+question answering. We describe workloads used below.
+
+--- PAGE 6 ---
+WWW ’25, April 28-May 2, 2025, Sydney, NSW, Australia Bailu Ding and Jiaqi Zhai
+Workload|𝑄||𝑋||𝑃𝑞||𝑃𝑥|𝑑𝑃
+ML-1M 6,040 3,649 8 4 64
+ML-20M 138,493 24,186 8 4 128
+Books 694,897 674,044 8 8 32
+NQ320K 307,373 109,739 4 4 768
+Table 2: Workload statistics.
+Recommendation Systems. We consider three widely used
+datasets, the 1M and 20M subsets of MovieLens [ 20], and the largest
+Books subset of Amazon Reviews [ 38]. Sequential retrieval mod-
+els have been shown to achieve state-of-the-art results on these
+datasets [ 22,27,60]. In these settings, sequential encoders, like
+RNNs or Transformers, are used to map user representations at
+time𝑡– e.g., in a commonly used setting shown in Figure 2, the
+list of items in user history up until time 𝑡,Φ0,...,Φ𝑡– toR𝑑, and
+the model is trained to autoregressively predict the next item 𝑥𝑡+1.
+We hence compare MoL with the proposed regularization loss on
+top of two popular backbones used for sequential retrieval models,
+SASRec [ 27] and HSTU [ 60], against cosine similarity baselines. We
+utilize user id-based embeddings discussed in Section 2.2 and MLPs
+to parameterize the 𝑃𝑄query-side and the 𝑃𝑋item-side features.
+Question Answering (QA). Natural Questions (NQ) [ 32] is com-
+monly used to evaluate state-of-the-art neural retrieval models,
+including dense retrieval [ 28,41] and generative retrieval [ 11,53,
+55,57] approaches in recent years. The most commonly used ver-
+sion [ 53,55,57], which we reuse in our work, is often referred to
+as NQ320k. NQ320k consists of 320k query-items pairs, where the
+items are from Wikipedia pages and the queries are natural lan-
+guage questions. We utilize special aggregation tokens discussed in
+Section 2.2 to parameterize embeddings in MoL, and compare MoL
+with popular sparse retrieval methods [ 42,47], dense retrieval meth-
+ods [ 28,40,41], and generative retrieval methods [ 4,11,53,55,57].
+Consistent with recent work [ 53,57,63], we use the pre-trained
+query generation model from DocT5Query [ 42] to generate syn-
+thetic (query, item) pairs for data augmentation.
+Table 2 summarizes the statistics of these four workloads.
+4.2 Quality of MoL-based Learned Similarity
+Metrics. We use Recall (Hit Rate) as the main metric. We report
+Hit Rate@{1, 10, 100} and Mean Reciprocal Rank (MRR) on NQ320K,
+following [ 53,57], and Hit Rate@{1, 10, 50, 200} on ML-1M ,ML-20M ,
+andBooks , following [59, 60].
+Hyperparameter Settings. We set the weight 𝛼for the proposed
+load balancing loss L𝑀𝐼to0.001for all experiments. We reuse
+baseline settings for most other hyperparameters, including learn-
+ing rate, number of examples used for in-batch negative sampling,
+etc., with detailed discussions in Appendix A. For the NQ320K
+dataset, we reuse SEAL [ 4] and NCI [ 57] results reported by [ 57],
+and results for other models as reported by [ 53]. The Sentence-
+T5 [40], GENRE [ 11], DSI [ 55], SEAL [ 4], DSI+QG [ 63], NCI [ 57],
+and GenRet [ 53] rows are all finetuned from T5-base, consistent
+with MoL, to ensure a fair comparison. All other results are imple-
+mented in PyTorch, and are trained with 1x/2x 48GB GPUs for the
+recommendation datasets and 4x 80GB GPUs for the QA datasets.MethodHR@KMRRK=1 K=10 K=50 K=200
+ML-1M dataset
+SASRec [27] .0610 .2818 .5470 .7540 .1352
+SASRec + MoL .0697 .3036 .5617 .7667 .1441
+HSTU [60] .0750 .3332 .5956 .7824 .1579
+HSTU + MoL .0884 .3465 .6022 .7935 .1712
+HSTU + MoL abl.L𝑀𝐼 .0847 .3417 .6011 .7942 .1662
+ML-20M dataset
+SASRec [27] .0653 .2883 .5484 .7658 .1375
+SASRec + MoL .0778 .3102 .5682 .7779 .1535
+HSTU [60] .0962 .3557 .6146 .8080 .1800
+HSTU + MoL .1010 .3698 .6260 .8132 .1881
+HSTU + MoL abl.L𝑀𝐼 .0994 .3670 .6241 .8128 .1866
+Books dataset
+SASRec [27] .0058 .0306 .0754 .1431 .0153
+SASRec + MoL .0095 .0429 .0915 .1635 .0212
+HSTU [60] .0101 .0469 .1066 .1876 .0233
+HSTU + MoL .0156 .0631 .1308 .2173 .0324
+HSTU + MoL abl.L𝑀𝐼 .0153 .0625 .1286 .2172 .0321
+Table 3: Evaluation of performance for sequential retrieval
+models on MovieLens and Amazon Reviews.
+MethodHR@KMRRK=1 K=10 K=100
+Sparse retrieval
+BM25 [47] .297 .603 .821 .402
+DocT5Query [42] .380 .693 .861 .489
+Dense retrieval
+DPR [28] .502 .777 .909 .599
+Sentence-T5 [40] .536 .830 .938 .641
+GTR-Base [41] .560 .844 .937 .662
+Generative retrieval
+GENRE [11] .552 .673 .754 .599
+DSI [55] .552 .674 .780 .596
+SEAL [4] .570 .800 .914 .655
+DSI+QG [63] .631 .807 .880 .695
+NCI [57] .659 .852 .924 .731
+GenRet [53] .681 .888 .952 .759
+Learned similarities
+MoL .685 .919 .970 .773
+MoL abl.L𝑀𝐼 .673 .919 .968 .767
+Table 4: Evaluation of performance for QA retrieval models
+finetuned from language models on Natural Questions.
+Results. Across the six recommendation scenarios utilizing dif-
+ferent sequential encoder backbones, Mixture-of-Logits (MoL rows)
+consistently outperform the state-of-the-art dense retrieval base-
+lines (dot products) by an average of 29.1% in HR@1, 16.3% in
+HR@10, and 18.1% in MRR (Table 3). On the widely used Natural
+Questions QA dataset, MoL outperforms all recent generative re-
+trieval approaches as well as strong dense- and sparse- retrieval
+baselines (Table 4). These results validate that learned similari-
+ties, in particular MoL, are not only theoretically expressive but
+also practically learnable , improving retrieval quality across het-
+erogeneous scenarios, including sequential retrieval models for
+Recommendations and finetuning LMs for Question Answering.
+
+--- PAGE 7 ---
+Retrieval with Learned Similarities WWW ’25, April 28-May 2, 2025, Sydney, NSW, Australia
+Method HR@1 HR@5 HR@10 HR@50 HR@100 Latency / ms
+ML-20MBruteForce 1.00 1.00 1.00 1.00 1.00 2.73 ±0.01
+TopKPerEmbd 5 0.69 0.67 0.63 0.46 0.40 1.61 ±0.05
+TopKPerEmbd 10 0.95 0.88 0.82 0.65 0.57 1.65 ±0.06
+TopKPerEmbd 50 1.00 1.00 0.99 0.95 0.92 1.64 ±0.05
+TopKPerEmbd 100 1.00 1.00 1.00 0.99 0.98 2.31±0.02
+TopKAvg 200 1.00 1.00 1.00 0.99 0.97 1.19±0.04
+TopKAvg 500 1.00 1.00 1.00 1.00 1.00 1.22±0.05
+CombTopK 5_200 1.00 1.00 1.00 1.00 1.00 1.86±0.06
+BooksBruteForce 1.00 1.00 1.00 1.00 1.00 128.36 ±0.30
+TopKPerEmbd 5 1.00 0.92 0.90 0.61 0.48 20.47 ±0.07
+TopKPerEmbd 50 1.00 1.00 1.00 0.98 0.93 21.60 ±0.08
+TopKPerEmbd 100 1.00 1.00 1.00 0.99 0.97 23.32±0.08
+TopKPerEmbd 200 1.00 1.00 1.00 1.00 1.00 26.55±0.12
+TopKAvg 200 0.97 0.92 0.91 0.76 0.67 1.13 ±0.04
+TopKAvg 500 0.97 0.98 0.97 0.86 0.81 1.17 ±0.04
+TopKAvg 1000 0.99 0.98 1.00 0.92 0.88 1.12 ±0.05
+TopKAvg 2000 1.00 0.99 1.00 0.95 0.92 1.20 ±0.02
+TopKAvg 4000 1.00 1.00 1.00 0.96 0.95 2.05 ±0.01
+TopKAvg 8000 1.00 1.00 1.00 0.97 0.97 3.79 ±0.01
+CombTopK 5_200 1.00 1.00 1.00 0.96 0.95 20.75 ±0.07
+CombTopK 50_500 1.00 1.00 1.00 0.99 0.96 22.12±0.07
+CombTopK 100_1000 1.00 1.00 1.00 0.99 0.98 24.02±0.13
+CombTopK 200_2000 1.00 1.00 1.00 1.00 1.00 28.01±0.11
+NQ320KBruteForce 1.00 1.00 1.00 1.00 1.00 37.74 ±.47
+TopKPerEmbd 5 1.00 1.00 1.00 0.96 1.00 4.71±0.08
+TopKPerEmbd 10 1.00 1.00 1.00 0.98 1.00 4.83±0.08
+TopKPerEmbd 50 1.00 1.00 1.00 1.00 1.00 6.31±0.09
+TopKAvg 100 1.00 1.00 1.00 1.00 1.00 0.57±0.05
+CombTopK 5_100 1.00 1.00 1.00 1.00 1.00 5.28±0.08
+Table 5: Evaluation of top 𝐾retrieval performance, with hit rate (HR) normalized by the brute-force top 𝐾method and latency
+measured over a batch of queries (where the batch size is 32). (Relative) hit rate higher than .99 is marked in bold.
+Ablation Studies. We conduct ablation studies for the proposed
+mutual information-based load balancing loss relative to the best
+performing method for each dataset (“abl. L𝑀𝐼” rows). Results
+show that our proposed L𝑀𝐼loss improves HR@1 by 2.4%, HR@10
+by 0.8% and MRR by 1.4% across the four datasets. In particular, our
+proposedL𝑀𝐼loss enables MoL to outperform the best generative
+retrieval approach on NQ320K, GenRet [53], across all metrics.
+4.3 Top𝐾retrieval performance
+We evaluate the following methods for top 𝐾retrieval performance:
+•Brute-force top 𝐾(BruteForce ): Evaluate the MoL scores for all
+items and return the top 𝐾items. This is the ground truth in our
+top𝐾evaluation2.
+•Per embedding top 𝐾(TopKPerEmbd (𝑁)): This algorithm is de-
+scribed in Section 3.2. 𝑁is the number of candidate items re-
+trieved from each embedding set, where 𝑁×𝑃≥𝐾.
+•Average top 𝐾(TopKAvg (𝑁)): This algorithm is described in Sec-
+tion 3.2.𝑁is the number of the candidate items retrieved by
+average dot products, where 𝑁≥𝐾.
+•Combined top 𝐾from per embedding top 𝐾and average top 𝐾
+(CombTopK𝑁1_𝑁2): This is described in Section 3.2. 𝑁1is the
+2We omit the baseline with the two-pass exact algorithm (Section 3.1) because the
+range-based item retrieval can still be expensive when the range threshold is loose.
+Empirically, the brute-force top 𝐾is more efficient on our datasets. We leave the
+efficient implementation of the two-pass exact algorithm as future work.number of candidate items retrieved from per embedding top 𝐾
+and𝑁2is the number of candidate items retrieved from average
+top𝐾, where𝑁1×𝑃+𝑁2≥𝐾.
+For each dataset, we evaluate top 𝐾retrieval methods based
+on the best performing model configurations reported in Table 3
+and Table 4. Table 5 shows the hit rate (HR) and latency of all
+the methods. The hit rate is normalized by the ground truth, i.e.,
+the hit rate achieved with brute-force top 𝐾. We measure latency
+by evaluating a batch of 32 retrieval queries, in order to achieve
+high accelerator utilization; this is consistent with prior work on
+GPU/TPU-based retrieval algorithms [ 9,26,59]. We omit ML-1M
+as its size is small (Table 2). We set batch size to 32for all datasets.
+We perform evaluation on a single RTX 6000 Ada GPU. We report
+latency averaged over 20 warm runs.
+We observe that our approximate heuristics achieve high HR
+with overfetching. For example, TopKAvg 500 achieves >.99in rel-
+ative HR across the board for ML-20M , and TopKAvg 100 achieves
+>.99in relative HR across the board for NQ320K . In addition, the
+combined top 𝐾algorithm can outperform both TopKPerEmbd and
+TopKAvg of the corresponding configurations, sometimes signifi-
+cantly, e.g., CombTopK 5_200 vs. TopKPerEmbd 5 and TopKAvg 200
+onBooks . This indicates that the set of candidate items retrieved by
+each individual approximate algorithm indeed complements each
+other when the weight distributions, 𝜋𝑝(𝑞,𝑥)s, vary in MoL.
+
+--- PAGE 8 ---
+WWW ’25, April 28-May 2, 2025, Sydney, NSW, Australia Bailu Ding and Jiaqi Zhai
+In terms of efficiency, we observe that our approximate heuristics
+are significantly lower in latency than the exact baselines, especially
+as the number of items in the dataset becomes large. For example,
+compared to BruteForce ,TopKAvg achieves >.99relative HR@100
+with a speedup of 66×in latency for NQ320K . While the algorithm
+latency grows with the size of the dataset in the brute-force base-
+line, it grows much slower with the approximate methods. For
+example, the algorithm latency increases by 47.0×from ML-20M
+toBooks inBruteForce , while the growth rate is 10.1×and1.0×for
+TopKPerEmbd 100 and TopKAvg 500, respectively. Thus, we expect
+the speedup of the approximate methods to become even more
+pronounced with larger datasets.
+We also notice that TopKAvg tends to be more efficient than
+TopKPerEmbd at comparable HRs, e.g., TopKAvg 4000 is 10.5×faster
+than TopKPerEmbd 50 on Books in terms of latency. First, the compu-
+tation in TopKAvg is agnostic to the number of component-level em-
+beddings,𝑃, because of the preprocessing described in Section 3.2.
+Second, the branching and deduplication steps in TopKPerEmbd
+cannot leverage the parallel processing capabilities of GPUs effec-
+tively. Additionally, the latency of the combined top 𝐾algorithm is
+lower than the sum of its individual components’ latencies; e.g., on
+ML-20M ,CombTopK 5_200 has a latency 1.5×lower than the sum of
+the individual latencies of TopKPerEmbd 5 and TopKAvg 200. This is
+done by consolidating processing shared by the two components.
+Overall, empirically TopKAvg strikes a good balance between
+high HR and low latency, and the combined top 𝐾algorithm can
+be used if the target HR is extremely stringent.
+5 Related work
+Similarity Functions in Retrieval. Most information retrieval mod-
+els in recommendation systems and natural language process-
+ing (e.g., question answering) follow a classical two-stage para-
+digm [ 10,28], where up to billions of items [ 6,13,35,59] are first
+filtered down to hundreds in the retrieval stage, followed by another
+stage (e.g., ranking in recommendation systems or generation in
+RAG [ 33]) that produces the final results. Earlier work on large-
+scale neural retrieval models primarily utilize dual-encoder (dense
+retrieval, etc.) setups, with dot products as the similarity func-
+tion [ 10,28,40,41]. Researchers quickly realized that dot products
+limited retrieval stage’s performance, and explored various learned
+similarity-based approaches. Prominent variants include maximum
+similarity based on multiple embeddings [ 29,35,48], specialized
+neural networks, often leveraging Hadamard products [ 6,21,54,56],
+and representing item ids as token sequences (“learned index struc-
+tures”), either implicitly defined during tree traversal [ 23,62,64] or
+explicitly in the “generative retrieval” setups [ 4,11,53,55,57,63]. It
+has been shown, however, that learned neural distances often fail to
+outperform dot products, e.g., Hadamard MLPs in recommendation
+systems [ 46] and DSI for QA scenarios in NLP [ 53]. Learned index
+structures further introduce stability and latency challenges as both
+NLP and recommendation systems need to support billion-scale
+realtime updated set of items [ 6,13,59]. Despite these challenges,
+significant gains (17% gains at Hit Rate@100 [ 59] to 24% gains at Hit
+Rate@400 [ 6]) with learned similarities have been reported in re-
+cent years; these can be attributed to careful construction of learned
+similarity functions [ 48,59], implicit diversification done as part of
+beam search [ 15], explicit incorporation of side-information usingspecial neural architectures [ 6,59], and hardware-aware similarity
+function and inference algorithm design on GPUs [6, 9, 43, 59].
+Load Balancing for Conditional Computations in Neural Networks.
+Conditional computations have been widely utilized in deep learn-
+ing models [ 2,8,49]. Regularization losses have been proposed
+based on the observation that an ideal policy should evenly utilize
+all compute units in aggregate while being sparse at an individual
+example level [ 2]. Mixture-of-experts, a common way to imple-
+ment conditional computations, has been widely used in language
+and vision domains [ 8,49] where mutual information-based reg-
+ularization losses between experts and tasks [ 8] and experts and
+tokens [50] have been shown to help with various architectures.
+Efficient Nearest Neighbor Search (NNS). NNS has been a popular
+research topic due to their critical role in large-scale retrieval and
+vector databases. Most studies focus on the dot product case, also
+known as Maximum Inner Product Search (MIPS). Various tech-
+niques were proposed and analyzed, including tree structures [ 3,45],
+locality sensitive hashing [ 17,51], production quantization [ 18,25],
+data partitioning [ 34,61], graph-based methods [ 24,37], and so on.
+The general case for NNS utilizing learned similarities remains less
+studied; for learned index structures, techniques to construct trees
+have been proposed to ensure beam search result in globally optimal
+top-𝐾results [ 64]. Algorithms based on implicit [ 24,37,43,56] or
+explicit graphs [ 56] have been proposed to obtain a tractable candi-
+date set in multi-stage retrieval setups; however, such approaches’
+performance can degrade when the similarity function is not a
+metric, and constructing appropriate graph indices for non-metric
+similarity functions can remain challenging even for the inner prod-
+uct case [ 39]. Due to GPUs and other accelerators having orders of
+magnitude higher arithmetic intensity vs CPUs, traditional quan-
+tization techniques [ 18,51] no longer fully utilize the compute;
+accelerator-specific nearest neighbor algorithms that benefit from
+increased compute have been proposed recently [6, 9, 43, 59].
+6 Conclusion
+We have analyzed techniques for efficient retrieval with expressive
+learned similarities in this work. We begin by showing Mixture-of-
+Logits ( MoL) is a universal approximator of all similarity functions,
+and further empirically learnable – MoL with our proposed load bal-
+ancing loss consistently outperforms dot products (dense retrieval),
+sparse retrieval, and generative retrieval approaches across Rec-
+ommendation Systems and Question Answering scenarios, setting
+new state-of-the-art across common, heterogeneous benchmark
+datasets. We next propose exact and approximate algorithms to
+enable efficient retrieval using learned similarity functions, and
+show their correctness and error bounds. Our approximate top 𝐾
+algorithms can reach >.99of Hit Rate relative to exact algorithms,
+while achieving up to 66×reduction in end-to-end latency and with
+minimal indexing overheads. We expect the speedups to be further
+amplified with larger-scale datasets and GPU kernel optimizations.
+Given MoL’s impressive empirical performance gains of 20%-30%
+across Hit Rate@50-400 over hundreds of millions to billions of
+items [ 6,59] and broad applicability across heterogeneous scenar-
+ios, our work provides strong theoretical and practical justifications
+for migrating web-scale vector databases away from dense retrieval
+and MIPS to Retrieva l with Learned Similarities (RAILS) on GPUs.
+
+--- PAGE 9 ---
+Retrieval with Learned Similarities WWW ’25, April 28-May 2, 2025, Sydney, NSW, Australia
+References
+[1][n. d.]. ANN Benchmarks. https://ann-benchmarks.com/. Accessed: 2024-08-06.
+[2]Emmanuel Bengio, Pierre-Luc Bacon, Joelle Pineau, and Doina Precup.
+2016. Conditional Computation in Neural Networks for faster models.
+arXiv:1511.06297 [cs.LG] https://arxiv.org/abs/1511.06297
+[3]Jon Louis Bentley. 1975. Multidimensional binary search trees used for associative
+searching. Commun. ACM 18, 9 (sep 1975), 509–517. https://doi.org/10.1145/
+361002.361007
+[4]Michele Bevilacqua, Giuseppe Ottaviano, Patrick Lewis, Scott Yih, Se-
+bastian Riedel, and Fabio Petroni. 2022. Autoregressive Search En-
+gines: Generating Substrings as Document Identifiers. In Advances in Neu-
+ral Information Processing Systems , S. Koyejo, S. Mohamed, A. Agarwal,
+D. Belgrave, K. Cho, and A. Oh (Eds.), Vol. 35. Curran Associates, Inc.,
+31668–31683. https://proceedings.neurips.cc/paper_files/paper/2022/file/
+cd88d62a2063fdaf7ce6f9068fb15dcd-Paper-Conference.pdf
+[5]Sebastian Borgeaud, Arthur Mensch, Jordan Hoffmann, Trevor Cai, Eliza Ruther-
+ford, Katie Millican, George van den Driessche, Jean-Baptiste Lespiau, Bogdan
+Damoc, Aidan Clark, Diego de Las Casas, Aurelia Guy, Jacob Menick, Roman
+Ring, Tom Hennigan, Saffron Huang, Loren Maggiore, Chris Jones, Albin Cassirer,
+Andy Brock, Michela Paganini, Geoffrey Irving, Oriol Vinyals, Simon Osindero,
+Karen Simonyan, Jack W. Rae, Erich Elsen, and Laurent Sifre. 2022. Improving
+Language Models by Retrieving from Trillions of Tokens. In International Con-
+ference on Machine Learning, ICML 2022, 17-23 July 2022, Baltimore, Maryland,
+USA (Proceedings of Machine Learning Research, Vol. 162) , Kamalika Chaudhuri,
+Stefanie Jegelka, Le Song, Csaba Szepesvári, Gang Niu, and Sivan Sabato (Eds.).
+PMLR, 2206–2240. https://proceedings.mlr.press/v162/borgeaud22a.html
+[6]Fedor Borisyuk, Qingquan Song, Mingzhou Zhou, Ganesh Parameswaran, Madhu
+Arun, Siva Popuri, Tugrul Bingol, Zhuotao Pei, Kuang-Hsuan Lee, Lu Zheng,
+Qizhan Shao, Ali Naqvi, Sen Zhou, and Aman Gupta. 2024. LiNR: Model Based
+Neural Retrieval on GPUs at LinkedIn. In Proceedings of the 33rd ACM International
+Conference on Information and Knowledge Management (Boise, ID, USA) (CIKM
+’24). Association for Computing Machinery, New York, NY, USA, 4366–4373.
+https://doi.org/10.1145/3627673.3680091
+[7]Haw-Shiuan Chang, Ruei-Yao Sun, Kathryn Ricci, and Andrew McCallum. 2023.
+Multi-CLS BERT: An Efficient Alternative to Traditional Ensembling. In Proceed-
+ings of the 61st Annual Meeting of the Association for Computational Linguistics
+(Volume 1: Long Papers) , Anna Rogers, Jordan Boyd-Graber, and Naoaki Okazaki
+(Eds.). Association for Computational Linguistics, Toronto, Canada, 821–854.
+https://doi.org/10.18653/v1/2023.acl-long.48
+[8]Zitian Chen, Yikang Shen, Mingyu Ding, Zhenfang Chen, Hengshuang Zhao,
+Erik G. Learned-Miller, and Chuang Gan. 2023. Mod-Squad: Designing Mixtures
+of Experts As Modular Multi-Task Learners. In Proceedings of the IEEE/CVF
+Conference on Computer Vision and Pattern Recognition (CVPR) . 11828–11837.
+[9]Felix Chern, Blake Hechtman, Andy Davis, Ruiqi Guo, David Majnemer, and
+Sanjiv Kumar. 2022. TPU-KNN: K Nearest Neighbor Search at Peak FLOP/s. In
+Advances in Neural Information Processing Systems .
+[10] Paul Covington, Jay Adams, and Emre Sargin. 2016. Deep Neural Networks
+for YouTube Recommendations. In Proceedings of the 10th ACM Conference on
+Recommender Systems (RecSys ’16) . 191–198.
+[11] Nicola De Cao, Gautier Izacard, Sebastian Riedel, and Fabio Petroni. 2021. Au-
+toregressive Entity Retrieval. In 9th International Conference on Learning Rep-
+resentations, ICLR 2021, Virtual Event, Austria, May 3-7, 2021 . OpenReview.net.
+https://openreview.net/forum?id=5k8F6UU39V
+[12] Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. 2019. BERT:
+Pre-training of Deep Bidirectional Transformers for Language Understanding. In
+Proceedings of the 2019 Conference of the North American Chapter of the Associa-
+tion for Computational Linguistics: Human Language Technologies, NAACL-HLT
+2019, Minneapolis, MN, USA, June 2-7, 2019, Volume 1 (Long and Short Papers) , Jill
+Burstein, Christy Doran, and Thamar Solorio (Eds.). Association for Computa-
+tional Linguistics, 4171–4186. https://doi.org/10.18653/v1/n19-1423
+[13] Chantat Eksombatchai, Pranav Jindal, Jerry Zitao Liu, Yuchen Liu, Rahul Sharma,
+Charles Sugnet, Mark Ulrich, and Jure Leskovec. 2018. Pixie: A System for
+Recommending 3+ Billion Items to 200+ Million Users in Real-Time. In Proceedings
+of the 2018 World Wide Web Conference (WWW ’18) . 1775–1784.
+[14] Stefan Elfwing, Eiji Uchibe, and Kenji Doya. 2017. Sigmoid-Weighted Linear
+Units for Neural Network Function Approximation in Reinforcement Learning.
+CoRR abs/1702.03118 (2017). arXiv:1702.03118 http://arxiv.org/abs/1702.03118
+[15] Weihao Gao, Xiangjun Fan, Chong Wang, Jiankai Sun, Kai Jia, Wenzi Xiao, Ruofan
+Ding, Xingyan Bin, Hui Yang, and Xiaobing Liu. 2021. Learning An End-to-End
+Structure for Retrieval in Large-Scale Recommendations. In Proceedings of the
+30th ACM International Conference on Information and Knowledge Management
+(CIKM ’21) . 524–533.
+[16] Daniel Gillick, Alessandro Presta, and Gaurav Singh Tomar. 2018. End-to-End
+Retrieval in Continuous Space. arXiv:1811.08008 [cs.IR]
+[17] Aristides Gionis, Piotr Indyk, and Rajeev Motwani. 1999. Similarity Search in
+High Dimensions via Hashing. In Proceedings of the 25th International Conference
+on Very Large Data Bases (VLDB ’99) . Morgan Kaufmann Publishers Inc., San
+Francisco, CA, USA, 518–529.[18] Ruiqi Guo, Sanjiv Kumar, Krzysztof Choromanski, and David Simcha. 2016. Quan-
+tization based Fast Inner Product Search. In Proceedings of the 19th International
+Conference on Artificial Intelligence and Statistics, AISTATS 2016 , Vol. 51. 482–490.
+[19] Ruiqi Guo, Philip Sun, Erik Lindgren, Quan Geng, David Simcha, Felix Chern, and
+Sanjiv Kumar. 2020. Accelerating large-scale inference with anisotropic vector
+quantization. In Proceedings of the 37th International Conference on Machine
+Learning (ICML’20) . JMLR.org, Article 364, 10 pages.
+[20] F. Maxwell Harper and Joseph A. Konstan. 2015. The MovieLens Datasets: History
+and Context. ACM Trans. Interact. Intell. Syst. 5, 4, Article 19 (dec 2015), 19 pages.
+https://doi.org/10.1145/2827872
+[21] Xiangnan He, Lizi Liao, Hanwang Zhang, Liqiang Nie, Xia Hu, and Tat-Seng
+Chua. 2017. Neural Collaborative Filtering. In Proceedings of the 26th International
+Conference on World Wide Web (Perth, Australia) (WWW ’17) . 173–182.
+[22] Balázs Hidasi, Alexandros Karatzoglou, Linas Baltrunas, and Domonkos Tikk.
+2016. Session-based Recommendations with Recurrent Neural Networks. In 4th
+International Conference on Learning Representations, ICLR 2016, San Juan, Puerto
+Rico, May 2-4, 2016, Conference Track Proceedings , Yoshua Bengio and Yann LeCun
+(Eds.). http://arxiv.org/abs/1511.06939
+[23] Kalina Jasinska, Krzysztof Dembczynski, Robert Busa-Fekete, Karlson
+Pfannschmidt, Timo Klerx, and Eyke Hullermeier. 2016. Extreme F-measure Max-
+imization using Sparse Probability Estimates. In Proceedings of The 33rd Interna-
+tional Conference on Machine Learning (Proceedings of Machine Learning Research,
+Vol. 48) , Maria Florina Balcan and Kilian Q. Weinberger (Eds.). PMLR, New York,
+New York, USA, 1435–1444. https://proceedings.mlr.press/v48/jasinska16.html
+[24] Suhas Jayaram Subramanya, Fnu Devvrit, Harsha Vardhan Simhadri, Ravishankar
+Krishnawamy, and Rohan Kadekodi. 2019. DiskANN: Fast Accurate Billion-point
+Nearest Neighbor Search on a Single Node. In Advances in Neural Information Pro-
+cessing Systems , H. Wallach, H. Larochelle, A. Beygelzimer, F. d 'Alché-Buc, E. Fox,
+and R. Garnett (Eds.), Vol. 32. Curran Associates, Inc. https://proceedings.neurips.
+cc/paper_files/paper/2019/file/09853c7fb1d3f8ee67a61b6bf4a7f8e6-Paper.pdf
+[25] Herve Jegou, Matthijs Douze, and Cordelia Schmid. 2011. Product Quantization
+for Nearest Neighbor Search. IEEE Trans. Pattern Anal. Mach. Intell. 33, 1 (jan
+2011), 117–128. https://doi.org/10.1109/TPAMI.2010.57
+[26] J. Johnson, M. Douze, and H. Jegou. 2021. Billion-Scale Similarity Search with
+GPUs. IEEE Transactions on Big Data 7, 03 (Jul 2021), 535–547.
+[27] Wang-Cheng Kang and Julian McAuley. 2018. Self-attentive sequential recom-
+mendation. In 2018 International Conference on Data Mining (ICDM) . 197–206.
+[28] Vladimir Karpukhin, Barlas Oguz, Sewon Min, Patrick Lewis, Ledell Wu, Sergey
+Edunov, Danqi Chen, and Wen-tau Yih. 2020. Dense Passage Retrieval for Open-
+Domain Question Answering. In Proceedings of the 2020 Conference on Empirical
+Methods in Natural Language Processing (EMNLP) , Bonnie Webber, Trevor Cohn,
+Yulan He, and Yang Liu (Eds.). Association for Computational Linguistics, Online,
+6769–6781. https://doi.org/10.18653/v1/2020.emnlp-main.550
+[29] Omar Khattab and Matei Zaharia. 2020. ColBERT: Efficient and Effective Passage
+Search via Contextualized Late Interaction over BERT. In Proceedings of the 43rd
+International ACM SIGIR Conference on Research and Development in Information
+Retrieval (Virtual Event, China) (SIGIR ’20) . Association for Computing Machinery,
+New York, NY, USA, 39–48. https://doi.org/10.1145/3397271.3401075
+[30] Yehuda Koren, Robert Bell, and Chris Volinsky. 2009. Matrix Factorization
+Techniques for Recommender Systems. Computer 42, 8 (2009), 30–37. https:
+//doi.org/10.1109/MC.2009.263
+[31] Taku Kudo and John Richardson. 2018. SentencePiece: A simple and language
+independent subword tokenizer and detokenizer for Neural Text Processing. In
+Proceedings of the 2018 Conference on Empirical Methods in Natural Language
+Processing: System Demonstrations , Eduardo Blanco and Wei Lu (Eds.). Association
+for Computational Linguistics, Brussels, Belgium, 66–71. https://doi.org/10.
+18653/v1/D18-2012
+[32] Tom Kwiatkowski, Jennimaria Palomaki, Olivia Redfield, Michael Collins, Ankur
+Parikh, Chris Alberti, Danielle Epstein, Illia Polosukhin, Jacob Devlin, Kenton Lee,
+Kristina Toutanova, Llion Jones, Matthew Kelcey, Ming-Wei Chang, Andrew M.
+Dai, Jakob Uszkoreit, Quoc Le, and Slav Petrov. 2019. Natural Questions: A
+Benchmark for Question Answering Research. Transactions of the Association for
+Computational Linguistics 7 (2019), 452–466. https://doi.org/10.1162/tacl_a_00276
+[33] Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin,
+Naman Goyal, Heinrich Küttler, Mike Lewis, Wen-tau Yih, Tim Rocktäschel,
+Sebastian Riedel, and Douwe Kiela. 2020. Retrieval-augmented generation for
+knowledge-intensive NLP tasks. In Proceedings of the 34th International Conference
+on Neural Information Processing Systems (, Vancouver, BC, Canada,) (NIPS ’20) .
+Curran Associates Inc., Red Hook, NY, USA, Article 793, 16 pages.
+[34] Chen Li, E. Chang, H. Garcia-Molina, and G. Wiederhold. 2002. Clustering for
+approximate similarity search in high-dimensional spaces. IEEE Transactions on
+Knowledge and Data Engineering 14, 4 (2002), 792–808.
+[35] Chao Li, Zhiyuan Liu, Mengmeng Wu, Yuchi Xu, Huan Zhao, Pipei Huang,
+Guoliang Kang, Qiwei Chen, Wei Li, and Dik Lun Lee. 2019. Multi-Interest
+Network with Dynamic Routing for Recommendation at Tmall. In Proceedings of
+the 28th ACM International Conference on Information and Knowledge Management
+(CIKM ’19) . 2615–2623.
+
+--- PAGE 10 ---
+WWW ’25, April 28-May 2, 2025, Sydney, NSW, Australia Bailu Ding and Jiaqi Zhai
+[36] Ilya Loshchilov and Frank Hutter. 2019. Decoupled Weight Decay Regularization.
+InInternational Conference on Learning Representations . https://openreview.net/
+forum?id=Bkg6RiCqY7
+[37] Yu A. Malkov and D. A. Yashunin. 2020. Efficient and Robust Approximate
+Nearest Neighbor Search Using Hierarchical Navigable Small World Graphs.
+IEEE Trans. Pattern Anal. Mach. Intell. 42, 4 (apr 2020), 824–836. https://doi.org/
+10.1109/TPAMI.2018.2889473
+[38] Julian McAuley, Christopher Targett, Qinfeng Shi, and Anton van den Hengel.
+2015. Image-Based Recommendations on Styles and Substitutes. In Proceedings
+of the 38th International ACM SIGIR Conference on Research and Development in
+Information Retrieval (Santiago, Chile) (SIGIR ’15) . Association for Computing
+Machinery, New York, NY, USA, 43–52. https://doi.org/10.1145/2766462.2767755
+[39] Stanislav Morozov and Artem Babenko. 2018. Non-metric Similarity Graphs for
+Maximum Inner Product Search. In Advances in Neural Information Processing
+Systems , S. Bengio, H. Wallach, H. Larochelle, K. Grauman, N. Cesa-Bianchi, and
+R. Garnett (Eds.), Vol. 31. Curran Associates, Inc. https://proceedings.neurips.cc/
+paper_files/paper/2018/file/229754d7799160502a143a72f6789927-Paper.pdf
+[40] Jianmo Ni, Gustavo Hernandez Abrego, Noah Constant, Ji Ma, Keith Hall, Daniel
+Cer, and Yinfei Yang. 2022. Sentence-T5: Scalable Sentence Encoders from Pre-
+trained Text-to-Text Models. In Findings of the Association for Computational
+Linguistics: ACL 2022 , Smaranda Muresan, Preslav Nakov, and Aline Villavicencio
+(Eds.). Association for Computational Linguistics, Dublin, Ireland, 1864–1874.
+https://doi.org/10.18653/v1/2022.findings-acl.146
+[41] Jianmo Ni, Chen Qu, Jing Lu, Zhuyun Dai, Gustavo Hernandez Abrego, Ji Ma,
+Vincent Zhao, Yi Luan, Keith Hall, Ming-Wei Chang, and Yinfei Yang. 2022. Large
+Dual Encoders Are Generalizable Retrievers. In Proceedings of the 2022 Conference
+on Empirical Methods in Natural Language Processing , Yoav Goldberg, Zornitsa
+Kozareva, and Yue Zhang (Eds.). Association for Computational Linguistics,
+Abu Dhabi, United Arab Emirates, 9844–9855. https://doi.org/10.18653/v1/2022.
+emnlp-main.669
+[42] Rodrigo Nogueira and Jimmy Lin. 2019. From doc2query to docttttt-
+query. https://cs.uwaterloo.ca/~jimmylin/publications/Nogueira_Lin_2019_
+docTTTTTquery-v2.pdf
+[43] Hiroyuki Ootomo, Akira Naruse, Corey Nolet, Ray Wang, Tamas Feher, and Yong
+Wang. 2024. CAGRA: Highly Parallel Graph Construction and Approximate
+Nearest Neighbor Search for GPUs.
+[44] Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang,
+Michael Matena, Yanqi Zhou, Wei Li, and Peter J. Liu. 2023. Exploring
+the Limits of Transfer Learning with a Unified Text-to-Text Transformer.
+arXiv:1910.10683 [cs.LG] https://arxiv.org/abs/1910.10683
+[45] Parikshit Ram and Alexander G. Gray. 2012. Maximum Inner-Product Search Us-
+ing Cone Trees. In Proceedings of the 18th ACM SIGKDD International Conference
+on Knowledge Discovery and Data Mining (KDD ’12) . 931–939.
+[46] Steffen Rendle, Walid Krichene, Li Zhang, and John Anderson. 2020. Neural
+Collaborative Filtering vs. Matrix Factorization Revisited. In Fourteenth ACM
+Conference on Recommender Systems (RecSys’20) . 240–248.
+[47] Stephen Robertson and Hugo Zaragoza. 2009. The Probabilistic Relevance Frame-
+work: BM25 and Beyond. Found. Trends Inf. Retr. 3, 4 (April 2009), 333–389.
+https://doi.org/10.1561/1500000019
+[48] Keshav Santhanam, Omar Khattab, Jon Saad-Falcon, Christopher Potts, and Matei
+Zaharia. 2022. ColBERTv2: Effective and Efficient Retrieval via Lightweight Late
+Interaction. In Proceedings of the 2022 Conference of the North American Chapter
+of the Association for Computational Linguistics: Human Language Technologies ,
+Marine Carpuat, Marie-Catherine de Marneffe, and Ivan Vladimir Meza Ruiz
+(Eds.). Association for Computational Linguistics, Seattle, United States, 3715–
+3734. https://doi.org/10.18653/v1/2022.naacl-main.272
+[49] Noam Shazeer, *Azalia Mirhoseini, *Krzysztof Maziarz, Andy Davis, Quoc Le,
+Geoffrey Hinton, and Jeff Dean. 2017. Outrageously Large Neural Networks: The
+Sparsely-Gated Mixture-of-Experts Layer. In International Conference on Learning
+Representations . https://openreview.net/forum?id=B1ckMDqlg
+[50] Yikang Shen, Zheyu Zhang, Tianyou Cao, Shawn Tan, Zhenfang Chen, and
+Chuang Gan. 2023. ModuleFormer: Modularity Emerges from Mixture-of-Experts.
+arXiv:2306.04640 [cs.CL] https://arxiv.org/abs/2306.04640
+[51] Anshumali Shrivastava and Ping Li. 2014. Asymmetric LSH (ALSH) for Sublinear
+Time Maximum Inner Product Search (MIPS). In Advances in Neural Information
+Processing Systems , Vol. 27.
+[52] Weiping Song, Chence Shi, Zhiping Xiao, Zhijian Duan, Yewen Xu, Ming Zhang,
+and Jian Tang. 2019. AutoInt: Automatic Feature Interaction Learning via
+Self-Attentive Neural Networks. In Proceedings of the 28th ACM International
+Conference on Information and Knowledge Management (Beijing, China) (CIKM
+’19). Association for Computing Machinery, New York, NY, USA, 1161–1170.
+https://doi.org/10.1145/3357384.3357925
+[53] Weiwei Sun, Lingyong Yan, Zheng Chen, Shuaiqiang Wang, Haichao Zhu,
+Pengjie Ren, Zhumin Chen, Dawei Yin, Maarten Rijke, and Zhaochun
+Ren. 2023. Learning to Tokenize for Generative Retrieval. In Advances
+in Neural Information Processing Systems , A. Oh, T. Naumann, A. Glober-
+son, K. Saenko, M. Hardt, and S. Levine (Eds.), Vol. 36. Curran Associates,Inc., 46345–46361. https://proceedings.neurips.cc/paper_files/paper/2023/file/
+91228b942a4528cdae031c1b68b127e8-Paper-Conference.pdf
+[54] Shulong Tan, Zhixin Zhou, Zhaozhuo Xu, and Ping Li. 2020. Fast Item Ranking
+under Neural Network based Measures. In Proceedings of the 13th International
+Conference on Web Search and Data Mining (Houston, TX, USA) (WSDM ’20) .
+Association for Computing Machinery, New York, NY, USA, 591–599. https:
+//doi.org/10.1145/3336191.3371830
+[55] Yi Tay, Vinh Q. Tran, Mostafa Dehghani, Jianmo Ni, Dara Bahri, Harsh Mehta,
+Zhen Qin, Kai Hui, Zhe Zhao, Jai Gupta, Tal Schuster, William W. Cohen, and
+Donald Metzler. 2022. Transformer Memory as a Differentiable Search Index. In
+Advances in Neural Information Processing Systems , Alice H. Oh, Alekh Agarwal,
+Danielle Belgrave, and Kyunghyun Cho (Eds.). https://openreview.net/forum?
+id=Vu-B0clPfq
+[56] Yiwei Wang, Bryan Hooi, Yozen Liu, Tong Zhao, Zhichun Guo, and Neil Shah.
+2022. Flashlight: Scalable Link Prediction With Effective Decoders. In Proceedings
+of the First Learning on Graphs Conference (Proceedings of Machine Learning
+Research, Vol. 198) , Bastian Rieck and Razvan Pascanu (Eds.). PMLR, 14:1–14:17.
+https://proceedings.mlr.press/v198/wang22a.html
+[57] Yujing Wang, Yingyan Hou, Haonan Wang, Ziming Miao, Shibin Wu, Qi Chen,
+Yuqing Xia, Chengmin Chi, Guoshuai Zhao, Zheng Liu, Xing Xie, Hao Sun,
+Weiwei Deng, Qi Zhang, and Mao Yang. 2022. A Neural Corpus Indexer for Doc-
+ument Retrieval. In Advances in Neural Information Processing Systems , S. Koyejo,
+S. Mohamed, A. Agarwal, D. Belgrave, K. Cho, and A. Oh (Eds.), Vol. 35. Curran
+Associates, Inc., 25600–25614. https://proceedings.neurips.cc/paper_files/paper/
+2022/file/a46156bd3579c3b268108ea6aca71d13-Paper-Conference.pdf
+[58] Zhilin Yang, Zihang Dai, Ruslan Salakhutdinov, and William W. Cohen. 2018.
+Breaking the Softmax Bottleneck: A High-Rank RNN Language Model. In Inter-
+national Conference on Learning Representations (ICLR’18) .
+[59] Jiaqi Zhai, Zhaojie Gong, Yueming Wang, Xiao Sun, Zheng Yan, Fu Li, and Xing
+Liu. 2023. Revisiting Neural Retrieval on Accelerators. In Proceedings of the 29th
+ACM SIGKDD Conference on Knowledge Discovery and Data Mining (Long Beach,
+CA, USA) (KDD ’23) . Association for Computing Machinery, New York, NY, USA,
+5520–5531. https://doi.org/10.1145/3580305.3599897
+[60] Jiaqi Zhai, Lucy Liao, Xing Liu, Yueming Wang, Rui Li, Xuan Cao, Leon Gao,
+Zhaojie Gong, Fangda Gu, Jiayuan He, Yinghai Lu, and Yu Shi. 2024. Actions
+Speak Louder than Words: Trillion-Parameter Sequential Transducers for Gen-
+erative Recommendations. In Proceedings of the 41st International Conference
+on Machine Learning (Proceedings of Machine Learning Research, Vol. 235) , Rus-
+lan Salakhutdinov, Zico Kolter, Katherine Heller, Adrian Weller, Nuria Oliver,
+Jonathan Scarlett, and Felix Berkenkamp (Eds.). PMLR, 58484–58509. https:
+//proceedings.mlr.press/v235/zhai24a.html
+[61] Jiaqi Zhai, Yin Lou, and Johannes Gehrke. 2011. ATLAS: A Probabilistic Algorithm
+for High Dimensional Similarity Search. In Proceedings of the 2011 ACM SIGMOD
+International Conference on Management of Data (SIGMOD ’11) . 997–1008.
+[62] Han Zhu, Xiang Li, Pengye Zhang, Guozheng Li, Jie He, Han Li, and Kun Gai.
+2018. Learning Tree-Based Deep Model for Recommender Systems. In Proceedings
+of the 24th ACM SIGKDD International Conference on Knowledge Discovery and
+Data Mining (London, United Kingdom) (KDD ’18) . 1079–1088.
+[63] Shengyao Zhuang, Houxing Ren, Linjun Shou, Jian Pei, Ming Gong, Guido Zuc-
+con, and Daxin Jiang. 2023. Bridging the Gap Between Indexing and Retrieval
+for Differentiable Search Index with Query Generation. arXiv:2206.10128 [cs.IR]
+https://arxiv.org/abs/2206.10128
+[64] Jingwei Zhuo, Ziru Xu, Wei Dai, Han Zhu, Han Li, Jian Xu, and Kun Gai. 2020.
+Learning optimal tree models under beam search. In Proceedings of the 37th
+International Conference on Machine Learning (ICML’20) . JMLR.org, Article 1080,
+10 pages.
+A Experiment Setups
+A.1 Reproducibility
+The implementations and hyperparameter settings for reproduc-
+ing our experiment results can be found at https://github.com/
+bailuding/rails. We discuss specific details below.
+A.2 Parameterization of low-rank
+(“component-level”) embeddings
+In this section, we elaborate on the embedding parameterization
+methods for MoL that we discussed in Section 2.2.
+A.2.1 Recommendation Systems. Prior work have shown that care-
+ful parameterization of low-rank (“component-level”) embeddings,
+or𝑓𝑝(𝑞)and𝑔𝑝(𝑥)s for 1≤𝑝≤𝑃, can significantly improve MoL’s
+
+--- PAGE 11 ---
+Retrieval with Learned Similarities WWW ’25, April 28-May 2, 2025, Sydney, NSW, Australia
+Q1 Q2 ... QPQ SP1 SP2 SP3 ... SPNQuery Encoder: Finetuned Language Model (e.g., T5)Parameterized Pooling: (D,) -> (max_seq_len, PQ)g1(q) g2(q) ... gPQ(q)
+X1 X2 ... XPX SP1 SP2 SP3 ... SPNItem Encoder: Finetuned Language Model (e.g., T5)Parameterized Pooling: (D,) -> (max_seq_len, PX)f1(x) f2(x) ... fPX(x)Sequential Encoder
+(RNNs/T ransformers)
+Φ1 Φ2 Φ3 ... ΦNg1(q) g2(q) ... gPQ(q)
+f1(x) f2(x) ... fPX(x)
+Item embeddingsItem MLPQuery MLPSide information, e.g.,
+user embeddings
+Rich, h eterogeneous features (Recommendations) Single, homogeneous feature (Language Models )
+Figure 3: Illustration of how to parameterize the embeddings to adapt Mixture-of-logits (MoL) learned similarity to various re-
+trieval scenarios, with a language model (LM) finetuning use case in question answering (characterized by a single homogeneous
+feature) shown on the left, and a recommendation systems use case (characterized by a large number of heterogeneous features)
+shown on the right. For the Question Answering example on the left, 𝑆𝑃1,...,𝑆𝑃𝑁represents the original SentencePiece [ 31]
+tokens that are inputs to the pre-trained language model LM, e.g., T5 [ 44].𝑄1,𝑄2,...,𝑄𝑃𝑄and𝑋1,𝑋2,...,𝑋𝑃𝑋represent the
+special aggregation tokens we add to the LM tokenizer for pooling information across the sequence. The “Parameterized
+Pooling” component uses a 𝐷-dimensional embedding as input to parameterize, at an example-level , how to weight each of the
+(max_seq_len) encoder outputs for the 𝑃𝑄/𝑃𝑋MoL component-level embeddings.
+performance [ 6]. In the context of large-scale recommendation sys-
+tems, cluster information based on interests of cohorts of members
+and topics of posts by themselves can lead to 10% recall gain at
+𝐾=400[6]. However, we cannot easily access similar information
+in the publicly available MovieLens [ 20] and Amazon Reviews [ 38]
+datasets. We therefore follow implementation provided by [ 59] and
+additionally optionally utilizes a User ID keyed one-hot embedding
+as one query-side low-rank (“component-level”) embeddings 𝑓𝑝(𝑞),
+which is a widely used technique in recommendation systems [ 30]
+that we discussed in Section 2.2. All other component-level embed-
+dings,𝑓𝑝(𝑞)s and𝑔𝑝(𝑥)s, are obtained by applying a multi-layer
+perceptron (MLP) on top of query-side/item-side representations
+in standard sequential recommendation setups [ 22,27]. The overall
+setup is illustrated on the right hand side of Figure 3.
+A.2.2 Question Answering (QA). Unlike Recommendation Systems,
+retrieval models used in question answering generally take the full
+semantic representation(s) of the query and/or the document as
+input, and are finetuned on top of pre-trained language models
+with homogeneous inputs, or wordpiece / sentencepiece tokens.
+Our MoL embedding construction consists of two components,
+special aggregation tokens and parameterized pooling. We present
+embedding construction on the query side first.Special Aggregation Tokens. Given both queries and documents
+are represented as token sequences (e.g., SentencePieces [ 31] in
+T5 [44]), we propose to add special tokens that can be used to
+aggregate different aspects of information as part of the overall
+self-attention based language model. Specifically, on the query
+side, let the tokenized sequence be 𝑆𝑃1,𝑆𝑃2,...,𝑆𝑃𝑁. During
+finetuning of the pretrained language model, we create 𝑃𝑄spe-
+cial tokens, 𝑄1,...,𝑄𝑃𝑄, and add them to the vocabulary of the
+query tokenizer. We also append those exact same 𝑃𝑄tokens
+before𝑆𝑃1,𝑆𝑃2,...,𝑆𝑃𝑁, so that the 𝑃𝑄special tokens can be
+used to aggregate information across the query input using early-
+fusion mechanisms. Note that many question answering scenar-
+ios [11,28,41,53,57] utilize bidirectional language models for re-
+trieval, like BERT [ 12] or T5 [ 44]; for recent unidirectional language
+models, we can add the special aggregation tokens 𝑋1,...,𝑋𝑃𝑋and
+𝑄1,...,𝑄𝑃𝑄to the end of the input sequence instead. Our con-
+struction can also be viewed as a way to extend the CLS token in
+BERT [ 7,12] to cover multiple aspects of information, in a way that
+encourages diversity via the L𝑀𝐼load balancing loss discussed in
+Section 2.
+
+--- PAGE 12 ---
+WWW ’25, April 28-May 2, 2025, Sydney, NSW, Australia Bailu Ding and Jiaqi Zhai
+item⟨𝑓1,𝑔1⟩⟨𝑓2,𝑔2⟩𝜋1𝜋2𝜙
+a 1 1 0.5 0.5 1.0
+b 0.8 0 0.5 0.5 0.4
+c 0 0.8 0.5 0.5 0.4
+d 0.7 0 1 0 0.7
+e 0.2 0.2 0.5 0.5 0.2
+Table 6: Example illustrating how exact- and approximate-
+top-𝑘algorithms work. We consider a fixed query 𝑞, and
+provide inner products ⟨𝑓𝑝(𝑥),𝑔𝑝(𝑞)⟩s, gating weights 𝜋𝑝s,
+and learned similarity scores 𝜙s for that query.
+Parameterized Pooling. We next add a pooling layer after the
+language model to encourage learning of aggregation mechanisms
+separate from language semantics. For each position 1≤𝑝≤𝑃𝑄,
+this pooling layer defines a probability distribution over different
+positions in language model’s outputs, or (0,...,𝑚𝑎𝑥 _𝑠𝑒𝑞_𝑙𝑒𝑛−1).
+We further parameterize the pooling layer, using the 𝐷-dimensional
+embedding at the first position after encoders. This enables us to
+define a pooling policy, at an example-level, how to weight each
+of the𝑚𝑎𝑥_𝑠𝑒𝑞_𝑙𝑒𝑛LM encoder outputs to arrive at the 𝑃𝑄MoL
+embeddings.
+The embedding construction on the item-side is identical. We
+illustrate the overall finetuning setup we use for question answering
+on the left hand side of Figure 3.
+A.3 Parameterization of 𝜋𝑝(𝑞,𝑥)matrices
+We follow the implementation provided in the original MoL pa-
+per [ 59], which parameterizes 𝜋𝑝(𝑞,𝑥)as a two-layer multi-layer
+perceptron (MLP) with SiLU [ 14] non-linearity. For recommenda-
+tion datasets ( ML-1M ,ML-20M ,Books ), the inputs to this MLP con-
+sist of user-side features, item-side features, and the 𝑃dot products
+⟨𝑓𝑝(𝑞),𝑔𝑝(𝑥)⟩s between the low-rank embeddings. For question
+answering datasets (NQ320K), we only use the last part – the 𝑃dot
+products⟨𝑓𝑝(𝑞),𝑔𝑝(𝑥)⟩s between the low-rank embeddings – as
+inputs to this MLP.
+A.4 Hyperparameter settings
+A.4.1 Recommendation Systems. We use an identical number of
+sampled negatives for dot product baselines (cosine similarity, “SAS-
+Rec”, “HSTU” rows in Table 3) and Mixture-of-Logits (“SASRec +
+MoL”, “HSTU + MoL” rows in Table 3) to ensure a fair compari-
+son, which is 128for ML-1M and ML-20M and 512for Amazon
+Books following prior work. For “+ MoL” rows, we additionally
+grid searched|𝑃𝑥|in{2,4,8,16},𝑑𝑃in{32,64,128}, whether to
+enable user-id based learned embeddings, and the dropout rate toapply to user-id based embeddings in {0.2,0.5,0.8}for the smaller
+MovieLens datasets. We followed initial hyperparameters provided
+by the authors [ 59] for all other parameters. The models are trained
+using PyTorch over 1 NVIDIA RTX 6000 Ada GPU for the smaller
+ML-1M andML-20M datasets and 2 NVIDIA RTX 6000 Ada GPUs
+for the larger Books datasets.
+A.4.2 Question Answering (QA). We train the model with AdamW
+optimizer [ 36], and grid searched learning rate in {2e-4, 5e-4, 8e-4}
+due to the introduction of the parameterized pooling component
+(Appendix A.2). We apply linear scheduling with warm-up over a
+fixed 10% of the training epochs. We train the model on 4 NVIDIA
+H100 80GB GPUs with a local batch size of 512. Note that due
+to the computational requirements of this dataset, prior work are
+frequently trained on 8 GPUs [ 28,57] or more, e.g., 32 GPUs in
+GENRE [ 11] and 256 TPUs in DSI [ 55]. We perform in-batch nega-
+tive sampling, consistent with baselines [ 28,40]. For MoL hyperpa-
+rameters, we grid searched 𝑃𝑄and𝑃𝑋in {(2, 2), (4, 4), (8, 8), (16, 16)},
+kept𝑑𝑃identical to the embedding dimension of the pretrained lan-
+guage model ( 768), and selected the best hyperparameters utilizing
+a validation set.
+B Examples for exact and approximate top 𝐾
+retrieval algorithms
+We provide examples for our exact- and approximate- retrieval
+algorithms discussed in Section 3 to facilitate understanding.
+Retrieval with Exact Algorithm (Section 3.1). Table 6 shows an
+example with 4items and 2pairs (groups) of embeddings ( 𝑃=2).
+Assume the goal is to retrieve the top 𝐾=2items. In the first
+stage, we retrieve the top 2items for each embedding set, i.e., item
+𝑎,𝑏,𝑐 are retrieved. For each of the retrieved items, we calculate
+the MoL scores based on their gating weights, i.e., 1.0,0.4,0.4for
+𝑎,𝑏, and𝑐, respectively. Here, 𝑆𝑚𝑖𝑛is set to 0.4. In the second stage,
+we retrieve all items with ⟨𝑓,𝑔⟩≥0.4for each embedding set, i.e.,
+item𝑑, and then calculate their corresponding MoL score, i.e., 0.7.
+The algorithm returns 𝑎and𝑑as the top 2items.
+Retrieval with Approximate Algorithm (Theorem 2). Consider
+again the example shown in Table 6. Assume we want to retrieve
+the top 2items. With top 𝐾over component-level embeddings,
+item𝑎,𝑏,𝑐 are retrieved, and 𝑆𝑘=0.4. Since𝑆is calculated as
+max{0.7,0.2}, the upper bound of the gap is 0.3. Here, the gap is
+exact, i.e., the actual second largest MoL score with item 𝑑is0.3
+higher than the second largest MoL score from the set of retrieved
+items{𝑎,𝑏,𝑐}. If we bound the gap with the retrieved items only,
+i.e.,𝑎,𝑏,𝑐 , then we will get a looser bound of 0.8−0.4=0.4.

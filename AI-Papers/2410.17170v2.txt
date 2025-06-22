@@ -1,0 +1,1642 @@
+# 2410.17170v2.pdf
+# Converted from PDF to TXT
+# Source path: D:\llm\notebooks\AI-Papers\2410.17170v2.pdf
+# File size: 882929 bytes
+
+===============================================
+PDF FILE CONTENT
+===============================================
+
+
+--- PAGE 1 ---
+Self-calibration for Language Model Quantization and Pruning
+Miles Williams♢♠George Chrysostomou♠Nikolaos Aletras♢
+♢University of Sheffield
+♠Enterprise AI Services, AstraZeneca
+{mwilliams15, n.aletras}@sheffield.ac.uk
+Abstract
+Quantization and pruning are fundamental ap-
+proaches for model compression, enabling effi-
+cient inference for language models. In a post-
+training setting, state-of-the-art quantization
+and pruning methods require calibration data,
+a small set of unlabeled examples. Convention-
+ally, this is randomly sampled web text, aiming
+to reflect the model training data. However,
+this poses two key problems: (1) unrepresenta-
+tive calibration examples can harm model per-
+formance, and (2) organizations increasingly
+avoid releasing model training data. In this pa-
+per, we propose self-calibration as a solution.
+Our approach requires no external data, instead
+leveraging the model itself to generate synthetic
+calibration data, with a view to better approx-
+imating the pre-training data distribution. We
+extensively compare the performance of self-
+calibration with several baselines, across a vari-
+ety of models, compression methods, and tasks.
+Our approach proves consistently competitive
+in maximizing downstream task performance,
+frequently outperforming even using real data.1
+1 Introduction
+Large language models (LLMs) trained using vast
+corpora have delivered remarkable advances across
+a variety of domains and tasks (Touvron et al.,
+2023a; Jiang et al., 2023; Mesnard et al., 2024).
+However, they demand extensive computational re-
+sources for inference (Wu et al., 2022; Luccioni
+et al., 2023), presenting a limiting factor for their
+practical use. Consequently, this has prompted the
+development of an extensive collection of meth-
+ods to improve inference efficiency (Treviso et al.,
+2023). In particular, model compression aims to
+reduce the size of a model while retaining down-
+stream task performance (Wan et al., 2024).
+Quantization and pruning have emerged as
+prominent model compression approaches for
+1https://github.com/mlsw/llm-compression-cal
+ibration
+xPre-trained
+Language Model
+Synthetic
+Calibration DataPost-training
+CompressionQuantized
+Language Model
+Pruned
+Language ModelFigure 1: Self-calibration for the post-training quantiza-
+tion and pruning of language models.
+LLMs (Gholami et al., 2021; Wan et al., 2024).
+Pruning removes less important weights from the
+model, while quantization represents the weights
+(and possibly activations) using fewer bits. Both
+quantization and pruning can be effectively applied
+in a post-training setting, retaining comparable per-
+formance across a range of downstream tasks (Fran-
+tar et al., 2023; Frantar and Alistarh, 2023; Sun
+et al., 2024; Lin et al., 2024).
+Post-training quantization and pruning typically
+depend upon calibration data , a small set of unla-
+beled examples (Nagel et al., 2020; Hubara et al.,
+2021) used to generate layer activations throughout
+the model. Conventionally, LLM calibration data
+consists of randomly sampled web text (Frantar
+et al., 2023; Sun et al., 2024; Lin et al., 2024), aim-
+ing to reflect the model training data distribution.
+However, recent work has questioned the in-
+fluence of calibration data in LLM compression.
+Jaiswal et al. (2024) hint that the careful selection
+of calibration data may benefit high-sparsity prun-
+ing. Concurrently, Williams and Aletras (2024)
+illustrate the impact of calibration data in quantiza-
+tion and pruning. Finally, Zeng et al. (2024) and
+Kurz et al. (2024) highlight the role of language-
+specific calibration data for multilingual models.arXiv:2410.17170v2  [cs.CL]  26 Feb 2025
+
+--- PAGE 2 ---
+To further complicate matters, organizations are
+increasingly reluctant to release model training data
+or disclose necessary replication details. Table 1
+illustrates that although the weights of some state-
+of-the-art LLMs are openly available, their training
+data is largely unavailable. This may be due to (1)
+legal liability concerns arising from data licensing
+(Eckart de Castilho et al., 2018), and (2) privacy
+concerns when using proprietary or personal data
+(Carlini et al., 2021). Moreover, publicly released
+training data can later become unavailable. For ex-
+ample, The Pile (Gao et al., 2020) is no longer dis-
+tributed due to copyright violations. The absence
+of training data raises the question of how repre-
+sentative calibration data can be selected, when the
+training distribution itself is unknown. This issue
+is especially relevant for models trained primarily
+with private datasets, such as Microsoft’s Phi series
+of models (Gunasekar et al., 2023; Li et al., 2023b).
+In this paper, we propose self-calibration as a so-
+lution to concerns surrounding the availability and
+quality of calibration data. Our approach removes
+the need for external calibration data sources, in-
+stead leveraging the model itself to automatically
+generate synthetic calibration data. We compare
+our approach to various real and synthetic datasets,
+including data sampled from a large mixture-of-
+experts model. Our approach is consistently com-
+petitive in maximizing the performance of com-
+pressed models, across a variety of models and
+compression methods. In many cases, we find that
+self-calibration can outperform even real data.
+2 Related Work
+2.1 Model Compression
+Model compression aims to reduce the size of a
+model without compromising downstream task per-
+formance, therefore reducing the computational re-
+sources required for inference (Treviso et al., 2023).
+Quantization and pruning are two prominent model
+compression approaches that have been widely ap-
+plied to LLMs (Wan et al., 2024).
+Pruning. The goal of pruning is to remove redun-
+dant model weights (LeCun et al., 1989). Pruning
+often relies upon a fine-tuning step (Han et al.,
+2015; Sanh et al., 2020), however this is challeng-
+ing at the scale of LLMs. Alternatively, there have
+been various efforts towards adapting the Optimal
+Brain Surgeon (OBS) framework (LeCun et al.,
+1989; Hassibi et al., 1993) for language model prun-
+ing (Frantar et al., 2021; Kurtic et al., 2022; FrantarOpen Source
+Model Reference Weights Data
+GPT-4 Achiam et al. (2023) ✗ ✗
+Mistral Jiang et al. (2023) ✓ ✗
+Llama 2 Touvron et al. (2023b) ✓ ✗
+Falcon Almazrouei et al. (2023) ✓ ✓
+Phi-2 Javaheripi et al. (2023) ✓ ✗
+Gemini Anil et al. (2024) ✗ ✗
+OLMo Groeneveld et al. (2024) ✓ ✓
+Claude 3 Anthropic (2024) ✗ ✗
+Gemma Mesnard et al. (2024) ✓ ✗
+Table 1: The training data for state-of-the-art LLMs is
+rarely available. Models selected according to bench-
+mark performance and ordered by publication date.
+and Alistarh, 2022). However, the extensive size of
+LLMs makes it impractical to apply such methods.
+SparseGPT (Frantar and Alistarh, 2023) presents
+an approximate weight reconstruction approach,
+enabling efficient LLM pruning without compro-
+mising performance. Separately, Wanda (Sun et al.,
+2024) relies on a pruning criterion that does not re-
+quire second-order information, allowing pruning
+with a single forward pass.
+Quantization. The aim of quantization is to rep-
+resent model weights (and potentially activations)
+using fewer bits. Large-magnitude outlier fea-
+tures pose a significant problem for the quantiza-
+tion of LLMs, which can be addressed through
+holding these in higher precision (Dettmers et al.,
+2022). However, this approach is less hardware-
+friendly. Instead, SmoothQuant (Xiao et al., 2023)
+migrates the difficulty of activation quantization to
+the weights, which are easier to quantize. AWQ
+(Lin et al., 2024) presents a hardware-friendly ap-
+proach for holding a small fraction of the weights
+in higher precision. In a separate line of work,
+Frantar and Alistarh (2022) adapt the OBS frame-
+work to quantization. GPTQ (Frantar et al., 2023)
+builds upon this work to enable second-order low-
+bit quantization for LLMs.
+2.2 Calibration Data
+In a post-training setting, model compression meth-
+ods rely upon calibration data (Wan et al., 2024).
+This consists of a small set of unlabeled examples,
+used to generate layer activations (Nagel et al.,
+2020; Hubara et al., 2021). Calibration data for
+LLMs conventionally consists of text sampled from
+a curated training dataset (Frantar et al., 2023; Xiao
+et al., 2023; Frantar and Alistarh, 2023; Sun et al.,
+2024; Lin et al., 2024). In practice, the exact model
+
+--- PAGE 3 ---
+training data may not be publicly available (Table
+1). Consequently, large scale web text datasets (e.g.
+C4; Raffel et al., 2020) are ordinarily used as an
+approximation of the pre-training distribution. Re-
+cent work has questioned the performance impact
+of the calibration data used for LLM compression
+(Jaiswal et al., 2024; Williams and Aletras, 2024;
+Zeng et al., 2024). Synthetic data presents a promis-
+ing avenue towards alleviating such concerns, in-
+cluding the varied quality of web text examples
+(Dodge et al., 2021). However, synthetic calibra-
+tion data for post-training LLM compression has
+yet to be systematically explored.
+Synthetic data for model compression has been
+previously explored in computer vision, regularly
+motivated by privacy and security concerns aris-
+ing from sensitive training images (e.g. medical
+contexts). Haroush et al. (2020) and Cai et al.
+(2020) proposed approaches for data-free quantiza-
+tion (Nagel et al., 2019), allowing the model itself
+to synthesize input data for quantization. Funda-
+mentally, these approaches generate images match-
+ing the learned statistics from batch normalization
+layers (Zhang et al., 2021; Li et al., 2023a), which
+are notably absent in LLMs (Wang et al., 2022).
+2.3 Synthetic Data with Language Models
+Synthetic data refers to artificial data that has been
+created with the aim of imitating real-world data
+(Liu et al., 2024). In the context of language mod-
+els, supervised training of classification models
+with synthetic labeled data has been widely ex-
+plored (Kumar et al., 2020; Schick and Schütze,
+2021; Sahu et al., 2022; Meng et al., 2022; Chung
+et al., 2023; Li et al., 2023c). Similarly, synthetic
+data has seen broad use for supervised instruction
+fine-tuning (Wang et al., 2023; Ding et al., 2023;
+Xu et al., 2024). Most recently, partially or entirely
+synthetic datasets have been used for pre-training
+(Gunasekar et al., 2023; Li et al., 2023b; Maini
+et al., 2024; Ben Allal et al., 2024). However, the
+distribution of such datasets may deviate from the
+pre-training distribution of other LLMs.
+3 Self-calibration
+When the exact training data for a model is unavail-
+able, sampling calibration data from an alternative
+distribution offers an approximation at best. Even
+if the exact training data is available, individual ex-
+amples may be noisy and deviate from the overall
+distribution. To address these limitations, we pro-pose self-calibration, a general-purpose adaptation
+to model compression that relies on calibration data
+from the model itself. Our hypothesis is that sam-
+pling from the learned posterior distribution, which
+approximates the training data, offers more repre-
+sentative calibration examples. In turn, we expect
+that such calibration examples will enable greater
+preservation of downstream task performance fol-
+lowing model compression.
+3.1 Synthesizing Calibration Data
+We formulate the synthesis of calibration examples
+as an open-ended text generation problem for a
+specific language model that we wish to compress.
+Crucially, we aim to generate synthetic data that
+is as representative as possible with respect to the
+training distribution. To achieve this, we refrain
+from using external data, which introduces assump-
+tions about the training data distribution.
+Fundamentally, text generation consists of pre-
+dicting the next token in a sequence. Formally, we
+compute a probability distribution over the vocabu-
+laryVfor the next token wi, given context w1:i−1.
+Taking the context as input, a language model gen-
+erates the output logits, u1:|V|. The probability
+distribution is then formed through normalizing the
+logits with the softmax function.
+To generate calibration data that reflects the
+model training data distribution, we condition gen-
+eration upon only the beginning-of-sequence token
+(e.g. <s>or<|start_of_text|> ). We continue to
+generate tokens until either the end-of-sequence to-
+ken or maximum sequence length is reached. In the
+event that a generation does not reach the desired
+length, we simply concatenate additional genera-
+tions. As a prefix or prompt would introduce bias
+and require external data, we do not directly condi-
+tion generation. Instead, we rely upon scheduled
+temperature sampling to guide generation.
+3.2 Temperature Scheduling
+The softmax function can be additionally parame-
+terized with a temperature t, to control the sharp-
+ness of the probability distribution (Ackley et al.,
+1985; Hinton et al., 2015). A lower temperature
+concentrates the probability mass on the most likely
+tokens, while a higher temperature disperses the
+probability mass more uniformly. In practice, the
+temperature influences characteristics of the gen-
+erated text, often improving its quality and diver-
+sity compared to greedy decoding (Holtzman et al.,
+2020; Meister et al., 2023).
+
+--- PAGE 4 ---
+When generating text without context, we hy-
+pothesize that the first few generated tokens are
+crucial, influencing the content and coherence. To
+explore a variety of prefixes, we propose the use
+of a temperature schedule, inspired by Carlini et al.
+(2021). Formally, we define the probability of a
+token as:
+P(wi|w1:i−1) =exp(ui/ti)
+P|V|
+j=1exp(uj/ti)
+where tiscales linearly from tinitial at the start of
+generation to tfinal, across ntoken generation steps:
+ti=
+
+tinitial+i
+n(tfinal−tinitial)ifi≤n,
+tfinal ifi > n.
+In practice, a temperature schedule enables us
+to experiment with a variety of generation strate-
+gies. For example, we are able to generate a diverse
+prefix (i.e. tinitial>1) followed by a more confi-
+dent continuation (i.e. tfinal≤1), as well as a
+high-likelihood prefix followed by a creative con-
+tinuation. We provide a comprehensive ablation of
+these parameters choices in §6.2. For comparison,
+we also present results with greedy decoding and
+standard sampling (i.e. without temperature).
+4 Experimental Setup
+4.1 Baseline Calibration Data
+Real data. To evaluate the performance of self-
+calibration for LLM compression, we first consider
+real-world datasets that are conventionally used for
+LLM compression (Frantar et al., 2023).
+•C4(Raffel et al., 2020): The Colossal Clean
+Crawled Corpus is routinely used as a source
+of calibration data (§2.2). This consists of web-
+text that has been deduplicated and filtered to
+maximize high-quality natural language text.
+•WikiText (Merity et al., 2017): The WikiText
+dataset consists of a high-quality encyclopedic
+text from Wikipedia. Notably, this includes only
+articles highlighted as ‘Good’ or ‘Featured’ by
+human editors. The review process assesses accu-
+racy and writing quality, amongst other factors.
+Synthetic data. Separately, we compare the per-
+formance of self-calibration with synthetic data
+generated (1) without a language model, and (2)
+with a substantially larger external model.•Vocabulary : As a simple baseline, we create ex-
+amples consisting of tokens randomly sampled
+from the model vocabulary. We assume a uni-
+form distribution over the vocabulary, however
+we exclude special purpose tokens (e.g. <unk> ).
+•Cosmopedia (Ben Allal et al., 2024): The Cos-
+mopedia dataset consists of a broad range of syn-
+thetic text, including textbooks, blog posts, and
+stories. These were created by prompting Mixtral
+8x7B Instruct (Jiang et al., 2024) with a variety
+of high-quality topics selected from real data.
+Sampling. Following convention, we randomly
+sample 128 calibration examples consisting of
+2,048 tokens each (Frantar et al., 2023; Frantar
+and Alistarh, 2023; Sun et al., 2024; Chrysostomou
+et al., 2024). Although the aim of random sam-
+pling is to avoid selection bias, it could produce
+a sample that is less representative of the source
+dataset. Consequently, we repeat the sampling pro-
+cess to create five distinct calibration sets for each
+source dataset. We present an ablation study on the
+quantity of calibration data used in §6.1.
+Certain models (Gemma, Mistral, and Llama)
+were trained using multilingual data, which is re-
+flected when sampling from these models. To en-
+able a fair comparison with our English-only cali-
+bration datasets and evaluation tasks, we promote
+the generation of English-language text for these
+models. Specifically, we constrain only the first
+generation step to a pre-defined list of English stop
+words curated by Honnibal et al. (2020).
+4.2 Models
+We experiment with popular ‘open-source’ LLMs
+from five different model families: (1) Gemma 2B
+(Mesnard et al., 2024), (2) Phi-2 2.7B (Javaheripi
+et al., 2023), (3) OPT 6.7B (Zhang et al., 2022),
+(4)Mistral 7B (v0.3) (Jiang et al., 2023), and (5)
+Llama 3.1 8B (Dubey et al., 2024).2
+With the exception of OPT, which was pre-
+trained using only publicly available datasets, lim-
+ited details surrounding the training data distribu-
+tion have been disclosed. The training data for
+all models is reported to include public web docu-
+ments. However, the training data for Phi-2 notably
+relies upon a substantial proportion of synthetic
+data generated with GPT-3.5 (Ouyang et al., 2022).
+2Mesnard et al. (2024) use a naming scheme that excludes
+embedding parameters. For comparison, we note that Gemma
+2B has 2.5B trainable parameters. We also note that the em-
+bedding parameters are shared (Press and Wolf, 2017).
+
+--- PAGE 5 ---
+Method Type Calibration Dataset Gemma 2B Phi-2 2.7B OPT 6.7B Mistral 7B Llama 3.1 8B
+- - 60.7 65.8 57.4 67.4 67.8
+AWQRealC4 59.5 0.2 65.4 0.2 57.6 0.1 67.1 0.0 66.9 0.2
+WikiText 59.5 0.2 65.4 0.2 57.5 0.1 67.1 0.1 67.1 0.1
+SyntheticV ocabulary 59.3 0.2 64.5 0.2 56.6 0.3 66.5 0.1 66.0 0.3
+Cosmopedia 59.8 0.2 65.3 0.2 57.6 0.1 67.0 0.2 66.9 0.3
+Self-calibration (Ours) 59.8 0.4 65.4 0.2 57.6 0.1 67.0 0.2 66.6 0.3
+GPTQRealC4 58.7 0.4 64.7 0.3 56.8 0.2 66.8 0.3 66.9 0.3
+WikiText 58.6 0.3 64.6 0.2 56.9 0.1 66.9 0.3 66.6 0.3
+SyntheticV ocabulary 57.9 0.3 64.3 0.2 56.6 0.3 66.0 0.1 65.7 0.1
+Cosmopedia 58.5 0.3 64.3 0.1 56.8 0.1 66.6 0.2 66.9 0.1
+Self-calibration (Ours) 59.9 0.3 65.0 0.3 56.9 0.2 65.9 0.2 66.1 0.3
+SparseGPTRealC4 49.7 0.8 54.3 0.3 52.8 0.2 57.3 0.3 54.8 0.3
+WikiText 48.3 0.2 53.3 0.5 51.6 0.2 55.5 0.3 52.6 0.4
+SyntheticV ocabulary 43.4 0.3 50.1 0.2 47.7 0.2 53.0 0.4 47.3 0.4
+Cosmopedia 47.7 0.3 52.3 0.2 50.9 0.2 55.1 0.3 50.9 0.3
+Self-calibration (Ours) 50.8 0.2 56.4 0.3 52.7 0.3 56.8 0.3 53.8 0.4
+WandaRealC4 44.2 0.2 50.4 0.4 50.6 0.2 53.7 0.3 49.0 0.3
+WikiText 44.8 0.4 49.9 0.2 49.2 0.2 53.4 0.2 49.2 0.1
+SyntheticV ocabulary 42.1 0.4 47.0 0.3 43.2 0.1 48.4 0.2 44.7 0.3
+Cosmopedia 44.5 0.2 49.4 0.4 48.7 0.2 52.7 0.2 47.7 0.2
+Self-calibration (Ours) 45.2 0.3 51.5 0.7 50.7 0.2 53.5 0.1 49.1 0.1
+Table 2: Average task accuracy across five calibration sets for all models, with standard deviation denoted in
+subscript. High lighted values indicate that self-calibration (ours) matches or exceeds the performance of all
+synthetic datasets. Bold values additionally indicate that self-calibration matches or exceeds the highest performing
+dataset overall, including the real datasets. Self-calibration temperature is fixed at 1.0 to enable fair comparison.
+4.3 Model Compression
+As it is not possible to experiment with every exist-
+ing model compression approach, we select four of
+the most widely adopted methods. We report the
+implementation details in Appendix A and com-
+plete hyperparameter selection in Appendix C.
+Quantization. For quantization, we trial A WQ
+(Lin et al., 2024) and GPTQ (Frantar et al., 2023).
+In both cases, we use 4-bit weight quantization,
+which sees minimal performance degradation while
+enabling efficient inference (Frantar et al., 2024).
+Pruning. For pruning, we employ SparseGPT
+(Frantar and Alistarh, 2023) and Wanda (Sun et al.,
+2024). In both cases, we focus on the 2:4 semi-
+structured (50%) sparsity setting, which enables
+inference speedups on GPUs (Mishra et al., 2021).
+4.4 Evaluation Tasks
+To offer an impartial selection of evaluation tasks,
+we adopt all zero-shot tasks used in the original
+work to evaluate AWQ, GPTQ, SparseGPT, and
+Wanda. Namely, ARC (easy and challenge sets)
+(Clark et al., 2018), BoolQ (Clark et al., 2019),
+HellaSwag (Zellers et al., 2019), LAMBADA (Pa-
+perno et al., 2016), OpenBookQA (Banerjee et al.,
+2019), PIQA (Bisk et al., 2020), RTE (Dagan et al.,
+2006), StoryCloze (Mostafazadeh et al., 2016), and
+WinoGrande (Sakaguchi et al., 2021).5 Results
+Table 2 presents the average performance across
+all downstream tasks (§4.4) for every model tested
+(§4.2).3For self-calibration, we set tinitial andtfinal
+as 1.0 (i.e. standard sampling), to enable a fair com-
+parison between models. However, we emphasize
+that the careful selection of these parameters could
+lead to further performance improvements. We pro-
+vide a deeper analysis surrounding the impact of
+the temperature schedule in §6.2.
+Self-calibration outperforms other synthetic
+datasets. We observe that the performance of
+self-calibration matches or exceeds other synthetic
+datasets in 17 out of 20 instances. For example,
+when quantizing Gemma 2B with GPTQ, self-
+calibration records a mean accuracy of 59.9%, com-
+pared to 58.5% with Cosmopedia and 57.9% with
+V ocabulary. Similarly, when pruning Llama 3.1
+8B with SparseGPT, self-calibration offers a 2.9
+point increase in mean accuracy compared to Cos-
+mopedia (53.8% versus 50.9%). This suggests that
+self-calibration may produce calibration data that
+is more representative of the training distribution of
+each model, compared to other synthetic datasets.
+Self-calibration can outperform real-world data.
+Our results show that for Phi-2, Gemma 2B, and
+3Complete results are presented in Appendix E.
+
+--- PAGE 6 ---
+12481632641285657585960Gemma 2B
+AWQ
+1248163264128
+GPTQ
+124816326412836404448
+SparseGPT
+1248163264128
+Wanda
+12481632641286465Phi-2 2.7B
+1248163264128
+ 124816326412844485256
+1248163264128
+Number of Calibration ExamplesMean Zero-shot Accuracy (%)
+C4 WikiText V ocabulary Cosmopedia SyntheticFigure 2: The mean zero-shot accuracy when compressing Gemma 2B and Phi-2 with each method. We present the
+mean value and standard deviation (shaded) across five distinct calibration sets sampled from each data source.
+OPT 6.7B, self-calibration achieves the highest
+mean accuracy compared to all other datasets in
+all but one instance. The only exception is when
+pruning OPT 6.7B with SparseGPT, where self-
+calibration ranks second to C4 (52.7% with self-
+calibration versus 52.8% with C4). Although self-
+calibration does not outperform real data for Mis-
+tral 7B and Llama 3.1 8B, we observe that the
+performance is as competitive with real data as
+Cosmopedia (i.e. matches or outperforms Cosmo-
+pedia in five out eight instances). These outcomes
+suggest that using self-calibration for model com-
+pression results in downstream performance that is
+at least comparable to that of real data.
+Pruning benefits the most from self-calibration.
+Across all models and both pruning methods, self-
+calibration results in higher mean accuracy com-
+pared to other synthetic data. For example, when
+pruning Llama 3.1 8B with Wanda, self-calibration
+is second only to WikiText by a 0.1 point difference
+(49.1% compared to 49.2% with WikiText) whilst
+also being 1.4 points higher than Cosmopedia. We
+also observe that quantization methods appear less
+sensitive to the calibration data. For example, the
+difference between the best and worst performing
+calibration data source for Gemma 2B is 0.6% with
+AWQ and 2.0% with GPTQ. In contrast, there is
+a range of 7.5% with SparseGPT and 3.2% with
+Wanda. This suggests that the choice of calibration
+dataset is less critical when applying quantizationto language models, corroborating earlier findings
+from Williams and Aletras (2024).
+Random vocabulary consistently underachieves.
+For every model and compression method, we ob-
+serve that random calibration data (i.e. V ocabulary)
+produces the lowest performance. In comparison to
+C4, compressing Phi-2 with this random synthetic
+calibration data degrades performance by 0.9% for
+AWQ, 0.5% for GPTQ, 4.2% for SparseGPT, and
+3.4% for Wanda. This illustrates that purely ran-
+dom synthetic data is suboptimal for calibration,
+even for quantization which may be less sensitive.
+6 Analysis
+6.1 Calibration Data Quantity Ablation
+Methodology. To assess how the quantity of cali-
+bration data impacts performance, we experiment
+with calibration sets of different sizes. For each cal-
+ibration set, we trial subsets of nexamples, where
+n∈ {1,2,4,8,16,32,64,128}. We repeat this
+process across five distinct calibration sets sampled
+from each source of calibration data.4
+Self-calibration may be more sample efficient.
+In the case of pruning, self-calibration may offer
+comparable or greater performance with less data.
+For example, when pruning Phi-2 with SparseGPT,
+4We perform this ablation using smaller models (Gemma
+2B and Phi-2) due to computational resource constraints.
+
+--- PAGE 7 ---
+0.0 0.5 1.0 1.5 2.02.0
+1.5
+1.0
+0.5
+0.0Gemma 2B59.8 60.1 59.5 60.1 60.1
+60.0 59.9 59.6 59.9 60.1
+59.8 60.0 59.8 60.0 60.2
+60.3 59.9 59.7 59.9 59.8
+59.4 59.8 59.8 60.1 60.0AWQ
+0.0 0.5 1.0 1.5 2.02.0
+1.5
+1.0
+0.5
+0.059.0 59.3 59.5 59.6 59.5
+59.0 59.3 59.7 59.6 59.5
+59.1 59.3 59.9 59.8 59.6
+59.0 59.0 59.6 59.9 59.6
+58.3 59.0 59.2 59.3 59.5GPTQ
+0.0 0.5 1.0 1.5 2.02.0
+1.5
+1.0
+0.5
+0.047.7 49.1 50.7 50.5 50.1
+47.3 48.8 51.0 50.5 50.4
+47.5 48.7 50.8 50.8 50.1
+46.4 48.0 50.0 50.3 49.9
+42.5 45.7 48.0 49.1 49.2SparseGPT
+0.0 0.5 1.0 1.5 2.02.0
+1.5
+1.0
+0.5
+0.044.5 44.6 45.3 44.9 44.7
+44.2 44.6 45.1 44.8 44.7
+44.3 44.5 45.2 45.1 44.9
+44.2 45.1 45.1 44.7 44.5
+41.0 44.4 45.2 44.9 44.6Wanda
+0.0 0.5 1.0 1.5 2.02.0
+1.5
+1.0
+0.5
+0.0Phi-2 2.7B65.4 65.3 65.3 65.3 65.2
+65.2 65.2 65.3 65.4 65.3
+65.2 65.2 65.4 65.3 65.3
+65.2 65.1 65.2 65.3 65.3
+64.7 65.2 65.2 65.3 65.0
+0.0 0.5 1.0 1.5 2.02.0
+1.5
+1.0
+0.5
+0.064.8 65.0 64.8 64.6 64.7
+64.7 64.8 65.0 64.7 64.7
+64.8 64.8 65.0 64.9 64.7
+64.4 64.6 64.9 64.9 64.7
+64.3 64.6 64.9 64.7 64.6
+0.0 0.5 1.0 1.5 2.02.0
+1.5
+1.0
+0.5
+0.054.5 55.0 55.6 55.9 55.5
+55.1 55.7 56.2 56.1 55.7
+54.8 56.0 56.4 56.5 55.5
+52.4 55.0 56.3 56.3 55.4
+52.1 53.9 55.4 55.5 54.8
+0.0 0.5 1.0 1.5 2.02.0
+1.5
+1.0
+0.5
+0.050.2 49.7 50.5 50.9 48.9
+50.2 50.7 51.1 51.1 49.0
+49.7 51.0 51.5 50.5 48.7
+48.6 50.1 50.9 50.3 48.5
+44.7 49.3 50.2 50.0 48.7
+59.4 60.3
+ 58.3 59.9
+ 42.5 51.0
+ 41.0 45.3
+64.7 65.4
+ 64.3 65.0
+ 52.1 56.5
+ 44.7 51.5
+Final Temperature ( tﬁnal)Initial Temperature ( tinitial)Figure 3: A joint parameter search for tinitial andtfinalusing n= 10 (§3.1) with Gemma 2B and Phi-2. We report the
+mean task accuracy across five distinct calibration sets.
+C4 reaches a mean accuracy of 54.3% with 128 ex-
+amples, while self-calibration achieves 54.5% with
+only 16 examples. While the same trend is visible
+for GPTQ, the performance margin between data
+sources is too small to draw the same conclusion.
+Finally, we note that improved sample efficiency
+can reduce the computational cost of model com-
+pression (Frantar and Alistarh, 2023). In practical
+terms, this can enable (1) fewer forward passes, as a
+direct result of fewer examples, or (2) an increased
+batch size, due to fewer intermediate activations.
+6.2 Sampling Strategy Ablation
+Methodology. To investigate how the parame-
+ters of our sampling strategy (§3.1) impact per-
+formance, we explore a broad range of values:
+tinitial, tfinal∈ {0.0,0.5,1.0,1.5,2.0}. We empha-
+size that certain subsets of these values are equiva-
+lent to several standard decoding strategies:
+•Greedy decoding. When both tinitial = 0 and
+tfinal= 0, this is equivalent to selecting the token
+with the highest probability at every timestep.
+•Standard sampling. Using a combination of
+tinitial= 1andtfinal= 1is equivalent to applying
+softmax without a temperature parameter.
+•Temperature sampling. When tinitial=tfinal, a
+constant temperature is maintained throughout
+generation, equivalent to temperature sampling.Sampling strategy can influence performance.
+Figure 3 presents the influence of the sampling
+strategy parameters upon mean task accuracy. For
+SparseGPT and Wanda, the careful selection of
+sampling parameters may offer improved perfor-
+mance. For example, Gemma 2B sees slightly el-
+evated performance when using a higher initial
+temperature and moderate final temperature. Con-
+versely, using both a low initial and final tempera-
+ture leads to substantially lower performance.
+Selecting sampling parameters is not essential.
+We observe that it is possible to achieve within 0.5
+points of the maximum performance through using
+only standard sampling (i.e. tinitial =tfinal= 1).
+This suggests that self-calibration can achieve rea-
+sonable performance with little attention towards
+the specific parameters used. Consequently, we sus-
+pect that using the model itself to generate calibra-
+tion data is a relatively stable and reliable method.
+6.3 Calibration Data Analysis
+Methodology. The content and style of text can
+vary markedly between calibration data sources.
+Consequently, we seek to analyze how the text
+characteristics differ between them. To this end,
+we employ a variety of automatic metrics to assess
+various text characteristics of the calibration sets.
+•Perplexity. As an indirect indicator of text qual-
+ity, we calculate the average perplexity across
+
+--- PAGE 8 ---
+examples in the calibration set for a given model.
+•Repetitions. Following Welleck et al. (2020),
+we report the average fraction of repeated tokens
+per sequence. More formally, this is computed
+across each sequence wof length Lin dataset D,
+where Idenotes the binary indicator function:
+R=1
+|D|LX
+w∈DLX
+i=1I(wi∈w1:i−1)
+•Vocabulary coverage. To assess the lexical di-
+versity of the calibration sets, we report the vo-
+cabulary coverage. We define this as the ratio
+between the subword tokens present in the cali-
+bration set and in the model vocabulary.
+•N-gram diversity. Following Meister et al.
+(2023), we report the average fraction of unique
+n-grams ( n∈ {1,2,3,4}) in the calibration set:
+D=1
+NNX
+n=1# unique n-grams
+# total n-grams
+•Zipf’s coefficient. Finally, we examine the ex-
+tent to which the calibration set follows Zipf’s
+law. Specifically, we calculate the fit of the expo-
+nent corresponding to the calibration set. Natural
+language text tends to have a value close to one.
+Self-calibration data is generally coherent text.
+Table 3 presents self-calibration data from Gemma
+2 and Llama 3.1 8B. For brevity, we select the first
+three texts generated by each model. We observe
+that the self-generated text is typically coherent
+and fluent in both models. Moreover, the content is
+routinely semantically plausible. These properties
+are somewhat supported by the perplexity results
+in Table 4, with self-calibration demonstrating sub-
+stantially lower perplexity than real data.
+Self-calibration may produce less diverse text.
+Table 4 presents the text characteristics for Gemma
+2B and Llama 3.1 8B across all datasets.5Com-
+pared to real data sources (i.e. C4 and WikiText),
+self-calibration data differs across various metrics.
+For example, self-calibration data from Llama 3.1
+8B has a lower vocabulary coverage (0.15 ver-
+sus 0.16-0.18) and n-gram diversity (0.58 versus
+0.62-0.65). However, self-calibration data has a
+higher Zipf’s coefficient (1.24 versus 1.12-1.16)
+5We observe similar results in other models (Appendix D).# Generated Text
+Gemma 2B
+1 <bos> The <b>G36S<b> is an assault rifle created for the German
+Army from 1997 to 2010 by Heckler & Koch. It is a simplified...
+2 <bos> Are you considering making an investment in a used or new
+Mercedes-Benz S-Class? Make Mercedes-Benz of Houston your...
+3 <bos> I recently created a poll to see what everyone thinks the best of
+the current generation of S13’s are. I have gotten some great...
+Llama 3.1 8B
+1 <|begin_of_text|> You are at:Home»Lifestyle»Food»I have a prob-
+lem... and it’s called peanut butter!\nI have a problem... and it’s...
+2 <|begin_of_text|> When we’re in the heat of our journey, when
+our plans and goals and hopes and dreams and desires are in control...
+3 <|begin_of_text|> This article by David K. Li from NBC News on
+February 9, 2021, talks about the increase of the vaccine mandate...
+Table 3: The starting segment of the first three synthetic
+texts generated by Gemma 2B and Llama 3.1 8B, using
+standard sampling.
+Dataset PPL Rep. Cov. Div. Zipf
+Gemma 2B
+C4 19.30 1.06 0.66 0.01 0.10 0.00 0.63 0.01 1.16 0.01
+WikiText 14.93 0.58 0.68 0.00 0.09 0.00 0.65 0.00 1.12 0.01
+V ocabulary 4.31 ×1060.00 0.00 0.64 0.00 0.96 0.00 0.27 0.00
+Cosmopedia 6.49 0.22 0.59 0.01 0.09 0.00 0.65 0.01 1.19 0.01
+Self-calibration 7.22 0.15 0.68 0.00 0.07 0.00 0.59 0.00 1.25 0.01
+Llama 3.1 8B
+C4 8.65 0.50 0.64 0.00 0.18 0.00 0.62 0.01 1.16 0.02
+WikiText 6.75 0.11 0.65 0.00 0.16 0.00 0.65 0.00 1.12 0.01
+V ocabulary 7.61 ×1050.01 0.00 0.87 0.00 0.91 0.00 0.49 0.00
+Cosmopedia 3.37 0.16 0.55 0.02 0.18 0.01 0.65 0.01 1.17 0.01
+Self-calibration 6.29 0.09 0.66 0.00 0.15 0.00 0.58 0.00 1.24 0.00
+Table 4: Text characteristics across all calibration sets
+for Gemma 2B and Llama 3.1 8B, with standard devia-
+tion denoted in subscript.
+and slightly elevated repetitions (0.66 versus 0.64-
+0.65). Overall, this suggests that self-calibration
+data is typically less diverse compared to real data.
+7 Conclusion
+In this paper, we proposed self-calibration for LLM
+quantization and pruning as a solution to mitigate
+concerns about the availability, quality, and repre-
+sentativeness of training data. Our proposed ap-
+proach is intuitive and requires no external data
+sources, instead relying on the model itself. We em-
+pirically demonstrated that self-calibration main-
+tains comparable or greater downstream task perfor-
+mance across a variety of models and compression
+methods. Surprisingly, our results also revealed
+that self-calibration can enable higher downstream
+task performance than using real data. We hope
+that our study will inspire further work on the ap-
+plication of synthetic data to LLM compression.
+
+--- PAGE 9 ---
+Limitations
+In this study, we experimented with English mod-
+els and evaluation tasks, and therefore only English
+calibration data. However, recent work has illus-
+trated the importance of language-specific calibra-
+tion data when compressing multilingual models
+(Zeng et al., 2024; Kurz et al., 2024). Although
+we anticipate that our approach will generalize to
+multilingual models, we hope to explore this matter
+further in a future work.
+Ethical Considerations
+Language models are capable of generating text
+that is incorrect, biased, and harmful (Weidinger
+et al., 2022). To compress a given model, our ap-
+proach requires the unsupervised generation of cal-
+ibration data from the model itself. Consequently,
+the calibration data may contain material that is
+problematic. However, we note that this is unlikely
+to introduce new safety issues in the compressed
+model. For the generated calibration data to con-
+tain problematic content, it must have already been
+encoded in the weights of the original model.
+Acknowledgments
+We are grateful to Vladimir Poroshin, Vitor
+Jeronymo, Szymon Palucha, Christopher May,
+Mario Sanger, and the anonymous reviewers for
+their invaluable feedback. MW is supported by
+the Centre for Doctoral Training in Speech and
+Language Technologies (SLT) and their Appli-
+cations funded by UK Research and Innovation
+grant EP/S023062/1. NA is supported by EPSRC
+grant EP/Y009800/1, part of the RAI UK Keystone
+projects.
+References
+Josh Achiam, Steven Adler, Sandhini Agarwal, Lama
+Ahmad, Ilge Akkaya, Florencia Leoni Aleman,
+Diogo Almeida, Janko Altenschmidt, Sam Altman,
+Shyamal Anadkat, Red Avila, Igor Babuschkin,
+Suchir Balaji, Valerie Balcom, Paul Baltescu, Haim-
+ing Bao, Mohammad Bavarian, Jeff Belgum, Irwan
+Bello, Jake Berdine, et al. 2023. GPT-4 technical
+report. Preprint , arXiv:2303.08774.
+David H. Ackley, Geoffrey E. Hinton, and Terrence J.
+Sejnowski. 1985. A learning algorithm for boltz-
+mann machines. Cognitive Science , 9(1):147–169.
+Ebtesam Almazrouei, Hamza Alobeidli, Abdulaziz Al-
+shamsi, Alessandro Cappelli, Ruxandra Cojocaru,
+Mérouane Debbah, Étienne Goffinet, Daniel Hesslow,Julien Launay, Quentin Malartic, Daniele Mazzotta,
+Badreddine Noune, Baptiste Pannier, and Guilherme
+Penedo. 2023. The Falcon series of open language
+models. Preprint , arXiv:2311.16867.
+Rohan Anil, Sebastian Borgeaud, Jean-Baptiste Alayrac,
+Jiahui Yu, Radu Soricut, Johan Schalkwyk, An-
+drew M. Dai, Anja Hauth, Katie Millican, David
+Silver, Melvin Johnson, Ioannis Antonoglou, Ju-
+lian Schrittwieser, Amelia Glaese, Jilin Chen, Emily
+Pitler, Timothy Lillicrap, Angeliki Lazaridou, Orhan
+Firat, James Molloy, et al. 2024. Gemini: A fam-
+ily of highly capable multimodal models. Preprint ,
+arXiv:2312.11805.
+Anthropic. 2024. The Claude 3 model family: Opus,
+Sonnet, Haiku.
+Pratyay Banerjee, Kuntal Kumar Pal, Arindam Mitra,
+and Chitta Baral. 2019. Careful selection of knowl-
+edge to solve open book question answering. In
+Proceedings of the 57th Annual Meeting of the Asso-
+ciation for Computational Linguistics , pages 6120–
+6129, Florence, Italy. Association for Computational
+Linguistics.
+Loubna Ben Allal, Anton Lozhkov, Guilherme Penedo,
+Thomas Wolf, and Leandro von Werra. 2024. Cos-
+mopedia.
+Yonatan Bisk, Rowan Zellers, Ronan Le bras, Jianfeng
+Gao, and Yejin Choi. 2020. PIQA: Reasoning about
+physical commonsense in natural language. Proceed-
+ings of the AAAI Conference on Artificial Intelligence ,
+34(05):7432–7439.
+Yaohui Cai, Zhewei Yao, Zhen Dong, Amir Gholami,
+Michael W. Mahoney, and Kurt Keutzer. 2020. Ze-
+roq: A novel zero shot quantization framework. In
+Proceedings of the IEEE/CVF Conference on Com-
+puter Vision and Pattern Recognition (CVPR) .
+Nicholas Carlini, Florian Tramèr, Eric Wallace,
+Matthew Jagielski, Ariel Herbert-V oss, Katherine
+Lee, Adam Roberts, Tom Brown, Dawn Song, Úlfar
+Erlingsson, Alina Oprea, and Colin Raffel. 2021. Ex-
+tracting training data from large language models. In
+30th USENIX Security Symposium (USENIX Security
+21), pages 2633–2650. USENIX Association.
+George Chrysostomou, Zhixue Zhao, Miles Williams,
+and Nikolaos Aletras. 2024. Investigating hallucina-
+tions in pruned large language models for abstractive
+summarization. Transactions of the Association for
+Computational Linguistics , 12:1163–1181.
+John Chung, Ece Kamar, and Saleema Amershi. 2023.
+Increasing diversity while maintaining accuracy:
+Text data generation with large language models and
+human interventions. In Proceedings of the 61st An-
+nual Meeting of the Association for Computational
+Linguistics (Volume 1: Long Papers) , pages 575–593,
+Toronto, Canada. Association for Computational Lin-
+guistics.
+
+--- PAGE 10 ---
+Christopher Clark, Kenton Lee, Ming-Wei Chang,
+Tom Kwiatkowski, Michael Collins, and Kristina
+Toutanova. 2019. BoolQ: Exploring the surprising
+difficulty of natural yes/no questions. In Proceedings
+of the 2019 Conference of the North American Chap-
+ter of the Association for Computational Linguistics:
+Human Language Technologies, Volume 1 (Long and
+Short Papers) , pages 2924–2936, Minneapolis, Min-
+nesota. Association for Computational Linguistics.
+Peter Clark, Isaac Cowhey, Oren Etzioni, Tushar Khot,
+Ashish Sabharwal, Carissa Schoenick, and Oyvind
+Tafjord. 2018. Think you have solved question an-
+swering? Try ARC, the AI2 reasoning challenge.
+Preprint , arXiv:1803.05457.
+Ido Dagan, Oren Glickman, and Bernardo Magnini.
+2006. The PASCAL recognising textual entailment
+challenge. In Machine Learning Challenges. Evalu-
+ating Predictive Uncertainty, Visual Object Classifi-
+cation, and Recognising Tectual Entailment , pages
+177–190, Berlin, Heidelberg. Springer Berlin Heidel-
+berg.
+Tim Dettmers, Mike Lewis, Younes Belkada, and Luke
+Zettlemoyer. 2022. GPT3.int8(): 8-bit matrix mul-
+tiplication for transformers at scale. In Advances in
+Neural Information Processing Systems , volume 35,
+pages 30318–30332. Curran Associates, Inc.
+Ning Ding, Yulin Chen, Bokai Xu, Yujia Qin,
+Shengding Hu, Zhiyuan Liu, Maosong Sun, and
+Bowen Zhou. 2023. Enhancing chat language mod-
+els by scaling high-quality instructional conversa-
+tions. In Proceedings of the 2023 Conference on
+Empirical Methods in Natural Language Processing ,
+pages 3029–3051, Singapore. Association for Com-
+putational Linguistics.
+Jesse Dodge, Maarten Sap, Ana Marasovi ´c, William
+Agnew, Gabriel Ilharco, Dirk Groeneveld, Margaret
+Mitchell, and Matt Gardner. 2021. Documenting
+large webtext corpora: A case study on the colos-
+sal clean crawled corpus. In Proceedings of the
+2021 Conference on Empirical Methods in Natural
+Language Processing , pages 1286–1305, Online and
+Punta Cana, Dominican Republic. Association for
+Computational Linguistics.
+Abhimanyu Dubey, Abhinav Jauhri, Abhinav Pandey,
+Abhishek Kadian, Ahmad Al-Dahle, Aiesha Letman,
+Akhil Mathur, Alan Schelten, Amy Yang, Angela
+Fan, Anirudh Goyal, Anthony Hartshorn, Aobo Yang,
+Archi Mitra, Archie Sravankumar, Artem Korenev,
+Arthur Hinsvark, Arun Rao, Aston Zhang, Aurelien
+Rodriguez, et al. 2024. The Llama 3 herd of models.
+Preprint , arXiv:2407.21783.
+Richard Eckart de Castilho, Giulia Dore, Thomas Mar-
+goni, Penny Labropoulou, and Iryna Gurevych. 2018.
+A legal perspective on training models for natural
+language processing. In Proceedings of the Eleventh
+International Conference on Language Resources
+and Evaluation (LREC 2018) , Miyazaki, Japan. Eu-
+ropean Language Resources Association (ELRA).Elias Frantar and Dan Alistarh. 2022. Optimal brain
+compression: A framework for accurate post-training
+quantization and pruning. In Advances in Neural
+Information Processing Systems , volume 35, pages
+4475–4488. Curran Associates, Inc.
+Elias Frantar and Dan Alistarh. 2023. SparseGPT: Mas-
+sive language models can be accurately pruned in
+one-shot. In Proceedings of the 40th International
+Conference on Machine Learning , volume 202 of
+Proceedings of Machine Learning Research , pages
+10323–10337. PMLR.
+Elias Frantar, Saleh Ashkboos, Torsten Hoefler, and Dan
+Alistarh. 2023. OPTQ: Accurate quantization for
+generative pre-trained transformers. In The Eleventh
+International Conference on Learning Representa-
+tions .
+Elias Frantar, Roberto L. Castro, Jiale Chen, Torsten
+Hoefler, and Dan Alistarh. 2024. MARLIN: Mixed-
+precision auto-regressive parallel inference on large
+language models. Preprint , arXiv:2408.11743.
+Elias Frantar, Eldar Kurtic, and Dan Alistarh. 2021. M-
+fac: Efficient matrix-free approximations of second-
+order information. In Advances in Neural Informa-
+tion Processing Systems , volume 34, pages 14873–
+14886. Curran Associates, Inc.
+Leo Gao, Stella Biderman, Sid Black, Laurence Gold-
+ing, Travis Hoppe, Charles Foster, Jason Phang,
+Horace He, Anish Thite, Noa Nabeshima, Shawn
+Presser, and Connor Leahy. 2020. The Pile: An
+800GB dataset of diverse text for language modeling.
+Preprint , arXiv:2101.00027.
+Leo Gao, Jonathan Tow, Baber Abbasi, Stella Biderman,
+Sid Black, Anthony DiPofi, Charles Foster, Laurence
+Golding, Jeffrey Hsu, Alain Le Noac’h, Haonan Li,
+Kyle McDonell, Niklas Muennighoff, Chris Ociepa,
+Jason Phang, Laria Reynolds, Hailey Schoelkopf,
+Aviya Skowron, Lintang Sutawika, Eric Tang, et al.
+2023. A framework for few-shot language model
+evaluation.
+Amir Gholami, Sehoon Kim, Zhen Dong, Zhewei Yao,
+Michael W. Mahoney, and Kurt Keutzer. 2021. A
+survey of quantization methods for efficient neural
+network inference. Preprint , arXiv:2103.13630.
+Dirk Groeneveld, Iz Beltagy, Evan Walsh, Akshita
+Bhagia, Rodney Kinney, Oyvind Tafjord, Ananya
+Jha, Hamish Ivison, Ian Magnusson, Yizhong Wang,
+Shane Arora, David Atkinson, Russell Authur,
+Khyathi Chandu, Arman Cohan, Jennifer Dumas,
+Yanai Elazar, Yuling Gu, Jack Hessel, Tushar Khot,
+William Merrill, Jacob Morrison, Niklas Muen-
+nighoff, Aakanksha Naik, Crystal Nam, Matthew
+Peters, Valentina Pyatkin, Abhilasha Ravichander,
+Dustin Schwenk, Saurabh Shah, William Smith,
+Emma Strubell, Nishant Subramani, Mitchell Worts-
+man, Pradeep Dasigi, Nathan Lambert, Kyle Richard-
+son, Luke Zettlemoyer, Jesse Dodge, Kyle Lo, Luca
+Soldaini, Noah Smith, and Hannaneh Hajishirzi.
+
+--- PAGE 11 ---
+2024. OLMo: Accelerating the science of language
+models. In Proceedings of the 62nd Annual Meeting
+of the Association for Computational Linguistics (Vol-
+ume 1: Long Papers) , pages 15789–15809, Bangkok,
+Thailand. Association for Computational Linguistics.
+Suriya Gunasekar, Yi Zhang, Jyoti Aneja, Caio
+César Teodoro Mendes, Allie Del Giorno, Sivakanth
+Gopi, Mojan Javaheripi, Piero Kauffmann, Gustavo
+de Rosa, Olli Saarikivi, Adil Salim, Shital Shah,
+Harkirat Singh Behl, Xin Wang, Sébastien Bubeck,
+Ronen Eldan, Adam Tauman Kalai, Yin Tat Lee,
+and Yuanzhi Li. 2023. Textbooks are all you need.
+Preprint , arXiv:2306.11644.
+Song Han, Jeff Pool, John Tran, and William Dally.
+2015. Learning both weights and connections for
+efficient neural network. In Advances in Neural In-
+formation Processing Systems , volume 28. Curran
+Associates, Inc.
+Matan Haroush, Itay Hubara, Elad Hoffer, and Daniel
+Soudry. 2020. The knowledge within: Methods for
+data-free model compression. In Proceedings of the
+IEEE/CVF Conference on Computer Vision and Pat-
+tern Recognition (CVPR) .
+Babak Hassibi, David Stork, and Gregory Wolff. 1993.
+Optimal brain surgeon: Extensions and performance
+comparisons. In Advances in Neural Information
+Processing Systems , volume 6. Morgan-Kaufmann.
+Geoffrey Hinton, Oriol Vinyals, and Jeffrey Dean. 2015.
+Distilling the knowledge in a neural network. In
+NIPS Deep Learning and Representation Learning
+Workshop .
+Ari Holtzman, Jan Buys, Li Du, Maxwell Forbes, and
+Yejin Choi. 2020. The curious case of neural text de-
+generation. In International Conference on Learning
+Representations .
+Matthew Honnibal, Ines Montani, Sofie Van Lan-
+deghem, and Adriane Boyd. 2020. spaCy: Industrial-
+strength Natural Language Processing in Python.
+Itay Hubara, Yury Nahshan, Yair Hanani, Ron Banner,
+and Daniel Soudry. 2021. Accurate post training
+quantization with small calibration sets. In Proceed-
+ings of the 38th International Conference on Machine
+Learning , volume 139 of Proceedings of Machine
+Learning Research , pages 4466–4475. PMLR.
+Ajay Jaiswal, Zhe Gan, Xianzhi Du, Bowen Zhang,
+Zhangyang Wang, and Yinfei Yang. 2024. Compress-
+ing LLMs: The truth is rarely pure and never simple.
+InThe Twelfth International Conference on Learning
+Representations .
+Mojan Javaheripi, Sébastien Bubeck, Marah Abdin, Jy-
+oti Aneja, Sebastien Bubeck, Caio César Teodoro
+Mendes, Weizhu Chen, Allie Del Giorno, Ronen El-
+dan, Sivakanth Gopi, Suriya Gunasekar, Mojan Java-
+heripi, Piero Kauffmann, Yin Tat Lee, Yuanzhi Li,
+Anh Nguyen, Gustavo de Rosa, Olli Saarikivi, Adil
+Salim, Shital Shah, et al. 2023. Phi-2: The surprising
+power of small language models.Albert Q. Jiang, Alexandre Sablayrolles, Arthur Men-
+sch, Chris Bamford, Devendra Singh Chaplot, Diego
+de las Casas, Florian Bressand, Gianna Lengyel, Guil-
+laume Lample, Lucile Saulnier, Lélio Renard Lavaud,
+Marie-Anne Lachaux, Pierre Stock, Teven Le Scao,
+Thibaut Lavril, Thomas Wang, Timothée Lacroix,
+and William El Sayed. 2023. Mistral 7B. Preprint ,
+arXiv:2310.06825.
+Albert Q. Jiang, Alexandre Sablayrolles, Antoine
+Roux, Arthur Mensch, Blanche Savary, Chris
+Bamford, Devendra Singh Chaplot, Diego de las
+Casas, Emma Bou Hanna, Florian Bressand, Gi-
+anna Lengyel, Guillaume Bour, Guillaume Lam-
+ple, Lélio Renard Lavaud, Lucile Saulnier, Marie-
+Anne Lachaux, Pierre Stock, Sandeep Subramanian,
+Sophia Yang, Szymon Antoniak, et al. 2024. Mixtral
+of experts. Preprint , arXiv:2401.04088.
+Varun Kumar, Ashutosh Choudhary, and Eunah Cho.
+2020. Data augmentation using pre-trained trans-
+former models. In Proceedings of the 2nd Workshop
+on Life-long Learning for Spoken Language Systems ,
+pages 18–26, Suzhou, China. Association for Com-
+putational Linguistics.
+Eldar Kurtic, Daniel Campos, Tuan Nguyen, Elias Fran-
+tar, Mark Kurtz, Benjamin Fineran, Michael Goin,
+and Dan Alistarh. 2022. The optimal BERT surgeon:
+Scalable and accurate second-order pruning for large
+language models. In Proceedings of the 2022 Con-
+ference on Empirical Methods in Natural Language
+Processing , pages 4163–4181, Abu Dhabi, United
+Arab Emirates. Association for Computational Lin-
+guistics.
+Simon Kurz, Jian-Jia Chen, Lucie Flek, and Zhixue
+Zhao. 2024. Investigating language-specific calibra-
+tion for pruning multilingual large language models.
+Preprint , arXiv:2408.14398.
+Yann LeCun, John Denker, and Sara Solla. 1989. Op-
+timal brain damage. In Advances in Neural In-
+formation Processing Systems , volume 2. Morgan-
+Kaufmann.
+Quentin Lhoest, Albert Villanova del Moral, Yacine
+Jernite, Abhishek Thakur, Patrick von Platen, Suraj
+Patil, Julien Chaumond, Mariama Drame, Julien Plu,
+Lewis Tunstall, Joe Davison, Mario Šaško, Gun-
+jan Chhablani, Bhavitvya Malik, Simon Brandeis,
+Teven Le Scao, Victor Sanh, Canwen Xu, Nicolas
+Patry, Angelina McMillan-Major, Philipp Schmid,
+Sylvain Gugger, Clément Delangue, Théo Matus-
+sière, Lysandre Debut, Stas Bekman, Pierric Cis-
+tac, Thibault Goehringer, Victor Mustar, François
+Lagunas, Alexander Rush, and Thomas Wolf. 2021.
+Datasets: A community library for natural language
+processing. In Proceedings of the 2021 Conference
+on Empirical Methods in Natural Language Process-
+ing: System Demonstrations , pages 175–184, Online
+and Punta Cana, Dominican Republic. Association
+for Computational Linguistics.
+Huantong Li, Xiangmiao Wu, Fanbing Lv, Daihai
+Liao, Thomas H. Li, Yonggang Zhang, Bo Han,
+
+--- PAGE 12 ---
+and Mingkui Tan. 2023a. Hard sample matters a
+lot in zero-shot quantization. In Proceedings of the
+IEEE/CVF Conference on Computer Vision and Pat-
+tern Recognition (CVPR) , pages 24417–24426.
+Yuanzhi Li, Sébastien Bubeck, Ronen Eldan, Allie Del
+Giorno, Suriya Gunasekar, and Yin Tat Lee. 2023b.
+Textbooks are all you need II: phi-1.5 technical report.
+Preprint , arXiv:2309.05463.
+Zhuoyan Li, Hangxiao Zhu, Zhuoran Lu, and Ming
+Yin. 2023c. Synthetic data generation with large lan-
+guage models for text classification: Potential and
+limitations. In Proceedings of the 2023 Conference
+on Empirical Methods in Natural Language Process-
+ing, pages 10443–10461, Singapore. Association for
+Computational Linguistics.
+Ji Lin, Jiaming Tang, Haotian Tang, Shang Yang, Wei-
+Ming Chen, Wei-Chen Wang, Guangxuan Xiao,
+Xingyu Dang, Chuang Gan, and Song Han. 2024.
+Awq: Activation-aware weight quantization for on-
+device llm compression and acceleration. In Proceed-
+ings of Machine Learning and Systems , volume 6,
+pages 87–100.
+Ruibo Liu, Jerry Wei, Fangyu Liu, Chenglei Si, Yanzhe
+Zhang, Jinmeng Rao, Steven Zheng, Daiyi Peng, Diyi
+Yang, Denny Zhou, and Andrew M. Dai. 2024. Best
+practices and lessons learned on synthetic data. In
+First Conference on Language Modeling .
+Alexandra Sasha Luccioni, Sylvain Viguier, and Anne-
+Laure Ligozat. 2023. Estimating the carbon footprint
+of BLOOM, a 176B parameter language model. Jour-
+nal of Machine Learning Research , 24(253):1–15.
+Pratyush Maini, Skyler Seto, Richard Bai, David Grang-
+ier, Yizhe Zhang, and Navdeep Jaitly. 2024. Rephras-
+ing the web: A recipe for compute and data-efficient
+language modeling. In Proceedings of the 62nd An-
+nual Meeting of the Association for Computational
+Linguistics (Volume 1: Long Papers) , pages 14044–
+14072, Bangkok, Thailand. Association for Compu-
+tational Linguistics.
+Clara Meister, Tiago Pimentel, Gian Wiher, and Ryan
+Cotterell. 2023. Locally typical sampling. Transac-
+tions of the Association for Computational Linguis-
+tics, 11:102–121.
+Yu Meng, Jiaxin Huang, Yu Zhang, and Jiawei Han.
+2022. Generating training data with language mod-
+els: Towards zero-shot language understanding. In
+Advances in Neural Information Processing Systems ,
+volume 35, pages 462–477. Curran Associates, Inc.
+Stephen Merity, Caiming Xiong, James Bradbury, and
+Richard Socher. 2017. Pointer sentinel mixture mod-
+els. In International Conference on Learning Repre-
+sentations .
+Thomas Mesnard, Cassidy Hardin, Robert Dadashi,
+Surya Bhupatiraju, Shreya Pathak, Laurent Sifre,
+Morgane Rivière, Mihir Sanjay Kale, Juliette Love,
+Pouya Tafti, Léonard Hussenot, Pier Giuseppe Sessa,Aakanksha Chowdhery, Adam Roberts, Aditya
+Barua, Alex Botev, Alex Castro-Ros, Ambrose
+Slone, Amélie Héliou, Andrea Tacchetti, et al. 2024.
+Gemma: Open models based on Gemini research and
+technology. Preprint , arXiv:2403.08295.
+Asit Mishra, Jorge Albericio Latorre, Jeff Pool, Darko
+Stosic, Dusan Stosic, Ganesh Venkatesh, Chong Yu,
+and Paulius Micikevicius. 2021. Accelerating sparse
+deep neural networks. Preprint , arXiv:2104.08378.
+Nasrin Mostafazadeh, Nathanael Chambers, Xiaodong
+He, Devi Parikh, Dhruv Batra, Lucy Vanderwende,
+Pushmeet Kohli, and James Allen. 2016. A corpus
+and cloze evaluation for deeper understanding of
+commonsense stories. In Proceedings of the 2016
+Conference of the North American Chapter of the
+Association for Computational Linguistics: Human
+Language Technologies , pages 839–849, San Diego,
+California. Association for Computational Linguis-
+tics.
+Markus Nagel, Rana Ali Amjad, Mart Van Baalen,
+Christos Louizos, and Tijmen Blankevoort. 2020. Up
+or down? adaptive rounding for post-training quanti-
+zation. In Proceedings of the 37th International Con-
+ference on Machine Learning , ICML’20. JMLR.org.
+Markus Nagel, Mart van Baalen, Tijmen Blankevoort,
+and Max Welling. 2019. Data-free quantization
+through weight equalization and bias correction. In
+Proceedings of the IEEE/CVF International Confer-
+ence on Computer Vision (ICCV) .
+Long Ouyang, Jeff Wu, Xu Jiang, Diogo Almeida, Car-
+roll L. Wainwright, Pamela Mishkin, Chong Zhang,
+Sandhini Agarwal, Katarina Slama, Alex Ray, John
+Schulman, Jacob Hilton, Fraser Kelton, Luke Miller,
+Maddie Simens, Amanda Askell, Peter Welinder,
+Paul Christiano, Jan Leike, and Ryan Lowe. 2022.
+Training language models to follow instructions with
+human feedback. Preprint , arXiv:2203.02155.
+Denis Paperno, Germán Kruszewski, Angeliki Lazari-
+dou, Ngoc Quan Pham, Raffaella Bernardi, Sandro
+Pezzelle, Marco Baroni, Gemma Boleda, and Raquel
+Fernández. 2016. The LAMBADA dataset: Word
+prediction requiring a broad discourse context. In
+Proceedings of the 54th Annual Meeting of the As-
+sociation for Computational Linguistics (Volume 1:
+Long Papers) , pages 1525–1534, Berlin, Germany.
+Association for Computational Linguistics.
+Ofir Press and Lior Wolf. 2017. Using the output em-
+bedding to improve language models. In Proceedings
+of the 15th Conference of the European Chapter of
+the Association for Computational Linguistics: Vol-
+ume 2, Short Papers , pages 157–163, Valencia, Spain.
+Association for Computational Linguistics.
+Colin Raffel, Noam Shazeer, Adam Roberts, Kather-
+ine Lee, Sharan Narang, Michael Matena, Yanqi
+Zhou, Wei Li, and Peter J. Liu. 2020. Exploring the
+limits of transfer learning with a unified text-to-text
+transformer. Journal of Machine Learning Research ,
+21(140):1–67.
+
+--- PAGE 13 ---
+Gaurav Sahu, Pau Rodriguez, Issam Laradji, Parmida
+Atighehchian, David Vazquez, and Dzmitry Bah-
+danau. 2022. Data augmentation for intent classi-
+fication with off-the-shelf large language models. In
+Proceedings of the 4th Workshop on NLP for Conver-
+sational AI , pages 47–57, Dublin, Ireland. Associa-
+tion for Computational Linguistics.
+Keisuke Sakaguchi, Ronan Le Bras, Chandra Bhagavat-
+ula, and Yejin Choi. 2021. WinoGrande: An adver-
+sarial winograd schema challenge at scale. Commun.
+ACM , 64(9):99–106.
+Victor Sanh, Thomas Wolf, and Alexander Rush. 2020.
+Movement pruning: Adaptive sparsity by fine-tuning.
+InAdvances in Neural Information Processing Sys-
+tems, volume 33, pages 20378–20389. Curran Asso-
+ciates, Inc.
+Timo Schick and Hinrich Schütze. 2021. Generating
+datasets with pretrained language models. In Pro-
+ceedings of the 2021 Conference on Empirical Meth-
+ods in Natural Language Processing , pages 6943–
+6951, Online and Punta Cana, Dominican Republic.
+Association for Computational Linguistics.
+Mingjie Sun, Zhuang Liu, Anna Bair, and J Zico Kolter.
+2024. A simple and effective pruning approach for
+large language models. In The Twelfth International
+Conference on Learning Representations .
+Hugo Touvron, Louis Martin, Kevin Stone, Peter Al-
+bert, Amjad Almahairi, Yasmine Babaei, Nikolay
+Bashlykov, Soumya Batra, Prajjwal Bhargava, Shruti
+Bhosale, Dan Bikel, Lukas Blecher, Cristian Canton
+Ferrer, Moya Chen, Guillem Cucurull, David Esiobu,
+Jude Fernandes, Jeremy Fu, Wenyin Fu, Brian Fuller,
+et al. 2023a. Llama 2: Open foundation and fine-
+tuned chat models. Preprint , arXiv:2307.09288.
+Hugo Touvron, Louis Martin, Kevin Stone, Peter Al-
+bert, Amjad Almahairi, Yasmine Babaei, Nikolay
+Bashlykov, Soumya Batra, Prajjwal Bhargava, Shruti
+Bhosale, Dan Bikel, Lukas Blecher, Cristian Canton
+Ferrer, Moya Chen, Guillem Cucurull, David Esiobu,
+Jude Fernandes, Jeremy Fu, Wenyin Fu, Brian Fuller,
+et al. 2023b. Llama 2: Open foundation and fine-
+tuned chat models. Preprint , arXiv:2307.09288.
+Marcos Treviso, Ji-Ung Lee, Tianchu Ji, Betty van Aken,
+Qingqing Cao, Manuel R. Ciosici, Michael Hassid,
+Kenneth Heafield, Sara Hooker, Colin Raffel, Pe-
+dro H. Martins, André F. T. Martins, Jessica Zosa
+Forde, Peter Milder, Edwin Simpson, Noam Slonim,
+Jesse Dodge, Emma Strubell, Niranjan Balasubra-
+manian, Leon Derczynski, Iryna Gurevych, and Roy
+Schwartz. 2023. Efficient methods for natural lan-
+guage processing: A survey. Transactions of the
+Association for Computational Linguistics , 11:826–
+860.
+Zhongwei Wan, Xin Wang, Che Liu, Samiul Alam,
+Yu Zheng, Jiachen Liu, Zhongnan Qu, Shen Yan,
+Yi Zhu, Quanlu Zhang, Mosharaf Chowdhury, and
+Mi Zhang. 2024. Efficient large language models: Asurvey. Transactions on Machine Learning Research .
+Survey Certification.
+Jiaxi Wang, Ji Wu, and Lei Huang. 2022. Understanding
+the failure of batch normalization for transformers in
+nlp. In Advances in Neural Information Processing
+Systems , volume 35, pages 37617–37630. Curran
+Associates, Inc.
+Yizhong Wang, Yeganeh Kordi, Swaroop Mishra, Alisa
+Liu, Noah A. Smith, Daniel Khashabi, and Hannaneh
+Hajishirzi. 2023. Self-instruct: Aligning language
+models with self-generated instructions. In Proceed-
+ings of the 61st Annual Meeting of the Association for
+Computational Linguistics (Volume 1: Long Papers) ,
+pages 13484–13508, Toronto, Canada. Association
+for Computational Linguistics.
+Laura Weidinger, Jonathan Uesato, Maribeth Rauh,
+Conor Griffin, Po-Sen Huang, John Mellor, Amelia
+Glaese, Myra Cheng, Borja Balle, Atoosa Kasirzadeh,
+Courtney Biles, Sasha Brown, Zac Kenton, Will
+Hawkins, Tom Stepleton, Abeba Birhane, Lisa Anne
+Hendricks, Laura Rimell, William Isaac, Julia Haas,
+et al. 2022. Taxonomy of risks posed by language
+models. In Proceedings of the 2022 ACM Confer-
+ence on Fairness, Accountability, and Transparency ,
+FAccT ’22, page 214–229, New York, NY , USA. As-
+sociation for Computing Machinery.
+Sean Welleck, Ilia Kulikov, Stephen Roller, Emily Di-
+nan, Kyunghyun Cho, and Jason Weston. 2020. Neu-
+ral text generation with unlikelihood training. In
+International Conference on Learning Representa-
+tions .
+Miles Williams and Nikolaos Aletras. 2024. On the
+impact of calibration data in post-training quantiza-
+tion and pruning. In Proceedings of the 62nd An-
+nual Meeting of the Association for Computational
+Linguistics (Volume 1: Long Papers) , pages 10100–
+10118, Bangkok, Thailand. Association for Compu-
+tational Linguistics.
+Thomas Wolf, Lysandre Debut, Victor Sanh, Julien
+Chaumond, Clement Delangue, Anthony Moi, Pier-
+ric Cistac, Tim Rault, Remi Louf, Morgan Funtow-
+icz, Joe Davison, Sam Shleifer, Patrick von Platen,
+Clara Ma, Yacine Jernite, Julien Plu, Canwen Xu,
+Teven Le Scao, Sylvain Gugger, Mariama Drame,
+Quentin Lhoest, and Alexander Rush. 2020. Trans-
+formers: State-of-the-art natural language processing.
+InProceedings of the 2020 Conference on Empirical
+Methods in Natural Language Processing: System
+Demonstrations , pages 38–45, Online. Association
+for Computational Linguistics.
+Carole-Jean Wu, Ramya Raghavendra, Udit Gupta,
+Bilge Acun, Newsha Ardalani, Kiwan Maeng, Glo-
+ria Chang, Fiona Aga, Jinshi Huang, Charles Bai,
+Michael Gschwind, Anurag Gupta, Myle Ott, Anas-
+tasia Melnikov, Salvatore Candido, David Brooks,
+Geeta Chauhan, Benjamin Lee, Hsien-Hsin Lee, Bu-
+gra Akyildiz, et al. 2022. Sustainable AI: Environ-
+mental implications, challenges and opportunities.
+
+--- PAGE 14 ---
+InProceedings of Machine Learning and Systems ,
+volume 4, pages 795–813.
+Guangxuan Xiao, Ji Lin, Mickael Seznec, Hao Wu,
+Julien Demouth, and Song Han. 2023. SmoothQuant:
+Accurate and efficient post-training quantization for
+large language models. In Proceedings of the 40th
+International Conference on Machine Learning , vol-
+ume 202 of Proceedings of Machine Learning Re-
+search , pages 38087–38099. PMLR.
+Can Xu, Qingfeng Sun, Kai Zheng, Xiubo Geng,
+Pu Zhao, Jiazhan Feng, Chongyang Tao, Qingwei
+Lin, and Daxin Jiang. 2024. WizardLM: Empow-
+ering large pre-trained language models to follow
+complex instructions. In The Twelfth International
+Conference on Learning Representations .
+Rowan Zellers, Ari Holtzman, Yonatan Bisk, Ali
+Farhadi, and Yejin Choi. 2019. HellaSwag: Can a ma-
+chine really finish your sentence? In Proceedings of
+the 57th Annual Meeting of the Association for Com-
+putational Linguistics , pages 4791–4800, Florence,
+Italy. Association for Computational Linguistics.
+Hongchuan Zeng, Hongshen Xu, Lu Chen, and Kai Yu.
+2024. Multilingual brain surgeon: Large language
+models can be compressed leaving no language be-
+hind. In Proceedings of the 2024 Joint International
+Conference on Computational Linguistics, Language
+Resources and Evaluation (LREC-COLING 2024) ,
+pages 11794–11812, Torino, Italia. ELRA and ICCL.
+Susan Zhang, Stephen Roller, Naman Goyal, Mikel
+Artetxe, Moya Chen, Shuohui Chen, Christopher De-
+wan, Mona Diab, Xian Li, Xi Victoria Lin, Todor Mi-
+haylov, Myle Ott, Sam Shleifer, Kurt Shuster, Daniel
+Simig, Punit Singh Koura, Anjali Sridhar, Tianlu
+Wang, and Luke Zettlemoyer. 2022. OPT: Open
+pre-trained transformer language models. Preprint ,
+arXiv:2205.01068.
+Xiangguo Zhang, Haotong Qin, Yifu Ding, Ruihao
+Gong, Qinghua Yan, Renshuai Tao, Yuhang Li, Feng-
+wei Yu, and Xianglong Liu. 2021. Diversifying sam-
+ple generation for accurate data-free quantization. In
+Proceedings of the IEEE/CVF Conference on Com-
+puter Vision and Pattern Recognition (CVPR) , pages
+15658–15667.
+
+--- PAGE 15 ---
+A Infrastructure
+We use the model implementations and prepared
+datasets from the Hugging Face Transformers
+(Wolf et al., 2020) and Datasets (Lhoest et al., 2021)
+libraries, respectively. For pruning with SparseGPT
+and Wanda, we adopt the implementation from
+Sun et al. (2024). For quantization with AWQ and
+GPTQ, we use the NVIDIA TensorRT Model Opti-
+mizer and AutoGPTQ libraries, respectively.6To
+enable reproducible model evaluations, we use the
+EleutherAI Language Model Evaluation Harness
+(Gao et al., 2023). All experiments are conducted
+using a single NVIDIA A100 80GB GPU.
+B Evaluation Datasets
+Table 5 lists the number of examples used from the
+relevant dataset split in each evaluation task. This
+is either the validation or test split, as implemented
+by Gao et al. (2023).
+C Hyperparameters
+Table 6 presents the hyperparameters used in all
+experiments. For SparseGPT and Wanda, we adopt
+the hyperparameters used in the original work. For
+AWQ and GPTQ, we use the hyperparameters from
+the respective implementations, NVIDIA TensorRT
+Model Optimizer and AutoGPTQ (§A).
+D Calibration Data Analysis
+Supplementary to the text characteristic results for
+Gemma 2 and Llama 3.1 8B presented in §6.3, we
+present the results for Phi-2 2.7B, OPT 6.7B, and
+Mistral 7B in Table 8. Finally, we also present
+self-calibration examples for the remaining models
+(Phi-2 2.7B, OPT 6.7B, and Mistral 7B) in Table 7.
+E Complete Results
+In addition to the summarized results (Table 2,
+we present the task performance across compres-
+sion methods and calibration data sources for each
+model: Gemma 2B (Table 9), Phi-2 2.7B (Table
+10), OPT 6.7B (Table 11), Mistral 7B (Table 12),
+and Llama 3.1 8B (Table 13).
+6Seehttps://nvidia.github.io/TensorRT-Model-O
+ptimizer andhttps://github.com/AutoGPTQ/AutoGPTQ .Dataset # Examples
+ARC-Easy (Clark et al., 2018) 2,376
+ARC-Challenge (Clark et al., 2018) 1,172
+BoolQ (Clark et al., 2019) 3,270
+HellaSwag (Zellers et al., 2019) 10,042
+LAMBADA (Paperno et al., 2016) 5,153
+OpenBookQA (Banerjee et al., 2019) 500
+PIQA (Bisk et al., 2020) 1,838
+RTE (Dagan et al., 2006) 277
+StoryCloze (Mostafazadeh et al., 2016) 1,511
+WinoGrande (Sakaguchi et al., 2021) 1,267
+Table 5: Number of examples in each evaluation task.
+Method Hyperparameter Value
+AWQBits per Weight 4
+Clip Step Size 0.05
+Group Size 128
+Maximum Clip Tokens 64
+Minimum Clip Ratio 0.5
+Scale Step Size 0.1
+GPTQBits per Weight 4
+Dampening 0.01
+Descending Activation Order Yes
+Group Size 128
+Symmetric Quantization Yes
+True Sequential Quantization Yes
+SparseGPTDampening 0.01
+Group Size 128
+Sparsity 2:4
+WandaGroup Size 1
+Sparsity 2:4
+Table 6: The hyperparameters used in all experiments.
+# Generated Text
+Phi-2 2.7B
+1 <|endoftext|> \n\n\ndef simple_math_problem() -> int:\n '''\nNathan
+collects all the leaves from his 8 bushes.\nEach bush has 16 plants...
+2 <|endoftext|> \n\n## TAKING OWNERSHIP OF WORKPLACE
+FEARS \n\nGood morning everyone,\n\nI’m here today to talk...
+3 <|endoftext|> \n\n## BOOSTING ANIMAL POPULATION IN
+INDIA\n\nIndia is known for its rich biodiversity, with a variety of...
+OPT 6.7B
+1 <s>It’s an interesting concept, but there’s no way anyone can get past
+the cost. I can’t see this going anywhere.\nWell this is what’s...
+2 <s>You are here\n\nOlympics Day 10: US men, Phelps, Lochte &
+swimming’s greatest\n\nUpdated: Wednesday, 20 August 2014...
+3 <s>Tampa Bay Lightning\nI’m a simple man, I see Lightning, I read
+Stamkos.\nYeah, the Bolts are gonna be so fun to watch next year...
+Mistral 7B
+1 <s>What with the heat of the summer and a seemingly endless amount
+of time spent outside in awe at the scenery and the local wildlife...
+2 <s>While working on an assignment on how to manage a conflict in
+our teams at University, I was inspired to do so in my own work...
+3 <s>Using “the old reliable” “the old faithful” methods of lead gener-
+ation can quickly become... well, let’s say, repetitive, uninspired...
+Table 7: The starting segment of the first three synthetic
+texts generated by Phi-2 2.7B, OPT 6.7B, and Mistral
+7B, using standard sampling.
+
+--- PAGE 16 ---
+Dataset PPL Rep. Cov. Div. Zipf
+Phi-2 2.7B
+C4 13.01 0.59 0.65 0.01 0.44 0.01 0.63 0.01 1.16 0.02
+WikiText 10.32 0.10 0.65 0.00 0.40 0.01 0.65 0.00 1.12 0.01
+V ocabulary 1.98 ×1050.02 0.00 0.99 0.00 0.87 0.00 0.66 0.00
+Cosmopedia 4.32 0.08 0.59 0.01 0.40 0.01 0.65 0.00 1.16 0.01
+Self-calibration 2.41 0.02 0.67 0.00 0.33 0.00 0.57 0.00 1.24 0.00
+OPT 6.7B
+C4 11.80 0.46 0.65 0.01 0.44 0.01 0.63 0.01 1.16 0.01
+WikiText 11.05 0.16 0.65 0.00 0.40 0.01 0.65 0.00 1.12 0.01
+V ocabulary 2.02 ×1050.02 0.00 0.99 0.00 0.87 0.00 0.66 0.00
+Cosmopedia 5.76 0.13 0.60 0.01 0.40 0.01 0.65 0.01 1.15 0.01
+Self-calibration 7.06 0.21 0.66 0.00 0.32 0.01 0.57 0.01 1.25 0.01
+Mistral 7B
+C4 7.81 0.17 0.65 0.01 0.47 0.01 0.63 0.00 1.15 0.01
+WikiText 5.81 0.07 0.67 0.00 0.42 0.01 0.65 0.00 1.10 0.01
+V ocabulary 1.64 ×1050.03 0.00 0.98 0.00 0.89 0.00 0.55 0.00
+Cosmopedia 3.07 0.03 0.53 0.01 0.46 0.00 0.67 0.01 1.15 0.01
+Self-calibration 5.79 0.15 0.66 0.00 0.41 0.00 0.59 0.00 1.24 0.00
+Table 8: Text characteristics across all calibration sets
+for Phi-2 2.7B, OPT 6.7B, and Mistral 7B, with standard
+deviation denoted in subscript.
+
+--- PAGE 17 ---
+Method Dataset ARC-e ARC-c BoolQ HS LMBD OBQA PIQA RTE SC WG Mean
+- - 74.1 40.4 69.7 52.8 58.3 30.8 77.2 64.3 74.9 64.6 60.7
+AWQC4 73.4 0.1 39.4 0.6 67.8 0.3 51.4 0.1 59.6 1.1 29.2 0.6 76.8 0.1 59.1 2.3 74.0 0.4 64.1 0.4 59.5 0.2
+WikiText 73.4 0.4 39.5 0.8 68.0 1.5 51.5 0.0 59.1 1.2 29.4 0.6 76.6 0.3 58.6 1.7 74.0 0.3 64.7 0.5 59.5 0.2
+V ocabulary 72.1 0.3 39.6 0.4 67.1 1.0 51.2 0.1 57.3 0.1 29.0 0.8 75.9 0.5 61.2 1.3 74.5 0.2 64.5 0.2 59.3 0.2
+Cosmopedia 73.4 0.4 39.5 0.6 68.3 0.9 51.3 0.1 60.5 0.8 29.4 1.0 76.8 0.2 60.0 1.5 74.1 0.3 64.7 0.5 59.8 0.2
+Self-calibration 73.3 0.2 40.6 0.4 68.6 0.2 51.9 0.2 59.5 0.6 28.8 0.2 76.6 0.3 60.5 3.0 74.1 0.3 63.6 0.3 59.8 0.4
+GPTQC4 72.8 0.7 38.4 0.8 68.7 1.4 50.9 0.2 54.9 1.7 27.8 1.1 76.1 0.3 60.6 2.8 73.6 0.4 63.1 0.7 58.7 0.4
+WikiText 71.3 0.8 37.2 0.4 67.3 0.8 51.3 0.2 55.3 0.3 29.0 0.9 76.0 0.4 61.8 1.8 73.4 0.4 63.4 0.4 58.6 0.3
+V ocabulary 70.8 1.0 36.3 0.7 69.1 0.7 50.3 0.3 53.2 1.8 29.1 0.9 75.9 0.3 58.3 1.4 72.3 0.5 63.6 0.7 57.9 0.3
+Cosmopedia 72.8 0.9 38.1 0.5 68.1 0.6 51.2 0.4 54.0 1.2 29.2 2.1 75.3 0.6 59.0 2.3 73.9 0.5 63.6 1.0 58.5 0.3
+Self-calibration 73.5 0.8 40.0 0.4 68.8 0.8 52.0 0.1 57.6 1.2 29.6 0.7 76.6 0.3 61.7 2.5 74.0 0.5 65.1 0.7 59.9 0.3
+SparseGPTC4 60.2 1.1 25.9 1.2 63.4 0.9 39.9 0.3 39.7 2.2 21.3 1.2 70.0 0.3 55.7 2.9 64.0 0.3 57.0 1.1 49.7 0.8
+WikiText 58.0 0.9 25.5 0.6 62.8 0.6 37.6 0.1 37.0 1.4 20.8 0.9 67.2 0.5 55.7 0.5 62.3 0.5 55.8 1.0 48.3 0.2
+V ocabulary 52.0 0.9 21.1 0.5 61.8 0.4 33.5 0.1 16.5 0.4 18.1 0.9 66.5 0.6 53.0 0.5 56.5 0.3 54.6 1.1 43.4 0.3
+Cosmopedia 60.1 1.0 25.7 0.7 62.2 0.1 37.8 0.3 29.6 1.4 19.8 0.9 68.1 0.5 56.3 1.9 61.2 0.6 55.9 0.9 47.7 0.3
+Self-calibration 63.0 0.5 28.0 0.8 62.7 0.3 40.5 0.2 38.1 1.2 22.1 0.5 70.7 0.7 57.5 1.5 66.7 0.2 59.0 0.7 50.8 0.2
+WandaC4 54.9 0.6 24.6 0.6 53.7 2.8 36.4 0.1 19.8 0.3 17.0 0.2 66.5 0.5 54.6 1.6 59.1 0.3 55.5 0.3 44.2 0.2
+WikiText 54.4 0.5 23.9 0.5 60.6 1.4 35.8 0.2 20.2 0.9 17.2 0.9 66.4 0.2 55.6 1.4 58.9 0.3 55.4 0.5 44.8 0.4
+V ocabulary 51.0 0.4 22.1 0.3 54.4 2.7 33.8 0.1 13.4 0.4 16.3 1.1 65.8 0.2 51.6 1.8 57.7 0.3 54.7 0.6 42.1 0.4
+Cosmopedia 54.4 0.8 24.4 0.6 62.1 0.2 35.8 0.2 16.6 0.3 16.8 0.6 66.4 0.5 55.1 0.5 57.5 0.3 55.9 0.6 44.5 0.2
+Self-calibration 56.4 0.2 25.6 0.4 51.8 1.4 37.2 0.1 23.1 0.3 19.6 0.5 67.5 0.4 53.9 1.0 61.2 0.3 56.1 0.6 45.2 0.3
+Table 9: Task accuracy across five calibration sets for Gemma 2B, with standard deviation denoted in subscript.
+Method Dataset ARC-e ARC-c BoolQ HS LMBD OBQA PIQA RTE SC WG Mean
+- - 79.8 53.0 83.4 55.8 49.8 40.2 78.6 62.5 79.3 75.8 65.8
+AWQC4 80.2 0.3 51.7 0.4 82.3 0.2 54.8 0.1 47.6 0.4 39.8 0.6 78.9 0.3 65.5 0.7 77.7 0.3 75.8 0.6 65.4 0.2
+WikiText 80.4 0.2 51.4 0.7 83.1 0.2 54.6 0.1 47.1 0.5 39.0 0.8 78.9 0.1 65.1 1.2 77.7 0.2 76.2 0.4 65.4 0.2
+V ocabulary 80.1 0.2 50.8 0.4 78.7 0.5 54.0 0.1 45.9 0.3 39.5 0.8 78.6 0.4 65.9 1.3 76.6 0.2 75.4 0.7 64.5 0.2
+Cosmopedia 80.2 0.2 51.0 0.5 81.7 0.5 54.7 0.1 46.8 0.1 39.5 0.6 78.3 0.0 66.8 1.4 77.7 0.2 75.8 0.6 65.3 0.2
+Self-calibration 80.6 0.3 51.1 0.3 82.9 0.1 54.7 0.1 47.5 0.2 39.3 0.3 78.1 0.2 65.8 0.8 78.1 0.5 75.6 0.7 65.4 0.2
+GPTQC4 79.6 0.1 50.9 0.8 82.3 0.7 54.5 0.1 46.8 0.6 38.9 0.7 78.4 0.3 62.1 1.6 78.2 0.4 75.6 0.9 64.7 0.3
+WikiText 79.5 0.3 50.4 0.6 80.8 0.6 54.2 0.1 46.7 0.4 39.1 0.7 78.0 0.6 64.0 1.3 78.0 0.4 75.3 0.6 64.6 0.2
+V ocabulary 79.3 0.3 50.3 0.9 80.1 1.5 53.9 0.2 45.6 0.6 38.5 1.6 77.9 0.3 64.1 1.0 77.7 0.2 75.1 0.8 64.3 0.2
+Cosmopedia 79.5 0.4 50.4 0.3 80.9 1.1 54.4 0.1 45.8 0.6 38.6 0.6 78.2 0.5 63.4 0.9 77.5 0.5 74.7 0.8 64.3 0.1
+Self-calibration 79.6 0.3 51.6 0.6 82.0 0.7 54.6 0.2 46.9 0.8 39.0 0.4 77.9 0.3 64.5 0.8 78.2 0.6 75.6 0.7 65.0 0.3
+SparseGPTC4 69.3 0.6 35.1 0.8 67.5 1.1 42.1 0.4 32.6 0.6 27.7 0.9 72.0 1.0 59.2 2.0 69.0 0.3 68.6 0.4 54.3 0.3
+WikiText 69.6 0.7 35.1 1.0 63.1 0.7 40.6 0.3 33.3 0.3 27.4 0.4 71.3 0.7 57.4 5.1 68.2 0.2 67.5 0.8 53.3 0.5
+V ocabulary 67.1 0.3 32.3 0.5 64.4 0.6 37.8 0.1 20.8 0.7 23.3 0.8 71.2 0.5 57.7 2.2 64.0 0.2 62.7 1.3 50.1 0.2
+Cosmopedia 70.5 1.0 37.2 0.8 64.6 0.9 40.6 0.3 24.0 0.5 27.6 1.2 71.2 0.4 56.0 1.9 66.0 0.4 65.8 0.9 52.3 0.2
+Self-calibration 71.2 0.3 37.7 0.5 73.4 1.0 41.6 0.3 31.6 0.8 32.1 0.8 72.0 0.5 65.5 2.8 71.0 0.4 68.2 0.5 56.4 0.3
+WandaC4 68.1 0.4 33.7 0.6 64.6 2.3 39.0 0.2 18.9 0.6 25.4 0.7 70.6 0.3 50.5 2.0 66.0 0.3 66.9 0.6 50.4 0.4
+WikiText 67.2 0.2 33.3 0.5 64.0 1.8 38.1 0.1 18.9 0.8 26.4 0.7 70.1 0.2 51.0 0.6 65.6 0.4 64.3 0.5 49.9 0.2
+V ocabulary 65.4 0.4 31.7 0.5 56.0 1.7 36.6 0.2 13.0 0.4 24.5 0.6 69.7 0.6 51.6 1.8 62.2 0.6 59.5 0.6 47.0 0.3
+Cosmopedia 66.0 0.9 31.5 0.7 66.6 2.1 38.2 0.2 16.6 0.7 23.5 0.5 69.5 0.4 53.9 2.1 64.3 0.5 64.4 0.4 49.4 0.4
+Self-calibration 67.6 0.3 35.1 0.6 68.8 2.0 39.5 0.1 18.7 0.5 25.8 0.4 70.1 0.3 59.1 3.5 65.7 0.3 64.9 1.3 51.5 0.7
+Table 10: Task accuracy across five calibration sets for Phi-2 2.7B, with standard deviation denoted in subscript.
+
+--- PAGE 18 ---
+Method Dataset ARC-e ARC-c BoolQ HS LMBD OBQA PIQA RTE SC WG Mean
+- - 65.6 30.5 66.1 50.5 63.3 27.6 76.3 55.2 73.6 65.2 57.4
+AWQC4 65.6 0.1 30.8 0.2 65.7 0.5 50.1 0.0 63.5 0.1 27.4 0.2 76.8 0.2 56.7 0.9 74.0 0.3 65.0 0.3 57.6 0.1
+WikiText 65.5 0.2 30.8 0.4 65.9 0.5 50.1 0.0 63.8 0.2 27.1 0.4 76.4 0.1 56.0 0.9 74.1 0.2 65.1 0.5 57.5 0.1
+V ocabulary 64.9 0.4 31.0 0.3 62.5 2.2 49.8 0.1 59.3 1.8 27.6 0.4 76.2 0.3 57.0 1.4 73.4 0.2 64.3 0.5 56.6 0.3
+Cosmopedia 65.4 0.1 31.0 0.2 66.0 0.5 50.0 0.1 64.0 0.3 27.5 0.4 76.8 0.3 56.3 0.4 74.1 0.2 65.1 0.5 57.6 0.1
+Self-calibration 65.8 0.2 30.9 0.3 65.6 0.4 50.2 0.1 63.6 0.2 26.9 0.5 77.1 0.2 56.8 0.7 73.9 0.2 64.9 0.4 57.6 0.1
+GPTQC4 64.9 0.2 30.4 0.3 65.3 1.0 49.6 0.1 62.8 0.3 26.5 0.5 75.9 0.1 54.2 1.1 73.2 0.2 64.7 0.5 56.8 0.2
+WikiText 64.7 0.3 30.6 0.2 65.5 0.4 49.7 0.1 62.8 0.2 26.9 0.4 76.1 0.3 55.1 0.7 73.2 0.3 64.6 0.4 56.9 0.1
+V ocabulary 65.0 0.5 30.7 0.4 64.4 2.0 49.8 0.1 60.4 1.8 27.2 0.4 76.1 0.3 55.5 1.2 72.7 0.3 64.1 0.6 56.6 0.3
+Cosmopedia 65.1 0.3 30.2 0.6 64.8 0.7 49.6 0.1 62.5 0.4 27.2 0.4 75.5 0.3 55.3 0.8 73.3 0.3 64.5 0.4 56.8 0.1
+Self-calibration 65.5 0.2 30.3 0.7 65.1 0.4 49.8 0.0 62.3 0.5 26.9 0.4 76.0 0.3 55.2 1.2 73.2 0.2 64.7 0.5 56.9 0.2
+SparseGPTC4 59.6 0.3 25.4 0.7 63.0 0.4 43.2 0.1 55.2 0.8 23.9 0.5 72.4 0.6 53.1 0.4 70.0 0.3 61.8 0.5 52.8 0.2
+WikiText 59.1 0.9 26.2 0.5 62.1 0.1 41.3 0.2 50.6 0.5 24.4 0.4 70.1 0.6 52.9 0.5 68.1 0.2 61.3 1.5 51.6 0.2
+V ocabulary 54.4 0.5 22.8 0.4 62.4 0.3 38.4 0.1 38.1 1.2 17.7 0.5 70.3 0.5 52.6 0.5 63.9 0.5 56.3 1.1 47.7 0.2
+Cosmopedia 59.9 0.6 26.3 0.6 62.2 0.0 42.3 0.3 41.6 0.7 24.8 0.6 71.9 0.4 53.1 0.4 67.4 0.7 60.0 0.8 50.9 0.2
+Self-calibration 58.6 0.4 25.8 0.8 65.3 0.9 42.2 0.2 55.6 0.5 23.9 0.4 71.9 0.6 52.6 1.1 69.7 0.4 60.9 0.6 52.7 0.3
+WandaC4 56.7 0.5 24.7 0.4 62.3 0.1 41.6 0.1 43.9 0.2 23.2 0.9 71.2 0.3 53.7 0.3 68.4 0.4 60.2 0.7 50.6 0.2
+WikiText 56.0 0.1 24.8 0.4 62.2 0.0 39.6 0.2 40.2 0.4 21.5 0.8 69.8 0.4 53.1 0.3 66.4 0.4 58.7 0.4 49.2 0.2
+V ocabulary 47.4 0.2 20.4 0.4 62.2 0.0 33.4 0.1 22.4 0.4 14.4 0.1 66.6 0.1 53.9 1.4 58.7 0.3 52.8 0.7 43.2 0.1
+Cosmopedia 57.0 0.1 24.7 0.3 62.2 0.0 40.7 0.2 31.0 0.7 23.0 0.5 70.9 0.4 52.7 0.0 66.0 0.5 58.5 0.4 48.7 0.2
+Self-calibration 56.3 0.2 24.6 0.3 64.1 0.4 41.3 0.1 45.7 0.5 21.5 0.3 70.8 0.4 53.9 0.3 68.3 0.3 60.1 0.7 50.7 0.2
+Table 11: Task accuracy across five calibration sets for OPT 6.7B, with standard deviation denoted in subscript.
+Method Dataset ARC-e ARC-c BoolQ HS LMBD OBQA PIQA RTE SC WG Mean
+- - 79.6 48.7 82.4 60.9 69.2 33.6 80.3 67.9 78.3 73.6 67.4
+AWQC4 79.3 0.0 48.1 0.2 81.6 0.4 59.9 0.1 68.1 0.4 33.6 0.6 79.7 0.2 69.2 0.4 78.3 0.1 72.9 0.2 67.1 0.0
+WikiText 79.4 0.3 48.0 0.6 81.8 0.4 60.0 0.1 68.1 0.2 33.7 0.4 79.9 0.2 69.1 0.8 78.5 0.3 72.4 0.5 67.1 0.1
+V ocabulary 79.3 0.3 48.3 0.2 79.3 0.5 59.9 0.1 67.1 0.6 33.4 0.5 79.7 0.1 67.4 0.5 77.8 0.4 72.3 0.7 66.5 0.1
+Cosmopedia 79.3 0.3 48.6 0.1 81.6 0.4 60.0 0.1 67.6 0.2 34.0 0.5 79.4 0.2 67.5 1.2 78.9 0.2 72.8 0.4 67.0 0.2
+Self-calibration 79.1 0.2 47.9 0.9 81.8 0.3 60.0 0.1 68.0 0.2 34.2 0.5 80.1 0.2 68.2 1.2 78.5 0.2 72.7 0.3 67.0 0.2
+GPTQC4 79.0 0.3 48.0 0.5 81.8 0.7 60.0 0.2 68.0 0.6 32.7 0.2 80.1 0.3 67.1 2.1 78.3 0.3 73.1 0.5 66.8 0.3
+WikiText 79.1 0.4 47.9 0.5 82.1 0.5 60.1 0.1 68.0 0.5 32.2 0.7 80.0 0.3 67.5 1.7 78.4 0.4 73.4 0.4 66.9 0.3
+V ocabulary 78.4 0.4 47.1 1.0 81.6 0.3 59.9 0.1 67.0 0.6 32.5 0.6 79.7 0.2 63.9 1.7 77.2 0.2 72.5 0.5 66.0 0.1
+Cosmopedia 79.1 0.3 47.1 0.5 81.5 0.6 60.0 0.1 67.9 0.2 32.0 0.4 80.2 0.3 66.7 2.1 78.1 0.4 73.1 0.4 66.6 0.2
+Self-calibration 78.3 0.3 46.8 0.5 80.7 0.9 59.9 0.2 66.9 0.6 32.0 0.6 79.4 0.4 63.0 0.7 78.3 0.2 73.1 0.4 65.9 0.2
+SparseGPTC4 67.4 0.7 34.3 0.8 75.2 0.9 46.7 0.3 53.9 0.6 23.9 0.5 73.3 0.7 60.3 1.9 71.8 0.5 66.3 0.9 57.3 0.3
+WikiText 67.2 0.4 33.3 0.5 64.3 0.2 45.2 0.2 54.0 0.5 23.1 0.4 71.3 0.3 60.1 2.5 70.4 0.4 66.3 0.6 55.5 0.3
+V ocabulary 62.5 1.4 30.0 0.8 71.0 0.6 44.5 0.2 42.7 0.4 20.2 0.6 71.5 0.3 56.9 2.9 68.6 0.3 62.2 0.9 53.0 0.4
+Cosmopedia 69.5 0.4 35.4 0.7 66.4 0.8 45.6 0.3 42.9 0.8 24.2 0.7 71.7 0.2 60.7 3.7 69.5 0.5 64.9 0.5 55.1 0.3
+Self-calibration 65.9 0.5 32.2 0.8 76.0 0.9 46.7 0.1 51.7 0.8 23.2 0.5 73.1 0.6 60.5 1.0 72.5 0.2 66.5 0.4 56.8 0.3
+WandaC4 64.3 0.4 30.5 0.6 70.4 0.6 44.3 0.1 42.3 0.3 21.2 0.6 71.9 0.3 56.4 2.0 70.8 0.3 64.5 0.5 53.7 0.3
+WikiText 64.8 0.6 31.0 0.5 66.1 0.8 43.5 0.1 44.5 0.2 21.6 0.4 70.7 0.2 58.6 1.1 70.0 0.2 63.6 0.5 53.4 0.2
+V ocabulary 58.4 0.5 26.1 0.2 64.3 0.7 39.5 0.2 29.8 0.3 17.8 0.6 69.7 0.1 54.6 1.4 64.4 0.2 59.0 0.7 48.4 0.2
+Cosmopedia 65.5 0.2 32.4 0.2 65.1 0.6 43.6 0.1 37.6 0.3 21.0 0.7 70.7 0.3 58.1 1.6 69.3 0.2 63.4 0.5 52.7 0.2
+Self-calibration 63.7 0.3 30.0 0.6 68.6 1.4 44.3 0.1 41.7 0.3 20.6 0.7 71.6 0.4 58.9 0.6 70.8 0.3 64.8 0.4 53.5 0.1
+Table 12: Task accuracy across five calibration sets for Mistral 7B, with standard deviation denoted in subscript.
+
+--- PAGE 19 ---
+Method Dataset ARC-e ARC-c BoolQ HS LMBD OBQA PIQA RTE SC WG Mean
+- - 81.4 51.5 82.2 60.0 67.1 33.4 80.0 70.0 78.2 74.0 67.8
+AWQC4 80.7 0.6 50.3 0.6 79.9 0.6 58.6 0.1 66.1 0.8 34.6 0.4 79.5 0.4 68.3 0.9 77.3 0.3 73.4 0.4 66.9 0.2
+WikiText 80.4 0.3 50.4 0.9 81.3 0.8 58.8 0.1 65.6 0.2 34.5 0.3 79.5 0.2 68.6 0.5 77.7 0.5 73.8 0.3 67.1 0.1
+V ocabulary 80.3 0.4 49.0 1.0 80.0 0.5 58.2 0.2 63.4 0.4 34.1 0.8 79.2 0.2 66.3 0.9 76.6 0.2 72.3 0.2 66.0 0.3
+Cosmopedia 81.1 0.1 50.3 0.7 81.0 0.5 58.8 0.1 65.4 0.5 34.7 0.5 79.6 0.2 67.1 2.3 77.6 0.4 73.0 0.5 66.9 0.3
+Self-calibration 80.8 0.3 50.0 0.6 80.6 0.2 58.7 0.1 65.1 0.4 34.5 0.6 79.6 0.3 66.1 2.1 77.3 0.3 73.7 0.3 66.6 0.3
+GPTQC4 80.5 0.4 48.7 0.8 80.5 0.4 58.8 0.3 65.4 0.7 32.7 1.2 79.6 0.3 71.9 1.4 78.1 0.3 72.8 1.0 66.9 0.3
+WikiText 80.4 0.4 48.5 1.0 80.4 0.5 58.8 0.1 65.3 0.2 33.2 0.8 79.3 0.1 69.5 1.6 77.7 0.4 72.9 0.2 66.6 0.3
+V ocabulary 80.0 0.5 47.9 1.2 80.9 0.6 58.0 0.2 62.8 0.5 33.8 0.4 79.2 0.5 65.1 1.0 76.7 0.3 72.6 0.5 65.7 0.1
+Cosmopedia 80.8 0.7 49.1 0.4 81.1 0.7 58.9 0.1 64.7 0.7 34.0 0.9 79.2 0.3 70.3 1.0 77.9 0.4 73.4 0.4 66.9 0.1
+Self-calibration 79.7 0.5 47.4 0.8 81.4 0.3 58.5 0.3 64.9 0.3 30.8 0.8 79.2 0.3 69.5 1.7 77.7 0.3 72.3 0.4 66.1 0.3
+SparseGPTC4 63.4 0.9 31.0 1.1 71.3 1.8 43.9 0.4 50.9 0.6 23.0 1.0 70.7 0.6 57.4 1.5 70.4 0.4 65.9 0.5 54.8 0.3
+WikiText 62.1 1.0 30.0 1.3 66.6 2.2 41.4 0.1 49.1 1.4 22.6 1.3 68.3 0.4 53.5 0.8 68.7 0.5 63.9 1.3 52.6 0.4
+V ocabulary 57.0 0.5 25.6 1.1 65.3 1.4 37.2 0.2 28.9 1.2 20.1 0.7 69.2 0.5 52.6 0.3 61.3 0.5 56.1 0.8 47.3 0.4
+Cosmopedia 64.6 1.0 31.9 1.1 64.8 1.1 41.6 0.4 34.3 0.9 21.8 1.3 68.9 0.5 53.6 0.5 66.4 0.7 61.6 1.1 50.9 0.3
+Self-calibration 64.5 0.8 32.3 1.0 70.7 0.9 42.8 0.2 43.3 1.5 22.0 0.9 69.5 0.3 58.9 2.4 69.6 0.5 64.1 0.5 53.8 0.4
+WandaC4 57.7 0.6 26.8 0.3 66.9 1.6 38.2 0.1 33.9 0.5 19.3 0.7 68.6 0.2 53.5 0.9 65.6 0.2 59.8 0.4 49.0 0.3
+WikiText 57.9 0.4 28.2 0.5 66.9 0.3 37.8 0.2 34.6 0.4 20.4 0.3 67.8 0.3 53.1 0.3 65.2 0.3 59.8 0.5 49.2 0.1
+V ocabulary 53.6 0.4 22.9 0.6 62.3 0.2 34.0 0.1 20.0 1.2 18.1 0.9 66.1 0.5 52.1 1.3 60.4 0.4 57.3 1.1 44.7 0.3
+Cosmopedia 57.7 0.5 26.1 0.2 65.7 0.6 37.2 0.2 26.6 0.4 20.0 0.8 68.6 0.4 52.4 0.7 64.0 0.3 58.7 0.6 47.7 0.2
+Self-calibration 58.1 0.4 27.5 0.2 67.7 0.4 37.8 0.2 31.8 0.4 19.9 0.7 69.0 0.4 54.3 1.3 65.7 0.4 59.2 0.5 49.1 0.1
+Table 13: Task accuracy across five calibration sets for Llama 3.1 8B, with standard deviation denoted in subscript.

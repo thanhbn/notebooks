@@ -1,0 +1,1185 @@
+# 2409.10959v1.pdf
+# Converted from PDF to TXT
+# Source path: D:\llm\notebooks\AI-Papers\2409.10959v1.pdf
+# File size: 10376842 bytes
+
+===============================================
+PDF FILE CONTENT
+===============================================
+
+
+--- PAGE 1 ---
+Leveraging Reviewer Experience in Code Review Comment Generation
+HONG YI LIN, The University of Melbourne, Australia
+PATANAMON THONGTANUNAM, The University of Melbourne, Australia
+CHRISTOPH TREUDE, Singapore Management University, Singapore
+MICHAEL W. GODFREY, University of Waterloo, Canada
+CHUNHUA LIU, The University of Melbourne, Australia
+WACHIRAPHAN CHAROENWET, The University of Melbourne, Australia
+Modern code review is a ubiquitous software quality assurance process aimed at identifying and resolving potential issues (e.g.,
+functional, evolvability) within newly written code. Despite its effectiveness, the process demands large amounts of effort from the
+human reviewers involved. To help alleviate this workload, researchers have trained various deep learning based language models to
+imitate human reviewers in providing natural language code reviews for submitted code. Formally, this automation task is known as
+code review comment generation. Prior work has demonstrated improvements in code review comment generation by leveraging
+machine learning techniques and neural models, such as transfer learning and the transformer architecture. However, the quality of
+the model generated reviews remain sub-optimal due to the quality of the open-source code review data used in model training. This
+is in part due to the data obtained from open-source projects where code reviews are conducted in a public forum, and reviewers
+possess varying levels of software development experience, potentially affecting the quality of their feedback. To accommodate for
+this variation, we propose a suite of experience-aware training methods that utilise the reviewers’ past authoring and reviewing
+experiences as signals for review quality. Specifically, we propose experience-aware loss functions (ELF), which use the reviewers’
+authoring and reviewing ownership of a project as weights in the model’s loss function. Through this method, experienced reviewers’
+code reviews yield larger influence over the model’s behaviour. Compared to the SOTA model, ELF was able to generate higher
+quality reviews in terms of accuracy (e.g., +29% applicable comments), informativeness (e.g., +56% suggestions), and comment types
+generated (e.g., +129% functional issues identified). The key contribution of this work is the demonstration of how traditional software
+engineering concepts such as reviewer experience can be integrated into the design of AI-based automated code review models.
+CCS Concepts: •Software and its engineering →Software creation and management ;•Computing methodologies →
+Machine translation ;Natural language generation .
+Additional Key Words and Phrases: Code Review, Review Comments, Neural Machine Translation, Natural Language Generation
+ACM Reference Format:
+Hong Yi Lin, Patanamon Thongtanunam, Christoph Treude, Michael W. Godfrey, Chunhua Liu, and Wachiraphan Charoenwet. 2018.
+Leveraging Reviewer Experience in Code Review Comment Generation. 1, 1 (September 2018), 28 pages. https://doi.org/XXXXXXX.
+XXXXXXX
+Authors’ addresses: Hong Yi Lin, holin2@unimelb.edu.au, The University of Melbourne, Melbourne, Victoria, Australia; Patanamon Thongta-
+nunam, patanamon.t@unimelb.edu.au, The University of Melbourne, Melbourne, Victoria, Australia; Christoph Treude, ctreude@smu.edu.sg, Sin-
+gapore Management University, Singapore, Singapore; Michael W. Godfrey, migod@uwaterloo.ca, University of Waterloo, Waterloo, Ontario,
+Canada; Chunhua Liu, chunhua@student.unimelb.edu.au, The University of Melbourne, Melbourne, Victoria, Australia; Wachiraphan Charoenwet,
+wcharoenwet@student.unimelb.edu.au, The University of Melbourne, Melbourne, Victoria, Australia.
+Permission to make digital or hard copies of all or part of this work for personal or classroom use is granted without fee provided that copies are not
+made or distributed for profit or commercial advantage and that copies bear this notice and the full citation on the first page. Copyrights for components
+of this work owned by others than the author(s) must be honored. Abstracting with credit is permitted. To copy otherwise, or republish, to post on
+servers or to redistribute to lists, requires prior specific permission and/or a fee. Request permissions from permissions@acm.org.
+©2018 Copyright held by the owner/author(s). Publication rights licensed to ACM.
+Manuscript submitted to ACM
+Manuscript submitted to ACM 1arXiv:2409.10959v1  [cs.SE]  17 Sep 2024
+
+--- PAGE 2 ---
+2 Lin et al.
+1 INTRODUCTION
+As a spiritual successor to the Fagan inspection, modern code review is a lightweight human-oriented software quality
+assurance process that can be found in most of today’s collaborative software development environments [19, 63, 81].
+The process requires developers who are not the code author to inspect a code change for a wide variety of problems,
+ranging from functional issues (e.g., logical flaws and resource misuse) to evolvability issues (e.g., poor variable naming
+and low readability) [ 53]. Whilst the review process helps improve the quality and maintainability of the software,
+practitioners often find the process both time-consuming [ 5] and mentally taxing [ 27]. When code reviews are not
+rigorously conducted, software files are still found to be defective [68], emphasising a need for automation.
+To help alleviate this workload, researchers have attempted to automate the code review process via three sequential
+tasks: code change quality estimation ,code review comment generation , and code refinement . Respectively, these tasks
+replicate the developer’s actions in deciding if a code change needs to be revised, describing what needs to be revised in
+a natural language review, and finally revising the code according to that review. In this work, we focus on the code
+review comment generation task which has been shown to be the most challenging component of the three tasks [ 43].
+This involves training deep language models [58, 80] to provide natural language reviews that identify a wide variety
+of issues within submitted code changes [ 40,43,77]. The state-of-the-art model, CodeReviewer [ 43], is a T5-based
+transformer [ 58] that has been trained on a large-scale GitHub code review corpus. Although considerable effort has
+been invested into curating a diverse set of code reviews, little attention has been placed on exploring the variation in
+quality across the reviews in the training data themselves.
+Code reviews can be conducted by a wide range of reviewers with varying levels of expertise, which may lead to
+diversity in the quality of reviews. Prior studies found that reviewers’ experience and expertise are often associated
+with the issue types identified in code reviews [ 36] and the level of usefulness [ 79]. Inexperienced reviewers (who
+have reviewed and authored few code changes) often focus on trivial issues like visual representation (e.g., Figure 1,
+Example 2), which are considered less useful by developers [ 36,79], or express confusion and uncertainty (e.g., Figure 1,
+Example 3), an anti-pattern associated with a lack of experience [ 10]. In contrast, experienced reviewers are more likely
+to identify critical functional issues, such as the missing validation check in Figure 1, Example 1, which demonstrates
+the value of deeper code understanding [36].
+As code reviews may reflect the reviewers’ insights drawn from their prior software development and code review
+experiences, we hypothesise that the quality of generated reviews can be improved by aligning the language model
+with experienced reviewers’ perspectives. To achieve this alignment, we propose a suite of experience-aware training
+methods that utilise the reviewers’ past authoring and reviewing experiences as signals for review quality. Specifically,
+we propose a novel method called experience-aware loss functions (ELF) , which assigns a weight to the model’s
+loss function that is proportional to the reviewer’s experience in the project [ 7,69]. In this way, comments made by
+experienced reviewers yield more influence over the model’s behaviour.
+Through both quantitative and qualitative evaluation, we found that ELF demonstrated stronger capability in
+generating high-quality reviews compared to past methods. In terms of accuracy, ELF achieved the highest increase
+over CodeReviewer in terms of BLEU-4 (+5%) and applicable comments generated (+29%). In terms of informativeness,
+ELF exhibited the highest increase in suggestions over CodeReviewer (+56%), whilst maintaining a similar improvement
+compared to experience-aware loss functions in terms of confused questions (-71%) and explanations generated (+125%).
+Regarding the types of generated reviews, we found that ELF demonstrated the highest increase over CodeReviewer in
+terms of functional faults detected (+129%) and evolvability issues identified (+21%). Amongst the different configurations
+Manuscript submitted to ACM
+
+--- PAGE 3 ---
+Leveraging Reviewer Experience in Code Review Comment Generation 3
+Fig. 1. Example of Variation in Code Review Content Provided by Reviewers with Different Levels of Experience
+of ELF, we found that considering both authoring and reviewing experience separately at the package level yielded the
+most improvement, however the complementary nature of the different granularities should also not be overlooked.
+This study extends our short paper [ 46], published at MSR 2024 (The International Conference on Mining Software
+Repositories), by introducing a new experience-aware technique along with deeper analysis to explore how different
+ways of estimating and weighing reviewers’ experiences affect model-generated reviews. The experimentation expands
+upon the initial work along two main vectors. Firstly, we expand the calculation of the ownership metrics to consider
+finer granularities; that is, we consider subsystem and package-level ownership in addition to repository-level, to better
+reflect reviewers’ specialised experiences within the project. Secondly, we introduce experience-aware loss functions
+(ELF) to replace the previously proposed experience-aware oversampling method; we do this for two reasons: 1) to
+mitigate the sensitivity to arbitrarily selected major ownership thresholds that may not generalise across projects,
+and 2) to circumvent the computationally costly search for optimal upsampling rates. We compare 12 new models
+derived from ELF in addition to the three previously proposed experience-aware oversampling strategies (calculated at
+repository level only) and the original CodeReviewer model in terms of accuracy, informativeness, and comment type.
+The main contributions of this paper are:
+•A suite of experience-aware training methods for improving code review comment generation
+•An analysis of emergent behaviours of code review comment generation models after experience-aware training
+•Two large scale datasets containing commit and pull-request histories for 826 of the top GitHub repositories
+•An augmented version of CodeReviewer’s dataset that is tagged with six different ownership metrics
+Manuscript submitted to ACM
+
+--- PAGE 4 ---
+4 Lin et al.
+2 BACKGROUND & RELATED WORK
+In this section, we discuss related work from three main areas: automated code reviews (2.1), review comment generation
+(2.2), and experienced reviewers and code review quality (2.3). We focus on these aspects as we seek to improve review
+comment generation by leveraging reviewer experience as a signal for identifying higher quality reviews during model
+training.
+2.1 Automated Code Reviews
+The recent success of deep learning based language models in the field of natural language processing [ 13,57,58,80] has
+inspired a plethora of research on their application to the software engineering domain [ 24,48,88]. This transition is
+seemingly natural, as both programming languages and natural languages are used to form sequential texts that conform
+to syntax and grammar, whilst expressing human logic in their semantics. As a result, many studies have demonstrated
+that language models can achieve promising levels of performance in real-world program understanding and generation
+tasks [ 88] — such as vulnerability detection [ 21], repair [ 20,22,90] and bug fixing [ 33,34,75] — suggesting the existence
+of exploitable naturalness properties [ 1,32,62] within human written software. Likewise, the field of automated code
+reviews also operates under the assumption that review comments are often repetitive and predictable, making the
+problem a suitable candidate for language modelling.
+In its current form, automated code reviewing can be subdivided into a sequence of three tasks: code change quality
+estimation [ 31,43], review comment generation [ 41,43,46,77], and code refinement [ 39,43–45,56,70,74,77,78].
+Firstly, code change quality estimation requires the model to determine whether a code change submitted by a developer
+requires code review. This can be defined as a ( 𝐻𝑝𝑟𝑒→𝑟𝑒𝑣𝑖𝑠𝑒 ?) binary classification task [ 43], where𝐻𝑝𝑟𝑒is the version
+of the code hunk submitted for review and 𝑟𝑒𝑣𝑖𝑠𝑒 ?is the binary decision output of whether the code change needs
+review. If it is determined that the code change needs review, review comment generation is subsequently performed.
+The review comment generation task requires the model to generate a natural language comment that can help guide
+the developer to improve the submitted piece of code, just as a human reviewer would. More formally, this can be
+formulated as a ( 𝐻𝑝𝑟𝑒→𝑅𝑛𝑙) neural machine translation task [ 43], where𝑅𝑛𝑙is the natural language review comment.
+Finally, code refinement requires the language model to address the review comment 𝑅𝑛𝑙, by revising 𝐻𝑝𝑟𝑒to the final
+improved version of the code hunk 𝐻𝑝𝑜𝑠𝑡, ready to be merged into the code base. This last task can be formulated as a
+(𝐻𝑝𝑟𝑒,𝑅𝑛𝑙→𝐻𝑝𝑜𝑠𝑡) bimodal input translation problem [43].
+Whilst it has been proven that underlying statistical properties of code reviews are learnable, publicly available
+state-of-the-art techniques such as LLaMA [ 47] and ChatGPT [ 28,76] still struggle to perform well on the given test sets.
+In contrast, the code review models trained on closed-source software projects [ 19,81] have reported high adoption
+rates. This may be because the data was collected from environments with experienced software engineers, strict code
+review cultures, and well-managed version control data, demonstrating that these code review models are performing
+well in practice when being trained with good, high-quality examples. However, such data of closed-source projects
+are limited, resulting in the need for open-source models to rely on data from open-source platforms such as GitHub,
+where the code review standards may vary widely.
+2.2 Review Comment Generation
+Review comment generation represents the most challenging task in the attempt to automate code reviews, as the
+language model is required to infer the single ground truth comment from a vast space of potential solutions using only
+Manuscript submitted to ACM
+
+--- PAGE 5 ---
+Leveraging Reviewer Experience in Code Review Comment Generation 5
+a small window of code. Tufano et al. [ 77] have demonstrated the potential of using the text-to-text transfer transformer
+(T5) [ 58] to generate code reviews, when pre-training the model with general code and natural language corpora related
+to the software engineering domain. Yet, compared to code refinement, the model showed far lower performance in
+terms of perfect predictions for review comment generation; however, upon their manual inspection, it was revealed
+that many generated comments were in fact either semantically equivalent to the ground truth or a valid alternative
+solution.
+Whilst Tufano et al. [ 77] conducted pre-training on more general software engineering corpora, Li et al. [ 40] found
+success in jointly pre-training on code functions and their attached reviews. Simultaneously, CodeReviewer [ 43] showed
+significant performance leaps by training on code review specific pre-training tasks as opposed to the generic masked
+language modelling technique used in prior works [ 40,77]. This success was enabled by their large scale multilingual
+GitHub code review dataset, which is now widely employed as the benchmark dataset [44, 46, 47, 65].
+More recently, Lu et al. [ 47] discovered that generic LLMs such as LLaMA [ 73] were also capable of review comment
+generation by parameter-efficient fine-tuning on only 8.4 million parameters. Taking a different approach, Sghaier and
+Sahraoui [ 65] explored the effect of cross-task knowledge distillation, by jointly learning the successive tasks of review
+comment generation and code refinement together with two symbiotic models.
+Whilst past research efforts have focused on improving review comment generation using various machine learning
+techniques, all of these approaches still assume that the quality of comments across their open-source datasets are
+equivalent.
+2.3 Experienced Reviewers and Code Review Quality
+Detailed knowledge about program elements is usually retained by developers who frequently work with the code
+base [ 18]. In the context of software quality, code ownership has often been a determinant of software defect prone-
+ness, where ownership ratios are inversely related to defect occurrences [ 7,30,69]. A study of implicated code has
+demonstrated that lower file level ownership tended to characterise the developers responsible for buggy lines [ 59],
+thus highlighting the importance of specialised knowledge. Concurrently, experienced developers are often assigned to
+fix complex bugs due to their expertise [ 9], which recursively deepens their knowledge of potential software quality
+issues. Given that code reviewers are a sub-population of developers, one would naturally intuit that their software
+development experience also has an impact on their effectiveness in reviewing code.
+Thongtanunam et al. [ 69] studied the relationship between software defects and code ownership of reviewers at the
+module level, concluding that modules that were reviewed by developers who lack both code authoring and reviewing
+expertise were more likely to be defect-prone. Whilst studying the role of people and participation in code review
+quality, Kononenko et al. [ 37] also discovered corroborating evidence of the inverse relationship between reviewer
+experience and the presence of bugs, thus indicating that code review quality indeed varies depending on the individual
+who conducts it. A survey in the open-source Mozilla core project revealed that developers were in close to uniform
+agreement regarding reviewer experience being a factor that influences code review quality [ 36]. The developers
+reasoned that domain knowledge is crucial for properly evaluating a change, as superficial reviews arise from a lack of
+familiarity with the code base. From an industry perspective, findings from Microsoft demonstrated that having prior
+experience with a file under review has a noticeable effect on the usefulness of the reviews provided [ 8]. Whilst this line
+of research has studied the notion of useful comments coarsely defined by their ability to trigger a code change [ 8,60],
+our study focuses on a more fine-grained view of review quality, scrutinising the variation in quality between change
+triggering comments.
+Manuscript submitted to ACM
+
+--- PAGE 6 ---
+6 Lin et al.
+Developers at Samsung [ 29] have expressed that reviews which identify defects, missing validations, performance
+optimisation opportunities, logical mistakes, etc. are useful, whilst visual representation issues that can be identified
+by static analysis tools are not useful. Coinciding with these results, developers from the OpenDev project [ 79] rated
+reviews that discuss functional defects and validation issues as the most useful type of reviews, whilst those that
+address visual representation are rated as the least useful. Based on this spectrum of comment usefulness ratings, a
+reviewer’s prior coding experience was found to have the largest positive impact on comment usefulness, whilst their
+authorship/reviewership of the specific file under review had no significant association. As the positive relationship
+between reviewer experience and code review quality has continuously resurfaced across different software development
+environments, we hypothesize that this pattern can be leveraged to enhance automated code review models.
+3 EXPERIENCE-AWARE TRAINING METHODS
+Different to past approaches [ 40,43], which have mainly focused on the effectiveness of deep learning based language
+modelling techniques, our approach is the first to scrutinise the variation in quality amongst open-source code reviews.
+As prior studies [ 29,36,79] found that reviewer experience is positively correlated with review quality, we developed
+two experience-aware model training methods to improve the quality of model generated code reviews. This section
+presents our proposed experience-aware training methods. In particular, we describe reviewer experience heuristics
+that are used to reflect a reviewer’s software development experiences (3.1), our previously proposed experience-aware
+oversampling method (3.2), and our newly proposed experience-aware loss function method (3.3).
+3.1 Reviewer Experience Heuristics
+We measure reviewers’ experience by calculating traditional code ownership metrics based on reviewers’ past activity
+as a code reviewer [ 69] and as a code author [ 7]. We consider three granularity levels of software systems: repository,
+subsystem, and package [ 87]. Ownership metrics at each granularity level represent different levels of knowledge
+coverage, where the repository level reflects general knowledge within a repository and the package level reflects
+knowledge of a particular component. We measure experience at different levels of granularity because some reviewers
+have ownership over specific components in the software system [ 72,87], whilst other reviewers are maintainers that
+oversee the whole project at a macro level [14].
+For authoring experience, Authoring Code Ownership (ACO) [7] represents the share of overall code contributions
+attributable to an individual. It represents a developer’s experience and coverage on a piece of software gained from
+hands on coding. We formulate ACO as follows:
+𝐴𝐶𝑂(𝐷,𝐺)=𝛼(𝐷,𝐺)
+𝐶(𝐺), 𝐺∈{𝑅𝑒𝑝𝑜𝑠𝑖𝑡𝑜𝑟𝑦,𝑆𝑢𝑏𝑠𝑦𝑠𝑡𝑒𝑚,𝑃𝑎𝑐𝑘𝑎𝑔𝑒 } (1)
+where𝛼(𝐷,𝐺)is the number of commits in which reviewer 𝐷has contributed to the software at the targeted granularity
+𝐺∈{𝑅𝑒𝑝𝑜𝑠𝑖𝑡𝑜𝑟𝑦,𝑆𝑢𝑏𝑠𝑦𝑠𝑡𝑒𝑚,𝑃𝑎𝑐𝑘𝑎𝑔𝑒 }and𝐶(𝐺)is the total commits at that granularity. A higher ACO ratio indicates
+more experience as a code author for the targeted granularity in the system, and vice versa. Whilst other studies [ 2,51]
+explore authorship at a line-level fidelity i.e., git blame, the scale of our study is orders of magnitude larger, rendering
+this calculation infeasible. A recent study also found that commit-based ownership shares a stronger relationship with
+software quality than line-based ownership [ 71]. Thus, we resort to commit level calculations, which is also widely
+considered as a reasonable approximation [7, 50, 69].
+Manuscript submitted to ACM
+
+--- PAGE 7 ---
+Leveraging Reviewer Experience in Code Review Comment Generation 7
+For a reviewing experience, Review-Specific Ownership (RSO) [ 69]represents the share of overall code reviews
+attributable to an individual. It represents a developer’s experience and coverage of a part of software systems gained
+from reviewing code. We formulate RSO as follows:
+𝑅𝑆𝑂(𝐷,𝐺)=𝑟(𝐷,𝐺)
+𝜌(𝐺), 𝐺∈{𝑅𝑒𝑝𝑜𝑠𝑖𝑡𝑜𝑟𝑦,𝑆𝑢𝑏𝑠𝑦𝑠𝑡𝑒𝑚,𝑃𝑎𝑐𝑘𝑎𝑔𝑒 } (2)
+where𝑟(𝐷,𝐺)is the number of closed pull requests in which reviewer 𝐷has reviewed (i.e., commented at least once)
+for a given granularity 𝐺∈{𝑅𝑒𝑝𝑜𝑠𝑖𝑡𝑜𝑟𝑦,𝑆𝑢𝑏𝑠𝑦𝑠𝑡𝑒𝑚,𝑃𝑎𝑐𝑘𝑎𝑔𝑒 }and𝜌(𝐺)is the total number of closed pull requests for
+that given granularity. A higher RSO ratio indicates more experience as a code reviewer for the chosen granularity in
+the system, and vice versa.
+The three levels of granularity are determined as follows.
+❖Repository level is the most coarsely grained, where authoring and reviewing activities are considered in
+terms of the entire repository of the project under development. Specifically, all commits and reviewed pull
+requests mined from a repository are considered at this level. Ownership at the repository level represents
+general experience covering the entire project.
+❖Subsystem level is represented by the top level of file directories in the repository [ 87]. For example, the
+filearch /arm64/kernel/module.c is considered to sit within the arch subsystem. A commit or reviewed pull
+request belongs to a subsystem if at least one of the changed files resides within that directory. Ownership at the
+subsystem level represents coverage over a particular top-level component of the system. Whilst we use the
+term “subsystem” to refer to the top-level directories in the source code hierarchy, we recognize that this view
+may not match an experienced developer’s mental model of the software architecture [ 38,52,67]. However, we
+consider that this model is a reasonable proxy: the source hierarchy is known to all developers of the project
+and hence has currency to them. In addition, the evaluation will be based on 826 GitHub repositories in our
+study; thus, devising a specialised architectural model for each repository is impractical and the models would
+be peculiar to our experiences rather than those of the project developers.
+❖Package level is represented by the immediate folder that contains the target file [ 87]. For example, the file
+arch/arm64/kernel /module.c is considered to sit within the arch/arm64/kernel package. A commit or reviewed
+pull request belongs to a package if at least one of the changed files resides within that directory. Ownership
+at the package level represents coverage over a direct set of co-located files. Similarly, our measurement of a
+package is only an approximation, it does not reflect the ground truth system architecture. The term “package”
+here is defined in terms of the hierarchical view of file locations, not to be confused with programming language
+constructs such as Java packages or C++ namespaces.
+3.2 Experience-Aware Oversampling
+Experience-aware oversampling was designed to over represent experienced reviewers’ code reviews during training,
+such that their perspectives yield more influence over the model’s behaviour. We previously introduced the experience-
+aware oversampling method as a preliminary test of the concept that automated code review models could conform to
+the perspectives of experienced reviewers, thus improving the quality of generated reviews [ 46]. This method utilised
+the traditional 5% ownership threshold rule [ 7,69] to target three specific sub-populations of the dataset, resulting in
+three separate models. The first group were major authors 𝑀𝐴(𝐴𝐶𝑂≥5%), the second group were major reviewers
+𝑀𝑅(𝑅𝑆𝑂≥5%), and the last group were major reviewers andmajor authors 𝑀𝑅𝑀𝐴(𝐴𝐶𝑂≥5%𝑎𝑛𝑑𝑅𝑆𝑂≥5%). Each
+Manuscript submitted to ACM
+
+--- PAGE 8 ---
+8 Lin et al.
+model was trained by oversampling one of these groups with an oversampling rate of 400%. A sizable oversampling
+rate was chosen with the intention to elicit strong effects.
+3.3 Experience-Aware Loss Functions
+In this study, we introduce experience-aware loss functions (ELF), which uses the reviewers’ assigned ownership ratios
+directly as loss function weights during training, such that their code reviews yield stronger influence over the model’s
+behaviour. Specifically, we augment the original negative log-likelihood loss for review comment generation [ 43] with
+an additional experience embedded weight term 𝜔[15,42,82–84]. This weight term dynamically accounts for the
+actual ownership values in their continuous form which both removes the need for the major ownership threshold
+assumption and the need for tuning an upsampling rate. Furthermore, utilizing the ownership values in their original
+form retains continuous information and allows the model to capture the intricate differences between the examples.
+We formulate the experience-aware loss function as follows:
+L𝑅𝐶𝐺=𝜔𝑘∑︁
+𝑡=1−log𝑃(𝑤𝑡|𝑐,𝑤<𝑡) (3)
+where𝑐is the submitted code change, 𝑤𝑡is the current comment token, 𝑤<𝑡are the comment tokens generated so far,
+and𝑘is the sequence length. We formulate four weighting strategies to embed the experience values of ACO and RSO
+dimensions into the weight term 𝜔.
+❖𝜔𝑎𝑐𝑜=𝑒1+𝑎𝑐𝑜takes only authoring experience into consideration, speculating that reviewers who are prolific
+in coding provide higher quality code reviews. Intuitively, the higher the ACO of the reviewer who wrote the
+comment, the heavier the penalty (i.e., the loss value is amplified by the weight term 𝜔) to the model for an
+incorrect prediction.
+❖𝜔𝑟𝑠𝑜=𝑒1+𝑟𝑠𝑜takes only reviewing experience into consideration, speculating that reviewers who are prolific
+in reviewing pull requests provide higher quality code reviews. Intuitively, the higher the RSO of the reviewer
+behind the comment, the heavier the penalty to the model for an incorrect prediction.
+❖𝜔𝑎𝑣𝑔=𝑒1+𝑟𝑠𝑜+𝑎𝑐𝑜
+2considers both authoring and reviewing experience equally, speculating that reviewers who
+are prolific in both committing and reviewing code provide higher quality code reviews. Intuitively, the higher
+the combined ACO and RSO of the reviewer behind the comment, the heavier the penalty to the model for an
+incorrect prediction.
+❖𝜔𝑚𝑎𝑥=𝑒1+𝑚𝑎𝑥(𝑟𝑠𝑜,𝑎𝑐𝑜)considers only the most representative experience type, speculating that reviewers
+who are prolific in either committing or reviewing code provide higher quality code reviews. Intuitively, the
+higher the reviewer’s max ownership, regardless of experience type, the heavier the penalty to the model for an
+incorrect prediction.
+Given that the model will be penalised differently based on the particular reviewer experience in focus, the
+weighted loss forces the model to align to their code review examples by affecting the direction of the gradient
+updates. Since the variation between ownership values is numerically small, we take an exponential to create stronger
+separation effects [ 15,82,85]. The four weights can be calculated at the three aforementioned granularities 𝐺∈
+{𝑅𝑒𝑝𝑜𝑠𝑖𝑡𝑜𝑟𝑦,𝑆𝑢𝑏𝑠𝑦𝑠𝑡𝑒𝑚,𝑃𝑎𝑐𝑘𝑎𝑔𝑒 }, resulting in 12 different models. For example, the model trained with 𝜔𝑎𝑐𝑜−𝑅𝑒𝑝𝑜
+weightedL𝑅𝐶𝐺 conforms to reviewers who have high authoring code ownership at the repository level, whilst the
+Manuscript submitted to ACM
+
+--- PAGE 9 ---
+Leveraging Reviewer Experience in Code Review Comment Generation 9
+Fig. 2. Overview of Our Experimental Design
+model trained with 𝜔𝑎𝑣𝑔−𝑃𝑘𝑔weightedL𝑅𝐶𝐺 aligns to reviewers with high coverage in terms of both authoring and
+reviewing ownership at the package level.
+4 EXPERIMENT SETUP
+In this section, we describe our data preparation process (4.1), our implementation of experience-aware model training
+(4.2), our proposed research questions (4.3), the evaluation metrics employed (4.4), and the manual evaluation process
+(4.5). The overview of our experimental design is presented in Figure 2.
+4.1 Data Preparation
+Dataset selection. We use the CodeReviewer dataset provided by Li et al. [ 43], which is the benchmark dataset for the
+field of automated code reviews. Specifically, we use the code refinement set for review comment generation, as their
+original comment generation dataset did not retain pull request IDs, making them untraceable. The dataset represents
+a diverse set of software projects written in nine of the most popular programming languages on GitHub, including
+Python, Java, Go, C++, JavaScript, C, C#, PhP, and Ruby. The training set was derived from 519 repositories, representing
+a subset of the top 10k most starred projects that contained more than 2.5k pull requests. The validation and test sets
+were derived from 307 repositories that contained between 1.5k and 2.5k pull requests. The size of the original dataset
+was 150,406 for training, 13,103 for validation and 13,104 for testing.
+Meta information recovery. To retrieve meta information for each comment in the dataset, we used PyGithub1to
+retrieve the associated pull requests and identify the original comments using string matching. For each comment, we
+extracted the username and ID of the reviewer and the timestamp of when the comment was posted. Throughout this
+process, we identified 10,583 accounts who wrote reviews in the training set and 2,763 accounts in validation and test
+set. The reviews covered a timeframe between 2011 and 2022.
+Preprocessing. Given that our focus is to build a review comment generation model that reflects the experienced
+perspective of human reviewers, we removed all bot accounts (e.g., CI bots, style checkers). This was achieved through
+two common methods [ 25]: 1) identification by the “bot” suffix [ 86], and 2) identification by an established list of
+1https://github.com/PyGithub/PyGithub
+Manuscript submitted to ACM
+
+--- PAGE 10 ---
+10 Lin et al.
+Table 1. Dataset Overview.
+Training Validation Test
+Dataset Filtering (Reviews)
+Original Dataset Size 150,406 13,103 13,104
+Untraceable - 618 - 24 - 41
+Generated by Bot - 1,207 - 41 - 55
+No Natural Language Comment - 7,322 - 632 - 639
+Final Dataset Size 141,259 12,406 12,369
+Mining Repository History
+# Repositories 519 300 300
+# Reviewer Accounts 10,583 2,148 2,125
+# Bot Accounts 9 3 4
+# Past Commits 8,294,486 2,945,639 2,944,569
+# Past Closed Pull Requests 3,478,749 606,148 605,649
+Ownership Statistics ( 𝜇/𝜎)
+RSO (Repository) 0.21 / 0.21 0.31 / 0.24 0.31 / 0.24
+ACO (Repository) 0.08 / 0.13 0.15 / 0.21 0.15 / 0.21
+RSO (Subsystem) 0.25 / 0.23 0.35 / 0.26 0.35 / 0.26
+ACO (Subsystem) 0.1 / 0.14 0.17 / 0.22 0.17 / 0.22
+RSO (Package) 0.31 / 0.27 0.39 / 0.29 0.38 / 0.29
+ACO (Package) 0.12 / 0.19 0.18 / 0.24 0.18 / 0.24
+bots [ 26]. The identified bot accounts were manually inspected for false positives, which were subsequently retained.
+Finally, we discarded comments that provided code but without any natural language remarks. More specifically, we are
+referring to the GitHub code suggestion functionality that can be found in comments denoted with the “‘𝑠𝑢𝑔𝑔𝑒𝑠𝑡𝑖𝑜𝑛 “‘
+format, where the reviewer’s comment contains only a code edit of the original code hunk under review. This type of
+comment makes up approximately 5% of the refinement dataset [ 46], which caused severe mode collapse in the model
+when used for comment generation training. Without removing the code-only comments, the model’s ability to provide
+real natural language comments can be degraded by only copy-and-pasting entire chunks of the submitted code, whilst
+inflating its performance on text matching-based results, e.g., BLEU-4. The final dataset included 141,259 examples for
+training, 12,406 for validation and 12,369 for testing. Table 1 presents statistics regarding the dataset filtering process.
+Mining software development history. We collected meta information on all commits and pull requests for
+each of the 826 GitHub repositories. More specifically, for each commit, we retrieved the original author, a list of the
+changed files, and the timestamp using PyDriller [ 66] and for each pull request, we retrieved the GitHub users who
+left comments, a list of the changed files, and the timestamp using PyGithub1. We observed that only some groups of
+developers used the GitHub review comment function, while others left reviews in the form of issue comments on the
+pull request. Therefore, in addition to considering GitHub review comments such as in our previous work [ 46], we also
+consider issue comments as they demonstrate code reviewing activity [ 35]. In terms of commit history, we omit merge
+commits as they do not represent actual code authoring activity. Table 1 presents statistics regarding the repository
+history mining process.
+Calculating ownership ratios. We calculate the ownership metrics with regard to each example (i.e., review
+comment) in the dataset. Although each reviewer may provide multiple reviews, the ownership metrics are calculated
+independently for each review comment. The rationale is that a reviewer’s ownership coverage may change throughout
+Manuscript submitted to ACM
+
+--- PAGE 11 ---
+Leveraging Reviewer Experience in Code Review Comment Generation 11
+time, hence our method reflects a version of that reviewer distilled at the timestamp of the review comment. The
+implementations are detailed in Algorithm 1 for ACO calculation and Algorithm 2 for RSO calculation, where 𝑅𝐶
+denotes a review comment, 𝐷denotes a developer, and 𝐺denotes the granularity level. Table 1 presents statistics
+regarding the calculated ownership ratios.
+Algorithm 1 Implementation of Authoring Code Ownership (ACO)
+1:procedure ACO (𝐷,𝐺,𝑅𝐶 ) ⊲ACO for one 𝑅𝐶example
+2:𝛼(𝐷,𝐺)← 0
+3:𝐶(𝐺)← 0
+4: for all commit∈𝐺do
+5:𝜏1←𝑅𝐶timestamp
+6:𝜏2←commit timestamp
+7: if𝜏2<𝜏1then𝐶(𝐺)←𝐶(𝐺)+1 ⊲# commits in 𝐺prior to𝑅𝐶
+8: if𝐷≡commit author then𝛼(𝐷,𝐺)←𝛼(𝐷,𝐺)+1 ⊲# commits in 𝐺by𝐷prior to𝑅𝐶
+9: end if
+10: end if
+11: end for
+12: return𝛼(𝐷,𝐺)/𝐶(𝐺) ⊲ratio of commits in 𝐺by𝐷over total commits in 𝐺at𝜏1
+13:end procedure
+Algorithm 2 Implementation of Review-Specific Ownership (RSO)
+1:procedure RSO(𝐷,𝐺,𝑅𝐶 ) ⊲RSO for one 𝑅𝐶example
+2:𝑟(𝐷,𝐺)← 0
+3:𝜌(𝐺)← 0
+4: for all closed PR∈𝐺do
+5:𝜏1←𝑅𝐶timestamp
+6:𝜏2←closed PR timestamp
+7:𝜃←Set(reviewers of closed PR)
+8: if𝜏2<𝜏1then𝜌(𝐺)←𝜌(𝐺)+1 ⊲# closed PRs in 𝐺prior to𝑅𝐶
+9: if𝐷∈𝜃then𝑟(𝐷,𝐺)←𝑟(𝐷,𝐺)+1 ⊲# closed PRs in 𝐺reviewed by 𝐷prior to𝑅𝐶
+10: end if
+11: end if
+12: end for
+13: return𝑟(𝐷,𝐺)/𝜌(𝐺) ⊲ratio of closed PRs in 𝐺reviewed by 𝐷over total closed PRs in 𝐺at𝜏1
+14:end procedure
+4.2 Model Fine-tuning
+Following CodeReviewer [ 43], we fine-tuned the models with a learning rate of 3 𝑒−4using the AdamW optimizer. The
+training was set for 30 epochs at a batch size of 72. A beam search width of 10 was used during inference. Our hardware
+consisted of a single server with 32 CPUs, 256GB RAM and four NVIDIA A100-80GB GPUs. For fair comparison with
+the experience-aware models, we fine-tuned CodeReviewer on our filtered dataset. To incorporate our experience-aware
+loss functions and the previous experience-aware oversampling method, we altered the original Python scripts provided
+by Li et al. [ 43], which were implemented with Pytorch2and HuggingFace Transformers3. For a fair comparison, we
+2https://pytorch.org/
+3https://huggingface.co/
+Manuscript submitted to ACM
+
+--- PAGE 12 ---
+12 Lin et al.
+also re-implemented experience-aware oversampling using our new ownership values, which were calculated based on
+our newly mined repository histories (i.e., omitting merge commits, including issue comments). In total, we trained 16
+models, including 12 ELF models, three experience-aware oversampling models, and one original CodeReviewer model.
+4.3 Research Questions
+In this work, we set out to investigate the effectiveness of experience-aware training methods on code review comment
+generation. We formulate three research questions to evaluate the model performance in three main aspects, i.e.,
+accuracy, informativeness, and issue types.
+(RQ1) What is the impact of ELF on the accuracy of code review comment generation models?
+Motivation: This RQ aims to evaluate the correctness of the generated comments against the ground truth, i.e., comments
+made by human reviewers. We measure the accuracy of the ELF models in terms of textual similarity [ 55] and semantic
+equivalence [ 40,77,78] against the ground truth in the test set. Additionally, to capture the diverse nature of all potential
+code reviews, we also assess their general applicability [ 43,77,78] to the code change submission. The textual similarity
+metric (BLEU-4), will be automatically assessed, whilst both semantic equivalence and applicability are manually
+evaluated.
+(RQ2) What is the impact of ELF on the informativeness of code review comment generation models?
+Motivation: Informativeness is one of the important characteristics of high-quality reviews as perceived by developers [ 29,
+36]. Typically, the informativeness of a code review refers to whether they identify an issue [ 8], prescribe a solution [ 29,
+43], and provide a clear explanation for their rationale [ 36,49,61,79]. The ability to achieve all three criteria may vary
+depending on the reviewer’s experience. In this RQ, we set out to evaluate the quality of the code reviews generated by
+the ELF models in terms of feedback type, i.e. suggestions, concerns, confused questions and presence of explanation.
+Both feedback type and presence of explanation are metrics that involve manual evaluation.
+(RQ3) What issue types are discussed in the ELF models’ code reviews?
+Motivation: Code reviews cover a wide variety of issues, including both functional and non-functional properties of
+the system [ 53]. Technical issues such as those related to defects and logic often require more in-depth knowledge of
+the system [ 36,79] as opposed to generic issues such as improving visual representation. As developers seek more
+insightful code reviews [ 29,36,49,79], it is crucial that the model is able to offer comments that reflect deeper issues.
+For this RQ, we manually evaluate the issue types discussed in the ELF models’ code reviews.
+4.4 Evaluation Metrics
+Our evaluation consists of one automatic text matching metric and five manual evaluation tasks. Automatic text
+matching is measured on the entire test set, whilst the manual evaluation tasks are completed on a random sample of
+100, achieving a 95% confidence level with 10% margin of error.
+❖BLEU-4 (RQ1): To align with past research [ 43], we adopt the established Bilingual Evaluation Understudy
+metric [ 55] with up to 4-gram matching to benchmark the new approaches in terms of accuracy against the test
+set. We use the exact implementation provided by Li et al. [43], with stop words removed from the comments.
+❖Semantic Equivalence (RQ1): This manual assessment of accuracy evaluates whether the model generated
+comments possess the same intentions as the ground truth code reviews in the test set [40, 77, 78]. This metric
+disregards the degree of textual overlap, since the same intention can be expressed in various different ways. For
+Manuscript submitted to ACM
+
+--- PAGE 13 ---
+Leveraging Reviewer Experience in Code Review Comment Generation 13
+Fig. 3. Examples of Semantically Equivalent (SE) and Applicable (App) Comments
+Fig. 4. Examples of Suggestion (Sug) with Explanation (Exp), Concern (Con) and Confused Question (CQ)
+example, in Figure 3, despite being worded differently, candidate A is considered semantically equivalent to the
+ground truth as the main intention of both comments is to change the error to a log warning.
+❖Applicability (RQ1): This manual assessment of accuracy evaluates whether model-generated comments
+provide applicable reviews given the context of the submitted code change [ 43,77,78]. Since ground truth code
+reviews reflect only a subset of many possible issues with a particular piece of code, this evaluation captures the
+models’ general ability to provide relevant code reviews. For example, in Figure 3, comment candidate B is not
+considered to be semantically equivalent to the ground truth; however, it is still applicable to the code change as
+the developer can make subsequent code improvements to address the comment. By definition, all comments
+that are semantically equivalent to the ground truth are also applicable.
+❖Feedback Type (RQ2): To measure informativeness, this manual assessment categorises the code reviews into
+three distinct feedback types. We present them in order of most to least informative:
+•Suggestion [8, 29, 43] — Not only is an issue identified, but a solution is also proposed to address the issue.
+•Concern [29, 43] — An issue is identified or doubt is raised; however, no solution is provided.
+•Confused Question [10] — The comment demonstrates an inability to comprehend the code change.
+In Figure 4, the most uninformative feedback type is exemplified in the ground truth, which is a confused question
+that demonstrates an inability to understand the code change. Comment candidate A will be categorised as a
+concern because only a concern is raised, but no further solution is provided. Comment candidate B is considered
+as providing a suggestion because it recognises that the assert statements should not be removed and directly
+suggests to "keep the ‘ \\\d’ tests ".
+❖Presence of Explanation (RQ2): This manual evaluation is a binary measure of whether the comment expresses
+their rationale. A comment that explains itself is considered to be more informative [ 36,49,61,79]. For example,
+in Figure 4, we consider that comment candidate B has expressed their rationale as it describes why "‘ \\\d’ tests"
+should be kept "to ensure that the code doesn’t produce invalid JS0N" . On the contrary, both the ground truth and
+candidate A do not provide a rationale for their concerns or questions.
+Manuscript submitted to ACM
+
+--- PAGE 14 ---
+14 Lin et al.
+Table 2. Code Review Comment Categories
+Group Category Description
+FunctionalFunctional DefectA functionality is missing or implemented incorrectly, which often
+requires additional code or larger modifications.
+ValidationIssues with detecting an invalid value and issues related to data
+sanitisation.
+LogicalIssues with comparison operations, control flow, computations
+and other types of logical errors
+InterfaceIssues when interacting with other parts of the software
+e.g., existing code library, hardware device, database, operating system
+ResourceIssues with the initialisation, manipulation and release of variables,
+memory, files and database
+Support Issues related to support systems, libraries or their configurations
+Timing Issues with incorrect thread synchronisation in shared resource settings
+EvolvabilitySolution Approach Suggestions for alternate implementations e.g., algorithms, data structures
+Documentation Suggestions to improve code comments or documentation
+Organisation of CodeSuggestions for structural refactoring
+e.g., collapse hierarchy, extract super class, inline function
+Alternate OutputSuggestions for improving error messages, toast messages, alerts
+and the returned values of a function
+Naming Convention Suggestions for renaming software elements to comply with conventions
+Visual RepresentationSuggestions for improving code readability
+e.g., removing white spaces, blank lines, code rearrangements, indentation
+DiscussionQuestion Questions to understand design and implementation choices
+Design DiscussionHigher level discussions on design directions, design patterns
+and software architecture
+Other Comments that do not fit within the taxonomy
+The code review comment categories and their respective descriptions are adopted from past work [6, 53, 79]
+❖Comment Category (RQ3): This manual evaluation categorises the suggestions and concerns based on 15
+established issue categories developed by past work [ 6,8,53,79]. These categories are broadly segmented
+into three large classes, covering functional issues, evolvability issues, and discussions. Functional issues are
+defects that can cause system failures at execution time, whilst evolvability issues are non-functional issues
+that affect the compliance, maintainability and understandability of the code. Discussions are dialogues that
+invoke thought regarding design directions and implementation choices. We only label comment category for
+comments previously annotated as applicable, as such, we do not consider the praise and false positive categories
+like in prior work [ 79]. Comments that do not fit into the taxonomy are categorised as other. The full list of code
+review comment categories and their respective descriptions are detailed in Table 2.
+4.5 Manual Evaluation Process
+The manual evaluation was conducted by the first and sixth authors. Both annotators have previously been employed
+as software engineers and are currently pursuing a PhD in software engineering. One has five years of software
+development experience, whilst the other has over 10 years. The manual evaluation consisted of 8,000 annotations
+(100 generated comments ×16 models×5 manual evaluation tasks). The annotators were provided with a guideline
+including the definitions above, the submitted code hunk, the ground truth review comment, the generated reviews, and
+Manuscript submitted to ACM
+
+--- PAGE 15 ---
+Leveraging Reviewer Experience in Code Review Comment Generation 15
+the post-review code refinement. To mitigate incorrect annotations caused by a lack of familiarity with the software
+environments in the examples, the annotators may acquire more information from the original repositories and external
+resources such as Stack Overflow and official package/language documentation.
+For each manual evaluation task (1,600 annotations for 100 generated comments ×16 models), the two annotators
+independently completed two rounds of annotations where the first round consisted of 300 generated comments and
+the second round consisted of 200 generated comments. After each round, we measure inter-rater agreement and
+resolve all conflicts, resulting in a refined annotation guideline that both annotators agreed on [ 3]. After reaching an
+agreement rate that we were satisfied with [ 23] (≥0.8 Cohen’s kappa [ 11]), the first author annotated the remaining
+1,100 comments independently. Finally, the annotations were reviewed by the second and fifth authors. Note that
+we omit information regarding which models generated the comments during the annotation process to eliminate a
+confirmation bias, i.e., avoiding the evaluation results favoring particular models. Below, we summarise our annotation
+process for each evaluation task, including the inter-rater agreement achieved during the independent annotation
+rounds and the conflicting cases that were resolved.
+For semantic equivalence, the annotators reached 89% agreement with a Cohen’s kappa of 0.66 (substantial agreement)
+in the first round; the second round reached a satisfactory agreement rate of 94% with a Cohen’s kappa of 0.82 (near
+perfect agreement). The most common type of conflict arose from the cases where the generated comments have
+semantically equivalent intention as the ground truth but suggest incorrect implementation, and where the generated
+comments have ambiguous intentions which are open to multiple interpretations. The comments with partial semantic
+equivalence were eventually labelled as not semantically equivalent as the suggested implementation would lead to the
+wrong fix. For the comments with ambiguous intentions, they were labelled as semantically equivalent if the subsequent
+ground truth code change was in the potential action space that could be elicited by the generated comment. Otherwise,
+they were labelled as not semantically equivalent.
+For applicability, the annotators reached 83% agreement with a Cohen’s kappa of 0.67 (substantial agreement) in
+the first round; the second round reached a satisfactory agreement rate of 93% with a Cohen’s kappa of 0.86 (near
+perfect agreement). The most common types of conflicts arose from cases where the generated comments required
+additional context and/or project knowledge to comprehend. For example, a generated comment suggested to rename a
+method " fc_fit_scheduler " toBasicTrainScheduler ", which can be considered as applicable. However, this suggestion
+is not suitable for a Python project as Pascal case violates PEP8 guidelines. These types of conflicts were resolved by
+consulting external resources in the context of the project.
+For feedback type, the annotators reached 93% agreement with a Cohen’s kappa of 0.86 (near perfect agreement) in
+the first round. Given that near perfect agreement was achieved, we omitted the second round and the first author
+performed the annotations on the remaining sampled comments. The most common types of conflicts arose from cases
+where the comments raised concerns in a question form which were similar to suggestions in question form. Code review
+suggestions are often provided in question form to be polite [ 16], however, they can also be a request for confirmation.
+For example, " Maybe close the ‘DeflaterOutputStream‘ here? " and " Do we need to close the ‘DeflaterOutputStream‘ here? "
+are similar comments, however the former is a polite suggestion that offers a solution, whilst the latter is a concern that
+requires other developers to clear their doubts. The conflicts were resolved by considering comments with " Do we ...? "
+questions as exhibiting uncertainty and therefore should be labelled as concern.
+For presence of explanation, the annotators reached 99% agreement with a Cohen’s kappa of 0.98 (near perfect
+agreement) in the first round. Given that near perfect agreement was achieved, the first author performed the annotations
+on the remaining sampled comments without the second round. There was only one conflicting case where the comment
+Manuscript submitted to ACM
+
+--- PAGE 16 ---
+16 Lin et al.
+asking " Isn’t there a complete_bipartite_graph function? " can be considered as a self-embedded rationale when viewed as
+a suggestion, and as lacking a rationale when viewed as a concern asking about the code change itself. This case was
+resolved by considering with the context of the feedback type and code change.
+For comment category, the annotators reached 88% agreement with a Cohen’s kappa of 0.86 (near perfect agreement)
+in the first round. Given that near perfect agreement was achieved, we omitted this task from the second round. The most
+common types of conflicts arose from the misallocation of variable declaration changes to the resource category. This
+category includes variable initialisation changes, which distinctly focuses on problems related to resource allocation.
+Since changes such as improving the declared variable type do not alter the external behaviour of the code, we categorise
+them as organisation of code a.k.a refactoring type code reviews instead.
+5 RESULTS
+In this section, we discuss the results with respect to the three RQs, which evaluate accuracy (5.1), informativeness (5.2)
+and comment types of the comments generated by our experience-aware loss functions (ELF) method (5.3).
+For the count based manual evaluation results on the 100 random samples, we are interested in measuring any
+significant improvements from our models compared to the original CodeReviewer model. To this end, we elect to
+report statistical significance based on the one-tailed two proportion Z-test [ 17]. The two proportion Z-test is used for
+comparing two proportions for significant differences, in this case one proportion would be the result of the original
+CodeReviewer model and the other proportion would be the result of one of our models. We select a one-tailed test
+as we are only interested in an improvement in one direction, e.g., significant increase in the number of suggestions
+generated out of 100 samples compared to the original CodeReviewer model.
+5.1 (RQ1) What is the impact of ELF on the accuracy of code review comment generation models?
+Below, we present the accuracy results of our ELF models based on BLEU-4, semantic equivalence, and applicability.
+BLEU-4. All ELF models surpassed past methods in terms of matched n-grams. The best-performing ELF
+models achieved 5% higher BLEU-4 scores than the original CodeReviewer model. As shown in Table 3, all ELF
+models (with different ownership values at different granularity levels) achieved higher BLEU-4 scores than the original
+CodeReviewer. In contrast, the experience-aware oversampling models achieved lower BLEU-4 scores. Comparing the
+performance of ELF models across different ownership values and granularities, all the models achieved comparable
+BLEU-4 scores ranging from 7.29 to 7.6. The highest performing ELF models were 𝜔𝑎𝑐𝑜_𝑅𝑒𝑝𝑜 and𝜔𝑎𝑣𝑔_𝑅𝑒𝑝𝑜, both
+recording without stop word BLEU-4 scores of 7.6, which is a +5%increase over the original CodeReviewer model. The
+results are also consistent when considering stop words in BLEU-4. These results suggest that ELF models can generate
+more comments that are textually similar to the ground truth than past models.
+Semantic Equivalence. Our ELF models achieved results comparable to those of the original CodeReviewer
+model in terms of generating semantically equivalent comments to the ground truth. Table 3 shows that
+20 comments out of 100 samples generated by the original CodeReviewer model are semantically equivalent to the
+ground truth. Our ELF models also achieve similar results, ranging from 17 to 23 comments that are semantically
+equivalent to the ground truth , where seven of 12 ELF models generated more than 20 of such comments. In contrast,
+all experience-aware oversampling models generated less than 20 semantically equivalent comments. The highest
+performing ELF models were 𝜔𝑟𝑠𝑜_𝑅𝑒𝑝𝑜 and𝜔𝑟𝑠𝑜_𝑃𝑘𝑔, both achieving 23 correct matches. These results suggest that
+the use of experience-aware methods does not have a large impact on the semantic equivalence of model generated
+comments towards the ground truth. However, it is important to note that this evaluation did not consider the quality
+Manuscript submitted to ACM
+
+--- PAGE 17 ---
+Leveraging Reviewer Experience in Code Review Comment Generation 17
+Table 3. BLEU-4 on the Entire Test Set, Semantic Equivalence & Applicablility on 100 Random Samples
+Exp-aware Oversampling Exp-aware Loss Function (ELF)
+𝜔𝑎𝑐𝑜 𝜔𝑟𝑠𝑜 𝜔𝑎𝑣𝑔 𝜔𝑚𝑎𝑥
+ORG MRMA MR MA Repo Sys Pkg Repo Sys Pkg Repo Sys Pkg Repo Sys Pkg
+𝑇𝑒𝑠𝑡 𝑆𝑒𝑡𝐵4𝑤/𝑜 𝑆𝑡𝑜𝑝𝑤𝑜𝑟𝑑𝑠 7.27 6.87↓ 6.71↓7.11↓ 7.6↑7.56↑7.46↑ 7.45↑7.57↑7.55↑ 7.6↑7.36↑7.45↑7.43↑7.29↑7.38↑
+𝐵4𝑤/𝑆𝑡𝑜𝑝𝑤𝑜𝑟𝑑𝑠 5.81 5.59↓ 5.5↓5.72↓ 6.09↑6.07↑6.02↑ 5.92↑6.1↑6.02↑ 6.07↑5.95↑5.96↑5.93↑5.82↑5.99↑
+𝑆𝑎𝑚𝑝𝑙𝑒𝑠SE 20 14↓ 18↓ 19↓ 17↓ 21↑ 19↓ 23↑ 23↑ 20 22↑ 20 22↑ 22↑ 22↑ 19↓
+App 42 40↓ 38↓ 44↑ 37↓ 54∗↑ 53↑ 52↑ 53↑ 53↑ 44↑ 43↑ 46↑ 48↑ 46↑ 44↑
+Original Code Reviewer ( ORG ), Major Reviewer Major Author ( MRMA ), Major Reviewer ( MR), Major Author ( MA), Repository ( Repo ), Subsystem ( Sys), Package ( Pkg)
+BLEU-4 (B4), Semantic Equivalence (SE), Applicablility (App)
+Increased from ORG (↑), Decreased from ORG (↓),p<0.05 (∗)
+Table 4. Feedback Type and Presence of Explanation on 100 Random Samples
+Exp-aware Exp-aware Loss Function (ELF)
+Oversampling 𝜔𝑎𝑐𝑜 𝜔𝑟𝑠𝑜 𝜔𝑎𝑣𝑔 𝜔𝑚𝑎𝑥
+GT ORG MRMA MR MA Repo Sys Pkg Repo Sys Pkg Repo Sys Pkg Repo Sys Pkg
+Sug 87 27 31↑ 28↑30↑25↓34↑42∗↑34↑ 35↑37↑29↑ 24↓31↑30↑28↑30↑
+Con 10 8 8 9↑11↑10↑17∗↑ 9↑14↑ 15↑11↑11↑ 16∗↑12↑12↑14↑12↑
+CQ 3 7 1∗↓ 1∗↓ 3↓ 2∗↓ 3↓ 2∗↓ 4↓ 3↓ 5↓ 4↓ 3↓ 3↓ 6↓ 4↓ 2∗↓
+Exp 68 8 16∗↑ 16∗↑20∗↑10↑11↑15↑11↑ 18∗↑11↑11↑ 12↑13↑12↑11↑15↑
+Ground Truth ( GT), Original Code Reviewer ( ORG ), Major Reviewer Major Author ( MRMA ), Major Reviewer ( MR), Major Author ( MA)
+Repository ( Repo ), Subsystem ( Sys), Package ( Pkg), Suggestion (Sug), Concern (Con), Confused Question (CQ), Explanation (Exp)
+Increased from ORG (↑), Decreased from ORG (↓),p<0.05 (∗)
+of generated comments. Given that our key goal is to improve the quality of generated comments by aligning with the
+comments of experienced reviewers, we did not expect to achieve an improvement in terms of semantic equivalence
+towards the general population of the dataset. To this end, we assess the quality of generated comments using the
+subsequent metrics.
+Applicability. Our ELF models can generate more comments that are applicable to the code changes than
+the original CodeReviewer model. The top performing ELF model generated 29% more applicable comments
+than the original CodeReviewer model. Table 3 shows that 42 comments out of 100 samples generated by the
+original CodeReviewer model were applicable to the code change. All ELF models apart from 𝜔𝑎𝑐𝑜_𝑅𝑒𝑝𝑜 generated
+more applicable comments than the original CodeReviewer model, ranging from 43 to 54 applicable comments. For
+experience-aware oversampling, only 𝑀𝐴could outperform the original CodeReviewer model. In total, eight of 12
+ELF models generated more applicable comments than all past techniques. Comparing across ELF strategies, we found
+that𝜔𝑟𝑠𝑜models were consistently high performing, generating between 52 and 53 applicable comments. Overall,
+𝜔𝑎𝑐𝑜_𝑆𝑦𝑠was the top performer with 54 applicable comments, which is a statistically significant increase of +29% over
+the original CodeReviewer model.
+RQ1: All ELF models surpassed past methods in terms of BLEU-4, achieving up to +5% increase over the original
+CodeReviewer model. Overall, all ELF models achieved comparable results to the original CodeReviewer model
+in terms of semantically equivalent comments. Our ELF models were able to generate more applicable comments
+than all past methods, achieving up to +29% increase over the original CodeReviewer model.
+5.2 (RQ2) What is the impact of ELF on the informativeness of code review comment generation models?
+Feedback Type. Our ELF models provided more suggestions than all past methods. The top performing ELF
+model generated 56% more suggestions than the original CodeReviewer model. Table 4 shows that 27 comments out
+Manuscript submitted to ACM
+
+--- PAGE 18 ---
+18 Lin et al.
+of 100 samples generated by the original CodeReviewer model were suggestions (64% of its applicable comments). With
+the exception of 𝜔𝑎𝑐𝑜_𝑅𝑒𝑝𝑜 and𝜔𝑎𝑣𝑔_𝑆𝑦𝑠, all ELF models provided more suggestions than the original CodeReviewer
+model, ranging from 28 to 42 suggestions. The experience-aware oversampling models also outperformed the original
+CodeReviewer model in terms of number of generated suggestions, however, the improvements were not significant.
+Overall, five of 12 ELF models surpassed all past techniques in terms of generated suggestions, all of which were 𝜔𝑎𝑐𝑜
+and𝜔𝑟𝑠𝑜models. Comparing across strategies, we found that 𝜔𝑟𝑠𝑜models showed the most consistent improvements,
+generating between 34 and 37 suggestions. Comparing across granularities, we found that package level models tended
+to provide the most suggestions, as they were consistently the highest performer across all four strategies for this
+task. The top performer, 𝜔𝑎𝑐𝑜_𝑃𝑘𝑔, generated 42 suggestions (79% of its applicable comments), yielding a statistically
+significant increase of +56% over the original CodeReviewer model.
+All ELF models generated more concerns and fewer confused questions than the original CodeReviewer
+model. The top performing ELF models generated 71% less confused questions than the original CodeReviewer
+model. Table 4 shows that eight comments out of 100 samples generated by the original CodeReviewer model were
+concerns. All ELF models generated more concerns than the original CodeReviewer model, ranging from nine to
+17 concerns generated. Similarly, both 𝑀𝑅and𝑀𝐴also provided more concerns than the original CodeReviewer
+model, however, the differences were not significant. Interestingly, subsystem level views tended to produce the most
+concerns across all four strategies for this task. Table 4 shows that seven comments out of 100 samples generated by the
+original CodeReviewer model were confused questions (17% of its applicable comments). All ELF models manifested
+less confusion than the original CodeReviewer model, ranging from two to six confused questions generated. The top
+performing ELF models, 𝜔𝑎𝑐𝑜_𝑅𝑒𝑝𝑜,𝜔𝑎𝑐𝑜_𝑃𝑘𝑔and𝜔𝑚𝑎𝑥 _𝑃𝑘𝑔generated only two confused questions each (5% of their
+applicable comments), which were statistically significant decreases of -71% against the original CodeReviewer model.
+Similarly, all experience-aware oversampling models also exhibited less confusion, with 𝑀𝑅𝑀𝐴 and𝑀𝑅generating
+only one confused question each.
+Presence of Explanation. We found that all ELF models tended to provide rationales more frequently than
+the original CodeReviewer model. The top performing ELF model generated 125% more comments with rationales
+than the original CodeReviewer model. Table 4 shows that eight comments out of 100 samples generated by the original
+CodeReviewer model contained a rationale (19% of its applicable comments). All ELF models surpassed the original
+CodeReviewer model in this regard, generating between 10 to 18 comments with rationales. Amongst the ELF models,
+𝜔𝑟𝑠𝑜_𝑆𝑦𝑠was the top performer, generating 18 of such comments (34% of its applicable comments), demonstrating a
+statistically significant increase of +125% over the original CodeReviewer model. Overall, experience-aware oversampling
+models still provided the most explanations, with 𝑀𝐴generating up to 20 comments with rationales.
+RQ2: Our ELF models were able to provide more suggestions than all past methods, achieving up to +56%
+increase over the original CodeReviewer model. Similar to experience-aware oversampling, all ELF models also
+generated more concerns with fewer confused questions, achieving up to -71% decrease compared to the original
+CodeReviewer model in terms of confused questions generated. All ELF models provided explanations more
+frequently, achieving up to +125% increase over the original CodeReviewer model.
+5.3 (RQ3) What issue types are discussed in the ELF models’ code reviews?
+Functional Issues. Our ELF models generated more comments related to functional issues than all past
+methods. The top performing model identified +129% more functional issues than the original CodeReviewer
+Manuscript submitted to ACM
+
+--- PAGE 19 ---
+Leveraging Reviewer Experience in Code Review Comment Generation 19
+model. Table 5 shows that seven comments out of 100 samples generated by the original CodeReviewer model were
+related to functional issues (17% of its applicable comments). In this regard, nine of 12 ELF models surpassed all past
+methods, generating between 10 to 16 functional issue related comments. In terms of experience-aware oversampling
+methods, both 𝑀𝑅𝑀𝐴 and𝑀𝑅outperformed the original CodeReviewer model, however the improvements were
+not significant. Comparing across the granularities, we found that package level models tended to provide more
+comments related to functional issues, however there was no observable pattern in the specific category types that
+yielded the improvement. Compared to the original CodeReviewer model, we found that 𝜔𝑎𝑐𝑜_𝑃𝑘𝑔was able to elicit five
+new comments related to high priority issues, such as logical, validation, and functional defects. The top performing
+model for this task was 𝜔𝑎𝑣𝑔_𝑃𝑘𝑔, which generated 16 comments related to functional issues (35% of its applicable
+comments), demonstrating a statistically significant increase of +129% over the original CodeReviewer model. Most
+of this improvement can be attributed to its ability to identify new logical errors and resource issues i.e., incorrect
+initialisation, manipulation and release.
+Evolvability Issues. Our ELF models generated more comments related to evolvability issues than the
+original CodeReviewer model. Specifically, all ELF models unanimously identified more documentation related
+issues than the original CodeReviewer model. Table 5 shows that 24 comments out of 100 samples generated by the
+original CodeReviewer model were related to evolvability issues. In comparison, six of 12 ELF models generated more
+evolvability related comments, ranging from 27 to 29 of such comments. For experience-aware oversampling, both
+𝑀𝑅𝑀𝐴 and𝑀𝐴also slightly outperformed the original CodeReviewer model. Comparing across strategies, we found
+that𝜔𝑟𝑠𝑜models yielded the most consistent improvements, achieving a +13% increase over the original code reviewer
+model. These improvements can be attributed to their ability to identify opportunities for improving documentation
+and code element renaming. Interestingly, every ELF model identified more documentation related issues, where 𝜔𝑎𝑐𝑜
+and𝜔𝑟𝑠𝑜models all achieved statistically significant improvements, reaching up to +600% increase over the original
+CodeReviewer model. All ELF models produced fewer comments related to trivial issues, i.e., visual representation,
+achieving up to -50% decrease from the original CodeReviewer model. Overall, 𝜔𝑎𝑐𝑜_𝑃𝑘𝑔yielded the most improvement,
+with a +21% increase over CodeReviewer, identifying more improvement opportunities for a wide array of evolvability
+issues (four of six categories).
+Discussion. All ELF models outperformed past methods in terms of discussion invoking comments. The top
+performing ELF models generated 150% more questions concerning implementation choices than the original
+CodeReviewer model. Table 5 shows that three comments out of 100 samples generated by the original CodeReviewer
+model were discussions. In contrast, all ELF models outperformed past methods, generating between six to 11 discussions.
+In this aspect, experience-aware oversampling demonstrated negligible overall difference compared to the original
+CodeReviewer model. The majority of improvements from the ELF models can be attributed to an increase in questions
+concerning implementation choices. In particular, 𝜔𝑎𝑐𝑜_𝑆𝑦𝑠,𝜔𝑟𝑠𝑜_𝑆𝑦𝑠and𝜔𝑎𝑣𝑔_𝑆𝑦𝑠exhibited statistically significant
+increases of +150% over CodeReviewer in terms of these types of questions.
+RQ3: Our ELF models identified more functional issues than all past methods, achieving up to +129% increase
+over the original CodeReviewer model. Our ELF models found more evolvability issues. Specifically, all ELF
+models identified more opportunities for improving documentation, achieving up to +600% increase over the
+original CodeReviewer model. All ELF models generated more questions concerning implementation choices
+than past methods, achieving up to +150% increase over the original CodeReviewer model.
+Manuscript submitted to ACM
+
+--- PAGE 20 ---
+20 Lin et al.
+Table 5. Code Review Comment Categories on 100 Random Samples
+Exp-aware Exp-aware Loss Function (ELF)
+Oversampling 𝜔𝑎𝑐𝑜 𝜔𝑟𝑠𝑜 𝜔𝑎𝑣𝑔 𝜔𝑚𝑎𝑥
+GT ORG MRMA MR MA Repo Sys Pkg Repo Sys Pkg Repo Sys Pkg Repo Sys Pkg
+Total Functional Issues 35 7 9↑ 9↑ 7 10↑12↑13↑10↑11↑12↑ 8↑ 9↑16∗↑11↑ 9↑11↑
+Functional Defect 6 2 2 1↓ 3↑ 1↓ 3↑ 4↑ 3↑ 2 2 2 1↓ 2 2 1↓ 2
+Validation 6 1 2↑ 4↑ 0↓ 1 1 2↑ 1 2↑ 1 0↓ 2↑ 1 2↑ 1 3↑
+Logical 5 0 2↑ 1↑ 1↑ 3∗↑ 4∗↑ 2↑ 1↑ 2↑ 2↑ 2↑ 2↑ 3∗↑ 2↑ 2↑ 0↓
+Interface 7 1 0↓ 1 0↓ 0↓ 0↓ 2↑ 1 0↓ 1 0↓ 1 2↑ 1 0↓ 2↑
+Resource 6 2 2 0↓ 2 3↑ 2 1↓ 3↑ 3↑ 5↑ 3↑ 2 6↑ 3↑ 4↑ 2
+Support 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+Timing 4 0 0 1↑ 0 1↑ 1↑ 1↑ 0 1↑ 0 0 0 1↑ 0 0 1↑
+Total Evolvability Issues 57 24 26↑ 23↓28↑19↓27↑29↑27↑27↑27↑24 21↓19↓23↓27↑23↓
+Solution Approach 7 4 2↓ 3↓ 4 1↓ 3↓ 2↓ 3↓ 4 3↓ 3↓ 3↓ 2↓ 3↓ 3↓ 5↑
+Documentation 7 0 3∗↑ 2↑ 2↑ 3∗↑ 4∗↑ 4∗↑ 4∗↑ 6∗↑ 6∗↑ 3∗↑ 2↑ 1↑ 2↑ 3∗↑ 2↑
+Organisation of Code 20 3 6↑ 3 9∗↑ 2↓ 2↓ 5↑ 4↑ 3 2↓ 5↑ 5↑ 2↓ 4↑ 7↑ 2↓
+Alternate Output 6 4 3↓ 4 2↓ 1↓ 7↑ 6↑ 3↓ 2↓ 4 1↓ 2↓ 4 4 1↓ 2↓
+Naming Convention 12 7 9↑ 7↑ 4↓ 7 6↓ 8↑ 9↑ 9↑ 9↑ 7 5↓ 7 7 9↑ 8↑
+Visual Representation 5 6 3↓ 4↓ 7↑ 5↓ 5↓ 4↓ 4↓ 3↓ 3↓ 5↓ 4↓ 3↓ 3↓ 4↓ 4↓
+Total Discussion 3 4 4 5↑ 5↑ 6↑11∗↑ 8↑10∗↑11∗↑ 8↑ 7↑10∗↑ 7↑ 7↑ 6↑ 8↑
+Question 1 4 4 2↓ 4 6↑10∗↑ 7↑ 9↑10∗↑ 7↑ 6↑10∗↑ 7↑ 7↑ 6↑ 6↑
+Design Discussion 2 0 0 3∗↑ 1↑ 0 1↑ 1↑ 1↑ 1↑ 1↑ 1↑ 0 0 0 0 2↑
+Other 2 0 0 0 1↑ 0 1↑ 1↑ 1↑ 1↑ 1↑ 1↑ 0 1↑ 1↑ 0 0
+Ground Truth ( GT), Original Code Reviewer ( ORG ), Major Reviewer Major Author ( MRMA ), Major Reviewer ( MR), Major Author ( MA)
+Repository ( Repo ), Subsystem ( Sys), Package ( Pkg), Functional Issue Evolvability Issue Discussion
+Increased from ORG (↑), Decreased from ORG (↓),p<0.05 (∗)
+6 ANALYSIS AND DISCUSSION
+In this section, we further discuss our experiment results and provide observations. Firstly, we investigate the distribution
+of ownership values and how they are related to each other (6.1). Secondly, we discuss the BLEU-4 score improvements
+of our ELF models (6.2). Thirdly, we discuss the value of considering reviewer experience at different granularities (6.3).
+Finally, we compare the performance of different ELF strategies (6.4).
+6.1 How are the different ownership values distributed and what is their relationship to each other?
+A difference in behaviour amongst the ELF models is only possible if reviewers’ ownership ratios vary between the
+authoring and reviewing perspective, and across the different granularities. Thus, we first investigate the distributions
+and relationships of the different ownership ratios to gain initial insight into why different ELF models may generate
+different code review comments.
+The kernel density estimates of the ownership ratios in Figure 5 demonstrate that reviewers tend to have higher RSO
+than ACO. In fact, many reviews are provided by experienced developers who contribute mainly via reviewing code,
+rather than by writing code, which aligns with past findings [ 69]. Interestingly, a rise in ACO values consistently comes
+with a rise in RSO values, indicating that developers who are responsible for a large portion of commits tend to also be
+responsible for a larger portion of code reviews. Comparing across the dataset splits, it is evident that ownership ratios
+in the training set are more concentrated around smaller values as opposed to the validation and test sets. This aligns
+with intuition since it is more difficult for an individual to gain high ownership coverage in large projects that have
+more contributors. We find that ACO and RSO values consistently increase as we consider a more refined granularity,
+indicating that many developers have more specialised coverage within the project. We report the Pearson correlation
+for ACO in the training set between repository and subsystem ( 𝜌=0.85), between subsystem and package ( 𝜌=0.69) and
+finally between repository and package ( 𝜌=0.58). We also report the Pearson correlation for RSO in the training set
+Manuscript submitted to ACM
+
+--- PAGE 21 ---
+Leveraging Reviewer Experience in Code Review Comment Generation 21
+Fig. 5. Kernel Density Estimates of ACO and RSO at Repository, Subsystem and Package Level
+between repository and subsystem ( 𝜌=0.67), between subsystem and package ( 𝜌=0.74) and finally between repository
+and package ( 𝜌=0.67). The divergence in both correlation and magnitude of ownership ratios between the different
+granular views indicate potential for varying signals. As such, a difference in model behavior when employing ELF
+from different granularities was within our expectation.
+6.2 Why do ELF models generate more textually similar reviews to the ground truth?
+To investigate the unanimous improvement of ELF models in terms of BLEU-4, we manually analysed the top 10
+examples for each ELF model in terms of the largest BLEU-4 delta against the original CodeReviewer model.
+We observe that all ELF models tended to provide code snippets with exact implementation suggestions embedded
+within their natural language comment as opposed to the original model which tended to provide natural language
+comments that occasionally included code elements. Thus, when ELF models were semantically equivalent to the
+ground truth, they often provided close to exact match code implementations to explain their suggestions, which
+achieves near perfect BLEU-4 results, as demonstrated in Figure 6. In the cases where ELF models did not achieve
+semantic equivalence, they were able to locate the exact code that was considered problematic by the ground truth
+Manuscript submitted to ACM
+
+--- PAGE 22 ---
+22 Lin et al.
+Fig. 6. Example of an ELF Model Generating a Natural Language Code Review with Embedded Code Snippet
+comment, which also resulted in high n-gram matches. This finding is significant given that using code snippets to
+explain implementations is rarely done in code reviews and a method used by experienced reviewers to guide new
+developers in the project [ 89]. Often used for suggestions and citations, reviewers employ these code snippets when
+the intended revision cannot be clearly described in words. This ensures that ideas can be quickly evaluated with less
+room for miscommunication. Given that these types of comments are well received by developers, we consider this an
+improvement in the quality of generated comments. We emphasise that the ELF models have learned this behaviour
+without losing the ability to generate natural language reviews; this can be contrasted with the previously discussed
+issue where models learned only to copy and paste code inputs due to problematic examples in the dataset that included
+only code suggestions without any natural language component.
+6.3 What is the value of considering reviewer experiences from different granularities?
+As observed in the results, all granularities perform similarly in terms of BLEU-4, semantic equivalence and applicability.
+However, similar metric results do not indicate that the different views are generating the same comments. To further
+explore the value of employing different granularities, we examine whether there is a difference in generated comments
+within each of the four proposed strategies.
+Firstly, we investigate the degree to which different granularities are achieving semantic equivalence on the same
+ground truth examples. For 𝜔𝑎𝑐𝑜, we find that the three granular views can cover 29 semantically equivalent comments
+together with10
+29being mutually inclusive and11
+29attributable to only one unique view. For 𝜔𝑟𝑠𝑜, we find that the
+three granular views can cover 34 semantically equivalent comments together with10
+34being mutually inclusive and
+12
+34attributable to only one unique view. For 𝜔𝑎𝑣𝑔, we find that the three granular views can cover 32 semantically
+equivalent comments together with10
+32being mutually inclusive and10
+32attributable to only one unique view. For 𝜔𝑚𝑎𝑥,
+we find that the three granular views can cover 32 semantically equivalent comments together with12
+32being mutually
+inclusive and13
+32attributable to only one unique view. For all strategies, more than half of the total semantically
+equivalent matches cannot be simultaneously covered by all three granular views, a substantial portion of which can
+only be covered by one particular view. To further explore the diversity of the generated comments, we conducted the
+same analysis on the types of elicited comments, which is displayed in Figure 7. Two applicable code reviews of the
+same code change submission are considered to be different if they fall under different code review categories. For 𝜔𝑎𝑐𝑜,
+we find that 32%, 44% and 42% of the applicable comments generated by repository, subsystem and package level views,
+respectively, were completely unique. For 𝜔𝑟𝑠𝑜, the proportion of applicable comments that were completely unique
+are 25%, 23% and 28%, respectively. The high percentage of uniquely generated comments indicates that the varying
+ownership ratios between the granularities in fact do elicit diverging perspectives. As such, we find that there is value
+in considering all three granularities when training automated code review models with ELF.
+Manuscript submitted to ACM
+
+--- PAGE 23 ---
+Leveraging Reviewer Experience in Code Review Comment Generation 23
+Fig. 7. Diversity of Applicable Comments Generated by ACO and RSO Based Strategies in Terms of Comment Category
+6.4 Which ELF strategies elicit the most improvement in terms of code review comment quality?
+Comparing across the strategies, we find that all three models of 𝜔𝑟𝑠𝑜are consistently high performing across the
+majority of the tasks, i.e., semantic equivalence, applicability, suggestions provided, identified evolvability issues
+and discussion invoking comments. However, the subsystem and package level models of 𝜔𝑎𝑐𝑜are consistently high
+performing across nearly all tasks apart from semantic equivalence. In contrast, we find that both 𝜔𝑎𝑣𝑔and𝜔𝑚𝑎𝑥
+strategies rarely bring additional value, indicating that experience types should be considered separately during training.
+Since the subsystem and package level models of both 𝜔𝑎𝑐𝑜and𝜔𝑟𝑠𝑜are top performing, we analyse their overlap
+in comment types generated. We find that the overlap between 𝜔𝑎𝑐𝑜_𝑃𝑘𝑔and𝜔𝑟𝑠𝑜_𝑃𝑘𝑔is only 22% compared to the
+overlap between 𝜔𝑎𝑐𝑜_𝑆𝑦𝑠and𝜔𝑟𝑠𝑜_𝑆𝑦𝑠at 37%. This indicates that the package level models of 𝜔𝑎𝑐𝑜and𝜔𝑟𝑠𝑜are not
+only more accurate and informative, but offer the most diverse range of code reviews. Compared to CodeReviewer,
+𝜔𝑎𝑐𝑜_𝑃𝑘𝑔is able to identify more high priority issues related to functional defects, validation errors, and logical faults,
+which are the top three most useful code review categories as rated by open-source developers [ 79]. We highlight the
+significance of this finding as code reviews rarely find functionality defects in reality [ 12]. This demonstrates that
+targeting reviewers’ coding experience at the package level can pinpoint critical code reviews during model training.
+To complement 𝜔𝑎𝑐𝑜_𝑃𝑘𝑔,𝜔𝑟𝑠𝑜_𝑃𝑘𝑔is able to catch more resource-related issues. 𝜔𝑎𝑐𝑜_𝑃𝑘𝑔improves on a wide variety
+of evolvability issues, i.e. documentation, organisation of code (refactoring), alternate output and naming convention.
+Unlike visual representation issues (formatting), these evolvability issues are often beyond the scope of traditional
+static analysis tools [ 81], making them highly valuable types of code reviews to generate. More specifically, improving
+the organisation of code can help ameliorate low evolvability in systems, which hinders developer productivity when
+adding features or fixing bugs [ 4,64]. On the other hand, 𝜔𝑟𝑠𝑜_𝑃𝑘𝑔excels at improving documentation, which can aid
+the comprehensibility of the programs [ 54]. Overall, we find that both 𝜔𝑎𝑐𝑜and𝜔𝑟𝑠𝑜strategies are the most effective,
+especially at the package level. Given the diverse nature of these two models, it is highly synergetic to integrate both
+models together.
+7 THREATS TO VALIDITY
+We now discuss the threats to the validity of our study.
+Manuscript submitted to ACM
+
+--- PAGE 24 ---
+24 Lin et al.
+Internal Validity. To ensure that our representation of CodeReviewer is faithful to the original paper [ 43], we
+utilised their exact replication package, pre-trained checkpoint, hyper-parameters, and training setup. The only varying
+factors are the filtered dataset used for fine-tuning and the experience-aware techniques that we introduce. Ownership
+values may be underestimated when records of reviews or commits are lost, users are unsearchable, users use multiple
+accounts, and when projects are rebased or deleted. As BLEU-4 is not an adequate measure for comprehensively
+evaluating the correctness of the automated code review models, we not only employ manual evaluation to capture
+semantic equivalence with the ground truth, but we also assess the applicability of the comments irrespective of the
+ground truth. To capture the informativeness of generated reviews, we conduct manual evaluation in terms of both
+feedback type and presence of explanation. To capture the change in behaviour in terms of the subject of generated
+comments, we conduct manual evaluation on the review category type. Since manual evaluation is prone to subjectivity
+and bias, the two annotators conducted the manual evaluations independently with the sources of the generated reviews
+masked. All conflicts were resolved together until a satisfactory inter-rater agreement level was reached, resulting in a
+refined guideline that was used to complete the rest of the annotations. Two additional reviewers then independently
+checked the final results for consistency. All research outputs are included in the replication package for transparency4.
+External Validity. Our experiments on model training focused on 519 of the most starred projects on GitHub, with
+more than 2,500 pull requests. Thus, the behaviours elicited from our ELF technique may not generalise to smaller
+scale software projects or to developers in other code review environments, e.g., Gerrit or closed source development.
+Additionally, the dataset consists of only inline code review comments, which dictates the nature of the discussion. As
+such, these findings may not generalise to other types of code review comments, e.g., commit level or pull request level.
+8 CONCLUSION
+The field of code review comment generation has demonstrated the potential of deep learning based language models in
+automating the cognitively loaded task of code reviewing. Whilst past studies have focused on technical improvements
+using techniques derived from the field of machine learning, our study explores the potential of leveraging the software
+engineering concept of reviewer experience to elicit higher quality code reviews from automated code review models. Our
+proposed experience-aware loss function (ELF) method re-weights the training data using traditional ownership metrics
+that reflect a reviewer’s authoring and reviewing experiences at the repository, subsystem, and package level. Through
+both quantitative and qualitative evaluation, our results show that certain ELF models can surpass all past methods in
+terms of both accuracy (RQ1) and informativeness (RQ2), whilst also identifying more functional and evolvability issues
+(RQ3) in the process. In particular, we found that considering both authoring and reviewing experiences separately at the
+package level was the most beneficial; however, the uniqueness of the comments elicited from both the repository and
+subsystem level view also demonstrate that different granularities are highly complementary. We hope that our findings
+can inspire future work in review comment generation to also consider integrating established software engineering
+concepts and theories into the design of automated code review models.
+ACKNOWLEDGMENT
+This research was supported by The University of Melbourne’s Research Computing Services and the Petascale Campus
+Initiative. Patanamon Thongtanunam was supported by the Australian Research Council’s Discovery Early Career
+Researcher Award (DECRA) funding scheme (DE210101091).
+4https://zenodo.org/records/13585832
+Manuscript submitted to ACM
+
+--- PAGE 25 ---
+Leveraging Reviewer Experience in Code Review Comment Generation 25
+REFERENCES
+[1]Miltiadis Allamanis, Earl T. Barr, Premkumar T. Devanbu, and Charles Sutton. 2018. A Survey of Machine Learning for Big Code and Naturalness.
+CSUR 51, 4 (2018), 81:1–81:37. https://doi.org/10.1145/3212695
+[2]Guilherme Avelino, Leonardo Teixeira Passos, André C. Hora, and Marco Túlio Valente. 2016. A novel approach for estimating Truck Factors. In
+ICPC . IEEE, New York, NY, USA, 1–10. https://doi.org/10.1109/ICPC.2016.7503718
+[3]Sebastian Baltes, Christoph Treude, and Martin P. Robillard. 2022. Contextual Documentation Referencing on Stack Overflow. TSE48, 1 (2022),
+135–149. https://doi.org/10.1109/TSE.2020.2981898
+[4]Rajendra K. Bandi, Vijay K. Vaishnavi, and Daniel E. Turk. 2003. Predicting maintenance performance using object-oriented design complexity
+metrics. TSE29, 1 (2003), 77–87. https://doi.org/10.1109/TSE.2003.1166590
+[5]Tobias Baum, Olga Liskin, Kai Niklas, and Kurt Schneider. 2016. Factors influencing code review processes in industry. In ESEC/FSE . ACM, New
+York, NY, USA, 85–96. https://doi.org/10.1145/2950290.2950323
+[6]Moritz Beller, Alberto Bacchelli, Andy Zaidman, and Elmar Juergens. 2014. Modern code reviews in open-source projects: which problems do they
+fix?. In MSR. ACM, New York, NY, USA, 202–211. https://doi.org/10.1145/2597073.2597082
+[7]Christian Bird, Nachiappan Nagappan, Brendan Murphy, Harald C. Gall, and Premkumar T. Devanbu. 2011. Don’t touch my code!: examining the
+effects of ownership on software quality. In ESEC/FSE . ACM, New York, NY, USA, 4–14. https://doi.org/10.1145/2025113.2025119
+[8]Amiangshu Bosu, Michaela Greiler, and Christian Bird. 2015. Characteristics of useful code reviews: An empirical study at microsoft. In MSR. IEEE,
+New York, NY, USA, 146–156. https://doi.org/10.1109/MSR.2015.21
+[9]Tse-Hsun Chen, Meiyappan Nagappan, Emad Shihab, and Ahmed E Hassan. 2014. An empirical study of dormant bugs. In MSR. ACM, New York,
+NY, USA, 82–91. https://doi.org/10.1145/2597073.2597108
+[10] Moataz Chouchen, Ali Ouni, Raula Gaikovina Kula, Dong Wang, Patanamon Thongtanunam, Mohamed Wiem Mkaouer, and Kenichi Matsumoto.
+2021. Anti-patterns in Modern Code Review: Symptoms and Prevalence. In SANER . IEEE, New York, NY, USA, 531–535. https://doi.org/10.1109/
+SANER50967.2021.00060
+[11] Jacob Cohen. 1960. A coefficient of agreement for nominal scales. Educational and psychological measurement 20, 1 (1960), 37–46.
+[12] Jacek Czerwonka, Michaela Greiler, and Jack Tilford. 2015. Code Reviews Do Not Find Bugs. How the Current Code Review Best Practice Slows Us
+Down. In ICSE , Vol. 2. IEEE, New York, NY, USA, 27–28. https://doi.org/10.1109/ICSE.2015.131
+[13] Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. 2019. BERT: Pre-training of Deep Bidirectional Transformers for Language
+Understanding. In NAACL-HLT . ACL, Philadelphia, PA, USA, 4171–4186. https://doi.org/10.18653/V1/N19-1423
+[14] Edson Dias, Paulo Meirelles, Fernando Castor, Igor Steinmacher, Igor Wiese, and Gustavo Pinto. 2021. What Makes a Great Maintainer of Open
+Source Projects?. In ICSE . IEEE, New York, NY, USA, 982–994. https://doi.org/10.1109/ICSE43902.2021.00093
+[15] Yafen Dong, Xiaohong Shen, Zhe Jiang, and Haiyan Wang. 2021. Recognition of imbalanced underwater acoustic datasets with exponentially
+weighted cross-entropy loss. Appl. Acoust. 174 (2021), 107740. https://doi.org/10.1016/J.APACOUST.2020.107740
+[16] Felipe Ebert, Fernando Castor, Nicole Novielli, and Alexander Serebrenik. 2018. Communicative Intention in Code Review Questions. In ICSME .
+IEEE, New York, NY, USA, 519–523. https://doi.org/10.1109/ICSME.2018.00061
+[17] Joseph L Fleiss, Bruce Levin, and Myunghee Cho Paik. 2013. Statistical methods for rates and proportions . John Wiley & Sons, Hoboken, NJ, USA.
+[18] Thomas Fritz, Gail C Murphy, and Emily Hill. 2007. Does a programmer’s activity indicate knowledge of code?. In ESEC/FSE . ACM, New York, NY,
+USA, 341–350. https://doi.org/10.1145/1287624.1287673
+[19] Alexander Frömmgen, Jacob Austin, Peter Choy, Nimesh Ghelani, Lera Kharatyan, Gabriela Surita, Elena Khrapko, Pascal Lamblin, Pierre-Antoine
+Manzagol, Marcus Revaj, Maxim Tabachnyk, Daniel Tarlow, Kevin Villela, Dan Zheng, Satish Chandra, and Petros Maniatis. 2024. Resolving Code
+Review Comments with Machine Learning. In ICSE-SEIP . IEEE, New York, NY, USA, 204–215. https://doi.org/10.1145/3639477.3639746
+[20] Michael Fu, Van Nguyen, Chakkrit Tantithamthavorn, Dinh Phung, and Trung Le. 2024. Vision Transformer Inspired Automated Vulnerability
+Repair. TOSEM 33, 3, Article 78 (mar 2024), 29 pages. https://doi.org/10.1145/3632746
+[21] Michael Fu and Chakkrit Tantithamthavorn. 2022. LineVul: a transformer-based line-level vulnerability prediction. In MSR. ACM, New York, NY,
+USA, 608–620. https://doi.org/10.1145/3524842.3528452
+[22] Michael Fu, Chakkrit Tantithamthavorn, Trung Le, Van Nguyen, and Dinh Phung. 2022. VulRepair: a T5-based automated software vulnerability
+repair. In ESEC/FSE . ACM, New York, NY, USA, 935–947. https://doi.org/10.1145/3540250.3549098
+[23] Akalanka Galappaththi, Sarah Nadi, and Christoph Treude. 2022. Does this apply to me? an empirical study of technical context in stack overflow.
+InMSR. ACM, New York, NY, USA, 23–34. https://doi.org/10.1145/3524842.3528435
+[24] Haoyu Gao, Christoph Treude, and Mansooreh Zahedi. 2023. Evaluating Transfer Learning for Simplifying GitHub READMEs. In ESEC/FSE . ACM,
+New York, NY, USA, 1548–1560. https://doi.org/10.1145/3611643.3616291
+[25] Mehdi Golzadeh, Alexandre Decan, and Natarajan Chidambaram. 2022. On the accuracy of bot detection techniques. In BotSE . ACM, New York, NY,
+USA, 1–5. https://doi.org/10.1145/3528228.3528406
+[26] Mehdi Golzadeh, Alexandre Decan, Damien Legay, and Tom Mens. 2021. A ground-truth dataset and classification model for detecting bots in
+GitHub issue and PR comments. J. Softw. 175 (2021), 110911. https://doi.org/10.1016/J.JSS.2021.110911
+[27] Pavlína Wurzel Gonçalves, Enrico Fregnan, Tobias Baum, Kurt Schneider, and Alberto Bacchelli. 2022. Do explicit review strategies improve code
+review performance? Towards understanding the role of cognitive load. EMSE 27, 4 (2022), 99. https://doi.org/10.1007/S10664-022-10123-8
+Manuscript submitted to ACM
+
+--- PAGE 26 ---
+26 Lin et al.
+[28] Qi Guo, Junming Cao, Xiaofei Xie, Shangqing Liu, Xiaohong Li, Bihuan Chen, and Xin Peng. 2024. Exploring the potential of chatgpt in automated
+code refinement: An empirical study. In ICSE . IEEE, New York, NY, USA, 1–13. https://doi.org/10.1145/3597503.3623306
+[29] Masum Hasan, Anindya Iqbal, Mohammad Rafid Ul Islam, AJM Imtiajur Rahman, and Amiangshu Bosu. 2021. Using a balanced scorecard to identify
+opportunities to improve code review effectiveness: An industrial experience report. EMSE 26 (2021), 1–34. https://doi.org/10.1007/S10664-021-
+10038-W
+[30] Hideaki Hata, Osamu Mizuno, and Tohru Kikuno. 2012. Bug prediction based on fine-grained module histories. In ICSE. IEEE, New York, NY, USA,
+200–210. https://doi.org/10.1109/ICSE.2012.6227193
+[31] Vincent J Hellendoorn, Jason Tsay, Manisha Mukherjee, and Martin Hirzel. 2021. Towards automating code review at scale. In ICSE. IEEE, New York,
+NY, USA, 1479–1482. https://doi.org/10.1145/3468264.3473134
+[32] Abram Hindle, Earl T Barr, Mark Gabel, Zhendong Su, and Premkumar Devanbu. 2016. On the naturalness of software. Commun. ACM 59, 5 (2016),
+122–131. https://doi.org/10.1145/2902362
+[33] Nan Jiang, Thibaud Lutellier, and Lin Tan. 2021. CURE: Code-Aware Neural Machine Translation for Automatic Program Repair. In ICSE. IEEE, New
+York, NY, USA, 1161–1173. https://doi.org/10.1109/ICSE43902.2021.00107
+[34] Matthew Jin, Syed Shahriar, Michele Tufano, Xin Shi, Shuai Lu, Neel Sundaresan, and Alexey Svyatkovskiy. 2023. Inferfix: End-to-end program
+repair with llms. In ESEC/FSE . ACM, New York, NY, USA, 1646–1656. https://doi.org/10.1145/3611643.3613892
+[35] Eirini Kalliamvakou, Georgios Gousios, Kelly Blincoe, Leif Singer, Daniel M German, and Daniela Damian. 2016. An in-depth study of the promises
+and perils of mining GitHub. EMSE 21 (2016), 2035–2071. https://doi.org/10.1007/S10664-015-9393-5
+[36] Oleksii Kononenko, Olga Baysal, and Michael W Godfrey. 2016. Code review quality: How developers see it. In ICSE . IEEE, New York, NY, USA,
+1028–1038. https://doi.org/10.1145/2884781.2884840
+[37] Oleksii Kononenko, Olga Baysal, Latifa Guerrouj, Yaxin Cao, and Michael W. Godfrey. 2015. Investigating code review quality: Do people and
+participation matter?. In ICSME . IEEE, New York, NY, USA, 111–120. https://doi.org/10.1109/ICSM.2015.7332457
+[38] Philippe B Kruchten. 1995. The 4+ 1 view model of architecture. IEEE software 12, 6 (1995), 42–50. https://doi.org/10.1109/52.469759
+[39] Jia Li, Ge Li, Zhuo Li, Zhi Jin, Xing Hu, Kechi Zhang, and Zhiyi Fu. 2023. Codeeditor: Learning to edit source code with pre-trained models. TOSEM
+32, 6 (2023), 1–22. https://doi.org/10.1145/3597207
+[40] Lingwei Li, Li Yang, Huaxi Jiang, Jun Yan, Tiejian Luo, Zihan Hua, Geng Liang, and Chun Zuo. 2022. AUGER: automatically generating review
+comments with pre-training models. In ESEC/FSE . ACM, New York, NY, USA, 1009–1021. https://doi.org/10.1145/3540250.3549099
+[41] Lingwei Li, Li Yang, Huaxi Jiang, Jun Yan, Tiejian Luo, Zihan Hua, Geng Liang, and Chun Zuo. 2022. Auger: Automatically generating review
+comments with pre-training models. In ESEC/FSE . ACM, New York, NY, USA, 1009–1021. https://doi.org/10.1145/3540250.3549099
+[42] Yi Li, Yiduo Yu, Yiwen Zou, Tianqi Xiang, and Xiaomeng Li. 2022. Online easy example mining for weakly-supervised gland segmentation from
+histology images. In MICCAI . Springer, New York, NY, USA, 578–587. https://doi.org/10.1007/978-3-031-16440-8_55
+[43] Zhiyu Li, Shuai Lu, Daya Guo, Nan Duan, Shailesh Jannu, Grant Jenks, Deep Majumder, Jared Green, Alexey Svyatkovskiy, Shengyu Fu, and
+Neel Sundaresan. 2022. Automating code review activities by large-scale pre-training. In ESEC/FSE . ACM, New York, NY, USA, 1035–1047.
+https://doi.org/10.1145/3540250.3549081
+[44] Bo Lin, Shangwen Wang, Zhongxin Liu, Yepang Liu, Xin Xia, and Xiaoguang Mao. 2023. Cct5: A code-change-oriented pre-trained model. In
+ESEC/FSE . ACM, New York, NY, USA, 1509–1521. https://doi.org/10.1145/3611643.3616339
+[45] Hong Yi Lin and Patanamon Thongtanunam. 2023. Towards Automated Code Reviews: Does Learning Code Structure Help?. In SANER . IEEE, New
+York, NY, USA, 703–707. https://doi.org/10.1109/SANER56733.2023.00075
+[46] Hong Yi Lin, Patanamon Thongtanunam, Christoph Treude, and Wachiraphan Charoenwet. 2024. Improving Automated Code Reviews: Learning
+from Experience. In MSR. IEEE, New York, NY, USA, 278–283. https://doi.org/10.1145/3643991.3644910
+[47] Junyi Lu, Lei Yu, Xiaojia Li, Li Yang, and Chun Zuo. 2023. LLaMA-Reviewer: Advancing Code Review Automation with Large Language Models
+through Parameter-Efficient Fine-Tuning. In ISSRE . IEEE, New York, NY, USA, 647–658. https://doi.org/10.1109/ISSRE59848.2023.00026
+[48] Shuai Lu, Daya Guo, Shuo Ren, Junjie Huang, Alexey Svyatkovskiy, Ambrosio Blanco, Colin B. Clement, Dawn Drain, Daxin Jiang, Duyu Tang, Ge
+Li, Lidong Zhou, Linjun Shou, Long Zhou, Michele Tufano, Ming Gong, Ming Zhou, Nan Duan, Neel Sundaresan, Shao Kun Deng, Shengyu Fu, and
+Shujie Liu. 2021. CodeXGLUE: A Machine Learning Benchmark Dataset for Code Understanding and Generation. In NeurIPS Datasets . Curran
+Associates Inc., Red Hook, NY, USA. https://datasets-benchmarks-proceedings.neurips.cc/paper/2021/hash/c16a5320fa475530d9583c34fd356ef5-
+Abstract-round1.html
+[49] Laura MacLeod, Michaela Greiler, Margaret-Anne Storey, Christian Bird, and Jacek Czerwonka. 2018. Code Reviewing in the Trenches: Challenges
+and Best Practices. IEEE Software 35, 4 (2018), 34–42. https://doi.org/10.1109/MS.2017.265100500
+[50] Shane McIntosh, Yasutaka Kamei, Bram Adams, and Ahmed E. Hassan. 2014. The impact of code review coverage and code review participation on
+software quality: a case study of the qt, VTK, and ITK projects. In MSR. ACM, New York, NY, USA, 192–201. https://doi.org/10.1145/2597073.2597076
+[51] Xiaozhu Meng, Barton P. Miller, William R. Williams, and Andrew R. Bernat. 2013. Mining Software Repositories for Accurate Authorship. In ICSME .
+IEEE, New York, NY, USA, 250–259. https://doi.org/10.1109/ICSM.2013.36
+[52] Gail C Murphy, David Notkin, and Kevin Sullivan. 1995. Software reflexion models: Bridging the gap between source and high-level models. In
+ESEC/FSE . ACM, New York, NY, USA, 18–28. https://doi.org/10.1145/222124.222136
+[53] Mika V. Mäntylä and Casper Lassenius. 2009. What Types of Defects Are Really Discovered in Code Reviews? TSE 35, 3 (2009), 430–448.
+https://doi.org/10.1109/TSE.2008.71
+Manuscript submitted to ACM
+
+--- PAGE 27 ---
+Leveraging Reviewer Experience in Code Review Comment Generation 27
+[54] Paul W. Oman and Curtis R. Cook. 1990. Typographic style is more than cosmetic. Commun. ACM 33, 5 (may 1990), 506–520. https://doi.org/10.
+1145/78607.78611
+[55] Kishore Papineni, Salim Roukos, Todd Ward, and Wei-Jing Zhu. 2002. Bleu: a method for automatic evaluation of machine translation. In ACL. ACL,
+Philadelphia, PA, USA, 311–318. https://doi.org/10.3115/1073083.1073135
+[56] Chanathip Pornprasit, Chakkrit Tantithamthavorn, Patanamon Thongtanunam, and Chunyang Chen. 2023. D-act: Towards diff-aware code
+transformation for code review under a time-wise evaluation. In SANER . IEEE, New York, NY, USA, 296–307. https://doi.org/10.1109/SANER56733.
+2023.00036
+[57] Alec Radford, Karthik Narasimhan, Tim Salimans, Ilya Sutskever, et al .2018. Improving language understanding by generative pre-training . Technical
+Report. OpenAI.
+[58] Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang, Michael Matena, Yanqi Zhou, Wei Li, and Peter J Liu. 2020. Exploring the
+limits of transfer learning with a unified text-to-text transformer. J. Mach. Learn. Res. 21, 140 (2020), 1–67.
+[59] Foyzur Rahman and Premkumar Devanbu. 2011. Ownership, experience and defects: a fine-grained study of authorship. In ICSE . IEEE, New York,
+NY, USA, 491–500. https://doi.org/10.1145/1985793.1985860
+[60] Mohammad Masudur Rahman, Chanchal K Roy, and Raula G Kula. 2017. Predicting usefulness of code review comments using textual features and
+developer experience. In MSR. IEEE, New York, NY, USA, 215–226. https://doi.org/10.1109/MSR.2017.17
+[61] Shadikur Rahman, Umme Ayman Koana, and Maleknaz Nayebi. 2022. Example driven code review explanation. In ESEM . ACM, New York, NY, USA,
+307–312. https://doi.org/10.1145/3544902.3546639
+[62] Baishakhi Ray, Vincent Hellendoorn, Saheel Godhane, Zhaopeng Tu, Alberto Bacchelli, and Premkumar Devanbu. 2016. On the" naturalness" of
+buggy code. In ICSE . IEEE, New York, NY, USA, 428–439. https://doi.org/10.1145/2884781.2884848
+[63] Peter C. Rigby and Christian Bird. 2013. Convergent contemporary software peer review practices. In ESEC/FSE . ACM, New York, NY, USA, 202–212.
+https://doi.org/10.1145/2491411.2491444
+[64] H.D. Rombach. 1987. A Controlled Expeniment on the Impact of Software Structure on Maintainability. TSESE-13, 3 (1987), 344–354. https:
+//doi.org/10.1109/TSE.1987.233165
+[65] Oussama Ben Sghaier and Houari A. Sahraoui. 2024. Improving the Learning of Code Review Successive Tasks with Cross-Task Knowledge
+Distillation. In ESEC/FSE , Vol. 1. ACM, New York, NY, USA, 1086–1106. https://doi.org/10.1145/3643775
+[66] Davide Spadini, Maurício Aniche, and Alberto Bacchelli. 2018. PyDriller: Python Framework for Mining Software Repositories. In ESEC/FSE . ACM,
+New York, NY, USA, 908–911. https://doi.org/10.1145/3236024.3264598
+[67] M-AD Storey, F David Fracchia, and Hausi A Müller. 1999. Cognitive design elements to support the construction of a mental model during software
+exploration. J. Softw. 44, 3 (1999), 171–185. https://doi.org/10.1016/S0164-1212(98)10055-9
+[68] Patanamon Thongtanunam, Shane McIntosh, Ahmed E. Hassan, and Hajimu Iida. 2015. Investigating Code Review Practices in Defective Files: An
+Empirical Study of the Qt System. In 2015 IEEE/ACM 12th Working Conference on Mining Software Repositories . ACM, New York, NY, USA, 168–179.
+https://doi.org/10.1109/MSR.2015.23
+[69] Patanamon Thongtanunam, Shane McIntosh, Ahmed E. Hassan, and Hajimu Iida. 2016. Revisiting code ownership and its relationship with software
+quality in the scope of modern code review. In ICSE . IEEE, New York, NY, USA, 1039–1050. https://doi.org/10.1145/2884781.2884852
+[70] Patanamon Thongtanunam, Chanathip Pornprasit, and Chakkrit Tantithamthavorn. 2022. Autotransform: Automated code transformation to
+support modern code review process. In ICSE . IEEE, New York, NY, USA, 237–248. https://doi.org/10.1145/3510003.3510067
+[71] Patanamon Thongtanunam and Chakkrit Tantithamthavorn. 2024. Code Ownership: The Principles, Differences, and Their Associations with
+Software Quality. In ISSRE . IEEE, New York, NY, USA, to appear.
+[72] Patanamon Thongtanunam, Chakkrit Tantithamthavorn, Raula Gaikovina Kula, Norihiro Yoshida, Hajimu Iida, and Ken-ichi Matsumoto. 2015. Who
+should review my code? A file location-based code-reviewer recommendation approach for Modern Code Review. In SANER . IEEE, New York, NY,
+USA, 141–150. https://doi.org/10.1109/SANER.2015.7081824
+[73] Hugo Touvron, Thibaut Lavril, Gautier Izacard, Xavier Martinet, Marie-Anne Lachaux, Timothée Lacroix, Baptiste Rozière, Naman Goyal, Eric
+Hambro, Faisal Azhar, Aurelien Rodriguez, Armand Joulin, Edouard Grave, and Guillaume Lample. 2023. LLaMA: Open and Efficient Foundation
+Language Models. arXiv:2302.13971 [cs.CL]
+[74] Michele Tufano, Jevgenija Pantiuchina, Cody Watson, Gabriele Bavota, and Denys Poshyvanyk. 2019. On learning meaningful code changes via
+neural machine translation. In ICSE . IEEE, New York, NY, USA, 25–36. https://doi.org/10.1109/ICSE.2019.00021
+[75] Michele Tufano, Cody Watson, Gabriele Bavota, Massimiliano Di Penta, Martin White, and Denys Poshyvanyk. 2019. An empirical study on learning
+bug-fixing patches in the wild via neural machine translation. TOSEM 28, 4 (2019), 1–29. https://doi.org/10.1145/3340544
+[76] Rosalia Tufano, Ozren Dabić, Antonio Mastropaolo, Matteo Ciniselli, and Gabriele Bavota. 2024. Code Review Automation: Strengths and Weaknesses
+of the State of the Art. TSE50, 2 (2024), 338–353. https://doi.org/10.1109/TSE.2023.3348172
+[77] Rosalia Tufano, Simone Masiero, Antonio Mastropaolo, Luca Pascarella, Denys Poshyvanyk, and Gabriele Bavota. 2022. Using pre-trained models to
+boost code review automation. In ICSE . IEEE, New York, NY, USA, 2291–2302. https://doi.org/10.1145/3510003.3510621
+[78] Rosalia Tufano, Luca Pascarella, Michele Tufano, Denys Poshyvanyk, and Gabriele Bavota. 2021. Towards automating code review activities. In
+ICSE . IEEE, New York, NY, USA, 163–174. https://doi.org/10.1109/ICSE43902.2021.00027
+[79] Asif Kamal Turzo and Amiangshu Bosu. 2024. What makes a code review useful to opendev developers? an empirical investigation. EMSE 29, 1
+(2024), 6. https://doi.org/10.1007/S10664-023-10411-X
+Manuscript submitted to ACM
+
+--- PAGE 28 ---
+28 Lin et al.
+[80] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, and Illia Polosukhin. 2017. At-
+tention is All you Need. In NeurIPS . Curran Associates Inc., Red Hook, NY, USA, 5998–6008. https://proceedings.neurips.cc/paper/2017/hash/
+3f5ee243547dee91fbd053c1c4a845aa-Abstract.html
+[81] Manushree Vijayvergiya, Małgorzata Salawa, Ivan Budiselić, Dan Zheng, Pascal Lamblin, Marko Ivanković, Juanjo Carin, Mateusz Lewko, Jovan
+Andonov, Goran Petrović, Daniel Tarlow, Petros Maniatis, and René Just. 2024. AI-Assisted Assessment of Coding Practices in Modern Code Review.
+InAIware . ACM, New York, NY, USA, 85–93. https://doi.org/10.1145/3664646.3665664
+[82] Valery Vishnevskiy, Richard Rau, and Orcun Goksel. 2019. Deep variational networks with exponential weighting for learning computed tomography.
+InMICCAI . Springer, New York, NY, USA, 310–318. https://doi.org/10.1007/978-3-030-32226-7_35
+[83] Kai Wang, Yizhou Peng, Hao Huang, Ying Hu, and Sheng Li. 2022. Mining Hard Samples Locally And Globally For Improved Speech Separation. In
+ICASSP . IEEE, New York, NY, USA, 6037–6041. https://doi.org/10.1109/ICASSP43922.2022.9747797
+[84] Xinshao Wang, Yang Hua, Elyor Kodirov, Guosheng Hu, and Neil Martin Robertson. 2019. Deep Metric Learning by Online Soft Mining and
+Class-Aware Attention. In AAAI . AAAI Press, Washington D.C, USA, 5361–5368. https://doi.org/10.1609/AAAI.V33I01.33015361
+[85] Jiwei Wei, Yang Yang, Xing Xu, Jingkuan Song, Guoqing Wang, and Heng Tao Shen. 2023. Less is Better: Exponential Loss for Cross-Modal Matching.
+TCSVT 33, 9 (2023), 5271–5280. https://doi.org/10.1109/TCSVT.2023.3249754
+[86] Mairieli Wessel, Bruno Mendes de Souza, Igor Steinmacher, Igor S. Wiese, Ivanilton Polato, Ana Paula Chaves, and Marco A. Gerosa. 2018.
+The Power of Bots: Characterizing and Understanding Bots in OSS Projects. In CSCW , Vol. 2. ACM, New York, NY, USA, Article 182, 19 pages.
+https://doi.org/10.1145/3274451
+[87] Motahareh Bahrami Zanjani, Huzefa Kagdi, and Christian Bird. 2016. Automatically Recommending Peer Reviewers in Modern Code Review. TSE
+42, 6 (2016), 530–543. https://doi.org/10.1109/TSE.2015.2500238
+[88] Zhengran Zeng, Hanzhuo Tan, Haotian Zhang, Jing Li, Yuqun Zhang, and Lingming Zhang. 2022. An extensive study on pre-trained models for
+program understanding and generation. In ISSTA . ACM, New York, NY, USA, 39–51. https://doi.org/10.1145/3533767.3534390
+[89] Beiqi Zhang, Liming Fu, Peng Liang, Jiaxin Yu, and Chong Wang. 2024. Demystifying code snippets in code reviews: a study of the OpenStack and
+Qt communities and a practitioner survey. EMSE 29, 4 (2024), 78. https://doi.org/10.1109/MSR.2017.17
+[90] Xin Zhou, Kisub Kim, Bowen Xu, Donggyun Han, and David Lo. 2024. Out of Sight, Out of Mind: Better Automatic Vulnerability Repair by
+Broadening Input Ranges and Sources. In ICSE . IEEE, New York, NY, USA, Article 88, 13 pages. https://doi.org/10.1145/3597503.3639222
+Manuscript submitted to ACM

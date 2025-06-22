@@ -1,0 +1,19 @@
+# AI-Papers utility environment requirements
+# Lightweight setup for PDF processing and text extraction
+
+# PDF Processing
+pypdf>=3.0.0
+pymupdf>=1.23.0
+pdfplumber>=0.10.0
+pdfminer.six>=20221105
+
+# Text Processing
+beautifulsoup4>=4.12.0
+requests>=2.31.0
+
+# Basic utilities
+pathlib2>=2.3.0
+argparse
+
+# Optional: For advanced text processing
+# nltk>=3.8.0

@@ -1,0 +1,1308 @@
+# 2502.02757v2.pdf
+# Converted from PDF to TXT
+# Source path: D:\llm\notebooks\AI-Papers\2502.02757v2.pdf
+# File size: 1044610 bytes
+
+===============================================
+PDF FILE CONTENT
+===============================================
+
+
+--- PAGE 1 ---
+Too Noisy To Learn: Enhancing Data Quality for
+Code Review Comment Generation
+Chunhua Liu
+The University of Melbourne
+chunhua.liu1@unimelb.edu.auHong Yi Lin
+The University of Melbourne
+holin2@student.unimelb.edu.auPatanamon Thongtanunam
+The University of Melbourne
+patanamon.t@unimelb.edu.au
+Abstract —Code review is an important practice in software
+development, yet it is time-consuming and requires substantial
+effort. While open-source datasets have been used to train
+neural models for automating code review tasks, including review
+comment generation, these datasets contain a significant amount
+of noisy comments (e.g., vague or non-actionable feedback) that
+persist despite cleaning methods using heuristics and machine
+learning approaches. Such remaining noise may lead models
+to generate low-quality review comments, yet removing them
+requires a complex semantic understanding of both code changes
+and natural language comments. In this paper, we investigate
+the impact of such noise on review comment generation and
+propose a novel approach using large language models (LLMs)
+to further clean these datasets. Based on an empirical study
+on a large-scale code review dataset, our LLM-based approach
+achieves 66-85% precision in detecting valid comments. Using the
+predicted valid comments to fine-tune the state-of-the-art code
+review models (cleaned models) can generate review comments
+that are 13.0% - 12.4% more similar to valid human-written
+comments than the original models. We also find that the
+cleaned models can generate more informative and relevant
+comments than the original models. Our findings underscore
+the critical impact of dataset quality on the performance of
+review comment generation. We advocate for further research
+into cleaning training data to enhance the practical utility and
+quality of automated code review.
+Index Terms —Automated Code Review, Review Comment
+Generation, Dataset Quality
+I. I NTRODUCTION
+Code review is a critical practice in software development,
+providing multiple benefits such as identifying logic errors [1,
+2]. At the core of this process is the reviewers’ comments on
+code changes, which serve as the primary means for providing
+feedback and suggestions. Despite its advantages, the process
+is often time-consuming and requires substantial effort from
+reviewers [3]. To alleviate this burden, recent research has
+focused on automatically generating review comments by
+training neural models on large-scale datasets mined from
+open-source platforms such as GitHub and Gerrit. While these
+models show promise in generating code review comments
+by training neural models on large-scale datasets [4–6], the
+gap between model-generated and human-written comments
+remains significant, limiting their practical use.
+Despite the availability of large-scale datasets, the quality of
+review comments varies due to various factors such as reviewer
+experience, limited review time [7, 8], diverse communicative
+intentions [9], and different standards for code review across
+@@ - 80,6 +80,7 @@ public  class  HoodieCreateHandle <T extends
+     HoodieRecordPayload > extends  HoodieIOH
+   String  partitionPath, String  fileId, Iterator <HoodieRecord <T>> 
+        recordIterator) {
+     this(config , commitT ime, hoodieT able, partitionPath , fileId );
+     this.recordIterator  = recordIterator;
++   this.useW riterSchema  = true;Reviewer’s Comment: Why do we have this flag?
+Label: Noisy Comment
+@@ - 157,7 +157,7 @@ public  class  ProviderConfig  extends  
+AbstractServiceConfig  {
+     @ Deprecated
+     public  void setProtocol (String  protocol ) {
+-        this.protocols  = Arrays .asList (new ProtocolConfig []{ new 
+         ProtocolConfig (protocol)});
++       this.protocols  = new ArrayList <>(Arrays .asList (new 
+ ProtocolConfig []{ new ProtocolConfig (protocol)}));
+     }
+Reviewer’s Comment: This can be simplified as new ArrayList<>(
+Arrays.asList(new ProtocolConfig(protocol)))
+Label: Valid Comment
+Fig. 1: Examples of noisy (Top) and valid (Bottom) comments
+for automated review comment generation.
+different projects. Prior work has attempted to clean these
+datasets by removing bots and filtering out noisy comments
+using heuristics [4, 10]. More recently, Li et. al. have attempted
+to clean their widely-used CodeReviewer benchmark using
+heuristic rules and a machine learning classifier (SVM) [5].
+Yet concerns about data quality persist. A recent work by
+Tufano et al. [11] revealed that a substantial proportion (32%)
+of comments in the test set of this widely-used dataset still con-
+tains noise. The noise includes vague, difficult-to-understand
+comments, and comments that merely seek clarification rather
+than suggest an improvement to the code (see Fig. 1 Top).
+We argue that such noisy comments may also exist in the
+training set. Neural models trained on noisy datasets inevitably
+internalize and potentially propagate low-quality reviews into
+the generated review comments. Such poor reviews can be
+considered as less useful in practical settings [7, 12, 13] or
+even negatively impact software quality [14]. To develop mod-
+els that generate high-quality review comments—providing
+clear suggestions for code improvements that assist code au-
+thors and automated code refinement—it is crucial to improve
+the quality of the training data.arXiv:2502.02757v2  [cs.SE]  6 Feb 2025
+
+--- PAGE 2 ---
+Identifying and removing noisy comments remaining in the
+code review datasets presents significant challenges due to the
+complexity of the task. It requires an understanding of both
+the technical context of code changes and the review com-
+ments written in natural language. Therefore, interpreting code
+review comments can be highly ambiguous and inference-
+heavy [9, 15]. Simple heuristics such as keywords matching
+and sentence length used in prior works [4, 10] fall short
+in analyzing these complexities and nuances in the review
+comments, urging the need for a more semantic and context-
+aware method to effectively clean code review datasets.
+To address these challenges, this work explores a novel
+approach to improve the quality of the review datasets and
+studies the impact of noise on the performance of auto-
+mated review comment generation. As large language models
+(LLMs) have shown promising performance in understanding
+both code and natural language [16, 17], and potential data
+annotation tasks in other domains [18, 19], we investigate
+the feasibility of using LLMs to classify noisy and valid
+comments, then retain the valid ones. Finally, we evaluate
+the performance of the state-of-the-art models (i.e., CodeRe-
+viewer [5] and CodeT5 [20]) trained on the cleaned datasets.
+Through an empirical study on the widely-used code review
+benchmark (CodeReviewer [5]), we find that only 64% of
+the sampled comments in the training set of CodeReviewer
+benchmark are valid. Our approach using LLMs achieved
+a precision of 66% - 85% in identifying valid comments
+and achieved a recall of 51% - 89% in identifying noisy
+comments. These results suggest that the proportion of valid
+comments in the dataset can be improved from 64% to 85%
+by LLMs. By retaining only the valid comments predicted
+by LLMs (i.e., cleaned datasets), the training size is 25%
+- 66% smaller than the original dataset. Nonetheless, the
+smaller data did not negatively impact the performance of
+comment generation models. Instead, the models fine-tuned
+on the cleaned datasets achieved BLEU-4 scores 7.5% - 13%
+higher than those trained on the original dataset, with a
+12.4% - 13.0% increase specifically on valid comments in test
+sets. Moreover, we also found that the quality of comments
+generated from the cleaned models is significantly improved,
+with up to a 24% increase in information score and an 11%
+increase in relevance score. These results highlight that valid
+and noisy review comments can be detected by LLMs and
+cleaning review data can improve the performance of the
+review comment generation models.
+Novelty and Contribution. To the best of our knowledge,
+we are the first to 1) present an automated approach to clean
+the large-scale review dataset using LLMs, 2) demonstrate the
+capability of LLMs to automatically classify valid and noisy
+review comments, and 3) highlight the impact of data quality
+on the performance of automated review comment generation,
+4) demonstrate an improvement in model performance and
+comment quality with a cleaned dataset despite its significantly
+smaller size than the original data (e.g., 117K vs 39K), 5) em-
+ploy a semi-automated method to approximate the quality of
+generated review comments at scale.Open Science. To facilitate reproducibility and future work,
+we provide a replication package that includes the cleaned
+datasets, experimental results, and scripts.1
+Paper Organisation. The remainder of this paper is struc-
+tured as follows: Section II discussed related work. Section III
+outlines an overview of the study design. Sections IV - VI
+present our study approaches and results of each research
+question. Section VII discusses the findings. Section VIII
+addresses potential threats to the validity. Finally, Section IX
+draws a conclusion.
+II. B ACKGROUND & R ELATED WORK
+Automated Code Reviews. To help alleviate the cognitive
+burden of the modern code review process [21, 22], automated
+code review research introduced three sequential tasks in 1)
+code change quality estimation [5], 2) review comment gen-
+eration [4] and 3) code refinement [23–25], which mirrors the
+human process of 1) assessing if a code change is problematic,
+2) providing a review comment in natural language that details
+issues and relevant fixes and 3) addressing the review by revis-
+ing the code. Recent study have leveraged large-scale datasets
+from open-source platforms to train models to perform these
+tasks [5, 10, 23]. Despite advancements achieved, automating
+the code review process remains challenging, particularly in
+the review comment generation task [11].
+Review Comment Generation. Review comment genera-
+tion is formulated as a sequence-to-sequence generation task,
+where models generate natural language review comments
+(RNL) based on code changes ( CDIFF). Initially, Tufano et al. [4]
+trained a T5 transformer [26] on Java ( CDIFF,RNL) pairs,
+demonstrating that review comments possess latent statistical
+properties that can be learned. Li et al. [5] introduced a
+large-scale dataset called CodeReviewer which includes nine
+programming languages for code review-specific pre-training
+and fine-tuning. Subsequent research using the CodeReviewer
+dataset explored various solutions, such as joint-training on
+multiple code review tasks [27] and prompting LLMs [11, 28].
+Although these models show improvements to the state-of-the-
+art, their generated comments still fall short when compared to
+human reviews, raising concerns about their practicality. While
+these studies focus on developing new techniques, the quality
+of underlying datasets has been overlooked. This importance
+of data quality is indeed underscored by a case study at
+Google [29], which highlights the potential to build practical
+code review tools using high-quality data.
+Review Comment Quality. Review comments serve multi-
+ple communication intentions, from suggesting code changes
+to seeking further information or expressing attitudes [9]. Such
+multi-faceted nature of these comments may hinder automated
+code review. Recent studies [10, 30] have highlighted that not
+all review comments are suitable for training machine learning
+and artificial intelligence models. This issue is compounded
+by the fact that datasets mined from open-source platforms
+1https://zenodo.org/records/13150598
+
+--- PAGE 3 ---
+often contain noise, such as unclear or non-actionable com-
+ments, even after processing with heuristic rules or removing
+bot-posted comments [11]. Although the importance of data
+quality has been recognized, most studies do not focus on
+identifying and removing noisy review comments at scale, and
+instead build on them directly.
+Existing Approaches for Dataset Quality. Existing ap-
+proaches for cleaning code review datasets have primarily
+relied on manually crafted heuristic rules, which are often
+dataset-specific and limited in scope. Early work by [31] used
+keywords to develop regular expressions for C# to remove
+non-actionable comments. Similarly, Tufano et al. [4, 10]
+designed a set of heuristic rules for Java that focused on
+surface-level features like comment length and keywords (e.g.,
+less than 5 words and contains ‘pr’ is considered as noisy).
+These approaches, however, lack semantic understanding and
+cross-language generalizability.
+More recent efforts have attempted to combine rule-based
+approaches with supervised machine learning. In developing
+the CodeReviewer dataset, Li et al. [5] applied existing heuris-
+tic rules [4] and supplemented them with a machine learning
+classifier (SVM) trained on manually labeled data.2Despite
+these advances, a recent manual analysis [11] reveals that sub-
+stantial noise persists in current benchmark datasets including
+CodeReviewer [5]. Particularly, the remaining noisy comments
+require semantic understanding of both code changes and
+review comments - a capability beyond existing approaches.
+III. S TUDY DESIGN
+Our study aims to explore an automated approach that
+automatically distils human code review comments before
+using them to train automated comment generation models.
+By focusing on comments that directly contribute to code
+improvements, we can enhance the quality of training data and,
+consequently, improve the performance of automated code
+review comment generation models.
+We consider valid and noisy comments using the following
+definitions, which align with definitions of the prior work [11].
+•Valid Comments refer to the review comments that
+should provide clear suggestions aimed at improving the
+source code. Given the submitted code change (i.e., code
+diff), the valid comment should explicitly express the
+issues, and clearly outline necessary actions to improve
+the code. The type of requested actions should also
+be clear, such as refactoring the code to improve code
+quality (regarding documentation, style, programming
+conventions and more), writing tests, aligning with good
+object-oriented design principles, fixing bugs, enhancing
+logging, or addressing other specific needs.
+•Noisy comments refer to the review comments that do
+not request direct and applicable actions to refine the
+code, or the message expressed is unclear and difficult to
+understand. This includes comments that do not explicitly
+2Details are provided in their supplementary material (Section A.1 and A.2)
+at https://arxiv.org/pdf/2203.09095v1.ask for specific changes, merely justifying the submitted
+code change, or are of low quality due to vagueness,
+ambiguity, or other factors that hinder understanding.
+This definition is consistent with characteristics of useful com-
+ments perceived by practitioners [1, 12, 32], widely adopted
+in prior work [33, 34] and corresponds with established
+taxonomies for comment type classification [11, 35].
+A. Research Questions
+The goal of this study is to examine the feasibility of Large
+Language Models (LLMs) to identify valid and noisy review
+comments and to investigate the impact of noisy comments
+on the performance of automated review comment generation
+models. To this end, we address three research questions.
+RQ1: To what degree can large language models seman-
+tically clean code review comments? While heuristics have
+been applied to clean the review datasets [4, 10, 31], they have
+missed noisy comments requiring a deeper understanding of
+semantics [10]. Despite the recent advancement of LLMs in
+various code-related tasks [36], their ability to determine the
+quality of code review comments has not yet been investigated.
+Our RQ1 aims to bridge this gap by empirically assessing
+the effectiveness of LLMs in classifying valid and noisy
+code review comments, shedding light on an efficient way of
+improving code review data quality.
+RQ2: Does semantic data cleaning impact the accu-
+racy of code review comment generation models? Recent
+work [11] has observed that a substantial proportion (32%)
+of the comments remain noisy. While retaining only predicted
+valid comments could improve data quality, it also reduces the
+training size, potentially affecting model performance. There-
+fore, we set out RQ2 to examine the impact of data cleaning on
+the performance of comment generation models. Specifically,
+we reassess the accuracy of code review generation models
+when trained on original versus cleaned datasets.
+RQ3: Does semantic data cleaning improve the quality of
+code review comment generation models? As the quality of
+training data improved (i.e., a higher ratio of valid comments),
+the review comment generation models would learn more on
+valid examples, thus they are more likely to generate high-
+quality review comments. Yet, it is unclear to what degree
+can the quality of generated review comments be improved
+using cleaned datasets. Therefore, in RQ3, we aim to examine
+the improvement in the quality of comments generated from
+models trained on original and cleaned datasets. We evaluate
+the quality in two main aspects, i.e., information and relevance
+using both manual and semi-automated analyses.
+B. Dataset
+In this study, we use the CodeReviewer dataset [5] as our
+subject of study. We selected this dataset because it is the
+largest real-world and widely used code review dataset, repre-
+senting typical code review data mined from public platforms
+like GitHub. This dataset exhibits several key characteristics:
+(a) it is large in scale, including approximately 116K samples
+in the training set, along with about 10K samples each in
+
+--- PAGE 4 ---
+SamplingData
+LabelingLLMsRQ1
+Semantic Data
+CleaningFine-tune 
+Comment
+Generation ModelsCleaned
+ModelsRQ2
+Sampling Manual Evaluation Quality of Sampled Generated CommentsRQ3Original
+CodeReviewer
+Dataset 
+Cleaned
+CodeReviewer
+Dataset Generation
+Generated Comments
+Topic Modeling Overall Evaluation Quality of Generated  CommentsTest setNoisy Comments Classification via LLMs
+Prompt Design Prompting LLMsFig. 2: An overview of the pipeline of our study.
+the validation and test sets; (b) it is diverse, containing
+projects from over 1,000 software repositories and covering
+nine commonly used programming languages.
+C. Study Overview
+Figure 2 presents an overview of our study. To investigate
+the degree to which valid and noisy comments can be au-
+tomatically classified by LLMs, RQ1 evaluates the accuracy
+of different prompts and LLMs based on manually annotated
+samples. The most effective approach (prompt strategy and
+LLM) will be selected to clean the whole training dataset.
+RQ2 and RQ3 aim to study the impact of semantic data
+cleaning on the performance of the comment generation
+models. We employ the LLM to clean the training data by
+(a) labeling all instances as valid or noisy, and (b) retaining
+only instances predicted as valid for a clean dataset. Sub-
+sequently, we fine-tune the comment generation models on
+both the cleaned and original datasets. We then compare their
+performance in terms of accuracy and quality. RQ2 evaluates
+the accuracy of the generated comments by comparing them
+with actual review comments written by human reviewers.
+RQ3 evaluates the quality of the generated comments by
+examining the information they provide and their relevance to
+the corresponding code diff. We conduct a manual analysis on
+a subset of sampled comments and perform a semi-automated
+analysis to estimate the quality for the overall test set. Below,
+we describe the details of our experimental design and present
+experimental results for each RQ (Sections IV - VI).
+IV. S EMANTIC DATA CLEANING VIA LLM S(RQ1)
+To assess the effectiveness of large language models (LLMs)
+in classifying valid and noisy comments, we frame this as
+a binary classification task. Given a natural language review
+comment RNLand a code change CDIFF, an LLM classifies
+whether the comment is valid or noisy based on the definitions
+described in Section III. Due to the lack of an evaluation set,
+we randomly sampled a subset from the training data and man-
+ually categorized it with valid andnoisy labels (Sec IV-A).
+Using this labeled dataset, we then assessed several LLMs with
+various prompts to evaluate their performance on comment
+classification (Sections IV-B - IV-D).A. Data Labeling
+To address RQ1, we manually labeled a subset of 270
+samples that were randomly selected from the training dataset,
+constituting a statistically significant sample size with a con-
+fidence level of 90% and a margin of error of ±5%.
+The labeling was conducted by two annotators (i.e., the
+authors of the paper) who have backgrounds in computer
+science and software engineering with more than five years
+of programming and software development experience. In
+the initial labeling phase, Annotators 1 and 2 independently
+annotated 50 of the 270 samples based on the definitions of
+valid and noisy described in Section III. The initial annotation
+resulted in a Cohen’s kappa coefficient of 0.57, indicating
+moderate agreement. After discussions on the disagreed cases,
+the Cohen’s kappa coefficient improved to 0.83, signifying
+near-perfect agreement. The remaining disagreements were
+resolved by involving Annotator 3 who is a senior researcher
+with extensive expertise in software engineering.
+After the initial phase, the definitions of valid comments
+were elaborated to become guidelines for determining valid
+comments based on the shared understanding of the two
+annotators.3Following this guideline, Annotator 1 proceeded
+to label the remaining 220 samples, consulting with Annotators
+2 and 3 on ambiguous cases to finalize the labels. Figure 1
+provides examples of valid and noisy review comments that
+we annotated.
+Ultimately, out of 270 review comments in the training
+dataset, the sample comprised 172 valid comments and 98
+noisy comments. The proportion of noisy comments (36%) is
+similar to the manual annotation in the test set of CodeRe-
+viewer by Tufano et al. [11], i.e., 32%,4suggesting that our
+manual annotation is consistent with the prior work.
+B. Review Comment Classification
+Large-language Models (LLMs). We focused on state-
+of-the-art LLMs with instruction-following capabilities and
+exposure to code-related tasks, as this allows the models to
+follow our classification guidelines and understand the code
+3The complete guideline is available in the replication package [37].
+4While Tufano et al. reported a 25% overall noise ratio across all three
+benchmarks in their study, our 32% specifically refers to the CodeReviewer
+benchmark, which was obtained from their replication package.
+
+--- PAGE 5 ---
+System Pr ompt (T ask Instruction)
+Context: Code Change
+Input: Review Comment
+Answer  FormatRole Assignment
+Definitions 
+Valid comments are those that request direct and explicit code
+changes aimed at improving the source code.  ...
+A comment is considered noisy if it does not request direct and
+applicable actions to refine the code,  ...
+@@ - 86,6 +86,7 @@ type PipelineManifest  struct  {
+    Version  PipelineSchemaMajorV ersion  `yaml:"version"`
+    Source   *Source                     `yaml:"source"`
+    Stages   []PipelineStage             `yaml:"stages"`
++   // ArtifactBuckets?
+ }
+The buckets are created via the stackset, customers don't need to 
+provide them.Below is a code dif f and review comment. 
+Please evaluate whether this comment is  Valid or Noisy .Criteria
+Your evaluation should be guided by the following criteria:
+1. Relevance to Code Change:  ...
+2. Clarity and Constructiveness: ...
+3. Focus on Improvement: ...Your task, as an experienced coder reviewer , is to evaluate
+review comments generated by other developers submitted
+during the code review process. Your objective is to discern
+between noisy comments and those are valid.
+Return the answer as a dict with label and explanation as keys.User  PromptFig. 3: The prompt template for noisy classification using
+PDEFINITION with context.
+change. We selected one commercial model (GPT-3.5) and
+two open-source models (CodeLlama [38] and Llama 3 [39]).
+•GPT-3.5 is an LLM that has been pre-trained on extensive
+natural language and code corpora. It has been widely
+used in many code-relevant tasks [40, 41]. We employed
+the gpt-3.5-turbo-0125 in our experiments.
+•CodeLlama is a variant of the open-source model
+Llama2 [42], tailored for code generation and understand-
+ing. We chose the CodeLlama-34b-Instruct version which
+is fine-tuned to follow human instructions, enabling vari-
+ous tasks across multiple programming languages without
+task-specific training.
+•Llama3 is a recent large open-source model. Despite not
+being specifically code-trained like CodeLlama, Llama3’s
+performance is optimized for coding and reasoning,
+which is suitable for our classification task. We used
+the Llama-3-8B-Instruct version to enable instruction
+following in our experiments.
+Our model selection considers (a) open-source and closed-
+source; (b) model size; (c) general vs code-focused. Although
+CodeLLama and Llama3 are from the same family, they were
+trained for different purposes, i.e., CodeLLama represents
+code-focused and Llama3 represents general-purpose LLMs.
+Prompt Design . A prompt is used to instruct LLMs to
+perform specific tasks [43]. Typically, a prompt comprises two
+components: the system prompt, which guides the models’
+overall behaviours, and the user prompt, which provides
+specific input for each query. Well-crafted and informative
+prompts in both components can effectively elicit relevantand accurate responses from LLMs. For our review comment
+classification task, we developed a comprehensive prompt
+template that draws upon strategies from OpenAI’s gpt-best-
+practices [44] and those that have proven effective in software
+engineering tasks such as software vulnerability detection [45]
+and security code review [46]. Our system prompt incorporates
+task instruction details including role assignment, key defini-
+tions, and classification criteria. The user prompt provides the
+context of the code change, the specific review comment to be
+classified, and a structured format for the model’s response.
+Figure 3 provides an example of our prompt template.
+To investigate the effectiveness of different components of
+the prompts on the review comment classification task, we
+designed four prompts by varying the task instruction in the
+system prompt and the user prompt. For task instructions,
+we varied between (a) P DEFINITION : a prompt that includes the
+definitions of valid and noisy comments as we used in manual
+annotation, and (b) P AUXILIARY : a prompt that supplements
+the P DEFINITION with seven auxiliary rules that concretize the
+same criteria in Fig 3. These auxiliary rules were developed
+based on our discussions and shared understanding during
+our initial labelling phase, and were used consistently to
+guide annotations throughout both RQ1 and RQ2. Complete
+prompts for P DEFINITION and P AUXILIARY for our experiments
+are in our replication package [37]. For the user prompt, we
+varied between (a) providing only a review comment RNL
+as input, and (b) providing both the code diff patch CDIFF
+and the corresponding comment RNLtogether as input. We
+experimented with these prompts on three LLMs, resulting in
+12 experiments. For all models, we set the temperature to a
+low value of 0.1 to ensure consistency.
+C. Evaluation
+To assess the performance of LLMs in classifying valid
+and noisy comments, we employ precision ,recall , and F1
+metrics. To provide a comprehensive view of classification per-
+formance, we report class-wise metrics, treating both valid and
+noisy as positive labels in separate evaluations. This evaluation
+offers insights into each LLM’s ability to identify valid and
+noisy comments. We also measure an overview performance
+considering both valid and noisy classes. Given the imbalanced
+nature of our dataset between valid and noisy classes, we
+report weighted overall performance metrics, where weights
+are proportional to the sample size of each class.
+Baseline. We use the cleaning approach of Li et al.[5]
+as a baseline. When constructing the CodeReviewer dataset,
+they applied extensive cleaning methods using both heuristic
+rules [4] and SVM classifiers.5Consequently, all instances in
+the CodeReviewer dataset were considered valid according
+to the approach of Li et al., which implies that any sam-
+pled instances are also considered valid by their approach.
+This baseline is appropriate because state-of-the-art cleaning
+approaches were already applied; thus, the remaining noisy
+5The data cleaning approach described in their appendix: https://arxiv.org/
+pdf/2203.09095v1
+
+--- PAGE 6 ---
+TABLE I: Experimental results on noisy classification.
+Prompt Model Input Overall (weighted) Valid (172) Noisy (98)
+Prec Rec F1 Prec Rec F1 # Prec Rec F1 #
+Baseline [5] - 40.6 63.7 49.6 63.7 100 77.8 270 0 0 0 0PDEFINITIONGPT-3.5 RNL 70.3 54.1 55.7 85.1 36.6 51.2 74 44.4 88.8 59.2 196
+CodeLlama RNL 64.1 65.6 58.0 66.0 94.8 77.8 247 60.9 14.3 23.1 23
+Llama3 RNL 71.8 72.6 71.7 75.3 84.9 79.8 194 65.8 51 57.5 76
+GPT-3.5 RNL+CDIFF 65.6 61.5 62.2 75.8 58.1 65.8 132 47.8 67.3 55.9 138
+CodeLlama RNL+CDIFF 54.2 62.2 52.3 63.8 94.2 76.1 254 37.5 6.1 10.5 16
+Llama3 RNL+CDIFF 62.6 65.2 59.8 66.7 90.7 76.8 234 55.6 20.4 29.9 36PAUXILIARYGPT-3.5 RNL 66.8 59.2 59.5 49.7 60.6 54.6 107 46.2 76.3 57.6 160
+CodeLlama RNL 71.0 71.7 70.1 73.2 87.7 79.8 205 67.2 43.9 53.1 64
+Llama3 RNL 71.0 71.9 70.6 74.0 86.0 79.6 200 65.7 46.9 54.8 70
+GPT-3.5 RNL+CDIFF 60.4 55.9 56.7 70.5 52.9 60.5 129 42.6 61.2 50.2 141
+CodeLlama RNL+CDIFF 47.0 62.2 55.7 64.1 92.4 75.7 248 40.9 9.2 15.0 22
+Llama3 RNL+CDIFF 63.3 65.6 62.2 68.0 86.6 76.2 219 54.9 28.6 37.6 51
+The highest and second-highest results are in bold and underlined. # represents the number of instances predicted in each class.
+ones represent cases that prior techniques could not detect,
+reflecting the upper bound performance of prior approaches.
+Other techniques [10, 12] are not suitable as they either
+require additional information that is not available in the
+CodeReviewer dataset [12], or are limited to the specific
+context [10]. For example, we applied the heuristic rules
+of Tufano et al. [10], and none of the comments in the
+CodeReviewer dataset are identified as noisy.
+D. Experimental Results
+Table I presents our experimental results on the noisy
+comments classification task. The precision of the baseline
+onvalid comments suggests that the original dataset has a
+valid comment ratio of 63.7%.
+Table I shows that LLMs achieve an overall F1 of up
+to 71.7%. Among the studied LLMs, Llama3 and GPT-3.5
+achieved comparable overall precision (71.8% and 70.3%
+respectively), with Llama3 and CodeLlama showing similar
+performance in recall (72.6% and 65.6%). For identifying valid
+comments, GPT-3.5 and Llama3 achieve a precision of 85.1%
+and 75.3% respectively. This suggests that by retaining only in-
+stances predicted as valid, the valid comment ratio is improved
+by 21.4 and 11.6 percentage points from the original dataset
+(63.7%). These findings suggest that LLMs can distinguish
+between valid and noisy code review comments.
+Table I shows that the prompt with only the review
+comment ( RNL) as input generally performed best across
+valid and noisy classes. It achieves the highest precision on
+overall and valid , and the second highest precision for
+noisy . Specifically, for Llama3, the performance remains
+similar whether using P DEFINITION or P AUXILIARY prompt. For
+CodeLlama, we observe a performance improvement when
+only the review comment ( RNL) is provided with the P AUXILIARY
+prompt. Similarly, providing additional code context ( CDIFF)
+alongside review comments ( RNL) does not improve the model
+performance. For instance, CodeLlama has a precision drop
+of 9.9% - 24% when CDIFFis provided. This may be because
+the additional details of P AUXILIARY and code context increasethe prompt length and distract the models, potentially leading
+them to overlook crucial criteria in longer prompts [47]. For
+instance, we observed that GPT-3.5 returns unexpected labels
+or empty responses for three samples with long context. These
+findings highlight the importance of concise, focused inputs
+for optimal LLM performance.
+Answer to RQ1: LLMs show promising potential in
+classifying code review comments, with an overall F1 up
+to 71.7%. The precision in identifying valid comments
+highlights that the proportion of valid comments can be
+improved from 64% on the original dataset to 85% on
+our cleaned datasets.
+V. I MPACT ON COMMENT GENERATION ACCURACY (RQ2)
+To investigate the impact of semantic data cleaningon com-
+ment generation models, we employ the LLMs from RQ1 to
+clean the dataset. Then, we fine-tune the pre-trained models
+with the cleaned dataset and evaluate the performance of the
+models in generating review comments.
+A. Semantic Data Cleaning
+To clean the dataset, we use the LLMs to predict the valid
+andnoisy classes and retain the valid instances (i.e.,
+removing the noisy instances). We used (1) GPT-3.5 and
+(2)Llama3 using the P DEFINITION prompt with RNLsince these
+two models exhibit strong performance in retaining a high
+ratio of valid comments (with 85.1% and 75.3% precision,
+respectively) while exhibiting complementary characteristics
+in recall. This allows us to obtain cleaned datasets with varying
+degrees of a valid comment ratio and training size.
+We use the LLMs to clean the training and validation sets
+of the studied dataset. Table II shows the statistics summary of
+cleaned training and validation set sizes with different LLMs.
+The O RIGINAL row shows the size of the original training
+and validation set of CodeReviewer [5]. The C LEANED rows
+show the size of the training and validation cleaned by GPT-
+3.5andLlama3 using the P DEFINITION prompt with RNL. The
+
+--- PAGE 7 ---
+TABLE II: Statistics of Datasets for Comment Generation.
+Dataset Training set Validation set Test set
+ORIGINAL 117,739 10,319
+10,169CLEANED GPT-3.5 39,625 3,395
+CLEANED LLAMA 3 87,872 7,571
+CONTROLLED GPT-3.5 39,625 3,395
+CONTROLLED LLAMA 3 87,872 7,571
+CONTROLLED are the training and validation sets that are
+randomly sampled to have the same number of instances as
+the two cleaned datasets. These control groups are designed
+to account for the impact of reduced data in clean datasets
+on performance, as the removal of noisy data results in fewer
+instances for training and validation.
+B. Comment Generation Models
+To address RQ2, we focused on models that can gener-
+ate code review comments. Our study requires code review
+models with reproducibility for a fair comparison of model
+performance between original and cleaned datasets under
+the same settings. Specifically, we need models that provide
+publicly available checkpoints and fine-tuning scripts. While
+prior work has fine-tuned various code models [5, 6, 27, 48]
+and LLMs [28] for this task, many do not meet our criteria.
+Therefore, we selected two widely known models for code
+review automation, i.e., CodeT5 [20] and CodeReviewer [5]
+that met our criteria.
+CodeT5 is a general-purpose encoder-decoder Transformer
+model pre-trained on both programming and natural languages,
+which demonstrated effectiveness across multiple downstream
+tasks. CodeReviewer is a state-of-the-art model pre-trained
+on tasks relevant to code changes. It leverages the pre-trained
+weights from CodeT5 for model initialization and continues
+pre-training on datasets pertinent to code reviews. This special-
+ized pre-training allows CodeReviewer to demonstrate superior
+performance on the comment generation task.
+We select CodeT5 and CodeReviewer as representative
+models because we aim to compare the impact of data quality
+between a general code-pretrained model (CodeT5) and a
+code review-specific pretrained model (CodeReviewer). This
+comparison allows us to understand whether the benefits of
+data cleaning generalize across different models and training
+data. We select CodeT5 over alternatives such as CodeBERT
+because CodeT5 has consistently demonstrated superior per-
+formance across various code-related tasks [20]. For CodeRe-
+viewer, recent studies have validated its continued competitive-
+ness in the code review domain. For instance, a recent study
+by Google researchers [30] highlighted CodeReviewer as “per-
+haps the closest recent result” to their code review assistant
+trained on their high-quality industrial datasets. Furthermore,
+Fan et al. [49] found that fine-tuning more recent large
+language models like Llama2 and CodeLlama sometimes did
+not outperform CodeReviewer, with BLEU-4 score differences
+ranging from -1.28 to 0.42. These findings demonstrate that
+CodeReviewer remains a competitive baseline for code reviewautomation, making it an appropriate choice for evaluating the
+impact of data quality on model performance.
+Fine-tuning : We fine-tuned the CodeReviewer and CodeT5
+models using original, cleaned, and controlled datasets. All
+experiments were conducted on four NVIDIA H100-80GB
+GPUs.We followed the hyperparameters specified in the origi-
+nal CodeReviewer, with one exception: we adjusted the batch
+size from 64 to 32, which resulted in an improved BLEU score
+from 5.3 to 5.7 and improved the training efficiency. To avoid
+over-fitting, we used an early stopping criterion that ended
+training after 5 epochs without improvement on validation set.
+C. Evaluation
+We evaluate the fine-tuned models using the original test
+set. We do not clean the test set because our goal is to assess
+the impact of different training sets on comment generation.
+Nevertheless, there may be noisy comments in the test set.
+Thus, we evaluate models’ performance on valid and noisy
+samples. To be consistent with RQ1, we manually labeled a
+subset of review comments from the test set as valid or noisy
+using our guidelines described in Section IV-A. We randomly
+sampled 371 review comments, ensuring a significant sample
+size with a confidence level of 95% and a margin of error
+of±5%. The annotation was conducted by Annotator 1,
+with ambiguous cases discussed with Annotator 2 to reach a
+consensus. As a result, this sample includes 223 valid samples
+and 148 noisy samples. To further increase the generalisation
+of the results, we obtained a manually labeled subset sampled
+from the test set by Tufano et al [11], which includes 234
+valid comments and 135 noisy comments that were randomly
+sampled from the same CodeReviewer test set that we used.
+We combined the two labeled test sets, resulting in a total of
+726 samples, comprising 452 valid and 274 noisy comments.
+To evaluate the quality of generated comments, we conduct
+automatic evaluation using the BLEU (Bilingual Evaluation
+Understudy) metric [50], which quantifies the n-gram lexical
+overlap between the generated comments and the ground truth
+comments from human reviewers. Following prior work [5],
+we use the BLEU-4 variant to calculate the overlap of up
+to 4-grams between generated and ground truth comments.
+We evaluate model performance on the entire test set and
+on manually labeled valid and noisy subsets. We use the
+one-sided Wilcoxon signed-rank test to statistically examine
+the difference in BLEU-4 between the original and cleaned
+models.
+D. Experimental Results
+Table III presents our experimental results. Overall, despite
+the substantial reduction in training data (i.e., 66% smaller
+using GPT-3.5 and 25% smaller using LLAMA3), the per-
+formance of comment generation models is not negatively
+impacted. Instead, when training using C LEANED datasets, the
+BLEU-4 increases by 4.2%-5.4% for CodeReviewer models
+and 6.7%-9.2% for CodeT5 models compared to the O RIG-
+INAL dataset. The Wilcoxon signed rank tests also confirm
+that BLEU-4 of the cleaned models is statistically higher
+
+--- PAGE 8 ---
+TABLE III: Model Performance (BLEU-4) on Comment Generation Models.
+M Dataset Test Valid Our&Tufano Noisy Our&Tufano Valid Our Noisy Our Valid Tufano Noisy TufanoCodeReviewerORIGINAL 5.73 6.17 5.41 5.45 5.17 7.12 5.60
+CLEANED GPT-3.5 6.04 5.4% ↑∗6.97 13.0% ↑∗5.02 7.2% ↓ 5.93 8.8% ↑ 5.19 0.4% ↑7.99 12.2% ↑∗4.83 13.8% ↓
+CONTROLLED GPT-3.5 5.63 6.20 5.43 5.21 5.13 7.39 5.70
+CLEANED LLAMA 3 5.97 4.2% ↑∗6.63 7.5% ↑∗5.18 4.3% ↓ 5.64 3.5% ↑ 5.11 1.2% ↓7.71 8.3% ↑∗5.14 8.2% ↓
+CONTROLLED LLAMA 35.63 6.18 5.66 5.12 5.36 7.45 5.86CodeT5ORIGINAL 5.19 5.34 5.04 4.84 5.09 5.85 6.03
+CLEANED GPT-3.5 5.67 9.2% ↑∗6.00 12.4% ↑∗5.23 3.8% ↑∗5.88 21.5% ↑∗5.27 3.5% ↑6.06 3.6% ↑ 5.15 14.6% ↓
+CONTROLLED GPT-3.5 5.20 5.34 5.30 5.17 5.39 5.45 5.41
+CLEANED LLAMA 3 5.54 6.7% ↑∗5.74 7.5% ↑∗5.33 5.8% ↑ 5.32 9.9% ↑∗5.14 1.0% ↑6.09 4.1% ↑ 5.46 9.5% ↓
+CONTROLLED LLAMA 35.21 5.19 5.12 4.95 5.26 5.38 5.01
+The highest and second-highest results are in bold and underlined, respectively.∗indicates the statistical significance (p-value <0.05).
+than the original models for all test instances. The improve-
+ment aligns with previous work; e.g., ∆BLEU(CodeReviewer,
+CodeT5) = 0.49 [5], and fine-tuning LLMs also demonstrates
+similar gains, e.g., ∆BLEU(Llama-Reviewer, CodeReviewer)
+= 0.4 [28]. However, merely reducing the training data does
+not improve performance, as evidenced by the results of the
+CONTROLLED groups. This indicates that training data quality
+is as important as data quantity.
+Models trained on cleaned datasets demonstrate consistent
+improvements in the valid subsets. When considering both our
+and Tufano’s valid subsets ( Valid Our&Tufano ), CodeReviewer
+exhibits substantial gains, with increases ranging from 7.5%
+to 13.0% in BLEU-4 scores. Similarly, CodeT5 achieves
+increases between 7.5% and 12.4%. Table III also shows a
+consistent increase in BLEU-4 for Valid Ourand Valid Tufano
+independently. These results strongly indicate that models
+trained on cleaned data generate comments that more closely
+align with valid human review comments. On the other hand,
+the performance of C LEANED models on the noisy subsets is
+inconsistent. Nonetheless, these BLEU-4 score variations may
+not accurately reflect the true quality of generated comments
+due to the inherent noise in the noisy dataset. Therefore, we
+conduct a manual evaluation in RQ3.
+Answer to RQ2: Despite the training size reduction, the
+performance of comment generation models is improved
+when using cleaned datasets. Specifically, the cleaned
+models perform consistently better on valid comments
+in test sets, leading to even higher increases in BLEU-4
+scores of 13.0% - 12.4% compared to the original models.
+VI. I MPACT ON GENERATED COMMENT QUALITY (RQ3)
+While BLEU-4 evaluates accuracy in terms of lexical cor-
+respondence, it does not account for the diversity in how
+similar intents can be expressed [51]. In addition, the quality of
+comments extends beyond lexical similarity to human reviews,
+incorporating factors such as informativeness and contextual
+relevance to code changes are crucial for code review [7, 34].
+This is particularly important given the potential noise in
+human review comments. Therefore, in RQ3, we evaluate the
+quality of generated comments.
+We assess the quality based on how much information a
+generated comment provides, and how relevant the commentis to the code change CDIFF (Sec VI-A). We compare the
+generations of the models trained by the O RIGINAL and
+CLEANED datasets. We focus the CodeReviewer models in this
+RQ given their superior performance over the CodeT5 models
+on comment generation. Our analysis focuses on comments
+generated by three model variants, i.e., trained by the O RIGI-
+NAL dataset and two cleaned versions —C LEANED GPT-3.5 and
+CLEANED LLAMA 3datasets — to evaluate comment quality.
+We conduct a two-fold evaluation: (a) a manual evaluation
+of a sampled subset of generated comments (Sec VI-B);
+and (b) an overall quality evaluation of the entire test set
+(Sec VI-C).
+A. Comments Quality Measures
+Following the definitions used in the CodeReviewer pa-
+per [5], we evaluate the information and relevance of generated
+comments as follows.
+Forinformation , we evaluate how informative the comment
+is for the code author to revise the code change. Each comment
+will be labeled with an information score of one to five,
+where five indicates very informative. For example, comments
+explicitly point out the issues and provide concrete suggestions
+(e.g., “Shouldn’t this be an assert instead of a throw?” ) will
+have a higher information score than those purely seeking
+clarification (e.g., “Why do we need to change this?” ).
+For relevance , we evaluate to what extent the review
+comment is related to the corresponding code change. Each
+comment will be labeled with a relevance score of one to three,
+where three indicates high relevance. Comments that explicitly
+point out the location of issues in the code changes will receive
+high relevance scores, while comments that implicitly indicate
+the issue location or are not related to the code changes will
+receive low relevance scores. Note that we did not evaluate
+the logical correctness of comments in our relevance metric.
+This aspect often requires context beyond the code change and
+lacks a definitive ground truth which is prone to uncertainty.
+Thus, we focus on objective factors such as the explicitness
+of issue location within the code change.
+B. Manual Evaluation
+We conducted a manual evaluation on a sampled subset of
+the generated comments. We randomly sampled 100 instances
+from our entire labeled test set. Each instance received three
+
+--- PAGE 9 ---
+TABLE IV: Information and Relevance Scores for Different
+Training Sets on CodeReviewer model.
+Training setManual Overall
+Information Relevance Information Relevance
+ORIGINAL 3.44 2.48 3.69 2.36
+CLEANED GPT-3.5 4.27∗2.77∗4.38∗2.63∗
+CLEANED LLAMA 34.08∗2.72∗3.85∗2.38
+Information scores range from 1-5; relevance scores from 1-3. The∗
+indicates that the score from cleaned model is significantly higher from
+the original model (p-value <0.05 using Wilcoxon signed rank tests).
+comments generated by the three model variants (O RIGINAL ,
+CLEANED GPT-3.5 , and C LEANED LLAMA 3). Thus, we evaluated
+a total of 300 generated comments. To ensure a reliable assess-
+ment of comment quality across our sample, the evaluations
+were manually conducted in two rounds. Initially, Annotators
+1 and 2 independently evaluated 50 generated comments for
+both information and relevance according to the guidelines
+with definitions for each score.6The first round of annotation
+achieved a Cohen’s kappa of 0.71 (substantial agreement)
+for information and 0.42 (moderate agreement) for relevance.
+Following a discussion to resolve disagreements, a second
+round of independent annotation of another 50 comments was
+conducted for relevance, improving the Cohen’s kappa to 0.60
+(substantial agreement). Annotators 1 and 2 annotated the
+remaining 200 comments independently and then discussed
+to resolve remaining disagreements.
+C. Overall Evaluation
+In addition to manual evaluation which is feasible only for a
+limited number of samples due to its labor-consuming nature,
+we conducted a semi-automated method to estimate the infor-
+mation and relevance of generated comments for the entire test
+setTo do so, we employed topic modeling to cluster comments
+generated by each model, then we manually annotated the
+information and relevance scores for each cluster.
+Topic Modeling. We employed BERTopic [52], a widely
+adopted topic modeling technique that outperforms traditional
+methods like LDA, to extract meaningful clusters from the
+generated comments. BERTopic is an embedding-based ap-
+proach that leverages a transformer-based model to represent
+each comment as a contextual embedding and applies clus-
+tering to these embeddings. This method effectively captures
+semantic similarities in comments and group similar comments
+in clusters. To generate embeddings, we used the recent code
+model, CodeT5+ [53], which performs effective bi-modal
+representation tasks involving both code and natural language.
+For the clustering model, we used agglomeration hierarchical
+clustering, which assigns each comment into its own cluster
+and iteratively merges the closest pairs of clusters until a
+stopping criterion is met.
+We measured the cluster quality using the mean coherence
+score [54], which measures how semantically similar the
+comments within a topic are to each other. We set the number
+6See information and relevance definitions in our replication package [37].of clusters to 50, which achieved coherence scores above 0.67
+for all three sets of comment clusters. The high coherence indi-
+cates that the clusters are generally well-formed and internally
+consistent, indicating cohesive clusters for manual analysis.
+Annotating Comment Quality. We evaluated the quality of
+generated comments as follows. For each cluster, BERTopic
+identified the top three representative comments that are
+most semantically similar to its cluster representation, using
+cTF-IDF and cosine similarity [54]. Then, we annotated the
+information and relevance scores following our established
+guidelines (Sec VI-A). Similar to the manual evaluation,
+Annotators 1 and 2 independently conducted the evaluations
+and resolved disagreements through discussion. Given the rela-
+tively high coherence scores of the clusters, we considered the
+average information and relevance scores of the representative
+comments as approximated quality scores for all comments in
+the corresponding cluster.
+D. Experimental Results
+Table IV provides the average information and relevance
+scores. Figure 4 illustrates the distribution of these scores.
+Based on the manual evaluation of 100 sampled instances,
+the C LEANED models achieve substantial improvement over
+the O RIGINAL model. For example, C LEANED GPT-3.5 achieves
+a 24% increase in information score and an 11% increase in
+relevance score. Figure 4 (a) and (b) show a clear trend towards
+higher information and higher relevance for the C LEANED
+models compared to the O RIGINAL model. The most notable
+change is a 73-80% decrease in low information (scores 1
+and 2) and a 61-72% decrease in low relevance (score 1)
+for both cleaned datasets. These results highlight a substantial
+improvement in the quality of comments after cleaning.
+We observe that the cleaned models tend to generate
+comments including code tokens related to the code change,
+making comments more specific and relevant to the code
+under review. The examples in Figure 5 show that a comment
+from the C LEANED GPT-3.5 model points out an issue more
+directly relevant to a changed code, compared to the comment
+from the O RIGINAL model. The improved relevance likely
+benefits from the characteristics of valid comments (i.e., more
+actionable and context-aware) in the training data.
+The results of an overall evaluation for the whole test set
+align with the manual evaluation results, as shown in Table IV.
+For example, the approximated information and relevance
+scores increase by 18% and 11% for C LEANED GPT-3.5 . Similar
+to our manual evaluation, we observe a 35-66% decrease in
+low information and a 55-88% decrease in low relevance for
+both C LEANED models. The results suggest that the cleaned
+datasets improve the quality of generated comments in terms
+of information and relevance.
+Answer to RQ3: The quality of generated review com-
+ments can be improved when using our cleaned datasets.
+Our manual evaluation shows an increase up to 24% in
+informativeness scores and 11% in relevance scores.
+
+--- PAGE 10 ---
+1 2 3 4 502040# Review CommentsTraining sets
+Original
+Cleaned_Llama3
+Cleaned_GPT3.5(a) Information score (manual)
+1 2 3020406080# Review Comments (b) Relevance Score (manual)
+1 2 3 4 50200040006000# Review Comments (c) Information Score (overall)
+1 2 30200040006000# Review Comments (d) Relevance Score (overall)
+Fig. 4: Distribution of information and relevance scores on tests across CodeReviewer models trained on different training sets.
+Ground  Truth : Please use camelCase instead of underscor e_case
+Original : What is the purpose of this line?               Info: 1  Rel: 1   
+CLEANED GPT3.5 : Please r ename `$prev_ref` to `$previousRef`.   Info: 5  Rel: 3CLEANED LLAMA3 : Why not use `$event->getRef()`?                  Info: 4  Rel: 2@@ -95,6 +95,8 @@ class  Product  extends BaseAction implements 
+EventSubscriberInterface
+             $con ->beginT ransaction();
+             try {
++                    $prev_ref  = $product ->getRef();
+                      $product
+                         ->setDispatcher( $event ->getDispatcher())
+                         ->setRef( $event ->getRef())   
+Fig. 5: Example comments generated by original and cleaned
+models with information (Info) and Relevance (Rel) scores.
+VII. D ISCUSSIONS
+In this section, we discuss the benefits, limitations, and costs
+of using LLMs to clean the review dataset.
+LLMs’ Capability: To what extent LLMs can classify valid
+and noisy code review comments? Our RQ1 has shown
+promising results on leveraging LLMs to classify valid and
+noisy comments, paving a crucial step towards automating
+dataset cleaning. Nonetheless, LLMs sometimes struggle to
+identify noisy comments. We observe that LLMs often incor-
+rectly classify comments including domain-specific terms but
+do not provide improvement suggestions as valid. For example,
+“Why ‘preexec fn’ is not set in the previous version?” includes
+‘preexec fn’.This may be because LLMs tend to preserve their
+learned knowledge (i.e., code tokens), consequently failing to
+adhere to the classification instruction that valid comments
+must explicitly address code changes. This underscores the
+complexity of noisy review comments that future research
+can address to improve the performance of noise removal
+in code review datasets. Since our current study examines
+models individually, future research could explore ensemble
+approaches that leverage common predictions across multiple
+models to enhance classification accuracy.
+Cost-Performance Trade-off :What are the costs of re-
+moving noisy comments using LLMs, and what benefits can
+it bring? We evaluated the efficiency of our LLM-based
+approach in terms of both time and cost, as well as its impact
+on the quality of comment generation. In terms of costs,
+GPT-3.5 required $50 USD and 39 hours to clean the entiredataset and the open-source Llama3 took 15 hours. This cost is
+lower than manual annotation, which would cost $25,600 USD
+based on crowdsourcing rates ($8/hour)7assuming 2,000 man-
+hours (one minute/comment) to annotate the entire training and
+validation sets.
+Given the cost of LLMs, the benefits of cleaned datasets
+are substantial. RQ2 shows that the cleaned models achieve
+an 13% and 12.4% increase in BLEU-4 for valid comments
+and RQ3 shows that the quality of the generated comments
+substantially increases. Moreover, we observe that the general-
+purpose CodeT5 model with a cleaned dataset achieved com-
+parable performance (BLEU-4 of 5.67) to the original CodeRe-
+viewer (BLEU-4 of 5.73) while using far fewer resources.
+CodeReviewer is a code-review specific model which was
+further pre-trained on CodeT5 with 463.2GB of code review
+data with 2,481k comments over 250k steps. In contrast,
+the CodeT5 model trained on C LEANED GPT-3.5 used only
+39k comments (98.4% fewer) and 7k training steps (97.2%
+fewer). This highlights the benefits of high-quality data for
+model efficiency, potentially reducing computational costs and
+environmental impact in large-scale training.
+VIII. T HREATS TO VALIDITY
+Construct Validity. We define ‘valid’ comments as those
+that are non-noisy (i.e., not vague, difficult to understand, or
+seeking clarification). It is possible that these valid comments
+can be technically incorrect or considered not useful by
+practitioners. However, assessing such technical correctness
+requires project-specific expertise to validate the comments.
+The classification performance of LLMs may vary with dif-
+ferent prompts and hyperparameter settings. Different prompt
+strategies and LLMs might yield different results. However,
+our primary goal was not to find the best LLMs nor optimize
+their hyperparameter settings, but to investigate the feasibility
+of automatically cleaning the review data using LLMs. In
+addition, we only evaluate the quality of generated comments
+in terms of informativeness and relevance. There might be
+a risk of incorrectness, where models fabricated non-existent
+code tokens by combining existing ones in the code change.
+However, evaluating correctness and hallucination is a non-
+trivial and manual-intensive task that requires a deep under-
+standing of the system and code change.
+7https://www.prolific.com/calculator
+
+--- PAGE 11 ---
+Internal Validity. The manual labeling and evaluation are
+subject to cognitive biases. To mitigate these, the annotations
+were conducted independently, and inter-rater agreements
+were measured. In addition, the results were reviewed blindly
+without knowing which models generated the comments to
+ensure that the quality scores do not purposefully favor any
+particular models. While the annotation of test samples by us
+and Tufano et al. could potentially be different, merging these
+two samples is reasonable as (1) the noisy/valid definitions and
+the criteria are derived from both Tufano’s and other works,
+and (2) we evaluate models separately on each labeled test set
+and on the combined set. We use topic modeling to cluster the
+generated comments, and then assign quality scores based on
+subsets of each cluster. It is possible that the scores are inac-
+curate. Nevertheless, this overall evaluation is consistent with
+the manual evaluation of the samples. It is important to note
+that this evaluation is just an approximation to complement our
+manual evaluation. LLMs used for classification in this work
+were trained on GitHub data. Thus, they may be susceptible to
+data leakage. Nevertheless, they were not specifically trained
+to classify noisy code review comments. Therefore, we believe
+the impact of potential data leakage on our classification task
+is minimal.
+External Validity Our study is based on two widely-known
+models (i.e., CodeT5 and CodeReviewer). The findings may
+not generalize to other code review models and datasets. Un-
+fortunately, other existing code review models are not suitable
+for our study for various reasons, for example, some models [6,
+27, 28] cannot be replicated due to missing model checkpoints
+or fine-tuning scripts, while [48] was pretrained only with
+Java examples, which is not comparable with CodeReviewer’s
+multi-language dataset. While we acknowledge that newer
+models continue to emerge, our primary objective was to
+demonstrate the fundamental impact of data quality on code
+review generation, rather than achieving state-of-the-art perfor-
+mance. The consistent improvements we observed across both
+models suggest that our data cleaning approach offers benefits
+that likely extend beyond a specific model. Furthermore, our
+study on identifying high-quality datasets remains valuable
+for emerging LLM-based code review systems in several
+key ways: (1) enhancing retrieval-augmented generation by
+validating the quality of retrieved examples, and (2) improving
+benchmark dataset quality by providing more reliable test sets
+for model evaluation. Therefore, we believe our key finding —
+high-quality datasets improve comment generation models —
+remains valid and applicable to a broad range of code review
+contexts.
+IX. C ONCLUSION
+In this paper, we address the critical issue of data quality
+in code review automation. We explore a novel method lever-
+aging large language models (LLMs) to identify and remove
+noisy comments. Our results show that LLMs can achieve
+66-85% precision in identifying valid comments, improving
+the proportion of valid comments from 64% in the original
+dataset to up to 85% in our cleaned datasets. By training codereview models on cleaned datasets, we observe substantial
+improvements in review comment generation quality, with up
+to a 13% increase in BLEU-4 scores and a 24% improvement
+in informativeness. Our work demonstrates the feasibility of
+automatically cleaning review datasets and offers insights into
+how data quality affects model performance in automated code
+review. Future research could investigate advanced cleansing
+techniques for complex comments.
+X. A CKNOWLEDGEMENT
+This research was supported by The University of Mel-
+bourne’s Research Computing Services and the Petascale
+Campus Initiative. Patanamon Thongtanunam was supported
+by the Australian Research Council’s Discovery Early Career
+Researcher Award (DECRA) funding scheme (DE210101091).
+REFERENCES
+[1] A. Bacchelli and C. Bird, “Expectations, outcomes, and
+challenges of modern code review,” in Proceedings of
+ICSE , 2013, pp. 712–721.
+[2] P. C. Rigby and C. Bird, “Convergent contemporary
+software peer review practices,” in Proceedings of FSE ,
+2013, p. 202–212.
+[3] A. Bosu, J. C. Carver, C. Bird, J. Orbeck, and C. Chock-
+ley, “Process aspects and social dynamics of contempo-
+rary code review: Insights from open source development
+and industrial practice at microsoft,” IEEE Transactions
+on Software Engineering , vol. 43, no. 1, pp. 56–75, 2017.
+[4] R. Tufano, S. Masiero, A. Mastropaolo, L. Pascarella,
+D. Poshyvanyk, and G. Bavota, “Using pre-trained mod-
+els to boost code review automation,” in Proceedings of
+ICSE , 2022, p. 2291–2302.
+[5] Z. Li, S. Lu, D. Guo, N. Duan, S. Jannu, G. Jenks,
+D. Majumder, J. Green, A. Svyatkovskiy, S. Fu, and
+N. Sundaresan, “Automating code review activities by
+large-scale pre-training,” in Proceedings of ESEC/FSE ,
+2022, p. 1035–1047.
+[6] B. Lin, S. Wang, Z. Liu, Y . Liu, X. Xia, and X. Mao,
+“Cct5: A code-change-oriented pre-trained model,” in
+Proceedings of ESEC/FSE . Association for Computing
+Machinery, 2023, p. 1509–1521.
+[7] O. Kononenko, O. Baysal, and M. W. Godfrey, “Code
+review quality: How developers see it,” in Proceedings
+of ICSE , 2016, pp. 1028–1038.
+[8] H. Y . Lin, P. Thongtanunam, C. Treude, and W. Charoen-
+wet, “Improving automated code reviews: Learning from
+experience,” in Proceedings of MSR , 2024, p. 278–283.
+[9] F. Ebert, F. Castor, N. Novielli, and A. Serebrenik,
+“Communicative intention in code review questions,” in
+Proceedings of ICSME , 2018, pp. 519–523.
+[10] R. Tufano, L. Pascarella, M. Tufano, D. Poshyvanyk, and
+G. Bavota, “Towards automating code review activities,”
+inProceedings of ICSE , 2021, pp. 163–174.
+[11] R. Tufano, O. Dabi ´c, A. Mastropaolo, M. Ciniselli,
+and G. Bavota, “Code review automation: Strengths and
+
+--- PAGE 12 ---
+weaknesses of the state of the art,” IEEE Transactions
+on Software Engineering , 2024.
+[12] A. Bosu, M. Greiler, and C. Bird, “Characteristics of
+useful code reviews: An empirical study at microsoft,”
+inProceedings of MSR , 2015.
+[13] A. K. Turzo and A. Bosu, “What makes a code review
+useful to opendev developers? an empirical investiga-
+tion,” Empirical Software Engineering , vol. 29, no. 1,
+p. 6, 2024.
+[14] S. Mcintosh, Y . Kamei, B. Adams, and A. E. Hassan, “An
+empirical study of the impact of modern code review
+practices on software quality,” Empirical Softw. Engg. ,
+vol. 21, no. 5, p. 2146–2189, oct 2016.
+[15] F. Ebert, F. Castor, N. Novielli, and A. Serebrenik,
+“An exploratory study on confusion in code reviews,”
+Empirical Softw. Engg. , vol. 26, no. 1, jan 2021.
+[16] M. Chen, J. Tworek, H. Jun, Q. Yuan, H. P. d. O.
+Pinto, J. Kaplan, H. Edwards, Y . Burda, N. Joseph,
+G. Brockman et al. , “Evaluating large language models
+trained on code,” arXiv preprint arXiv:2107.03374 , 2021.
+[17] D. Hendrycks, C. Burns, S. Basart, A. Zou, M. Mazeika,
+D. Song, and J. Steinhardt, “Measuring massive multitask
+language understanding,” 2020.
+[18] F. Gilardi, M. Alizadeh, and M. Kubli, “Chatgpt out-
+performs crowd workers for text-annotation tasks,” Pro-
+ceedings of the National Academy of Sciences , vol. 120,
+no. 30, 2023.
+[19] B. Ding, C. Qin, L. Liu, Y . K. Chia, B. Li, S. Joty,
+and L. Bing, “Is GPT-3 a good data annotator?” in
+Proceedings of ACL , 2023, pp. 11 173–11 195.
+[20] Y . Wang, W. Wang, S. Joty, and S. C. Hoi,
+“CodeT5: Identifier-aware unified pre-trained encoder-
+decoder models for code understanding and generation,”
+inProceedings of EMNLP , 2021, pp. 8696–8708.
+[21] Y . Tao and S. Kim, “Partitioning composite code changes
+to facilitate code review,” in Proceedings of MSR , 2015,
+pp. 180–190.
+[22] T. Baum, K. Schneider, and A. Bacchelli, “Associating
+working memory capacity and code change ordering with
+code review performance,” Empirical Software Engineer-
+ing, vol. 24, pp. 1762–1798, 2019.
+[23] M. Tufano, J. Pantiuchina, C. Watson, G. Bavota, and
+D. Poshyvanyk, “On learning meaningful code changes
+via neural machine translation,” in Proceedings of ICSE ,
+2019, p. 25–36.
+[24] P. Thongtanunam, C. Pornprasit, and C. Tantithamtha-
+vorn, “Autotransform: Automated code transformation to
+support modern code review process,” in Proceedings
+of the IEEE/ACM International Conference on Software
+Engineering , 2022, pp. 237–248.
+[25] C. Pornprasit, C. Tantithamthavorn, P. Thongtanunam,
+and C. Chen, “D-act: Towards diff-aware code transfor-
+mation for code review under a time-wise evaluation,”
+inProceedings of the IEEE International Conference on
+Software Analysis, Evolution and Reengineering . IEEE,
+2023, pp. 296–307.[26] C. Raffel, N. Shazeer, A. Roberts, K. Lee, S. Narang,
+M. Matena, Y . Zhou, W. Li, and P. J. Liu, “Exploring
+the limits of transfer learning with a unified text-to-
+text transformer,” Journal of machine learning research ,
+vol. 21, no. 140, pp. 1–67, 2020.
+[27] O. Ben Sghaier and H. Sahraoui, “Improving the learning
+of code review successive tasks with cross-task knowl-
+edge distillation,” Proc. ACM Softw. Eng. , vol. 1, no.
+FSE, jul 2024.
+[28] L. Junyi, Y . Lei, L. Xiaojia, Y . Li, and Z. Chun,
+“Llama-reviewer: Advancing code review automation
+with large language models through parameter-efficient
+fine-tuning,” in Proceedings of ISSRE , 2023, pp. 647–
+658.
+[29] M. Vijayvergiya, M. Salawa, I. Budiseli ´c, D. Zheng,
+P. Lamblin, M. Ivankovi ´c, J. Carin, M. Lewko, J. An-
+donov, G. Petrovi ´cet al. , “Ai-assisted assessment of
+coding practices in modern code review,” arXiv preprint
+arXiv:2405.13565 , 2024.
+[30] A. Fr ¨ommgen, J. Austin, P. Choy, N. Ghelani,
+L. Kharatyan, G. Surita, E. Khrapko, P. Lamblin, P.-
+A. Manzagol, M. Revaj et al. , “Resolving code review
+comments with machine learning,” in Proceedings of
+ICSE-SEIP , 2024, pp. 204–215.
+[31] A. Gupta and N. Sundaresan, “Intelligent code reviews
+using deep learning,” in Proceedings of KDD , 2018.
+[32] A. K. Turzo and A. Bosu, “What makes a code review
+useful to opendev developers? an empirical investiga-
+tion,” Empirical Software Engineering , vol. 29, no. 1,
+p. 6, 2024.
+[33] B. S. Meyers, N. Munaiah, E. Prud’hommeaux, A. Me-
+neely, J. Wolff, C. Ovesdotter Alm, and P. Murukannaiah,
+“A dataset for identifying actionable feedback in collab-
+orative software development,” in Proceedings of ACL ,
+2018, pp. 126–131.
+[34] M. M. Rahman, C. K. Roy, and R. G. Kula, “Predicting
+usefulness of code review comments using textual fea-
+tures and developer experience,” in Proceedings of MSR ,
+2017, pp. 215–226.
+[35] M. V . M ¨antyl ¨a and C. Lassenius, “What types of defects
+are really discovered in code reviews?” IEEE Transac-
+tions on Software Engineering , vol. 35, no. 3, pp. 430–
+448, 2009.
+[36] D. Zan, B. Chen, F. Zhang, D. Lu, B. Wu, B. Guan,
+W. Yongji, and J.-G. Lou, “Large language models meet
+NL2Code: A survey,” in Proceedings of ACL , 2023, pp.
+7443–7464.
+[37] “Replication package,” https://zenodo.org/records/
+13150598.
+[38] B. Roziere, J. Gehring, F. Gloeckle, S. Sootla, I. Gat,
+X. E. Tan, Y . Adi, J. Liu, T. Remez, J. Rapin et al. ,
+“Code llama: Open foundation models for code,” arXiv
+preprint arXiv:2308.12950 , 2023.
+[39] Meta AI, “Introducing meta llama 3: The most capable
+openly available llm to date,” 2023. [Online]. Available:
+https://ai.meta.com/blog/meta-llama-3/
+
+--- PAGE 13 ---
+[40] Z. Zheng, K. Ning, Y . Wang, J. Zhang, D. Zheng, M. Ye,
+and J. Chen, “A survey of large language models for
+code: Evolution, benchmarking, and future trends,” ACM
+Transactions on Software Engineering and Methodology ,
+vol. 1, no. 1, p. 44, January 2024.
+[41] Q. Guo, J. Cao, X. Xie, S. Liu, X. Li, B. Chen, and
+X. Peng, “Exploring the potential of chatgpt in auto-
+mated code refinement: An empirical study,” in 2024
+IEEE/ACM 46th International Conference on Software
+Engineering (ICSE) . IEEE Computer Society, apr 2024,
+pp. 379–391.
+[42] H. Touvron, L. Martin, K. Stone, P. Albert, A. Almahairi,
+Y . Babaei, N. Bashlykov, S. Batra, P. Bhargava, S. Bhos-
+aleet al. , “Llama 2: Open foundation and fine-tuned chat
+models,” arXiv preprint arXiv:2307.09288 , 2023.
+[43] P. Liu, W. Yuan, J. Fu, Z. Jiang, H. Hayashi, and
+G. Neubig, “Pre-train, prompt, and predict: A systematic
+survey of prompting methods in natural language
+processing,” ACM Comput. Surv. , vol. 55, no. 9, jan 2023.
+[Online]. Available: https://doi.org/10.1145/3560815
+[44] OpenAI, “gpt-best-practices,” 2023. [On-
+line]. Available: https://platform.openai.com/docs/guides/
+gptbest-practices
+[45] C. Zhang, H. Liu, J. Zeng, K. Yang, Y . Li, and H. Li,
+“Prompt-enhanced software vulnerability detection using
+chatgpt,” in Proceedings of ICSE (Companion) , 2024, p.
+276–277.
+[46] J. Yu, P. Liang, Y . Fu, A. Tahir, M. Shahin, C. Wang, and
+Y . Cai, “Security code review by large language models,”
+2024.[47] N. F. Liu, K. Lin, J. Hewitt, A. Paranjape, M. Bevilacqua,
+F. Petroni, and P. Liang, “Lost in the middle: How
+language models use long contexts,” Transactions of the
+Association for Computational Linguistics , vol. 12, pp.
+157–173, 2024.
+[48] L. Li, L. Yang, H. Jiang, J. Yan, T. Luo, Z. Hua, G. Liang,
+and C. Zuo, “Auger: automatically generating review
+comments with pre-training models,” in Proceedings of
+ESEC/FSE , 2022, p. 1009–1021.
+[49] L. Fan, J. Liu, Z. Liu, D. Lo, X. Xia, and S. Li, “Ex-
+ploring the capabilities of llms for code change related
+tasks,” ACM Transactions on Software Engineering and
+Methodology , 2024.
+[50] K. Papineni, S. Roukos, T. Ward, and W.-J. Zhu, “Bleu: a
+method for automatic evaluation of machine translation,”
+inProceedings of ACL , Jul. 2002, pp. 311–318.
+[51] S. Stapleton, Y . Gambhir, A. LeClair, Z. Eberhart,
+W. Weimer, K. Leach, and Y . Huang, “A human study of
+comprehension and code summarization,” in Proceedings
+of ICPC , 2020, p. 2–13.
+[52] M. Grootendorst, “Bertopic: Neural topic modeling
+with a class-based tf-idf procedure,” arXiv preprint
+arXiv:2203.05794 , 2022.
+[53] Y . Wang, H. Le, A. Gotmare, N. Bui, J. Li, and
+S. Hoi, “CodeT5+: Open code large language models
+for code understanding and generation,” in Proceedings
+of EMNLP , 2023, pp. 1069–1088.
+[54] M. R ¨oder, A. Both, and A. Hinneburg, “Exploring the
+space of topic coherence measures,” in Proceedings of
+WSDM , 2015, p. 399–408.

@@ -1,0 +1,1161 @@
+# 2411.10129v1.pdf
+# Converted from PDF to TXT
+# Source path: D:\llm\notebooks\AI-Papers\2411.10129v1.pdf
+# File size: 1638441 bytes
+
+===============================================
+PDF FILE CONTENT
+===============================================
+
+
+--- PAGE 1 ---
+Prompting and Fine-tuning Large Language Models
+for Automated Code Review Comment Generation
+Md. Asif Haider1*, Ayesha Binte Mostofa1*, Sk. Sabit Bin Mosaddek1*, Anindya Iqbal1, Toufique Ahmed2
+1Bangladesh University of Engineering and Technology , Dhaka, Bangladesh
+2University of California , Davis, USA
+1805112@ugrad.cse.buet.ac.bd, 1805062@ugrad.cse.buet.ac.bd, 1805106@ugrad.cse.buet.ac.bd,
+anindya@cse.buet.ac.bd, tfahmed@ucdavis.edu
+Abstract —Generating accurate code review comments remains
+a significant challenge due to the inherently diverse and non-
+unique nature of the task output. Large language models
+pretrained on both programming and natural language data
+tend to perform well in code-oriented tasks. However, large-
+scale pretraining is not always feasible due to its environmental
+impact and project-specific generalizability issues. In this work,
+first we fine-tune open-source Large language models (LLM) in
+parameter-efficient, quantized low-rank (QLoRA) fashion on con-
+sumer grade hardware to improve review comment generation.
+Recent studies demonstrate the efficacy of augmenting semantic
+metadata information into prompts to boost performance in
+other code-related tasks. To explore this in code review activities,
+we also prompt proprietary, closed-source LLMs augmenting
+the input code patch with function call graphs and code sum-
+maries. Both of our strategies improve the review comment
+generation performance, with function call graph augmented few-
+shot prompting on the GPT-3.5 model surpassing the pretrained
+baseline by around 90% BLEU-4 score on the CodeReviewer
+dataset. Moreover, few-shot prompted Gemini-1.0 Pro, QLoRA
+fine-tuned Code Llama and Llama 3.1 models achieve competitive
+results (ranging from 25% to83% performance improvement)
+on this task. An additional human evaluation study further vali-
+dates our experimental findings, reflecting real-world developers’
+perceptions of LLM-generated code review comments based on
+relevant qualitative metrics.
+Index Terms —code review comments, quantized low-rank fine-
+tuning, few-shot prompting, function call graph, large language
+models
+I. I NTRODUCTION
+Code review, the manual process of inspecting authored
+source code by fellow teammates, is a crucial part of the
+software development lifecycle that helps detect errors and
+encourages further code improvement [1]. First formalized by
+Fagan [2], it is a systematic and collaborative software quality
+assurance activity where developers check each other’s code
+for improvement. Code reviews not only help in identifying
+bugs and potential issues early in the development cycle but
+also enhance code readability, maintainability, and overall
+software quality. However, despite the numerous benefits,
+the traditional review process demands significant manual
+effort, forcing developers to spend an excessive amount of
+* All three authors have equal contributions.
+The funding from the Research and Innovation Centre For Science and
+Engineering, RISE-BUET Undergraduate Student Research Grant S2023-03-
+113 supports our work.time (more than 6 hours per week) reviewing their peers’
+code, as shown in [3], [4]. It is also responsible for frequent
+context switch of the developers from the actual tasks they
+are expected to focus on [5]. Hence, automating code review
+activities is in significant demand. One distinct task stands
+out in the Modern Code Review (MCR) practices: Review
+Comment Generation (RCG) , which can help reduce the
+burden from a code reviewer, automatically suggesting a
+potential change in the code submitted for review. We focus
+on improving the automation performance of review comment
+generation task in this study.
+With the rapid advances in deep learning and natural
+language processing techniques, researchers proposed many
+Pretrained Language Models (PLM) on source code focusing
+on review tasks, notably including encoder-only BERT
+models [6], [7] and encoder-decoder based T5 models [8]–
+[10]. Novel pretraining and fine-tuning attempts on large-scale
+datasets showed promising results. However, training on such
+domain-specific huge datasets requires a substantial amount
+of costly computing resources, imposing a negative impact
+on the carbon footprint globally [11]. While these models can
+usually generalize well, they might lack deep knowledge of
+project specific codebases, organizational coding standards,
+or niche libraries. This can lead to generic or less relevant
+code review suggestions, missing context-specific nuances.
+However, decoder-only unified language models (e.g.
+based on GPT architecture) have shown superior performance
+when scaled to large parameter sizes. Also generally known
+as LLMs, these models can reduce the need for repetitive
+training while offering amazing few-shot learning capabilities
+[12]. This refers to prompt engineering of the model with a
+few similar query-response pairs, also known as Few Shot
+Learning . Designing efficient LLM prompts for the mentioned
+task yet remains less explored, motivating us toward this
+research direction.
+Apart from proprietary LLMs, there has been a lot of
+work going on in the open-source landscape. General purpose
+open-source LLMs (e.g. Llama, Mistral) when fine-tuned,
+show performance improvement over PLMs. LLMs further
+trained on code-specific data, also known as Code LLMsarXiv:2411.10129v1  [cs.SE]  15 Nov 2024
+
+--- PAGE 2 ---
+(e.g. Codex, Code Llama) are currently the superior options
+for various code-related subtasks (including code generation,
+code summarization) [13]. The best-performing versions of
+these LLMs nearly have 30-70B parameters, which is quite
+impossible to fit into a consumer grade GPU having around
+16GB VRAM. Hence, fine-tuning the smaller versions of these
+LLMs (7-8B) is a promising cost-effective strategy to ensure
+project-specific, context-aware use cases. Parameter Efficient
+Fine-Tuning (PEFT) approaches (Low-Rank Adaptation, 4-bit
+Quantization) are found to assist in such endeavors [14].
+Augmenting statically analyzed, semantic structural facts
+to prompt the code model proved to be beneficial in code
+summarization tasks [15]. Inspired by this, we propose a
+new methodology to design cost-effective few-shot prompts
+for proprietary LLMs, augmented with a programming
+language component- function call graph and a natural
+language component- code summary . We also explore further
+ablation studies to understand their standalone contributions
+for code review comment generation task. Additionally,
+we fine-tune open-source general-purpose LLMs and code
+LLMs in automating review comment generation task in a
+low resource-constrained setting. Specifically, we leverage
+the Quantized Low-Rank Adaptation (QLoRA) approach to
+fine-tune our models in a supervised way. To summarize, we
+particularly investigate the following research questions in
+this study:
+RQ1: How effective is code review comment generation
+using fine-tuned open-source Large Language Models?
+RQ2: How well do the closed-source Large Language
+Models perform in code review comment generation task when
+prompt engineered in a few-shot setting?
+RQ3: When incorporated into prompts, what are the impacts
+of function call graph and code summary in improving review
+comment generation performance?
+RQ4: How effective Large Language Models are in gen-
+erating review comments from a real-world developer’s per-
+spective?
+Our contributions can be summarized as follow:
+•Evaluating code review comment generation performance
+with open-source LLMs (Llama 2, Code Llama, Llama 3
+series) in quantized, low-rank adapted parameter-efficient
+fine-tuning setup
+•Exploring the performance of different closed-source,
+proprietary LLMs (GPT 3.5-Turbo, GPT-4o, Gemini-1.0
+Pro) in few-shot prompt setting without any further data
+augmentation
+•Investigating the impact of incorporating manually
+extracted function call graph and CodeT5 model
+generated code summary into the few-shot prompts to
+observe their impact on review comment generationperformance
+•Manual analysis and a developer study focusing on
+evaluating the LLM-generated review comments based
+on relevant qualitative metrics
+•A replication package with all the scripts for data, code
+and result processing for our study, which can be found
+here.
+II. B ACKGROUND
+We provide a brief overview of LLMs, few-shot prompting
+and parameter-efficient QLoRA fine-tuning approaches.
+A. Large Language Models
+Large Language Models (LLM) represent a novel class of
+computational models with millions and billions of trained
+model parameters designed to process, understand, and gen-
+erate human-like text. LLMs for software engineering tasks
+are typically divided into two types: general-purpose models
+and code-focused models. General-purpose models, such as
+the GPT series and Gemini [16], are designed for a broad range
+of tasks, including question-answering, summarizing, and gen-
+erating dialogues. Code-specific LLMs, like Code Llama [17],
+are specialized in programming languages and excel in gener-
+ating, completing, and debugging code. Built on the foundation
+of the Transformer architecture with multi-headed attention for
+efficient sequence processing, these models have evolved sig-
+nificantly since 2017. Transformers replaced RNNs, enabling
+better long-range dependency handling and allowing models
+like GPT to scale to trillions of parameters and multimodal
+capabilities. Gemini, based on Google’s T5 [18] model, has
+further advanced multi-modal capabilities, processing text,
+images, audio, and video with an extended context window,
+making it valuable for tasks like code summarization and
+refinement.
+B. Few-shot Prompting
+Until 2020, fine-tuning was pre-dominant for adapting the
+models to a specific task. However, with advancements in
+LLMs, prompt engineering has emerged as an efficient alter-
+native [19]–[22]. A prompt is a structured natural language
+input that directs Large Language Models (LLMs) to execute
+a specified task, incorporating instructions and contextual
+information to enhance output relevance of test queries. While
+Large Language Models can perform well with zero-shot, they
+achieve better performance with few-shot prompting [12]. This
+technique introduces a limited number of labeled examples
+within the prompt as contextual information, illustrating the
+input-output relationship to guide the model’s responses. Top
+few-shot context suited for the test query can be retrieved from
+the training dataset utilizing a separate ranking algorithms.
+C. QLoRA : Parameter Efficient Fine-Tuning
+Modern Large Language Models have billions of parame-
+ters, hence fine tuning these models requires a vast amount
+
+--- PAGE 3 ---
+Fig. 1. Overview of the methodology
+of memory and high-end GPU machines. A full finetuning
+process can also be extremely time and energy consuming,
+as it involves training all the layers and parameters with
+task-specific data. Several parameter-efficient fine-tuning tech-
+niques, also known collectively as PEFT methods [23]–[25]
+have been proposed and applied to decrease the memory
+usage and training cost while maintaining the accuracy of
+the fine-tuned model to a reasonable extent [14]. Quantized
+LoRA, best known as QLoRA [26] is a quantized version
+of LoRA that introduces quantizing the transformer model to
+4-bit NormalFloat (NF4) precision with double quantization
+processing from typical 16-bit FloatingPoint (FP16). It also
+utilizes a paged optimizer to deal with memory spikes seen
+when training with longer batches, eventually making fine-
+tuning possible with more limited computational resources.
+III. M ETHODOLOGY
+Figure 1 provides a brief graphical overview of our study.
+We collected review comments, along with the code snip-
+pets before and after code review from the CodeReviewer
+[9] dataset. To answer RQ1 , we fine-tuned models from
+Meta Llama series (Llama 2, Code Llama, Llama 3, Llama
+3.1, Llama 3.2). For addressing RQ2 and RQ3 , we few-
+shot prompted models from GPT (GPT-3.5 Turbo, GPT 4o)
+and Gemini (Gemini-1.0 Pro) series, and experimented with
+different prompt augmentation strategies. Finally, we invited
+a group of software developers from industry to participate
+in an anonymous human evaluation study designed to answerour proposed RQ4 . The following subsections explain each of
+these steps in detail.
+A. Dataset
+We used the CodeReviewer [9] dataset for all of our
+experiments. Introduced by Microsoft, this dataset was
+collected from publicly available high-quality open-source
+repositories. It covers nine most popular languages including
+C, C++, C#, Go, Java, JavaScript, PHP, Python, and Ruby.
+This dataset was processed for three downstream tasks (code
+change quality estimation, review comment generation, and
+code refinement). As our experiment focuses on review
+comment generation task, this dataset fits well with our
+experiments. The dataset was already split into three parts
+(Training, Validation, and Test data). As data from the same
+project can result in biased test and validation data, the dataset
+was split at the project level. Hence, there is no correlation
+between the three parts of the dataset. We separated all the
+necessary fields of the dataset for our experiment, including
+old file (the file before the pull request), code diff , and a
+review comment .
+We intended not to utilize the whole test dataset for evalua-
+tion to keep our prompting cost within limit, as closed-source
+LLMs like GPT-3.5 and GPT-4 series impose a significant
+amount of cost overhead when applied to such a huge dataset
+with thousands of entries. Consequently, for our experiment
+purpose, we randomly picked 5000 and 500 samples from
+the whole test set and only evaluated further prompting, fine-
+
+--- PAGE 4 ---
+TABLE I
+OVERVIEW OF THE DATASET
+Dataset Split Type Count
+CodeReviewerTrain Set ∼118k
+Validation Set ∼10k
+Test Set ∼10k
+Test Subset 1 5000
+Test Subset 2 500
+tuning, and ablation study using these two test subsets. Table
+I shows the overview of the dataset used in our experiments.
+Wilcoxon-signed rank test conducted on these subsets with
+results from section IV-A, IV-B and IV-C suggest no statisti-
+cally significant difference among these different versions of
+the test set.
+B. RQ1: Parameter Efficient Quantized Fine-tuning for RCG
+In this section, we describe in detail how we fine-tuned
+open-source LLMs for the review comment generation task.
+We utilized QLoRA, an effective parameter-efficient fine-
+tuning (PEFT) technique that combines together the idea of
+working with low-rank matrices and 4-bit quantization. The
+motivation for going with the PEFT approach was to ensure
+fine-tuning in a constrained, low-resource setting which can
+be achieved with a consumer grade GPU configuration.
+1) Data Preprocessing for Supervised Fine-tuning: LLMs,
+when trained to follow some specific form of instructions
+tend to show superior performance in practice. Fine-tuning
+on a diverse range of multi-task datasets with rich natural
+language instructions has been proven to demonstrate
+performance enhancement on completely unseen tasks [27],
+[28]. Hence in this work, we modified the dataset to contain
+a suitable instruction-following prompt for the code review
+comment generation task. We crafted our template inspired
+by Stanford Alpaca [29] and used the original dataset from
+CodeReviewer [9] to perform fine-tuning in a supervised
+fashion. The modified data structure follows the {instruction,
+input, output }format, similar to the framework introduced
+in [30]. We show our prompt template and corresponding
+sample instruction, input, and output in Figure 2.
+2) Fine-tuning Open-Source Models: Using the instruction-
+following dataset that we prepared, we fine-tuned various
+generations and variants of the Llama, the leading LLM
+series by Meta in the open-source scenario. Llama 2 [31],
+the direct successor of the Meta Llama model was pretrained
+on 2 trillion tokens. Code Llama [17] was built on top of
+Llama 2 after training with fill-in-the-middle capabilities on
+code-specific datasets. We fine-tuned the 7B base version
+of both models for our task. Llama 31even surpassed the
+previous models in the Llama series as openly accessible
+1https://github.com/meta-llama/llama3
+Fig. 2. Prompt template for supervised fine-tuning with instruction, input,
+output specified
+LLMs, followed by Llama 3.1 (with a greater window of
+128ktokens) and Llama 3.2 (lightweight, quantized version).
+We used the 3B Instruct version for our purpose.
+3) Experimental Setup: We implemented our fine-tuning
+experiment using a couple of popular open-source tools. We
+used Axolotl for fine-tuning Llama 2 and Code Llama 7B
+variants with QLoRA adapter for 4-bit quantization. Axolotl2
+is a tool designed to streamline the fine-tuning of various
+AI models, offering support for multiple configurations and
+architectures. To fine-tune all the Llama 3 models, we used
+Unsloth3, which offers faster training and inference speed
+for more recent LLMs. All experiments were conducted on
+NVIDIA RTX 5000 GPU machine with 16 GB VRAM. The
+token length limit was set to 2048. All the models were trained
+for 2 full epochs (except 5 epochs for Llama 3.2) using a 32-bit
+paged AdamW optimizer for Llama 2 and Code Llama models,
+while the Llama 3 series used an 8-bit AdamW optimizer
+instead. We set the LoRA rank to 32, the scaling factor alpha
+to 16, and the dropout rate to 0.05. The micro batch size was
+fixed to 2 and a learning rate of 0.0002 was used with 0.01
+weight decay.
+C. RQ2: Few-shot Prompting for RCG
+In this section, we discuss in detail how we applied prompt
+engineering to our task and dataset.
+2https://github.com/OpenAccess-AI-Collective/axolotl
+3https://github.com/unslothai/unsloth
+
+--- PAGE 5 ---
+1) Prompted Closed-Source Models: We chose three
+proprietary popular LLMs for our prompting experiments.
+Two of them, the GPT-3.5 Turbo [12] and GPT-4o [32]
+models were accessed via OpenAI API, Gemini-1.0 Pro
+[16] model was provided by Google DeepMind API. These
+decoder-only models generate text by predicting the next
+token in a sequence given the previous tokens, which makes
+these models particularly effective for tasks involving text
+generation and completion.
+We chose the instruct version of the GPT-3.5 Turbo, the
+most cost-effective model in the GPT-3.5 series. It offers a
+context window of 4,096 tokens and is trained on data up
+to September 2021. GPT-4 omni, also known as GPT-4o,
+is the flagship multimodal model of OpenAI with advanced
+reasoning performance. It is updated with knowledge
+up to October 2023, providing enhanced capabilities in
+understanding and generating diverse types of content. We
+finally picked Gemini-1.0 Pro from the Gemini series of
+advanced multi-modal models developed by Google. It was
+created to scale across a wide range of tasks with up to
+1M input tokens, a limit greater than the other comparable
+models. Gemini-1.0-pro offers a context window of 32k
+tokens and is noted for its impressive output speed of 86.8
+tokens per second, making it comparatively faster.
+2) Few-shot Prompt Design: A prompt is a structured
+natural language input presented to a language model,
+designed to receive a specific response tailored to a particular
+task. While, in many cases, large language models show
+outstanding performance with zero-shot prompting (without
+any example), it might need some examples to be provided
+for complex tasks. Few-shot prompting is a widely used
+technique to enable in-context learning [33]–[35] where we
+provide demonstrations in the prompt to steer the model to
+perform better.
+Thoughtful, well-crafted prompts are crucial for leveraging
+the performance of generative models like GPT-3.5 and 4
+series. Review Comment Generation is a complex task that
+requires much focus and contextual knowledge about the
+code snippet. Generated review comments need to be precise,
+specially on the parts where the code is to be modified. A
+comment needs to be informative, relevant and well-explained
+to denote where to fix issues in the code. In our prompt,
+we include {Instruction optional +Exemplars +Query test}.
+Below we discuss these in detail.
+•Instruction: Instructions are only added in the GPT-4o
+chat model, to avoid producing overly long code reviews
+and encourage concise review comments that are at once
+relevant and informative to the code changes. We took
+inspiration for our prompt design from Specificity and
+Information ,Content and Language Style ,User Interac-
+tion and Engagement andPrompt Structure and Clarity
+categories as shown in [36], and Emotional Stimulus aspresented in [37]. Upon design experiments, we chose
+”Please provide formal code review for software develop-
+ers in one sentence for following test case, implementing
+few-shot learning from examples. Don’t start with code
+review/review. Just give the answer. ” as our prompt.
+•Exemplars: Few-shot ( k-shot where kcan be 3, 5, 10
+for example) exemplars were the examples collected from
+the training dataset to guide the model towards generating
+output with desired accuracy and format. For each sample
+from our test subset in our study, we employed BM-
+25 [38], the popular information retrieval and ranking
+algorithm to retrieve the most relevant ksamples from the
+training set. Following the original CodeReviewer study
+[9], each example of our prompt contained the following
+contents:
+– Code Diff: A code snippet showing the changes
+in the code, denoted as patch in the CodeReviewer
+dataset.
+– Code Review: The corresponding review comment,
+originally the msg portion of the CodeReviewer
+dataset samples.
+•Query test:For evaluating the model, we used test queries
+structured similarly to the training examples. Each test
+case of our Test Subset 1 contains only the Code Diff .
+We appended ” Code Review ” tag to indicate the model
+to complete the desired review comment in the prompt.
+We also added function call graph and code summary
+components to each of our k-shot samples (similarly, in the
+test queries) to address the RQ3, which we discuss in section
+III-D in detail.
+D. RQ3: Impact of Semantic Metadata Augmented Prompts
+for RCG
+In this section, we discuss the key steps of dataset
+preprocessing to produce function call graph and code
+summary. Then we present how we incorporated these into
+our prompting pipeline already discussed in section III-C.
+1) Extracting Function Call Graph: As code diff
+represents a small part of the whole code base, carrying
+not much information about the other parts of the code,
+the challenge remained: how can we enable our model to
+recognize the gist of the code base? To address this issue,
+we hypothesized that semantic data flow information, like
+function call graphs, is an important contributing factor to
+the deeper understanding of our code base. A function call
+graph is a control flow graph representing which function is
+called from other functions. It creates a directed graph where
+each node represents a function or module and each edge
+symbolizes the call from one function to another.
+To achieve this, we extracted syntactic details from the given
+code sample first, leveraging Abstract Syntax Tree (AST).
+AST, in essence, is a data structure that captures the syntactic
+structure of a program or code. It forms a tree where each node
+
+--- PAGE 6 ---
+Fig. 3. Prompt designs for few-shot prompting
+denotes a construct occurring in the code. We parsed each old
+file code ‘oldf’ from our dataset to generate an AST to identify
+key elements like function calls and definitions, using Tree-
+sitter4, a popular parser generator tool and incremental parsing
+library with support for multiple programming languages.
+Fig. 4. Call graph extraction workflow
+As shown in Figure 4, we traverse the whole tree to identify
+the function calls. For each of the nine languages, we built
+an extractor that extracts the function call relationships, from
+which we constructed adjacency lists to neatly represent the
+call graphs. Initially, we included all the function calls with
+scope resolution operators to distinguish different functions in
+different modules, but this led to excessively large call graphs,
+impacting performance. To address this, we chose to remove
+the scope resolution operators and duplicate function calls.
+Finally, we excluded external (e.g., library) function calls to
+maintain focus on the core code structure. Figure 5 shows the
+overview of these modifications.
+4https://github.com/tree-sitter/tree-sitter
+Fig. 5. Scope resolution of call graphs
+2) Generating Code Summary: We hypothesized that in-
+cluding code summarization would capture the overall context
+of code changes in code diffs, improving code review comment
+generation. Initially, we attempted to summarize the entire
+code, but token limitations affected the performance. We then
+focused on summarizing only the function related to the code
+diffs.
+Fig. 6. Code summary generation workflow
+Using an AST, we identified the relevant function for
+each code diff, building extractors for nine languages that
+extract the start and the end of the function and recognize
+language-specific function definitions and handling edge cases
+such as nested functions, and class methods. If the code diff
+was not inside any function, we extracted the code around the
+code diff. We tokenized the extracted code using CodeT5’s
+RoBERTa-based tokenizer, splitting larger functions into
+smaller chunks as needed. These tokenized chunks were then
+fed into the CodeT5 [8] model, generating summaries that
+were appended to our prompts to enhance review accuracy.
+Figure 6 outlines the key steps in this summary generation
+workflow.
+3) Experimental Setup: Here we discuss the model
+hyperparameters we experimented with. We used OpenAI and
+Google provided APIs for invoking the experimental models.
+We explored different model temperatures ( temp = 0.5,0.7)
+and numbers of few-shot samples ( k= 3,5) to generate review
+comments. We finally report the results for temp = 0.7, and
+
+--- PAGE 7 ---
+few-shot count k= 5 as they showed comparatively better
+results. We also picked top n= 5 outputs by the models,
+calculated their BLEU scores, and kept the best-performing
+result only for further comparison. We then follow the same
+set of hyperparameters (except setting few-shot count k= 3)
+to prompt the Google Gemini-1.0 Pro model as well. The
+maximum number of tokens to be generated by the model was
+set to 100. We leave the rest of the available API parameters
+(frequency and present penalty, top p) to their default values.
+The structure of all the prompts is shown in Figure 3.
+4) Ablation Studies: To understand individual contributions
+of function call graph and code summary, we generate all
+combinations of prompt including without any and both of
+the augmentations, and augmenting with only call graph and
+only summary. The details are discussed in the section IV-C.
+E. RQ4: Real-World Developers Perspectives on LLM Gener-
+ated Review Comments
+1) Web portal Design: We developed a web portal
+dedicated to present participants with essential components
+for each assessment: code snippet ,code summary generated
+from the snippet, ground truth provided as a reference,
+and code reviews generated by multiple models , with
+model names anonymized to prevent bias. The reviewers
+were asked to rank the model generated comments based on
+three of the qualitative metrics found in literature: relevence
+score, information score and explanation clarity score
+[9]. To avoid any misunderstanding, the instructions were
+presented on a separate page, ensuring that participants could
+review the guidelines thoroughly before proceeding with the
+evaluation. The backend of the portal was implemented using
+Node.js with the Express framework, while the frontend
+was developed with React.js and TypeScript to provide a
+responsive and interactive user interface. Participant data
+and study feedback were stored securely in a PostgreSQL
+database hosted on Render.
+2) Participants: We promoted the web portal among the
+professional software engineering community around the au-
+thors’ network, as the study focuses on code review tasks.
+Participants were recruited on a rolling basis to ensure a
+diverse sample to capture a broad spectrum of programming
+skills and domain knowledge. Each participant was compen-
+sated for their time and feedback. We recruited 8 participants,
+each affiliated with reputed software industry companies in
+the country. Each code review example was evaluated twice,
+with feedback from two distinct participants, to enhance the
+reliability and robustness of our analysis.
+F . Evaluation Metrics
+We provide a brief description of the evaluation metrics used
+for the review comment generation task in this section.
+•BLEU [39] (Bilingual Evaluation Understudy) is one of
+the widely acknowledged metrics to measure the text
+generation performance of language models. BLEU-4 isthe weighted geometric mean of all the modified 4-gram
+precisions, scaled by the brevity penalty. The modified
+n-gram precision used here adjusts for cases where the
+generated candidate text may have n-grams that do not
+perfectly match any n-grams in the reference texts.
+•BERTScore [40] leverages pre-trained contextual em-
+beddings from the BERT [41] model and finds out the
+average F1 score, which is a harmonic mean of precision
+and recall, providing a single metric to assess the quality
+of generated sentences compared to the ground truth. It
+has been shown to correlate with human judgment better
+in terms of sentence-level similarity instead of word-level
+matching. A higher BERTScore indicates better similarity
+between the predicted sentences and the reference sen-
+tences.
+•Human Evaluation metrics include the following scores:
+– Relevance score measures how much the review
+comment aligns with the overall content.
+– Information score assesses the completeness of the
+information provided in the review comment.
+– Explanation clarity score evaluates the clarity of
+the explanations offered within the review comment.
+All these qualitative human judgment metrics were rated
+on a scale of 0 to 5, with 5 indicating the best score.
+IV. R ESULTS
+In this section, we answer each of the research questions
+taking evidence from our experiment results.
+A. RQ1: How effective is code review comment generation
+using fine-tuned open-source Large Language Models?
+TABLE II
+COMPARISON OF FINE -TUNED LLAMA MODELS ON TESTSUBSET 1
+Model BLEU-4 BERTScore
+CodeReviewer (223M) 4.28 baseline 0.8348 baseline
+Llama 2 (7B) 5.02 +17.29% 0.8397 +0.59%
+Code Llama (7B) 5.58 +30.37% 0.8480 +1.58%
+Llama 3 (8B) 5.27 +23.13% 0.8476 +1.53%
+Llama 3.1 (8B) 5.38 +25.7% 0.8483 +1.62%
+Llama 3.2 (3B) 4.54 +6.07% 0.8371 +0.28%
+We present our QLoRA fine-tuned open-source models’
+performance on Test Subset 1 in Table II. The results demon-
+strate a notable improvement in both BLEU-4 and BERTScore
+metrics for all fine-tuned models compared to the baseline
+CodeReviewer model. Code Llama (7B) achieved the highest
+BLEU-4 score of 5.58, reflecting a 30.37% increase over
+the pretrained CodeReviewer model. In terms of BERTScore,
+Llama 3.1 (8B) scored the highest value of 0.8483, represent-
+ing a 1.62% improvement.
+
+--- PAGE 8 ---
+Fig. 7. Model generated code review comments for a sample code diff
+RQ1 Findings: Supervised fine-tuned (QLoRA) models
+showed notable performance in review comment generation
+task. All open-source LLMs tested with this approach
+(Llama 2, Code Llama and Llama 3 variants) outperformed
+the baseline. Specially Code Llama, which is designed
+for processing code, demonstrates a particularly significant
+improvement.
+B. RQ2: How well do the closed-source Large Language
+Models perform in code review comment generation task when
+prompt engineered in a few-shot setting?
+Next, we used few-shot prompting for review comment
+generation using leading closed-source LLMs. Due to the
+incurring API cost of the closed-source models, we conducted
+our initial experiment on the smaller Test Subset 2. We report
+the promising results of 5-shot prompting in Table III. As it
+indicates, our experimental models outperform the baseline
+even without any further data augmentation.
+TABLE III
+COMPARISON OF FEW -SHOT PROMPTED CLOSED -SOURCE LLM S ON TEST
+SUBSET 2
+Model BLEU-4 BERTScore
+CodeReviewer 4.28 baseline 0.8348 baseline
+GPT-3.5 Turbo 8.13 +89.95% 0.8509 +1.93%
+Gemini-1.0 Pro 7.85 +83.41% 0.8509 +1.93%
+GPT-4o 6.92 +61.68% 0.8505 +1.88%
+GPT-3.5 Turbo achieved an impressive performance im-
+provement of 89.95% with a BLEU-4 score of 8.13 surpassing
+other experimental models. Gemini-1.0 Pro performed second
+best, with a BLEU-4 score of 7.85 (and 83.41% boost over
+the baseline). GPT-4o model performed comparatively poor,
+scoring a 6.92 BLEU-4 (with 61.68% improvement over the
+baseline). On BERTScore metric, GPT-3.5 Turbo and Gemini-
+1.0 Pro achieved 0.8509, both gaining a performance upgrade
+of1.93%.RQ2 Findings: Closed-source LLMs proved to be highly
+effective, as they improved over the baseline, exploiting the
+effectiveness of few-shot prompting for review comment
+generation task. Among the models tested, GPT-3.5 Turbo
+achieved the most significant performance gain. Gemini-1.0
+Pro and GPT-4o also showed impressive results.
+C. RQ3: When incorporated into prompts, what are the im-
+pacts of function call graph and code summary in improving
+review comment generation performance?
+TABLE IV
+PROMPTING CLOSED -SOURCE LLM S ON TESTSUBSET 2WITH
+AUGMENTED FUNCTION CALL GRAPH AND CODE SUMMARY
+Model BLEU-4 BERTScore
+CodeReviewer 4.28 baseline 0.8348 baseline
+GPT-3.5 Turbo ( W) 8.13 +89.95% (ref ) 0.8509 +1.93% (ref )
+GPT-3.5 Turbo ( C+S) 7.83 +82.94% (-3.69%) 0.8514 +1.99% (+0.06%)
+Gemini-1.0 Pro ( W) 7.85 +83.41% (ref ) 0.8509 +1.93% (ref )
+Gemini-1.0 Pro ( C+S) 7.77 +81.54% (-1.02%) 0.8496 +1.77%(-0.15%)
+GPT-4o ( W) 6.92 +61.68% (ref ) 0.8505 +1.88% (ref )
+GPT-4o ( C+S) 7.39 +72.66% (+6.79%) 0.8528 +2.16% (+0.27%)
+TABLE V
+FURTHER ABLATION STUDY ON FUNCTION CALL GRAPH AND CODE
+SUMMARY WITH GPT-3.5 T URBO ON TESTSUBSET 1
+Model BLEU-4 BERTScore
+GPT-3.5 Turbo ( W) 8.32 reference 0.8519 reference
+GPT-3.5 Turbo ( C) 8.36 +0.48% 0.8523 +0.05%
+GPT-3.5 Turbo ( S) 8.20 -1.44% 0.8518 -0.01%
+GPT-3.5 Turbo ( C+S) 8.27 -0.60% 0.8515 -0.05%
+In this section, We report the effect of appending both
+function call graph and code summary into prompts in Table
+IV. We used the smaller Test Subset 2 of the dataset to
+
+--- PAGE 9 ---
+evaluate our experimental closed-source LLMs with this
+proposed modification. In terms of both metrics, call graph
+and summary augmentation failed to guide the GPT-3.5
+Turbo and Gemini-1.0 Pro models in the right direction,
+where these models have a context window of 4k and 32k
+tokens respectively. Manual inspection revealed that GPT-3.5
+Turbo mostly got affected due to the large number of input
+tokens in the prompt after the proposed augmentation. On
+the other hand, GPT-4o with its context window of 128k
+tokens performs noticeably better when augmented with
+the same metadata, as it could handle much bigger input
+contexts. GPT-4o improved 6.79% BLEU-4 score and 0.27%
+BERTScore relative to the version before augmentation.
+However, even with such a relative improvement, GPT-4o
+falls short behind GPT-3.5 Turbo performance.
+Contrary to our hypothesis, incorporating both the function
+call graph and code summary together negatively affected
+the performance of a few models. So we experimented with
+all possible combinations of these augmentation to identify
+which additional information was causing a degradation in
+performance. To keep the API expense within limit, we used
+the larger Test Subset 1 to conduct this ablation study on
+our best performing model GPT-3.5 Turbo. Evidence from
+Table V suggests adding standalone function call graph is
+advantageous while adding code summary with prompts has
+a negative impact on the performance. With only the function
+call graph added, GPT-3.5 Turbo achieves the highest BLEU-
+4 score of 8.36 which is over 90% of baseline performance.
+Figure 7 presents a test sample with multiple LLM generated
+review comments.
+RQ3 Findings: Albeit being the inferior performer, GPT-
+4o with longer context window shows relative performance
+improvement when both call graph and summary were
+added simultaneously. Further ablation experiments suggest
+that, while function call graph guides the model to generate
+better code review, the code summary mostly affects the
+result negatively. Thus, when both of them are incorpo-
+rated, already well-performing models like GPT-3.5 Turbo
+demonstrate slight performance degradation.
+D. RQ4: How effective Large Language Models are in gener-
+ating review comments from a real-world developer perspec-
+tive?
+Further analysis of the qualitative metric scores collected
+from the developer study supports our previous findings that
+experimental models significantly outperformed the baseline.
+Figure 8 illustrates the top models’ scores across relevance,
+informativeness, and explanation clarity metrics. The exact
+scores are reported in Table VI. Among the GPT series, GPT-
+3.5 Turbo with Callgraph achieved notable performance,
+surpassing the other two GPT-3.5 variants. Interestingly, Code
+Llama demonstrated the strongest qualitative results, possibly
+due to its pretraining, focused on meticulously designed code-
+related tasks.
+Fig. 8. Comparison of LLM-generated code reviews across their average
+qualitative scores on a scale of 5, as perceived by developers
+TABLE VI
+EVALUATION OF LLM- GENERATED CODE REVIEWS BY REAL -WORLD
+DEVELOPERS ACROSS THEIR AVERAGE QUALITATIVE SCORES ON A SCALE
+OF5
+Model Relevance Information Explanation Clarity
+Codereviewer 1.34 1.22 1.23
+Code Llama 3.45 3.13 2.95
+GPT-3.5-Turbo ( W) 3.23 2.87 2.74
+GPT-3.5-Turbo ( C) 3.42 3.04 2.89
+GPT-3.5-Turbo ( C+S) 3.22 2.76 2.76
+RQ4 Findings: According to the reported experience of
+8 software practitioners, LLM generated review comments
+showed notable performance compared to the baseline
+Codereviewer. Fine-tuned Code Llama has outperformed
+all other models in all three qualitative metrics closely
+followed by GPT-3.5 Turbo augmented with callgraph.
+V. D ISCUSSION
+1) Observations: Although all our trained models
+surpassed baseline pretrained CodeReviewer (which exhibits
+high confidence in incorrect answers), they each have specific
+limitations. Although GPT-3.5-turbo is cost-effective, they
+can get distracted due to the limited context window size.
+In contrast, GPT-4o shows improved performance with a
+longer context window, allowing for greater focus on call
+graph and code summary for generating code reviews.
+However, due to budget constraints, we were unable to fully
+explore the performance of GPT-4o on the whole dataset.
+On the other hand, fine-tuned Code Llama tend to generalize
+poor, often failing to address specific changes in greater detail.
+
+--- PAGE 10 ---
+2) Future directions: We are incorporating our model-
+generated code reviews into code repair tasks, experimenting
+with different prompt and fine-tuning strategies to improve the
+ability of the model to suggest effective code fixes after review.
+VI. T HREATS TO VALIDITY
+Threats to internal validity are related to how the roles
+played by the model architecture and the configuration of
+hyper-parameters might impact the experiments. Due to
+cost and resource constraints, we explored hyper-parameters
+prioritizing their expected impact on model performance,
+while leaving others less explored. As a result, it is possible
+that further tuning could yield additional improvements.
+Threats to construct validity include our use of the
+widely popular BLEU metric, as it was used in the original
+baseline study and relevant literature. However, its ability
+to reflect true performance remains uncertain. The human
+evaluation results indicate that Code Llama outperforms
+GPT-3.5 Turbo, with both models surpassing the baseline.
+This raises questions about the overall reliability of BLEU as
+a performance measure, suggesting that this might be a threat
+to construct validity.
+Threats to conclusion validity highlight the fact that the
+exact same responses might not be generated by LLMs, given
+their inherent nondeterministic nature [42]. Additionally, by
+setting the temperature parameter to 0.7, we encourage more
+variability in the model’s outputs. This nondeterminism in
+LLM can potentially undermine the conclusion validity drawn
+from their responses.
+Threats to external validity are primarily related to the
+dataset used in this study. All experiments were conducted
+using the CodeReviewer [9] dataset of Microsoft Research.
+As the dataset is derived from publicly available open-source
+repositories rather than industrial projects, the generalizability
+of our findings to industrial applications may be limited.
+VII. R ELATED WORKS
+A. Automation of Code Review Activities
+There has been considerable interest in reducing the manual
+labor involved in code review activities. Researchers worked
+on code quality assessment [9], [43]–[46], probable reviewer
+recommendation [47]–[52], suggesting review comments [9],
+[10], [53] and refining problematic code snippets [9], [10],
+[54]–[56]. Our study focuses on the pipeline suggested by Li
+et al. [9]. Retrieval-based approaches were initially adopted
+for review comment suggestion tasks. DeepMem [57], an
+LSTM-based model was introduced first to achieve this.
+Attention mechanism was added on top of LSTM architecture
+later on by Siow et al. [58]. Tufano et al. [10] presented the
+first contribution of leveraging deep learning for this task
+via pretraining on code and technical language at a large
+scale. To improve the results, CodeReviewer [9] and AUGER
+[59] proposed code review-specific pretrained models.CommentFinder [60] showed an efficient retrieval-oriented
+alternative as well.
+However, approaches so far have not considered code diffs
+in their pipeline. D-ACT [61] was the first method to introduce
+diff-awareness in code refinement to boost performance in
+little differences between code base and initial commits, al-
+though they did not leverage code review comments to achieve
+this. CodeReviewer [9], pretrained on 9 popular programming
+languages, was tailored for code review activities and con-
+sidered both diff-awareness and review comments altogether.
+Significant progress in code review activities has been possible
+further for the usage of unified Large Language Models,
+as the model size and training data continued to grow in
+recent times. Llama-Reviewer [14] was introduced to fine-
+tune the open-source Llama model tailored for code review
+tasks that could achieve impressive performance improvement
+using parameter-efficient fine-tuning approaches. It used the
+LoRA [25] method for fine-tuning, while there is room for
+improvement using the quantized counter-part [26]. Addition-
+ally, more recent and better models in the Meta Llama series
+have been released since then, including the general-purpose
+model Llama 2 [31] and Code Llama [17], a model specifically
+fine-tuned on code-specific datasets. Finally, Llama 3 was also
+released for the open-source community.
+B. Pretrained and Fine-Tuned Language Models in Software
+Engineering
+Deep learning techniques, motivated by their impact and
+success in Natural Language Processing domains, have
+also been widely adopted in software engineering tasks.
+Encoder-only models like BERT [41], encoder-decoder
+models like BART [62] and T5 [18], and decoder-only
+models like GPT [12] are some of the notable progresses
+here. Pretrained code models can learn code representations
+with various code-specific properties including lexical,
+semantic, and syntactic information. Fine-tuning can help
+these models to be suitable for specific tasks by updating the
+pretrained model weights with task-specific data. Inspired by
+the models above, researchers proposed to further fine-tune
+these models on several downstream tasks in software
+engineering. CodeBERT [6] and GraphCodeBERT [7] are
+bi-directional transformer models specifically pretrained on
+NL-PL pairs in 6 programming languages, with the latter
+introducing the incorporation of source code data flow graphs
+inside the model token level. These models show superior
+performance in tasks including natural language code search,
+code summarization, code clone detection, and documentation
+generation from code.
+On the other hand, decoder-only transformer models like
+CodeGPT [63], Codex [64] focused on generative tasks like
+code completion and code generation. Models like PLBART
+[65] and CodeT5 [8] can be applied for both code understand-
+ing and generation tasks. Despite covering a wide variety of
+code-related tasks, the models above did not pay any attention
+
+--- PAGE 11 ---
+to code review activities when proposed. Tufano et al. [10]
+first proposed TufanoT5 that utilizes the pretrained T5 model
+for automating code review tasks, with CodeReviewer [9]
+improving upon that by introducing the integration of code
+changes into the pretraining phase. Recently, there have been
+many large language models for code, including open-source
+community-developed LLMs like Code Llama [17], StarCoder
+[66], MagiCoder [67] along with proprietary models like GPT-
+3.5 and GPT-4 [32].
+C. Prompting in Software Engineering
+Prompt engineering is a good enough alternative to heavy
+fine-tuning that requires supervised datasets and computational
+resources. Providing prompts to pretrained LLMs is found to
+be beneficial in many code-related tasks as shown in [20],
+[34], [35], [68] covering code summarization, bug fixation
+and documentation generation. Different prompting strategies
+include zero-shot learning, few-shot learning [12], [33], chain-
+of-thought [22], persona [21], etc. Not all prompting strategies
+are suitable for review-related activities as some of these are
+specifically designed for mathematical and logical reason-
+ing tasks. Zero-shot, few-shot, and personal prompting are
+instruction-based and hence most suitable for code review
+tasks. Guo et al. [69] conducted an empirical study to in-
+vestigate the potential of the GPT-3.5 model for code review
+automation, while few-shot prompting on LLMs is still of
+great interest to explore. Ahmed et al. investigated prompting
+performance on LLMs for code summarization tasks [70],
+often with augmentation of semantic metadata in prompts for
+GPT models [71]. We investigate the augmentation of such
+semantic information in a concise way into LLM prompts
+inspired by their work.
+VIII. C ONCLUSION
+In this study, we aim to automate code review comment gen-
+eration, using Large Language Models (LLMs) through care-
+fully designed prompts with few-shot learning and parameter-
+efficient fine-tuning. Our prompting approach utilizes the
+baseline CodeReviewer dataset for our task, incorporating
+augmented code summaries and function call graphs after thor-
+ough pre-processing. Additionally, we applied QLoRA tech-
+nique to fine-tune the open-source Large Language Models.
+Experimental results demonstrate that our strategies signifi-
+cantly outperform the baseline CodeReviewer in generating re-
+view comments. Furthermore, a human evaluation experiment
+conducted on professional developers through our designed
+study indicates that both finetuned code-specific LLMs and
+general purpose LLMs incorporating call graphs into few-shot
+prompts improve the quality of generated review comments,
+thereby further validating the effectiveness of our approach.
+REFERENCES
+[1] D. Spadini, G. C ¸ alikli, and A. Bacchelli, “Primers or reminders? the
+effects of existing review comments on code review,” in Proceedings of
+the ACM/IEEE 42nd International Conference on Software Engineering ,
+2020, pp. 1171–1182.[2] M. Fagan, “Design and code inspections to reduce errors in program de-
+velopment,” in Software pioneers: contributions to software engineering .
+Springer, 2011, pp. 575–607.
+[3] A. Bosu and J. C. Carver, “Impact of peer code review on peer
+impression formation: A survey,” in 2013 ACM / IEEE International
+Symposium on Empirical Software Engineering and Measurement , 2013,
+pp. 133–142.
+[4] X. Yang, R. G. Kula, N. Yoshida, and H. Iida, “Mining the modern
+code review repositories: A dataset of people, process and product,” in
+Proceedings of the 13th international conference on mining software
+repositories , 2016, pp. 460–463.
+[5] J. Czerwonka, M. Greiler, and J. Tilford, “Code reviews do not find
+bugs. how the current code review best practice slows us down,”
+in2015 IEEE/ACM 37th IEEE International Conference on Software
+Engineering , vol. 2. IEEE, 2015, pp. 27–28.
+[6] Z. Feng, D. Guo, D. Tang, N. Duan, X. Feng, M. Gong, L. Shou, B. Qin,
+T. Liu, D. Jiang et al. , “Codebert: A pre-trained model for programming
+and natural languages,” arXiv preprint arXiv:2002.08155 , 2020.
+[7] D. Guo, S. Ren, S. Lu, Z. Feng, D. Tang, S. Liu, L. Zhou, N. Duan,
+A. Svyatkovskiy, S. Fu et al. , “Graphcodebert: Pre-training code repre-
+sentations with data flow,” arXiv preprint arXiv:2009.08366 , 2020.
+[8] Y . Wang, W. Wang, S. Joty, and S. C. Hoi, “Codet5: Identifier-aware
+unified pre-trained encoder-decoder models for code understanding and
+generation,” arXiv preprint arXiv:2109.00859 , 2021.
+[9] Z. Li, S. Lu, D. Guo, N. Duan, S. Jannu, G. Jenks, D. Majumder,
+J. Green, A. Svyatkovskiy, S. Fu et al. , “Automating code review
+activities by large-scale pre-training,” in Proceedings of the 30th ACM
+Joint European Software Engineering Conference and Symposium on
+the Foundations of Software Engineering , 2022, pp. 1035–1047.
+[10] R. Tufano, S. Masiero, A. Mastropaolo, L. Pascarella, D. Poshyvanyk,
+and G. Bavota, “Using pre-trained models to boost code review automa-
+tion,” in Proceedings of the 44th international conference on software
+engineering , 2022, pp. 2291–2302.
+[11] E. Strubell, A. Ganesh, and A. McCallum, “Energy and policy con-
+siderations for modern deep learning research,” in Proceedings of the
+AAAI conference on artificial intelligence , vol. 34, no. 09, 2020, pp.
+13 693–13 696.
+[12] T. Brown, B. Mann, N. Ryder, M. Subbiah, J. D. Kaplan, P. Dhariwal,
+A. Neelakantan, P. Shyam, G. Sastry, A. Askell et al. , “Language mod-
+els are few-shot learners,” Advances in neural information processing
+systems , vol. 33, pp. 1877–1901, 2020.
+[13] Z. Zheng, K. Ning, Y . Wang, J. Zhang, D. Zheng, M. Ye, and J. Chen,
+“A survey of large language models for code: Evolution, benchmarking,
+and future trends,” arXiv preprint arXiv:2311.10372 , 2023.
+[14] J. Lu, L. Yu, X. Li, L. Yang, and C. Zuo, “Llama-reviewer: Advancing
+code review automation with large language models through parameter-
+efficient fine-tuning,” in 2023 IEEE 34th International Symposium on
+Software Reliability Engineering (ISSRE) . IEEE, 2023, pp. 647–658.
+[15] T. Ahmed, K. S. Pai, P. Devanbu, and E. Barr, “Automatic semantic
+augmentation of language model prompts (for code summarization),”
+inProceedings of the IEEE/ACM 46th International Conference on
+Software Engineering , 2024, pp. 1–13.
+[16] G. Team, R. Anil, S. Borgeaud, Y . Wu, J.-B. Alayrac, J. Yu, R. Soricut,
+J. Schalkwyk, A. M. Dai, A. Hauth et al. , “Gemini: a family of highly
+capable multimodal models,” arXiv preprint arXiv:2312.11805 , 2023.
+[17] B. Roziere, J. Gehring, F. Gloeckle, S. Sootla, I. Gat, X. E. Tan, Y . Adi,
+J. Liu, T. Remez, J. Rapin et al. , “Code llama: Open foundation models
+for code,” arXiv preprint arXiv:2308.12950 , 2023.
+[18] C. Raffel, N. Shazeer, A. Roberts, K. Lee, S. Narang, M. Matena,
+Y . Zhou, W. Li, and P. J. Liu, “Exploring the limits of transfer learning
+with a unified text-to-text transformer,” Oct. 2019.
+[19] C. Pornprasit and C. Tantithamthavorn, “Gpt-3.5 for code review au-
+tomation: How do few-shot learning, prompt design, and model fine-
+tuning impact their performance?” arXiv preprint arXiv:2402.00905 ,
+2024.
+[20] S. Feng and C. Chen, “Prompting is all you need: Automated an-
+droid bug replay with large language models,” in Proceedings of the
+IEEE/ACM 46th International Conference on Software Engineering .
+New York, NY , USA: ACM, Feb. 2024.
+[21] J. White, Q. Fu, S. Hays, M. Sandborn, C. Olea, H. Gilbert, A. Elnashar,
+J. Spencer-Smith, and D. C. Schmidt, “A prompt pattern catalog to
+enhance prompt engineering with ChatGPT,” Feb. 2023.
+
+--- PAGE 12 ---
+[22] S. Kim, S. J. Joo, D. Kim, J. Jang, S. Ye, J. Shin, and M. Seo, “The
+CoT collection: Improving zero-shot and few-shot learning of language
+models via chain-of-thought fine-tuning,” May 2023.
+[23] X. L. Li and P. Liang, “Prefix-tuning: Optimizing continuous prompts
+for generation,” arXiv preprint arXiv:2101.00190 , 2021.
+[24] B. Lester, R. Al-Rfou, and N. Constant, “The power of scale for
+parameter-efficient prompt tuning,” arXiv preprint arXiv:2104.08691 ,
+2021.
+[25] E. J. Hu, Y . Shen, P. Wallis, Z. Allen-Zhu, Y . Li, S. Wang, L. Wang,
+and W. Chen, “Lora: Low-rank adaptation of large language models,”
+arXiv preprint arXiv:2106.09685 , 2021.
+[26] T. Dettmers, A. Pagnoni, A. Holtzman, and L. Zettlemoyer, “Qlora:
+Efficient finetuning of quantized llms,” Advances in Neural Information
+Processing Systems , vol. 36, 2024.
+[27] J. Wei, M. Bosma, V . Y . Zhao, K. Guu, A. W. Yu, B. Lester, N. Du,
+A. M. Dai, and Q. V . Le, “Finetuned language models are zero-shot
+learners,” arXiv preprint arXiv:2109.01652 , 2021.
+[28] L. Ouyang, J. Wu, X. Jiang, D. Almeida, C. Wainwright, P. Mishkin,
+C. Zhang, S. Agarwal, K. Slama, A. Ray et al. , “Training language
+models to follow instructions with human feedback,” Advances in neural
+information processing systems , vol. 35, pp. 27 730–27 744, 2022.
+[29] R. Taori, I. Gulrajani, T. Zhang, Y . Dubois, X. Li, C. Guestrin, P. Liang,
+and T. B. Hashimoto, “Stanford alpaca: An instruction-following llama
+model,” https://github.com/tatsu-lab/stanford alpaca, 2023.
+[30] Y . Wang, Y . Kordi, S. Mishra, A. Liu, N. A. Smith, D. Khashabi,
+and H. Hajishirzi, “Self-instruct: Aligning language models with self-
+generated instructions,” arXiv preprint arXiv:2212.10560 , 2022.
+[31] H. Touvron, L. Martin, K. Stone, P. Albert, A. Almahairi, Y . Babaei,
+N. Bashlykov, S. Batra, P. Bhargava, S. Bhosale et al. , “Llama
+2: Open foundation and fine-tuned chat models,” arXiv preprint
+arXiv:2307.09288 , 2023.
+[32] J. Achiam, S. Adler, S. Agarwal, L. Ahmad, I. Akkaya, F. L. Aleman,
+D. Almeida, J. Altenschmidt, S. Altman, S. Anadkat et al. , “Gpt-4
+technical report,” arXiv preprint arXiv:2303.08774 , 2023.
+[33] J. Liu, D. Shen, Y . Zhang, B. Dolan, L. Carin, and W. Chen, “What
+makes good in-context examples for GPT- 3?” Jan. 2021.
+[34] M. Geng, S. Wang, D. Dong, H. Wang, G. Li, Z. Jin, X. Mao, and
+X. Liao, “Large language models are few-shot summarizers: Multi-
+intent comment generation via in-context learning,” in Proceedings of
+the IEEE/ACM 46th International Conference on Software Engineering .
+New York, NY , USA: ACM, Feb. 2024.
+[35] S. Gao, X.-C. Wen, C. Gao, W. Wang, H. Zhang, and M. R. Lyu,
+“What makes good in-context demonstrations for code intelligence tasks
+with LLMs?” in 2023 38th IEEE/ACM International Conference on
+Automated Software Engineering (ASE) . IEEE, Sep. 2023.
+[36] S. M. Bsharat, A. Myrzakhan, and Z. Shen, “Principled instructions
+are all you need for questioning llama-1/2, gpt-3.5/4,” arXiv preprint
+arXiv:2312.16171 , 2023.
+[37] C. Li, J. Wang, Y . Zhang, K. Zhu, W. Hou, J. Lian, F. Luo, Q. Yang,
+and X. Xie, “Large language models understand and can be enhanced
+by emotional stimuli,” arXiv preprint arXiv:2307.11760 , 2023.
+[38] S. Robertson, H. Zaragoza et al. , “The probabilistic relevance frame-
+work: Bm25 and beyond,” Foundations and Trends® in Information
+Retrieval , vol. 3, no. 4, pp. 333–389, 2009.
+[39] K. Papineni, S. Roukos, T. Ward, and W.-J. Zhu, “Bleu: a method for
+automatic evaluation of machine translation,” in Proceedings of the 40th
+annual meeting of the Association for Computational Linguistics , 2002,
+pp. 311–318.
+[40] T. Zhang*, V . Kishore*, F. Wu*, K. Q. Weinberger, and Y . Artzi,
+“Bertscore: Evaluating text generation with bert,” in International
+Conference on Learning Representations , 2020. [Online]. Available:
+https://openreview.net/forum?id=SkeHuCVFDr
+[41] J. Devlin, M.-W. Chang, K. Lee, and K. Toutanova, “BERT: Pre-training
+of deep bidirectional transformers for language understanding,” Oct.
+2018.
+[42] S. Ouyang, J. M. Zhang, M. Harman, and M. Wang, “Llm is like a
+box of chocolates: the non-determinism of chatgpt in code generation,”
+arXiv preprint arXiv:2308.02828 , 2023.
+[43] S.-T. Shi, M. Li, D. Lo, F. Thung, and X. Huo, “Automatic code review
+by learning the revision of source code,” in Proceedings of the AAAI
+Conference on Artificial Intelligence , vol. 33, no. 01, 2019, pp. 4910–
+4917.
+[44] I. X. Gauthier, M. Lamothe, G. Mussbacher, and S. McIntosh, “Is his-
+torical data an appropriate benchmark for reviewer recommendation sys-tems?: A case study of the gerrit community,” in 2021 36th IEEE/ACM
+International Conference on Automated Software Engineering (ASE) .
+IEEE, 2021, pp. 30–41.
+[45] H. Hijazi, J. Duraes, R. Couceiro, J. Castelhano, R. Barbosa, J. Medeiros,
+M. Castelo-Branco, P. De Carvalho, and H. Madeira, “Quality evaluation
+of modern code reviews through intelligent biometric program compre-
+hension,” IEEE Transactions on Software Engineering , vol. 49, no. 2,
+pp. 626–645, 2022.
+[46] V . J. Hellendoorn, J. Tsay, M. Mukherjee, and M. Hirzel, “Towards
+automating code review at scale,” in Proceedings of the 29th ACM Joint
+Meeting on European Software Engineering Conference and Symposium
+on the Foundations of Software Engineering , 2021, pp. 1479–1482.
+[47] S. Asthana, R. Kumar, R. Bhagwan, C. Bird, C. Bansal, C. Maddila,
+S. Mehta, and B. Ashok, “Whodo: Automating reviewer suggestions at
+scale,” in Proceedings of the 2019 27th ACM joint meeting on european
+software engineering conference and symposium on the foundations of
+software engineering , 2019, pp. 937–945.
+[48] A. Chueshev, J. Lawall, R. Bendraou, and T. Ziadi, “Expanding the
+number of reviewers in open-source projects by recommending appro-
+priate developers,” in 2020 IEEE International Conference on Software
+Maintenance and Evolution (ICSME) . IEEE, 2020, pp. 499–510.
+[49] P. Pandya and S. Tiwari, “Corms: a github and gerrit based hybrid
+code reviewer recommendation approach for modern code review,” in
+Proceedings of the 30th ACM joint European software engineering
+conference and symposium on the foundations of software engineering ,
+2022, pp. 546–557.
+[50] G. Rong, Y . Zhang, L. Yang, F. Zhang, H. Kuang, and H. Zhang,
+“Modeling review history for reviewer recommendation: A hypergraph
+approach,” in Proceedings of the 44th international conference on
+software engineering , 2022, pp. 1381–1392.
+[51] E. S ¨ul¨un, E. T ¨uz¨un, and U. Do ˘grus¨oz, “Rstrace+: Reviewer suggestion
+using software artifact traceability graphs,” Information and Software
+Technology , vol. 130, p. 106455, 2021.
+[52] S. Rebai, A. Amich, S. Molaei, M. Kessentini, and R. Kazman, “Multi-
+objective code reviewer recommendations: balancing expertise, avail-
+ability and collaborations,” Automated Software Engineering , vol. 27,
+pp. 301–328, 2020.
+[53] V . Balachandran, “Reducing human effort and improving quality in peer
+code reviews using automatic static analysis and reviewer recommenda-
+tion,” in 2013 35th International Conference on Software Engineering
+(ICSE) . IEEE, 2013, pp. 931–940.
+[54] R. Tufano, L. Pascarella, M. Tufano, D. Poshyvanyk, and G. Bavota,
+“Towards automating code review activities,” in 2021 IEEE/ACM 43rd
+International Conference on Software Engineering (ICSE) . IEEE, 2021,
+pp. 163–174.
+[55] M. Fu, C. Tantithamthavorn, T. Le, V . Nguyen, and D. Phung, “Vulre-
+pair: a t5-based automated software vulnerability repair,” in Proceedings
+of the 30th ACM joint european software engineering conference and
+symposium on the foundations of software engineering , 2022, pp. 935–
+947.
+[56] P. Thongtanunam, C. Pornprasit, and C. Tantithamthavorn, “Autotrans-
+form: Automated code transformation to support modern code review
+process,” in Proceedings of the 44th international conference on software
+engineering , 2022, pp. 237–248.
+[57] A. Gupta and N. Sundaresan, “Intelligent code reviews using deep
+learning,” in Proceedings of the 24th ACM SIGKDD International
+Conference on Knowledge Discovery and Data Mining (KDD’18) Deep
+Learning Day , 2018.
+[58] J. K. Siow, C. Gao, L. Fan, S. Chen, and Y . Liu, “CORE: Automating
+review recommendation for code changes,” in 2020 IEEE 27th Interna-
+tional Conference on Software Analysis, Evolution and Reengineering
+(SANER) . IEEE, Feb. 2020.
+[59] L. Li, L. Yang, H. Jiang, J. Yan, T. Luo, Z. Hua, G. Liang, and C. Zuo,
+“AUGER: Automatically GEnerating review comments with pre-training
+models,” Aug. 2022.
+[60] Y . Hong, C. Tantithamthavorn, P. Thongtanunam, and A. Aleti, “Com-
+mentFinder: a simpler, faster, more accurate code review comments
+recommendation,” in Proceedings of the 30th ACM Joint European
+Software Engineering Conference and Symposium on the Foundations
+of Software Engineering . New York, NY , USA: ACM, Nov. 2022.
+[61] C. Pornprasit, C. Tantithamthavorn, P. Thongtanunam, and C. Chen, “D-
+ACT: Towards diff-aware code transformation for code review under
+a time-wise evaluation,” in 2023 IEEE International Conference on
+
+--- PAGE 13 ---
+Software Analysis, Evolution and Reengineering (SANER) . IEEE, Mar.
+2023.
+[62] M. Lewis, Y . Liu, N. Goyal, M. Ghazvininejad, A. Mohamed, O. Levy,
+V . Stoyanov, and L. Zettlemoyer, “BART: Denoising sequence-to-
+sequence pre-training for natural language generation, translation, and
+comprehension,” Oct. 2019.
+[63] S. Lu, D. Guo, S. Ren, J. Huang, A. Svyatkovskiy, A. Blanco,
+C. Clement, D. Drain, D. Jiang, D. Tang et al. , “Codexglue: A machine
+learning benchmark dataset for code understanding and generation,”
+arXiv preprint arXiv:2102.04664 , 2021.
+[64] M. Chen, J. Tworek, H. Jun, Q. Yuan, H. P. D. O. Pinto, J. Kaplan,
+H. Edwards, Y . Burda, N. Joseph, G. Brockman et al. , “Evaluating large
+language models trained on code,” arXiv preprint arXiv:2107.03374 ,
+2021.
+[65] W. U. Ahmad, S. Chakraborty, B. Ray, and K.-W. Chang, “Unified pre-
+training for program understanding and generation,” Mar. 2021.
+[66] R. Li, L. B. Allal, Y . Zi, N. Muennighoff, D. Kocetkov, C. Mou,
+M. Marone, C. Akiki, J. Li, J. Chim et al. , “Starcoder: may the source
+be with you!” arXiv preprint arXiv:2305.06161 , 2023.
+[67] Y . Wei, Z. Wang, J. Liu, Y . Ding, and L. Zhang, “Magicoder: Empow-
+ering code generation with OSS-Instruct,” Dec. 2023.
+[68] J. Y . Khan and G. Uddin, “Automatic code documentation generation
+using GPT-3,” Sep. 2022.
+[69] Q. Guo, J. Cao, X. Xie, S. Liu, X. Li, B. Chen, and X. Peng, “Exploring
+the potential of ChatGPT in automated code refinement: An empirical
+study,” in Proceedings of the IEEE/ACM 46th International Conference
+on Software Engineering . New York, NY , USA: ACM, Feb. 2024.
+[70] T. Ahmed and P. Devanbu, “Few-shot training LLMs for project-specific
+code-summarization,” Jul. 2022.
+[71] T. Ahmed, K. S. Pai, P. Devanbu, and E. Barr, “Automatic semantic
+augmentation of language model prompts (for code summarization),”
+inProceedings of the IEEE/ACM 46th International Conference on
+Software Engineering . New York, NY , USA: ACM, Apr. 2024.

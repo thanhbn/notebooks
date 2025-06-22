@@ -1,0 +1,142 @@
+{
+  "code_generation_problems": [
+    {
+      "id": "bubble_sort",
+      "problem": "Viết hàm sắp xếp nổi bọt (bubble sort) để sắp xếp một mảng số nguyên theo thứ tự tăng dần. Hàm cần có tên là bubble_sort và nhận vào một list, trả về list đã sắp xếp.",
+      "correct_solution": "def bubble_sort(arr):\n    \"\"\"\n    Sắp xếp mảng sử dụng thuật toán bubble sort\n    Args:\n        arr: List các số cần sắp xếp\n    Returns:\n        List đã được sắp xếp theo thứ tự tăng dần\n    \"\"\"\n    n = len(arr)\n    for i in range(n):\n        swapped = False\n        for j in range(0, n - i - 1):\n            if arr[j] > arr[j + 1]:\n                arr[j], arr[j + 1] = arr[j + 1], arr[j]\n                swapped = True\n        if not swapped:\n            break\n    return arr",
+      "test_cases": [
+        {
+          "input": "[64, 34, 25, 12, 22, 11, 90]",
+          "expected_output": "[11, 12, 22, 25, 34, 64, 90]"
+        },
+        {
+          "input": "[5, 2, 8, 1, 9]",
+          "expected_output": "[1, 2, 5, 8, 9]"
+        },
+        {
+          "input": "[]",
+          "expected_output": "[]"
+        },
+        {
+          "input": "[1]",
+          "expected_output": "[1]"
+        }
+      ]
+    },
+    {
+      "id": "fibonacci",
+      "problem": "Tạo hàm tính số Fibonacci thứ n sử dụng phương pháp đệ quy có ghi nhớ (memoization). Hàm cần có tên fibonacci và xử lý các trường hợp edge case.",
+      "correct_solution": "def fibonacci(n, memo={}):\n    \"\"\"\n    Tính số Fibonacci thứ n sử dụng memoization\n    Args:\n        n: Vị trí của số Fibonacci cần tính (n >= 0)\n        memo: Dictionary lưu trữ các giá trị đã tính\n    Returns:\n        Số Fibonacci thứ n\n    Raises:\n        ValueError: Nếu n < 0\n    \"\"\"\n    if n < 0:\n        raise ValueError(\"n phải là số không âm\")\n    \n    if n in memo:\n        return memo[n]\n    \n    if n <= 1:\n        return n\n    \n    memo[n] = fibonacci(n-1, memo) + fibonacci(n-2, memo)\n    return memo[n]",
+      "test_cases": [
+        {
+          "input": "0",
+          "expected_output": "0"
+        },
+        {
+          "input": "1",
+          "expected_output": "1"
+        },
+        {
+          "input": "10",
+          "expected_output": "55"
+        },
+        {
+          "input": "20",
+          "expected_output": "6765"
+        }
+      ]
+    }
+  ],
+  "buggy_code_samples": [
+    {
+      "id": "infinite_loop_bug",
+      "description": "Vòng lặp vô hạn trong bubble sort",
+      "buggy_code": "def bubble_sort(arr):\n    n = len(arr)\n    for i in range(n):\n        for j in range(0, n - 1):  # Bug: thiếu i trong n - i - 1\n            if arr[j] > arr[j + 1]:\n                arr[j], arr[j + 1] = arr[j + 1], arr[j]\n    return arr",
+      "bug_explanation": "Vòng lặp trong không giảm phạm vi sau mỗi lần lặp ngoài, dẫn đến không tối ưu và có thể gây lỗi với mảng lớn",
+      "security_issues": [],
+      "performance_issues": ["O(n²) không cần thiết", "Không có early termination"]
+    },
+    {
+      "id": "memory_leak_bug",
+      "description": "Memory leak trong fibonacci memoization",
+      "buggy_code": "def fibonacci(n):\n    memo = {}\n    def fib_helper(n):\n        if n in memo:\n            return memo[n]\n        if n <= 1:\n            return n\n        memo[n] = fib_helper(n-1) + fib_helper(n-2)  # Bug: memo không được clear\n        return memo[n]\n    return fib_helper(n)",
+      "bug_explanation": "Memo dictionary được tạo mới mỗi lần gọi hàm, không tái sử dụng được cache",
+      "security_issues": [],
+      "performance_issues": ["Không cache giữa các lần gọi", "Tốn bộ nhớ không cần thiết"]
+    },
+    {
+      "id": "sql_injection_bug",
+      "description": "Lỗ hổng SQL injection trong truy vấn database",
+      "buggy_code": "def get_user_data(user_id):\n    import sqlite3\n    conn = sqlite3.connect('users.db')\n    cursor = conn.cursor()\n    \n    # Bug: SQL injection vulnerability\n    query = f\"SELECT * FROM users WHERE id = {user_id}\"\n    cursor.execute(query)\n    \n    result = cursor.fetchall()\n    conn.close()\n    return result",
+      "bug_explanation": "Sử dụng string concatenation thay vì parameterized queries",
+      "security_issues": ["SQL Injection", "Không validate input", "Có thể truy cập unauthorized data"],
+      "performance_issues": []
+    },
+    {
+      "id": "xss_vulnerability",
+      "description": "Lỗ hổng XSS trong web application",
+      "buggy_code": "def render_user_comment(comment):\n    html_template = f\"\"\"\n    <div class=\"comment\">\n        <p>{comment}</p>  <!-- Bug: XSS vulnerability -->\n    </div>\n    \"\"\"\n    return html_template",
+      "bug_explanation": "Không escape HTML trong user input, cho phép script injection",
+      "security_issues": ["Cross-site Scripting (XSS)", "Code injection", "Session hijacking potential"],
+      "performance_issues": []
+    }
+  ],
+  "code_review_scenarios": [
+    {
+      "id": "review_scenario_1",
+      "title": "API Endpoint Security Review",
+      "code_to_review": "from flask import Flask, request, jsonify\nimport jwt\nimport sqlite3\n\napp = Flask(__name__)\nSECRET_KEY = 'my-secret-key'  # Review point 1\n\n@app.route('/api/user/<user_id>', methods=['GET'])\ndef get_user(user_id):\n    # Review point 2: No authentication check\n    conn = sqlite3.connect('app.db')\n    cursor = conn.cursor()\n    \n    # Review point 3: SQL injection risk\n    query = f\"SELECT name, email FROM users WHERE id = {user_id}\"\n    cursor.execute(query)\n    \n    result = cursor.fetchone()\n    conn.close()\n    \n    if result:\n        return jsonify({'name': result[0], 'email': result[1]})\n    else:\n        return jsonify({'error': 'User not found'}), 404",
+      "review_points": [
+        {
+          "type": "security",
+          "severity": "high",
+          "description": "Hard-coded secret key in source code",
+          "suggestion": "Sử dụng environment variables hoặc secure key management"
+        },
+        {
+          "type": "security", 
+          "severity": "high",
+          "description": "Không có authentication/authorization",
+          "suggestion": "Thêm JWT token validation hoặc session check"
+        },
+        {
+          "type": "security",
+          "severity": "critical",
+          "description": "SQL injection vulnerability",
+          "suggestion": "Sử dụng parameterized queries hoặc ORM"
+        },
+        {
+          "type": "performance",
+          "severity": "medium", 
+          "description": "Không có connection pooling",
+          "suggestion": "Sử dụng connection pool hoặc ORM với connection management"
+        }
+      ]
+    },
+    {
+      "id": "review_scenario_2",
+      "title": "Algorithm Efficiency Review",
+      "code_to_review": "def find_duplicates(arr):\n    duplicates = []\n    for i in range(len(arr)):\n        for j in range(i + 1, len(arr)):\n            if arr[i] == arr[j] and arr[i] not in duplicates:\n                duplicates.append(arr[i])\n    return duplicates\n\ndef process_large_dataset(data):\n    results = []\n    for item in data:\n        # Review point: Inefficient string operations\n        result = \"\"\n        for char in item:\n            result += char.upper()  # String concatenation in loop\n        results.append(result)\n    return results",
+      "review_points": [
+        {
+          "type": "performance",
+          "severity": "high",
+          "description": "O(n²) complexity cho find_duplicates",
+          "suggestion": "Sử dụng set hoặc dictionary để đạt O(n) complexity"
+        },
+        {
+          "type": "performance",
+          "severity": "medium",
+          "description": "Inefficient string concatenation trong loop",
+          "suggestion": "Sử dụng join() hoặc list comprehension với built-in methods"
+        },
+        {
+          "type": "code_quality",
+          "severity": "low",
+          "description": "Có thể sử dụng built-in functions",
+          "suggestion": "Sử dụng str.upper() trực tiếp thay vì manual loop"
+        }
+      ]
+    }
+  ]
+}

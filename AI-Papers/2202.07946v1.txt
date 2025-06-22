@@ -1,0 +1,1229 @@
+# 2202.07946v1.pdf
+# Converted from PDF to TXT
+# Source path: D:\llm\notebooks\AI-Papers\2202.07946v1.pdf
+# File size: 737331 bytes
+
+===============================================
+PDF FILE CONTENT
+===============================================
+
+
+--- PAGE 1 ---
+Turn Tree into Graph: Automatic Code Review via Simpliﬁed AST
+Driven Graph Convolutional Network
+Bingting Wua, Bin Liangb,<and Xiaofang Zhanga,<
+aSchool of Computer Science and Technology, Soochow University, Suzhou, China
+bDepartment of Computer Science, Harbin Institute of Technology, Shenzhen, China
+ARTICLE INFO
+Keywords :
+Automatic Code Review
+Deep Learning
+Abstract Syntax Tree
+Graph Neural NetworksABSTRACT
+Automatic code review (ACR), which can relieve the costs of manual inspection, is an indispensable
+andessentialtaskinsoftwareengineering.TodealwithACR,existingworkistoserializetheabstract
+syntax tree (AST). However, making sense of the whole AST with sequence encoding approach
+is a daunting task, mostly due to some redundant nodes in AST hinder the transmission of node
+information. Not to mention that the serialized representation is inadequate to grasp the information
+of tree structure in AST. In this paper, we ﬁrst present a new large-scale Apache Automatic Code
+Review (AACR) dataset for ACR task since there is still no publicly available dataset in this task.
+The release of this dataset would push forward the research in this ﬁeld. Based on it, we propose a
+novel Simpliﬁed AST based Graph Convolutional Network (SimAST-GCN) to deal with ACR task.
+Concretely, to improve the eﬃciency of node information dissemination, we ﬁrst simplify the AST
+of code by deleting the redundant nodes that do not contain connection attributes, and thus deriving
+a Simpliﬁed AST. Then, we construct a relation graph for each code based on the Simpliﬁed AST to
+properlyembodytherelationsamongcodefragmentsofthetreestructureintothegraph.Subsequently,
+inthelightofthemeritofgraphstructure,weexploreagraphconvolutionnetworksarchitecturethat
+followsanattentionmechanismtoleveragethecrucialimplicationsofcodefragmentstoderivecode
+representations.Finally,weexploitasimplebuteﬀectivesubtractionoperationintherepresentations
+between the original and revised code, enabling the revised diﬀerence to be preferably learned for
+deciding the results of ACR. Experimental results on the AACR dataset illustrate that our proposed
+model outperforms the state-of-the-art methods.
+1. Introduction
+Code review is the act of consciously and systemati-
+cally convening programmers to check each other’s code
+for mistakes, and has been repeatedly shown to accelerate
+andstreamlinetheprocessofsoftwaredevelopment.Hence,
+it also incurs considerable human resources [1], making it
+impossible to expand code review on a large scale. There-
+fore, many researchers are committed to automatic code
+review (ACR). For ACR, we ﬁrst provide the model with
+the original code and the revised code, and then the model
+providesuswithsuggestionsonwhetherthismodiﬁcationis
+acceptable.
+Traditionalapproachesarelimitedtodealwiththemain
+challengeofcodereview:understandingthecode[2].There-
+fore, researchers can only improve eﬃciency from other
+aspects of code review, such as recommending suitable
+reviewers [3, 4, 5] and using static analysis tools [6, 7, 8].
+However, with the development of deep learning, we can
+understand the code by modeling the source code, thereby
+eﬀectively solving the main challenges in automatic code
+review.
+Recentwork[9,10]hasshownthatdeeplearningmeth-
+odsperformbetterincapturingthesyntacticalandsemantic
+information of the source code, enabling suitable code re-
+view suggestions. Among them, Shi [9] proposes a method
+<Corresponding author.
+20204227028@stu.suda.edu.cn (B. Wu); bin.liang@stu.hit.edu.cn
+(B. Liang); xfzhang@suda.edu.cn (X. Zhang)
+ORCID(s):called Deep Automatic Code reviEw (DACE), which uses
+long short-term memory (LSTM) [11] and convolutional
+neural network (CNN) [12] to capture the semantic and
+syntactical information, respectively. Due to the character-
+isticsofACR,themodelneedstocomparetheoriginalcode
+and the revised code. They also design a pairwise recursive
+autoencoder to compare the code.
+In most previous research eﬀorts, they divide the code
+according to the delimiter to ensure that the syntactical
+information of the code can be preserved. However, such
+delimiter-based models still limit in that splitting the code
+according to the delimiter does not eﬀectively represent
+the structural information of the code. This is because of
+the diﬀerences between programming languages and natu-
+ral languages. In natural language, it is usually sequential
+comprehension.Butinaprogramminglanguage,itneedsto
+be understood under the logical order of the abstract syntax
+tree (AST). For example, the programmer may divide the
+code into lines because the code is too long, but this does
+not mean that the syntax of the code has changed.
+In the ﬁeld of code representation, moreover, there are
+some AST-based methods. These methods mostly serialize
+the AST into a sequence of nodes. In the subsequent pro-
+cessing, various network models can be applied to improve
+the performance of code representation. Although these
+methodsusesomestructuralinformationintheAST,theydo
+not make full use of the structural information at the model
+level.
+We thus explore a novel solution to represent the code
+fragments:obtainingamoreconciseandeﬃcientcodegraph
+Wu et al.: Preprint submitted to Elsevier Page 1 of 15arXiv:2202.07946v1  [cs.SE]  16 Feb 2022
+
+--- PAGE 2 ---
+Turn Tree into Graph: Automatic Code Review via Simpliﬁed AST Driven Graph Convolutional Network
+OriginalfileRevisedfile
+DeveloperReviewerSubmitAcceptCode baseReject
+Accept
+Figure 1: Traditional code review process.
+representation by simplifying the AST and using graph
+convolution to handle the associated information between
+nodes. Based on the idea, we propose a Simpliﬁed AST
+basedGraphConvolutionalNetwork(SimAST-GCN)model
+toleveragethesemanticdependenciesofthecodefragments.
+Here, the semantic and syntactical information from neigh-
+bors of each node are aggregated to derive the code graph
+embeddings, so as to extract the semantics for representing
+the code fragments well. To our knowledge, this is the ﬁrst
+study to deploy the graph structure for leveraging the node
+connectioninformationintheASTforthecodereviewtask.
+Further, there is no public dataset for the code review task.
+As such, to advance and facilitate research in the ﬁeld of
+ACR, we present a new Apache Automatic Code Review
+(AACR) dataset. The main contributions of our work can
+be summarized as follows:
+•Weprovidealarge-scaleApacheAutomaticCodeRe-
+viewdataset(AACR),sincethereisnopublicdataset
+available for ACR.
+•A Simpliﬁed AST based Graph Convolutional Net-
+work is proposed to extract syntactical and semantic
+information from source code fragments.
+•Experimental results on the AACR dataset show that
+the proposed model achieves signiﬁcantly better re-
+sults than state-of-the-art baseline methods.
+The rest of this paper is organized as follows. Section
+2 introduces the background. Section 3 describes our ap-
+proach. Section 4 provides our experimental design. Sec-
+tion 5 presents the experimental results and analyzes them.
+Section 6 presents several related works. Finally, Section 7
+concludes our work.
+2. Background
+2.1. Code Review
+The general process of traditional code review is shown
+in Figure 1. When a developer completes and submits the
+code implementation for speciﬁc requirements, the system
+will arrange a suitable reviewer who needs to compare the
+diﬀerences between the original ﬁle and the revised ﬁle to
+verifywhetherthecodemeetstherequirements.Ifthereisno
+public static int add(String[] args){    Scanner sc=new Scanner(System.in);    int a=sc.nextInt();    int b=sc.nextInt();    return a+b;}Figure 2: Example of source code.
+problem,thecodewillbeaddedtothecodebase;otherwise,
+the reviewer will ask the developer to revise the code.
+Traditional approaches use static analysis tools to assist
+with code review. For example, Checkstyle1covers coding
+style-related issues, PMD2checks class design issues and
+questionable coding practices, and FindBugs3[13] detects
+potential bugs in the code. However, traditional static anal-
+ysis tools cannot understand the code. They only judge
+whetherthereisaproblemwiththecodebasedonpredeﬁned
+patterns.
+TosolvetheACRtaskwithadeeplearningmethod,the
+model ﬁrst extracts as many features as possible from the
+original ﬁle and the revised ﬁle, and encode these features
+as vector representations. Then, the model uses diﬀerent
+networkstructurestoenhancethesefeaturestomaximizethe
+characteristics of the source code. Finally, it is necessary to
+design a suitable model or method to calculate the distance
+between the original ﬁle and the revised ﬁle, and generate
+code review recommendations based on the diﬀerence.
+2.2. Abstract Syntax Tree
+An abstract syntax tree (AST) is a tree designed to
+representtheabstractsyntacticstructureofsourcecode[14].
+For example, Figure 2 shows an example of source code,
+and Figure 3(a) shows the AST extracted from that source
+code.ASThasbeenwidelyusedbyprogramminglanguages
+and software engineering tools. For example, it has a wide
+rangeofapplicationsinsourcecoderepresentation[15,16],
+defect prediction [17], and other ﬁelds. Each node of an
+AST corresponds to a construct or symbol in the source
+code. Firstly, unlike ordinary source code, AST is abstract
+and does not contain all the details, such as separators and
+punctuation. Secondly, AST contains richer structural and
+semanticinformation,whichisverysuitableforrepresenting
+source code.
+Here, we do not directly use the original AST infor-
+mation. Since after the program is parsed into an AST,
+its node size will increase signiﬁcantly, which hampers the
+performance of the graph network. Therefore, we simplify
+the AST to improve the performance of the entire model.
+2.3. Tree-based Neural Network
+Recently, many researchers have proposed Tree-Based
+Neural Networks (TBNNs) that use ASTs directly as model
+1https://checkstyle.sourceforge.io
+2https://pmd.github.io
+3http://ﬁndbugs.sourceforge.net
+Wu et al.: Preprint submitted to Elsevier Page 2 of 15
+
+--- PAGE 3 ---
+Turn Tree into Graph: Automatic Code Review via Simpliﬁed AST Driven Graph Convolutional Network
+MethodDeclarationmodifiersstaticpublicnameparametersbodyreturn_typeadd...LocalVariableDeclarationLocalVariableDeclarationReturnStatementtypeReferenceType...BasicTypeexpressionBinaryOperationtype...typeBasicType...LocalVariableDeclarationMethodDeclarationstaticpublic…LocalVariableDeclarationLocalVariableDeclarationReturnStatementLocalVariableDeclarationScannerVariableDeclaratorSystemscsc…intVariableDeclaratorscbnextInt+abAttribute nodeCode node(a) Abstract Syntax Tree (b) Simplified Abstract Syntax Tree 
+Figure 3: Example of preprocessing source code based on AST. The nodes framed by dashed lines are later removed. The AST
+is extracted from the source code shown in Figure 2.
+inputs. Given a tree, TBNNs typically use a recursive ap-
+proach, aggregating information from leaf nodes upward in
+layers to obtain a vector representation of the source code.
+Themostrepresentativemodelofthecoderepresentationis
+AST-based Neural Network (ASTNN) [15].
+In ASTNN, they parse the code fragment into the AST
+and use the preorder traversal algorithm to split the AST
+into a sequence of statement trees (ST-trees, that is, a tree
+composed of the statement node as the root and the AST
+node corresponding to the statement). Then, they design
+a Statement Encoder module to encode all ST-trees into
+vectorse1;:::;et. For each ST-tree t, letndenotes a non-leaf
+node,andCdenotesthenumberofitschildrennodes.With
+the pre-trained embedding matrix WeËRðVðdwhereV
+is the vocabulary size and dis the embedding dimension of
+nodes, the vector of node ncan be obtained by:
+vn=Wñ
+exn (1)
+wherexnis the one-hot representation of symbol nand
+vnis the embedding. Next, the representation of node nis
+computed by the following equation:
+h=.Wñ
+nvn+É
+iË[1;C]hi+bn/ (2)
+whereWnËRdkis the weight matrix with encoding
+dimensionk,hiis the hidden state for each children i,bn
+is a bias term, is the activation function and his the
+updatedhiddenstate.TheﬁnalrepresentationoftheST-tree
+is computed by:
+et=[max.hi1/;:::;max.hik/];i=1;:::;N (3)
+whereNis the number of nodes in the ST-tree. Then,
+ASTNNusesBidirectionalGatedRecurrentUnit(Bi-GRU)
+[18], to model the characteristics of the statements. The
+hidden states of Bi-GRU are sampled into a single vector
+by pooling. Such a vector captures the characteristics of
+sourcecode[19],[20]andcanserveasaneuralsourcecode
+representation.2.4. Motivation
+As illustrated in the previous sections, the structural
+information of code, like AST, Control Flow Graph (CFG)
+[21], Data Flow Graph (DFG) [22], have been widely used
+in many tasks. We think that it’s meaningful to use the
+structural information in ACR task.
+For token-based methods and delimiter-based methods,
+the performance is under the expectation in many tasks.
+Their approaches are to divide the code into tokens or lines
+according to the space or delimiter. There is no doubt that
+thesepre-processingoperationsabandonthestructuralinfor-
+mation. However, in the code representation, the structural
+information is much more important than that in nature
+language process. Hence, it is a little late for us to use the
+AST information in ACR task.
+InadditiontointroducingASTstructureinformationinto
+ACR,wealsomadesomeoptimizationsandimprovements.
+Inmanycoderepresentationmethods,wenoticedthatmany
+researchers[15]believethatthelargenumberofASTnodes
+has a negative eﬀect on the model.
+In order to solve this problem, we manually checked
+all the node types generated by AST, and tried to ﬁlter
+the generated nodes with simple rules. Attempt to greatly
+reducethenumberofautomaticallygeneratednodeswithout
+aﬀecting the overall structure and semantic information of
+the AST, so as to obtain lightweight and eﬀective structural
+information.
+Similarly, we also found that in the ﬁeld of code rep-
+resentation, there are still some shortcomings in the use
+of AST’s tree structure information. Researchers usually
+serialize the tree structure into a sequence of nodes, which
+damages the overall information expression to some extent.
+Therefore, in this article, we also propose the use of the
+latestgraphconvolutionoperationandattentionmechanism
+to better capture code information from the tree structure.
+Wu et al.: Preprint submitted to Elsevier Page 3 of 15
+
+--- PAGE 4 ---
+Turn Tree into Graph: Automatic Code Review via Simpliﬁed AST Driven Graph Convolutional Network
+ASTSimplified AST1. Node Sequence and Relation Graph Generation2. SimAST-GCN
+OriginalRevisedOrInputEmbedding moduleGCN layersBi-GRU………Attention…
+……DifferenceOriginalRevisedMLP…Output3. Prediction
+Embeddings or hidden representations
+Figure 4: General framework of SimAST-GCN. The blue and khaki nodes in the AST correspond to the nodes in Figure 3. The
+white nodes are the undrawn parts.
+3. Proposed Approach
+We introduce our approach (SimAST-GCN) in this sec-
+tion. As shown in Figure 4, the architecture of the proposed
+SimAST-GCNframeworkcontainsthreemaincomponents.
+First, the Node Sequence and Relation Graph Generation
+module simpliﬁes the AST, as illustrated in Figure 3, and
+generates the corresponding adjacency matrix and node
+sequencebasedontheSimpliﬁedAST.Second,theproposed
+SimAST-GCN obtains the word embeddings of the node
+sequenceandusesaBidirectionalGatedRecurrentUnit(Bi-
+GRU)tomodelthenaturalnessofthestatements.Itthenem-
+ploysaGraphConvolutionNetwork(GCN)tofusethenode
+relationgraphandthehiddenstatus.Finally,retrieval-based
+attention is employed to derive the code representation.
+Third, a prediction is made by calculating the diﬀerences in
+the code representations to predict the ﬁnal result.
+3.1. Node Sequence and Relation Graph
+Generation
+3.1.1. Simplifying AST
+First, we use the existing syntax analysis tools to parse
+thesourcecodefragmentsintothecorrespondingASTs.For
+each AST, we delete the redundant nodes and reconstruct
+node connections of the entire AST to ensure the integrity
+of the tree structure.
+GivenanAST TandtheASTattributenodes S(attribute
+nodes, the blue nodes in Figure 3). First, we ﬁlter attribute
+nodes and retain nodes with strong semantic information.
+We assume that if the attribute nodes contain a Declaration
+orStatement , then these attribute nodes contain connection
+information. For example, in Figure 3(a), MethodDeclara-
+tiondeﬁnes a method, all nodes under the method belong
+to this node, while the node modiﬁers indicates that the
+nodestaticis a modiﬁer, and reduces the strength of the
+connectionbetweenthenode staticandMethodDeclaration .
+Therefore, we remove these redundant nodes to reduce the
+number of node sequences and increase the strength of the
+connection between each node.Algorithm 1 Procedure for simplifying the AST
+Input:TherootofAST,R;thesourcecodefragment,C;the
+attribute node, S.
+Output: The Simpliﬁed AST.
+1:LetFS=[].
+2:foreachnodeËSdo
+3:ifDeclaration ËnodeorStatementËnodethen
+4:FS}FS+node
+5:function SIMPLIFYAST(R;C;FS )
+6:Letchildren=[].
+7:foreachnodeËR[child]do
+8: ifnodeËCornodeËFSthen
+9: children }children+node
+10: else
+11: children }children+node[child]
+12:SimplifyAST .node;C;FS/
+13:R[child]}children
+14:SIMPLIFYAST(R;C;FS )
+15:returnR
+If we simply remove the redundant nodes in the AST
+tree, it will split the entire AST. To maintain the integrity
+of the whole tree, we need to reconnect the split AST. For
+example, in Figure 3(a), the nodes framed by dashed lines
+are removed, and ﬁnally a Simpliﬁed AST is generated, as
+showninFigure3(b).TheprocedureforsimplifyingtheAST
+is depicted in Algorithm 1. In general, if the node in the
+original AST is deleted, we connect the child node of the
+deleted node to its parent node.
+3.1.2. Generate Node Sequence and Relation Graph
+over Simpliﬁed AST
+After obtaining the Simpliﬁed AST, we use the depth-
+ﬁrst traversal algorithm to serialize the Simpliﬁed AST into
+Node Sequences. For example, if the size of the AST is n,
+then we derive a node sequence w=[w1;w2;:::;wn].
+Wu et al.: Preprint submitted to Elsevier Page 4 of 15
+
+--- PAGE 5 ---
+Turn Tree into Graph: Automatic Code Review via Simpliﬁed AST Driven Graph Convolutional Network
+InspiredbypreviousGCN-basedapproach[23],wepro-
+duce a node relation graph for each code fragment over the
+simpliﬁed AST:
+Ai;j=T
+1ifi=jorwi;wjare directly connected
+0otherwise(4)
+Then, an adjacency matrix AËRnnis derived via the
+simpliﬁed AST of the source code fragments.
+3.2. SimAST-GCN
+3.2.1. Embedding Model
+In our proposed model SimAST-GCN, we use the gen-
+sim [24] library to train the embeddings of symbols to get
+the distributed representations of the words in the AST.
+Thus, we can get the embedding lookup table VËRmðNð
+accordingtothewordindex,where mistheembeddingsize
+(the dimension of each word) and ðNðis the number of all
+words after deduplication (vocabulary size). Then, given a
+node sequence with nnodes, we can get the corresponding
+embedding matrix x=[x1;x2;:::;xn], where xiËRmis the
+word embedding.
+3.2.2. Graph Convolutional Network
+InourmodelSimAST-GCN,ourGCNmoduletakesthe
+node relation graph and the corresponding node represen-
+tations as input. Each node representation in the l-th GCN
+layer is updated by aggregating the information from their
+neighborhoods, the calculation formula is:
+hl=LeakyReLU. Lhl*1Wl+bl/ (5)
+where hl*1is the hidden representation generated from the
+precedingGCNlayer. Lisanormalizedsymmetricofanode
+relation adjacency matrix:
+L=A_.D+1/ (6)
+where D=³n
+j=1Ai;jis the degree of Ai. The original node
+representations for the GCN layers are the hidden represen-
+tations generated by the Bi-GRU layers, which using the
+previous embedding matrix xas the1*st GCN layer input:
+Hc=^hc
+1;hc
+2;:::;hc
+n`=Bi-GRU.x/ (7)
+Finally, we can capture the representations hof the GCN
+layers successfully. Susequently, we use the retrieval-based
+attention mechanism [23] to capture signiﬁcant sentiment
+featuresfromthecontextrepresentationsforthesourcecode:
+t=nÉ
+i=1hcñ
+thi (8)
+t=exp.t/
+³n
+i=1exp.i/(9)
+where hcñ
+tis the transposition of the hidden status of the
+t-th node, and hiis the graph hidden representation of theTable 1
+Statistics of the AACR dataset.
+Repository #methods #rejected reject rate
+accumulo 12,704 2,883 23%
+ambari 5,313 542 10%
+cloudstack 9,942 6,032 61%
+commons-lang 6,176 5634 91%
+ﬂink 23,792 16,172 68%
+incubator-point 7,759 1,001 13%
+kafka 24,912 8,888 36%
+lucene-solr 6,785 2,886 43%
+shardingsphere 12,254 676 6%
+i-thnode.Hence,theﬁnalrepresentationofthesourcecode
+fragment is formulated as follows:
+r=nÉ
+i=1ihc
+i(10)
+3.3. Prediction
+The above content is the operation for one code frag-
+ment. The ACR process needs to compare the two source
+code fragments (the original ﬁle sOand the revised ﬁle
+sR) and give a judgment—that is, whether it passes the
+code review. Therefore, after we obtain the corresponding
+representations rOandrR,weneedtocalculatethedistance
+between them:
+r=rO*rR(11)
+y=softmax. Wr+b/ (12)
+wheresoftmax. /is the softmax function.
+The target to train the classiﬁers is to minimize the
+weighted cross entropy loss between the predicted and the
+true distributions:
+L=*SÉ
+i=1.wOyilog pi+wR.1*yi/log.1* pi//+ññ2(13)
+whereSdenotes the number of training samples, wOis the
+weightofincorrectlypredictingarejectedchange, wRisthe
+weight of incorrectly predicting an approved change. These
+two terms provide the opportunity to handle an imbalanced
+label distribution. is the weight of the L2regularization
+term.denotes all trainable parameters.
+4. Experimental design
+This section introduces the process of the experiment,
+includingtherepositoryselectionandthedataconstruction,
+baseline setting, evaluation metrics and experimental set-
+ting.
+Wu et al.: Preprint submitted to Elsevier Page 5 of 15
+
+--- PAGE 6 ---
+Turn Tree into Graph: Automatic Code Review via Simpliﬁed AST Driven Graph Convolutional Network
+4.1. Dataset Construction
+We selected 9 projects from Github belonging to the
+Apache Foundation because the Apache Foundation is a
+widely used code review source. Six of them ( commons-
+lang, ﬂink, incubator-point, kafka, lucene-solr, sharding-
+sphere)werechosenbecausetheyhaveover2000stars.The
+remaining projects ( accumulo, ambari, cloudstack ) were
+selected by [9]. The language of all the projects is Java.
+For data processing, we extracted all issues belonging
+to these projects from 2018 to 2020. Among these issues,
+many do not involve code submission, but only provide
+feedback, so we need to choose according to the issue type.
+Aftermanuallyanalyzinghundredsofissuetypes,weﬁnally
+chose the types PullRequestEvent andPullRequestReview-
+CommentEvent .Becauseonlythesetwotypesofissueshave
+revised code, it can be judged whether the code has passed
+thereviewbyinspectingwhetherthecodehasbeenaddedto
+the code base.
+Inmanypracticalcases,wecaneasilyextracttheoriginal
+code and revised code from the issue, but because these
+codesareusuallycontainedinmanyﬁles,itisdiﬃcultforus
+to use them directly as the input of the network. Therefore,
+we assume that all of the changes are independent and
+identically distributed, so there is no connection between
+thesechanges,andifaﬁlecontainsmanychangedmethods,
+we can split these methods independently as inputs.
+Further, if we add a new method or delete a whole
+method,halfoftheinputdataisempty.Sowediscardthese
+data because they cannot be fed into the network. That is,
+weonlyconsiderthecasewherethecodehasbeenchanged.
+In addition, considering that the submitted data may be too
+large, we subdivide the code submitted each time into the
+method level for subsequent experiments.
+After processing the data, each piece of data comprises
+three parts: the original code fragment, the revised code
+fragment,and thelabel. Theoriginalcode fragmentandthe
+revisedcodefragmentarebothmethod-levelJavaprograms.
+Thelabeluses0and1torepresentrejectionandacceptance.
+ThebasicstatisticsoftheAACRaresummarizedinTable1.
+In this paper, the rate of the rejection between 6% and
+91%meansthatthereisclassimbalanceduringmodeltrain-
+ing and it will lead to poor performance, so we set the
+’class_weight’ parameter to ’balance’ in our model.
+4.2. Comparison Models
+Inthispaper,wecomparedourproposedmodel(SimAST-
+GCN) with three other models in the ACR task. These
+models use diﬀerent methods (including delimiter-based
+method, token-based method, tree-based method) to obtain
+the code features. The baseline models are as follows:
+•DACE[9]dividesthecodeaccordingtothedelimiter
+anddesignsapairwiserecursiveautoencodertocom-
+pare the code.
+•TBRNN serializes the AST into tokens and uses an
+RNN to capture the syntactic and semantic informa-
+tion.•ASTNN [15] splits large ASTs into a sequence of
+smallstatementtreesandcalculatestherepresentation
+distance to compare the code.
+In addition, we considered variants of our proposed
+SimAST-GCN.
+•ASTGCN isourproposedmodelwithouttheSimpli-
+ﬁed AST module.
+•SimAST is our proposed model without the GCN
+module.
+•SAGCN-C is our proposed model, but where it con-
+nect the representations to compare codes rather than
+calculating the distance.
+Inordertoensurethefairnessoftheexperimentandthe
+stability of the results, we ran all the methods on the new
+AACRdataset,andeachexperimentwasrepeated30times.
+4.3. Evaluation
+4.3.1. Metrics for ACR evaluation
+Since the automatic code review can be formulated as
+a binary classiﬁcation problem (accept or reject) [9], we
+choose the commonly-used Accuracy, F1-measure (F1),
+Areaunderthereceiveroperatingcharacteristiccurve(AUC)
+as evaluation metrics. In addition, considering the unbal-
+anced data distribution in the AACR dataset, we also added
+another evaluation metric Matthews correlation coeﬃcient
+(MCC) to better evaluate the performance and eﬃciency of
+the model.
+The value range of AUC is [0,1]. When the AUC value
+is 1, it means that the predicted value is consistent with the
+correctvalue.WhentheAUCvalueis0.5,itisequivalentto
+random selection. When the AUC value is less than 0.5, it
+means that it is worse than random selection.
+The detailed deﬁnitions of Accuracy is as follows:
+Accuracy=TP+TN
+TP+TN+FP+FN(14)
+where TP, FP, FN, and TN represent True Positives, False
+Positives,FalseNegatives,andTrueNegatives,respectively.
+The Accuracy is the ratio of the number of correctly pre-
+dicted samples to the total number of predicted samples.
+The calculation formula of F1 is as follows:
+Precision=TP
+TP+FP(15)
+Recall=TP
+TP+FN(16)
+F1=2<Precision<Recall
+Precision+Recall(17)
+The F1 score is the harmonic mean of the precision and
+recall. The value range of F1 is [0,1], which indicates the
+Wu et al.: Preprint submitted to Elsevier Page 6 of 15
+
+--- PAGE 7 ---
+Turn Tree into Graph: Automatic Code Review via Simpliﬁed AST Driven Graph Convolutional Network
+resultisbetweenthezeroprecision(orrecall)valueandthe
+perfect recall and precision.
+The calculation formula of MCC is:
+MCC=TPTN*TPFNù
+.TP+FP/.TP+FN/.TN+FP/.TN+FN/
+(18)
+ThevaluerangeofMCCis[-1,1],indicatingtheprediction
+is totally wrong and the predicted result is consistent with
+the real situation, separately.
+4.3.2. Signiﬁcance analysis (Win/Tie/Loss indicator)
+Inthispaper,weusedtheWin/Tie/Lossindicatortocom-
+pare further the performance diﬀerence between SimAST-
+GCNandthebaselinemodels,whichiswidelyusedinsoft-
+ware ﬁelds [25],[26]. We repeated the experiment 30 times
+for all models. Then we applied two data analysis methods
+(Wilcoxon signed-rank test and Cliﬀ’s delta test) to analyze
+the performance of SimAST-GCN and other methods.
+The Wilcoxon signed-rank test is commonly used for
+pairwise comparison. It is a non-parametric statistical hy-
+pothesistestusedtodeterminewhetherthetwopopulations
+of matched samples have the same distribution. Diﬀerent
+from the Student’s t-test, the Wilcoxon signed-rank test
+does not assume that the data are normally distributed. It is
+more statistically detectable for diﬀerent datasets than the
+Student’s t-test, and it is more likely to give statistically
+signiﬁcantresults.The pvalueisusedtodeterminewhether
+the diﬀerence between the two populations of a matched
+samples is signiﬁcant ( pvalue<0:05) or not.
+The Cliﬀ’s delta test [27] is a non-parametric eﬀect size
+test, which is a supplementary analysis of the Wilcoxon
+signed-rank test in this paper. It measures the diﬀerence
+betweentwopopulationsofcomparisonsamplesintheform
+of numerical value. Table 2 shows the mappings between
+Cliﬀ’s delta values ( ðð) and their eﬀective levels.
+Speciﬁcally,forSimAST-GCNandabaselinemodel M,
+the Win/Tie/Loss indicator between them on ACR task is
+calculated as follows:
+•Win: The result of SimAST-GCN outperforms M, if
+thepvalue less than 0.05, and the eﬀective level of
+Cliﬀ’s delta is not Negligible .
+•Loss: The result of Moutperforms SimAST-GCN, if
+thepvalue less than 0.05, and the eﬀective level of
+Cliﬀ’s delta is not Negligible .
+•Tie: Others.
+4.4. Experimental Setting
+Inourexperiments,weusedthejavalangtools4toobtain
+ASTs for Java code, and we used Skip-gram algorithm
+implementedbygensimlibrary[24]totraintheembeddings
+of nodes. The embedding size was set to 300. The hidden
+sizeofBi-GRUwas300.ThenumberofGCNlayerswas3,
+which is the optimal depth in pilot studies. The coeﬃcients
+4https://github.com/c2nes/javalangTable 2
+Mappings between the Cliﬀ’s delta values( ðð) and their
+eﬀective levels
+Cliﬀ’s delta Eﬀective levels
+ðð<0.147 Negligible
+0.147 fðð<0.33 Small
+0.33fðð<0.474 Medium
+0.474 fðð Large
+wOandwRwererelatedtothedataset,andthecoeﬃcient 
+ofL2regularizationitemwassetto 10*5.Adamwasutilized
+as the optimizer with a learning rate of 10*3to train the
+model, and the mini-batch was 128. We random initialized
+all the Wandbwith a uniform distribution.
+Alltheexperimentswereconductedonaserverwith24
+cores of 3.8GHz CPU and a NVIDIA GeForce RTX 3090
+GPU.
+5. Experimental Results
+This section shows the performance of our proposed
+method SimAST-GCN with other baseline methods. There-
+fore, we put forward the following research questions:
+•RQ1: Does our proposed SimAST-GCN model out-
+perform other models for automatic code review?
+•RQ2: How diﬀerent parameter settings and module
+inﬂuence the performance of our method?
+•RQ3: Does our proposed SimAST-GCN model out-
+perform other models in terms of time eﬃciency?
+5.1. Does our proposed SimAST-GCN model
+outperform other models for automatic code
+review?
+Tables 3–6 show the comparison results of four metrics
+on the AACR dataset. For each table, it is divided into
+three columns. The ﬁrst column is the repository name.
+The second column is the corresponding metric column,
+which shows the metric values of our proposed SimAST-
+GCN method and the other three baseline methods. For
+each repository, the result of the best method is presented
+in hold. The p() column shows the pvalues of Wilcoxon
+signed-rank test and Cliﬀ’s delta values between Sim-AST
+and the other three baseline methods. For the pvalue of
+Wilcoxon signed-rank test, we displayed the original value
+in the table if the value is not less than 0.05. Otherwise, we
+will display ’ <0:05’ in the table. For Cliﬀ’s delta value,
+we displayed the eﬀective level (shown in Table 2) in the
+table.InordertodistinguishthepositiveandnegativeCliﬀ’s
+delta value, we used ’+’ and ’-’ before the eﬀective level to
+represent the property. The row ’Average & Win/Tie/Loss’
+showstheaveragevalueofthecorrespondingmetricandthe
+Win/Tie/Loss indicator.
+The results in all the metrics show that the proposed
+SimAST-GCNconsistentlyoutperformsallcomparisonmod-
+els. This veriﬁes the eﬀectiveness of our proposed method
+at ACR.
+Wu et al.: Preprint submitted to Elsevier Page 7 of 15
+
+--- PAGE 8 ---
+Turn Tree into Graph: Automatic Code Review via Simpliﬁed AST Driven Graph Convolutional Network
+Table 3
+Accuracy values of SimAST-GCN and other three baseline methods.
+RepositoryAccuracy p( )
+DACE TBRNN ASTNN SimAST-GCN DACE vs. SimAST-GCN TBRNN vs. SimAST-GCN ASTNN vs. SimAST-GCN
+accumulo 86.108 88.868 90.887 94.597 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+ambari 75.563 70.944 82.015 85.969 <0.05(+Large) <0.05(+Large) <0.05(+Medium)
+cloudstack 74.181 75.957 72.311 76.664 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+commons-lang 96.525 97.758 93.381 98.306 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+ﬂink 67.133 70.969 69.438 70.125 <0.05(+Large) <0.05(-Large) <0.05(+Medium)
+incubator-pinot 75.168 78.605 61.605 78.888 <0.05(+Small) 0.6(-Small) <0.05(+Large)
+kafka 57.71 58.885 63.74 62.669 <0.05(+Large) <0.05(+Large) <0.05(-Medium)
+lucene-solr 67.882 72.95 71.45 74.0 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+shardingsphere 86.994 88.315 89.975 89.695 <0.05(+Large) <0.05(+Medium) <0.05(-Large)
+Average &76.363 78.139 77.2 81.213 9/0/0 7/1/1 7/0/2Win/Tie/Loss
+Table 4
+F1 values of SimAST-GCN and other three baseline methods.
+RepositoryF1 p( )
+DACE TBRNN ASTNN SimAST-GCN DACE vs. SimAST-GCN TBRNN vs. SimAST-GCN ASTNN vs. SimAST-GCN
+accumulo 0.91 0.926 0.942 0.965 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+ambari 0.855 0.82 0.896 0.921 <0.05(+Large) <0.05(+Large) <0.05(+Medium)
+cloudstack 0.683 0.727 0.726 0.729 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+commons-lang 0.794 0.873 0.679 0.9 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+ﬂink 0.554 0.588 0.559 0.598 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+incubator-pinot 0.85 0.873 0.732 0.874 <0.05(+Small) 0.6(-Small) <0.05(+Large)
+kafka 0.623 0.625 0.698 0.699 <0.05(+Large) <0.05(+Large) 0.417(-Negligible)
+lucene-solr 0.731 0.749 0.752 0.771 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+shardingsphere 0.929 0.936 0.945 0.944 <0.05(+Large) <0.05(+Medium) <0.05(-Large)
+Average &0.77 0.791 0.77 0.822 9/0/0 8/1/0 7/1/1Win/Tie/Loss
+Table 5
+AUC values of SimAST-GCN and other three baseline methods.
+RepositoryAUC p( )
+DACE TBRNN ASTNN SimAST-GCN DACE vs. SimAST-GCN TBRNN vs. SimAST-GCN ASTNN vs. SimAST-GCN
+accumulo 0.805 0.877 0.869 0.925 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+ambari 0.653 0.605 0.651 0.668 <0.05(+Medium) <0.05(+Large) <0.05(+Large)
+cloudstack 0.734 0.768 0.762 0.768 <0.05(+Large) 0.136(+Negligible) <0.05(+Large)
+commons-lang 0.9 0.962 0.956 0.971 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+ﬂink 0.671 0.695 0.678 0.711 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+incubator-pinot 0.622 0.623 0.652 0.656 <0.05(+Large) <0.05(+Large) <0.05(+Small)
+kafka 0.602 0.612 0.638 0.644 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+lucene-solr 0.689 0.737 0.709 0.745 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+shardingsphere 0.684 0.745 0.783 0.785 <0.05(+Large) <0.05(+Large) 0.491(+Negligible)
+Average &0.707 0.736 0.744 0.764 9/0/0 8/1/0 8/1/0Win/Tie/Loss
+Table 6
+MCC values of SimAST-GCN and other three baseline methods.
+RepositoryMCC p( )
+DACE TBRNN ASTNN SimAST-GCN DACE vs. SimAST-GCN TBRNN vs. SimAST-GCN ASTNN vs. SimAST-GCN
+accumulo 0.61 0.709 0.735 0.847 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+ambari 0.213 0.141 0.239 0.246 <0.05(+Large) <0.05(+Large) <0.05(+Small)
+cloudstack 0.469 0.527 0.521 0.533 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+commons-lang 0.775 0.863 0.687 0.892 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+ﬂink 0.32 0.373 0.337 0.391 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+incubator-pinot 0.182 0.204 0.207 0.222 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+kafka 0.202 0.218 0.265 0.276 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+lucene-solr 0.376 0.469 0.423 0.485 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+shardingsphere 0.203 0.36 0.393 0.369 <0.05(+Large) <0.05(+Medium) <0.05(-Large)
+Average &0.372 0.429 0.423 0.474 9/0/0 9/0/0 8/0/1Win/Tie/Loss
+Wu et al.: Preprint submitted to Elsevier Page 8 of 15
+
+--- PAGE 9 ---
+Turn Tree into Graph: Automatic Code Review via Simpliﬁed AST Driven Graph Convolutional Network
+SimAST-GCN DACE TBRNN ASTNN
+Methods0.10.20.30.40.50.60.70.80.9Accuracy
+SimAST-GCN DACE TBRNN ASTNN
+Methods0.600.650.700.750.800.850.900.95F1
+SimAST-GCN DACE TBRNN ASTNN
+Methods0.60.70.80.9AUC
+SimAST-GCN DACE TBRNN ASTNN
+Methods60708090100MCC
+Figure 5: Boxplot of four metrics of SimAST-GCN and the other three baseline methods.
+Compared with the delimiter-based model (DACE), we
+ﬁnd that SimAST-GCN achieves the best performance in
+all the terms of the F1, AUC, and MCC. This is because,
+compared to DACE, SimAST-GCN is not the delimiter-
+based method. We adopt an AST as the abstract code rep-
+resentation,whichdemonstratestheeﬀectivenessofASTat
+code representation.
+Compared with the AST-based models (TBRNN and
+ASTNN), SimAST-GCN also achieves the best perfor-
+mance according to all metrics. Although both TBRNN
+and ASTNN use an abstract syntax tree for source code
+processing, in the code review task, we ﬁnd that the two
+methods do not perform well in comparison to SimAST-
+GCN. On the one hand, we simplify the AST and enhance
+theconnectionpropertiesbetweennodes.Ontheotherhand,
+we use a more advanced graph neural network to model
+the simpliﬁed AST to capture better syntactic and semantic
+information.
+Moreover, we utilize a retrieval-based attention mech-
+anism to capture signiﬁcant sentiment features from the
+context representations for the source code. This mecha-
+nism dramatically improves the performance of the model,allowing the model to focus on the parts of the code that
+mayhavechanged,whichiswidelyusedinnaturallanguage
+processing.
+Insummary,thisistheﬁrststudytosimplifytheabstract
+syntaxtreeanddeployagraphstructuretoleverageSimpli-
+ﬁedASTforthecodereviewtask.Ourexperimentsshowthe
+eﬃciencyofexploitingtheSimpliﬁedASTandadoptingthe
+graph neural network.
+5.2. How diﬀerent parameter settings and module
+inﬂuence the performance of our method?
+5.2.1. Parameter settings
+As a key component of our model, we investigated the
+impact of the GCN layer number on the performance of
+ourproposedmethodSimAST-GCN.Wevariedthenumber
+of layers from 1 to 12, and we report the results of four
+metrics in Figure 6. Overall, the 3-layer GCN achieves the
+bestperformanceonthe accumulo dataset.Hence,weﬁnally
+set the number of GCN layers to 3 in our experiments.
+Comparatively,thelayersofGCNlessthan3inSimAST-
+GCN perform unsatisfactorily, which indicates that fewer
+Wu et al.: Preprint submitted to Elsevier Page 9 of 15
+
+--- PAGE 10 ---
+Turn Tree into Graph: Automatic Code Review via Simpliﬁed AST Driven Graph Convolutional Network
+2 4 6 8 10 12
+GCN Layers909192939495Accuracy
+Accuracy
+2 4 6 8 10 12
+GCN Layers0.930.940.950.960.97F1
+F1
+2 4 6 8 10 12
+GCN Layers0.880.890.900.910.920.930.94AUC
+AUC
+2 4 6 8 10 12
+GCN Layers0.740.760.780.800.820.840.86MCC
+MCC
+Figure 6: Impact of the number of GCN layers. Four metrics based on diﬀerent numbers of GCN layers are reported.
+Table 7
+Accuracy values of SimAST-GCN and other three variant methods.
+RepositoryAccuracy p( )
+ASTGCN SimAST SAGCN-C SimAST-GCN ASTGCN vs. SimAST-GCN SimAST vs. SimAST-GCN SAGCN-C vs. SimAST-GCN
+accumulo 84.53 93.567 92.476 94.597 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+ambari 80.96 78.813 75.102 85.969 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+cloudstack 71.54 76.507 71.725 76.664 <0.05(+Large) 0.719(+Negligible) <0.05(+Large)
+commons-lang 97.588 98.213 96.861 98.306 <0.05(+Large) 0.146(-Medium) <0.05(+Large)
+ﬂink 66.634 69.552 67.493 70.125 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+incubator-pinot 70.004 73.961 74.319 78.888 <0.05(+Large) <0.05(+Medium) <0.05(+Medium)
+kafka 64.115 61.845 59.946 62.669 <0.05(-Large) <0.05(+Medium) <0.05(+Large)
+lucene-solr 58.08 72.953 73.171 74.0 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+shardingsphere 89.181 88.849 87.315 89.695 <0.05(+Small) <0.05(+Small) <0.05(+Large)
+Average &75.848 79.362 77.601 81.213 8/0/1 7/2/0 9/0/0Win/Tie/Loss
+GCN layers in SimAST-GCN are insuﬃcient to derive the
+precise syntactical dependencies of the source code.
+Inaddition,theperformanceofSimAST-GCNdecreases
+asthenumberofGCNlayersincreases,andtendstodecrease
+when the depth of the model is greater than 7. This means
+thatsimplyincreasingthedepthoftheGCNwillreducethe
+learning ability of the model because the model parameters
+increase sharply.5.2.2. Module inﬂuence
+We conducted an ablation study to analyze further the
+impact of diﬀerent components of the proposed SimAST-
+GCN. The results of the four metrics are shown in Table 7–
+10.
+We can observe that the model without the Simpli-
+ﬁed AST (ASTGCN) performs most unsatisfactorily on the
+Wu et al.: Preprint submitted to Elsevier Page 10 of 15
+
+--- PAGE 11 ---
+Turn Tree into Graph: Automatic Code Review via Simpliﬁed AST Driven Graph Convolutional Network
+Table 8
+F1 values of SimAST-GCN and other three variant methods.
+RepositoryF1 p( )
+ASTGCN SimAST SAGCN-C SimAST-GCN ASTGCN vs. SimAST-GCN SimAST vs. SimAST-GCN SAGCN-C vs. SimAST-GCN
+accumulo 0.897 0.959 0.951 0.965 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+ambari 0.889 0.876 0.85 0.921 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+cloudstack 0.72 0.717 0.688 0.729 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+commons-lang 0.859 0.902 0.815 0.9 <0.05(+Large) 0.06(-Large) <0.05(+Large)
+ﬂink 0.572 0.58 0.565 0.598 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+incubator-pinot 0.808 0.837 0.843 0.874 <0.05(+Large) <0.05(+Medium) <0.05(+Medium)
+kafka 0.714 0.678 0.656 0.699 <0.05(-Medium) <0.05(+Large) <0.05(+Large)
+lucene-solr 0.733 0.758 0.765 0.771 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+shardingsphere 0.941 0.939 0.931 0.944 <0.05(+Small) 0.094(+Negligible) <0.05(+Large)
+Average &0.792 0.805 0.785 0.822 8/0/1 7/2/0 9/0/0Win/Tie/Loss
+Table 9
+AUC values of SimAST-GCN and other three variant methods.
+RepositoryAUC p( )
+ASTGCN SimAST SAGCN-C SimAST-GCN ASTGCN vs. SimAST-GCN SimAST vs. SimAST-GCN SAGCN-C vs. SimAST-GCN
+accumulo 0.846 0.91 0.893 0.925 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+ambari 0.691 0.62 0.657 0.668 <0.05(-Large) <0.05(+Large) <0.05(+Large)
+cloudstack 0.742 0.764 0.726 0.768 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+commons-lang 0.945 0.975 0.925 0.971 <0.05(+Large) 0.09(-Small) <0.05(+Large)
+ﬂink 0.689 0.686 0.682 0.711 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+incubator-pinot 0.662 0.651 0.668 0.656 <0.05(-Medium) <0.05(+Medium) <0.05(-Large)
+kafka 0.65 0.616 0.619 0.644 <0.05(-Large) <0.05(+Large) <0.05(+Large)
+lucene-solr 0.506 0.732 0.737 0.745 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+shardingsphere 0.747 0.686 0.703 0.785 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+Average &0.72 0.738 0.734 0.764 6/0/3 8/1/0 8/0/1Win/Tie/Loss
+AACRdataset.ThisconﬁrmsthatsimplifyingtheASTisthe
+most signiﬁcant improvement for ACR.
+In addition, the removal of retrieval-based attention and
+GCN (SimAST) leads to a considerable performance drop.
+This indicates that the attention mechanism and node rela-
+tions vastly improve the performance of ACR.
+We further observe that the model with the connected
+information (SAGCN-C) declines sharply, which indicates
+that it is better to calculate the distance between the repre-
+sentations rather than connecting the representation.5.3. Does our proposed SimAST-GCN model
+outperform other models in terms of time
+eﬃciency?
+In practical applications, the training time of the model
+has excellent limitations on the application of the model, so
+we measured the training time consumption of our model
+SimAST-GCN and the other three baseline models. The
+results are shown in Figure 7.
+In Figure 7, we can observe that SimAST-GCN con-
+sumes the least amount of time than other baseline models.
+Webelievethattherearetworeasonsforourexcellentmodel
+training eﬃciency. First, our model has good parallelism
+capability. ASTNN requires node information to propagate
+from leaf nodes to root nodes, and this is a sequential
+Table 10
+MCC values of SimAST-GCN and other three variant methods.
+RepositoryMCC p( )
+ASTGCN SimAST SAGCN-C SimAST-GCN ASTGCN vs. SimAST-GCN SimAST vs. SimAST-GCN SAGCN-C vs. SimAST-GCN
+accumulo 0.627 0.814 0.786 0.847 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+ambari 0.275 0.185 0.211 0.246 <0.05(-Large) <0.05(+Large) <0.05(+Large)
+cloudstack 0.488 0.521 0.447 0.533 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+commons-lang 0.847 0.896 0.801 0.892 <0.05(+Large) 0.057(-Large) <0.05(+Large)
+ﬂink 0.349 0.352 0.337 0.391 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+incubator-pinot 0.221 0.229 0.24 0.222 0.813(+Negligible) <0.05(-Large) <0.05(-Large)
+kafka 0.288 0.222 0.228 0.276 <0.05(-Large) <0.05(+Large) <0.05(+Large)
+lucene-solr 0.046 0.457 0.469 0.485 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+shardingsphere 0.328 0.263 0.231 0.369 <0.05(+Large) <0.05(+Large) <0.05(+Large)
+Average &0.385 0.438 0.417 0.474 6/1/2 7/1/1 8/0/1Win/Tie/Loss
+Wu et al.: Preprint submitted to Elsevier Page 11 of 15
+
+--- PAGE 12 ---
+Turn Tree into Graph: Automatic Code Review via Simpliﬁed AST Driven Graph Convolutional Network
+SimAST-GCN DACE TBRNN ASTNN0200040006000800010000Time(second)
+Figure 7: Time consumption for SimAST-GCN and three
+baseline methods during training phrase.
+process. The root node cannot be calculated when the in-
+formation is not propagated, which leads to a long time-
+consuming model. DACE and TBRNN use a large number
+of RNN networks in their models, so they are not very
+good in terms of parallelism. The SimAST-GCN model we
+proposed uses only a small amount of RNN network in the
+model,andalargenumberofparallelGCNnetworks,which
+greatly improves the parallelism of the network, thereby
+greatlyreducingthetimeconsumptionofmodeltrainingand
+improving the training eﬃciency of the model. Second, we
+preprocess the data for all models. We move the extraction
+of AST, the simplifying of AST, and the extraction of node
+relationshipgraphsintothepreprocessingprocess.Thus,the
+execution eﬃciency of the model is improved.
+In conclusion, our model SimAST-GCN outperforms
+other models in terms of time eﬃciency.
+5.4. Discussion
+Inthissection,wewilldiscusstheeﬀectivenessofSim-
+plifying AST. Table 11 lists the tree size before and after
+simplifyingtheAST.Wecanseethattheaveragetokenofthe
+treedropsfrom170to94.Wealsonoticethattheproportion
+ofcodetokensinalltokenshasalsogreatlyincreased(from
+47% to 85%), the average percentage increase is about 38
+percentage points. We believe that when the AST is not
+simpliﬁed, the proportion of extra nodes generated is too
+high, which will cause the model to focus too much on
+the information of the extra nodes, thereby ignoring the
+information of the code nodes themselves. Therefore, by
+simplifyingtheAST,ontheonehand,wecanstrengthenthe
+contact information between nodes, and on the other hand,
+we can increase the proportion of code nodes, so that the
+twokindsofnodeinformationcanbebetterbalanced.Thisis
+whysimpliﬁedASThelpstopredictthecodereviewresults.
+ThereasonsforsimplifyingASTaretwo-fold.First,after
+removing useless attribute nodes, the remaining attribute
+nodes represent the relationship between nodes, not the
+attributes of a speciﬁc node. For example, the “modiﬁers"nodeinFigure3(a)meansthatthe“static"nodeisamodiﬁer
+node. However, the “Method Declaration" node can unify
+its child nodes and shorten the distance between the code
+nodes, thereby strengthening the connection between the
+nodes. Second, a smaller number of nodes can reduce the
+computational cost and training overhead.
+6. Related Work
+6.1. Source Code Representation
+In the ﬁeld of software engineering, lots of code-related
+research needs to transform the code into a machine under-
+standable form. Therefore, how to eﬀectively represent the
+source code fragment is a signiﬁcant challenge in the ﬁeld
+of software engineering research.
+Deep learning based methods have attracted much at-
+tentioninlearningrepresentationofsourcecodefragments.
+Raychev[28]usesn-gramandRNNmodelforthecodecom-
+pletion task, and the main idea is to simplify the code com-
+pletion problem to a natural language processing problem,
+that is, to predict the probability of a sentence. Allamanis
+[29] proposes a neural probabilistic language model for the
+methodnamingproblem.Theythinkthatinsimilarcontexts,
+the name tends to have similar embeddings.
+However, with the deepening of the research, the re-
+searchers found that the structural information in the code
+is very important, so they began to study how to extract
+structural information in source code fragments. Mou [30]
+proposes a novel neural network (TBCNN), which is a tree-
+based model designed for programming language process-
+ing. They propose a convolution kernel used on the AST
+to capture the essential structural information. Lam [31]
+combines the project’s bug-ﬁxing history and the features
+built from rVSM and DNN for better accuracy in bug lo-
+calization task. Huo [32] proposes a convolutional neural
+network NP-CNN, which is used to leverage both syntactic
+andsemanticinformation.Accordingtothebugreport,NP-
+CNN learns uniﬁed features from the natural language and
+thesourcecodefragmentstopredictpotentialbuggysource
+code automatically. Wei [33] proposes a methods called
+CDLH for functional clone detection, which is an end-to-
+end learning framework. CDLH exploits both syntactic and
+semantic information to learn hash codes for fast computa-
+tionbetweendiﬀerentcodefragments.Zhang[15]proposes
+a method ASTNN. The main idea is to obtain better feature
+extraction ability by dividing the AST into sentence-level
+blocks.
+Compared with these methods of serializing structural
+information into tokens for modeling, with the recent de-
+velopmentofgraphneuralnetworks,manyresearchershave
+tried to directly use the original structural information for
+modeling instead of destroying the original structural infor-
+mation. Allamanis [34] represents source code fragments
+as graphs and uses diﬀerent edge types to model semantic
+and syntactic relation information between diﬀerent nodes.
+Wu et al.: Preprint submitted to Elsevier Page 12 of 15
+
+--- PAGE 13 ---
+Turn Tree into Graph: Automatic Code Review via Simpliﬁed AST Driven Graph Convolutional Network
+Table 11
+Statistics of the tree size for the original and simpliﬁed versions of the AST.
+Repository Operation Max token Average token Simpliﬁed rate Average code token Code token rate Percentage increase
+accumuloOriginal 3334 188.5243.84% 89.2247.33%36.95Simpliﬁed 1949 105.87 84.27%
+ambariOriginal 2407 217.8643.83% 103.0747.31%36.92Simpliﬁed 1339 122.36 84.23%
+cloudstackOriginal 5036 217.1643.94% 102.2447.08%36.91Simpliﬁed 1790 121.73 83.99%
+commons-langOriginal 1718 112.4348.49% 53.3547.45%44.67Simpliﬁed 831 57.91 92.12%
+ﬂinkOriginal 1928 145.6944.14% 68.5647.06%37.19Simpliﬁed 1069 81.38 84.24%
+incubator-pinotOriginal 3751 187.0244.4% 88.7547.45%37.89Simpliﬁed 2388 103.99 85.34%
+kafkaOriginal 2650 149.1645.96% 70.4247.21%40.15Simpliﬁed 1265 80.6 87.36%
+lucene-solrOriginal 5467 242.6543.94% 113.9646.96%36.82Simpliﬁed 3059 136.02 83.78%
+shardingsphereOriginal 434 73.1443.11% 34.8647.66%36.11Simpliﬁed 247 41.61 83.77%
+AverageOriginal - 170.4144.5% 80.4947.28%38.18Simpliﬁed - 94.61 85.46%
+*Simpliﬁed rate =1*Simpliﬁed average token _Original average token.
+*Code token rate = Average code token _Average token (Original/Simpliﬁed).
+*Percentage increase = Simpliﬁed code token rate *Original code token rate.
+Zugner [35] combines the context and the structure infor-
+mation of source code and uses multiple programming lan-
+guages as the dataset to improve results on every individual
+languages.
+Unlikethepreviousmethods,ourmethodSimAST-GCN
+not only strengthens the structural information, but also
+uses the graph convolution network to deeply integrate the
+structural information and semantic information to better
+represent the characteristics of the source code fragments.
+6.2. Automatic Code Review
+As an crucial part of software engineering, code review
+plays a pivotal role in the entire software life cycle. Code
+reviewdeterminesthereviewresultsbyconveningotherde-
+veloperstounderstand,analyzeanddiscussthecode.There
+is no doubt that this whole process requires many human
+resources. Therefore, many studies are devoted to reducing
+theconsumptionofhumanresourcesincodereviewprocess.
+Thongtanunam [3] reveals that 4%-30% of reviews have
+code reviewer assignment problem. Thus, a code reviewer
+recommendationalgorithm,FilePathSimilarity(FPS),was
+proposedtoexploittheﬁlelocationinformationtosolvethe
+problem. Zanjani [4] proposed an approach called cHRev,
+which is used to recommend the best suitable reviewer
+to participate in a given review. The method makes the
+recommendationbasedonthecontributionsintheirpriorre-
+views.Xia[5]proposesarecommendationalgorithmwhich
+leverages the implicit relations between the reviews and
+the historical reviews. So, they utilize a hybrid approach,
+combining the latent factor models and the neighborhood
+methods to capture implicit relations. They are all research-
+ing how to recommend suitable reviewers to improve the
+eﬃciency of code review.Although there are so many code reviewer recommen-
+dation related works, it can only improve the eﬃciency
+of code review, but can not eﬀectively reduce the human
+eﬀort consumption of code review [36]. Rigby [37] ﬁnds
+thatdespitediﬀerencesbetweenitems,manycharacteristics
+of the review process independently converge to similar
+values. They believe that this represents a general principle
+of code review practice. Therefore, we believe that since
+there are general principles of code review practice, then
+we can use existing deep learning techniques to learn these
+general principles. Just like the research of deep learning
+technologyinotheraspectsofsoftwareengineering.Shi[9]
+believesthatautomaticcodereviewisabinaryclassiﬁcation
+problem. Their model can learn the diﬀerences between the
+originalﬁleandtherevisedﬁletomakethesuggestion.Thus,
+they propose a novel model called DACE, which learns the
+revision features by exploiting a pairwise autoencoding and
+a context enrich module.
+However,theunderstandingofautomaticcodereviewis
+not the only one, Tufan [38] proposes a method, learning
+the code changes recommended by reviewer, to implement
+them in the original code automatically. In other words,
+they are trying to make a map from the original code ﬁle
+to the revised code ﬁle, which is totally diﬀerent from the
+opinion that Shi [9] hold. In this paper, our understanding
+of automatic code review is the same as Shi [9], so we are
+more focused on optimizing the representation of the code
+and improving the accuracy of prediction.
+Wu et al.: Preprint submitted to Elsevier Page 13 of 15
+
+--- PAGE 14 ---
+Turn Tree into Graph: Automatic Code Review via Simpliﬁed AST Driven Graph Convolutional Network
+7. Conclusion
+In this paper, we ﬁrst present AACR, a challenging
+datasetforautomaticcodereview.Then,weproposeaSim-
+pliﬁedASTbasedGraphConvolutionalNetwork(SimAST-
+GCN) to extract syntactic and semantic information from
+source code. SimAST-GCN ﬁrst extract AST from the
+source code and simplifying the extracted AST. Then,
+SimAST-GCN uses Bi-GRU to enrich the semantic infor-
+mationandGCNtoenrichthesyntacticinformation.Finally,
+SimAST-GCN composes the representations from the orig-
+inal code ﬁle and the revised code ﬁle to predict the results.
+Experimental results on the AACR dataset showed that our
+proposedmodelSimAST-GCNoutperformsstate-of-the-art
+methods, including Token-based models and GCN-based
+models. Our code and experimental data are publicly avail-
+able at https://github.com/SimAST-GCN/SimAST-GCN.
+Acknowledgment
+This work was partially supported by the National Nat-
+ural Science Foundation of China (61772263, 61872177,
+61972289, 61832009), the Collaborative Innovation Center
+ofNovelSoftwareTechnologyandIndustrialization,andthe
+PriorityAcademicProgramDevelopmentofJiangsuHigher
+Education Institutions.
+References
+[1] C. Sadowski, E. Söderberg, L. Church, M. Sipko, A. Bacchelli,
+Modern code review: a case study at google, in: Proceedings of
+the40thInternationalConferenceonSoftwareEngineering:Software
+Engineering in Practice, 2018, pp. 181–190.
+[2] A. Bacchelli, C. Bird, Expectations, outcomes, and challenges of
+modern code review, in: 2013 35th International Conference on
+Software Engineering (ICSE), IEEE, 2013, pp. 712–721.
+[3] P. Thongtanunam, C. Tantithamthavorn, R. G. Kula, N. Yoshida,
+H.Iida,K.-i.Matsumoto,Whoshouldreviewmycode?aﬁlelocation-
+based code-reviewer recommendation approach for modern code
+review, in: 2015 IEEE 22nd International Conference on Software
+Analysis, Evolution, and Reengineering (SANER), IEEE, 2015, pp.
+141–150.
+[4] M.B.Zanjani,H.Kagdi,C.Bird, Automaticallyrecommendingpeer
+reviewers in modern code review, IEEE Transactions on Software
+Engineering 42 (2015) 530–543.
+[5] Z. Xia, H. Sun, J. Jiang, X. Wang, X. Liu, A hybrid approach to
+code reviewer recommendation with collaborative ﬁltering, in: 2017
+6th International Workshop on Software Mining (SoftwareMining),
+IEEE, 2017, pp. 24–31.
+[6] V. Balachandran, Reducing human eﬀort and improving quality
+in peer code reviews using automatic static analysis and reviewer
+recommendation,in:201335thInternationalConferenceonSoftware
+Engineering (ICSE), IEEE, 2013, pp. 931–940.
+[7] G. Díaz, J. R. Bermejo, Static analysis of source code security:
+Assessment of tools against samate tests, Information and software
+technology 55 (2013) 1462–1476.
+[8] G.McGraw, Automatedcodereviewtoolsforsecurity, Computer41
+(2008) 108–111.
+[9] S.-T. Shi, M. Li, D. Lo, F. Thung, X. Huo, Automatic code review
+bylearningtherevisionofsourcecode, in:ProceedingsoftheAAAI
+ConferenceonArtiﬁcialIntelligence,volume33(01),2019,pp.4910–
+4917.[10] J. K. Siow, C. Gao, L. Fan, S. Chen, Y. Liu, Core: Automating
+review recommendation for code changes, in: 2020 IEEE 27th In-
+ternational Conference on Software Analysis, Evolution and Reengi-
+neering (SANER), IEEE, 2020, pp. 284–295.
+[11] K. Greﬀ, R. K. Srivastava, J. Koutník, B. R. Steunebrink, J. Schmid-
+huber, Lstm: A search space odyssey, IEEE transactions on neural
+networks and learning systems 28 (2016) 2222–2232.
+[12] P. Sun, R. Zhang, Y. Jiang, T. Kong, C. Xu, W. Zhan, M. Tomizuka,
+L. Li, Z. Yuan, C. Wang, P. Luo, Sparse r-cnn: End-to-end object
+detectionwithlearnableproposals, in:ProceedingsoftheIEEE/CVF
+Conference on Computer Vision and Pattern Recognition (CVPR),
+2021, pp. 14454–14463.
+[13] D. Hovemeyer, W. Pugh, Finding bugs is easy, Acm sigplan notices
+39 (2004) 92–106.
+[14] I. D. Baxter, A. Yahin, L. Moura, M. Sant’Anna, L. Bier, Clone
+detection using abstract syntax trees, in: Proceedings. International
+Conference on Software Maintenance (Cat. No. 98CB36272), IEEE,
+1998, pp. 368–377.
+[15] J. Zhang, X. Wang, H. Zhang, H. Sun, K. Wang, X. Liu, A novel
+neuralsourcecoderepresentationbasedonabstractsyntaxtree(2019)
+783–794.
+[16] L. Mou, G. Li, Z. Jin, L. Zhang, T. Wang, Tbcnn: A tree-based
+convolutional neural network for programming language processing,
+arXiv preprint arXiv:1409.5718 (2014).
+[17] T. Shippey, D. Bowes, T. Hall, Automatically identifying code fea-
+tures for software defect prediction: Using ast n-grams, Information
+and Software Technology 106 (2019) 142–160.
+[18] D. Tang, B. Qin, T. Liu, Document modeling with gated recurrent
+neural network for sentiment classiﬁcation, in: Proceedings of the
+2015 conference on empirical methods in natural language process-
+ing, 2015, pp. 1422–1432.
+[19] A.Hindle,E.T.Barr,M.Gabel,Z.Su,P.Devanbu,Onthenaturalness
+of software, Communications of the ACM 59 (2016) 122–131.
+[20] B.Ray,V.Hellendoorn,S.Godhane,Z.Tu,A.Bacchelli,P.Devanbu,
+On the" naturalness" of buggy code, in: 2016 IEEE/ACM 38th
+International Conference on Software Engineering (ICSE), IEEE,
+2016, pp. 428–439.
+[21] C. Fang, Z. Liu, Y. Shi, J. Huang, Q. Shi, Functional code clone
+detectionwithsyntaxandsemanticsfusionlearning, in:Proceedings
+of the 29th ACM SIGSOFT International Symposium on Software
+Testing and Analysis, 2020, pp. 516–527.
+[22] D. Guo, S. Ren, S. Lu, Z. Feng, D. Tang, S. Liu, L. Zhou, N. Duan,
+A. Svyatkovskiy, S. Fu, et al., Graphcodebert: Pre-training code
+representations with data ﬂow, arXiv preprint arXiv:2009.08366
+(2020).
+[23] C. Zhang, Q. Li, D. Song, Aspect-based sentiment classiﬁcation
+with aspect-speciﬁc graph convolutional networks, arXiv preprint
+arXiv:1909.03477 (2019).
+[24] R./uni0158eh/uni016F/uni0159ek,P.Sojka, SoftwareFrameworkforTopicModellingwith
+LargeCorpora, in:ProceedingsoftheLREC2010WorkshoponNew
+Challenges for NLP Frameworks, ELRA, Valletta, Malta, 2010, pp.
+45–50. http://is.muni.cz/publication/884893/en .
+[25] G. Fan, X. Diao, H. Yu, K. Yang, L. Chen, Deep semantic feature
+learning with embedded static metrics for software defect predic-
+tion, in: 2019 26th Asia-Paciﬁc Software Engineering Conference
+(APSEC), 2019, pp. 244–251. doi: 10.1109/APSEC48747.2019.00041 .
+[26] Y. Liu, Y. Li, J. Guo, Y. Zhou, B. Xu, Connecting software metrics
+across versions to predict defects, in: 2018 IEEE 25th Interna-
+tional Conference on Software Analysis, Evolution and Reengineer-
+ing (SANER), 2018, pp. 232–243. doi: 10.1109/SANER.2018.8330212 .
+[27] G. Macbeth, E. Razumiejczyk, R. D. Ledesma, Cliﬀ’s delta cal-
+culator: A non-parametric eﬀect size program for two groups of
+observations, Universitas Psychologica 10 (2011) 545–555.
+[28] V. Raychev, M. Vechev, E. Yahav, Code completion with statistical
+language models, in: Proceedings of the 35th ACM SIGPLAN
+Conference on Programming Language Design and Implementation,
+2014, pp. 419–428.
+Wu et al.: Preprint submitted to Elsevier Page 14 of 15
+
+--- PAGE 15 ---
+Turn Tree into Graph: Automatic Code Review via Simpliﬁed AST Driven Graph Convolutional Network
+[29] M. Allamanis, E. T. Barr, C. Bird, C. Sutton, Suggesting accurate
+method and class names, in: Proceedings of the 2015 10th Joint
+Meeting on Foundations of Software Engineering, 2015, pp. 38–49.
+[30] L. Mou, G. Li, L. Zhang, T. Wang, Z. Jin, Convolutional neural
+networks over tree structures for programming language processing,
+in: Thirtieth AAAI Conference on Artiﬁcial Intelligence, 2016.
+[31] A. N. Lam, A. T. Nguyen, H. A. Nguyen, T. N. Nguyen, Combining
+deeplearningwithinformationretrievaltolocalizebuggyﬁlesforbug
+reports (n), in: 2015 30th IEEE/ACM International Conference on
+Automated Software Engineering (ASE), IEEE, 2015, pp. 476–481.
+[32] X. Huo, M. Li, Z.-H. Zhou, et al., Learning uniﬁed features from
+naturalandprogramminglanguagesforlocatingbuggysourcecode.,
+in: IJCAI, volume 16, 2016, pp. 1606–1612.
+[33] H.Wei,M.Li, Superviseddeepfeaturesforsoftwarefunctionalclone
+detection by exploiting lexical and syntactical information in source
+code., in: IJCAI, 2017, pp. 3034–3040.
+[34] M.Allamanis,M.Brockschmidt,M.Khademi, Learningtorepresent
+programs with graphs, arXiv preprint arXiv:1711.00740 (2017).
+[35] D. Zügner, T. Kirschstein, M. Catasta, J. Leskovec, S. Günnemann,
+Language-agnosticrepresentationlearningofsourcecodefromstruc-
+ture and context, arXiv preprint arXiv:2103.11318 (2021).
+[36] D. Singh, V. R. Sekar, K. T. Stolee, B. Johnson, Evaluating how
+static analysis tools can reduce code review eﬀort, in: 2017 IEEE
+Symposium on Visual Languages and Human-Centric Computing
+(VL/HCC), IEEE, 2017, pp. 101–105.
+[37] P.C.Rigby,C.Bird, Convergentcontemporarysoftwarepeerreview
+practices, in: Proceedings of the 2013 9th Joint Meeting on Founda-
+tions of Software Engineering, 2013, pp. 202–212.
+[38] R. Tufan, L. Pascarella, M. Tufanoy, D. Poshyvanykz, G. Bavota,
+Towardsautomatingcodereviewactivities,in:2021IEEE/ACM43rd
+International Conference on Software Engineering (ICSE), IEEE,
+2021, pp. 163–174.
+Wu et al.: Preprint submitted to Elsevier Page 15 of 15

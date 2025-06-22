@@ -1,0 +1,632 @@
+# 2.2.3.LeetCodeDataset.A Temporal Dataset for Robust Evaluation and_2504.14655v1.pdf
+# Converted from PDF to TXT
+# Source path: D:\llm\notebooks\AI-Papers\2.2.3.LeetCodeDataset.A Temporal Dataset for Robust Evaluation and_2504.14655v1.pdf
+# File size: 344099 bytes
+
+===============================================
+PDF FILE CONTENT
+===============================================
+
+
+--- PAGE 1 ---
+LeetCodeDataset: A Temporal Dataset for Robust Evaluation and
+Efficient Training of Code LLMs
+Yunhui Xia
+newfacade@163.comWei Shen∗
+shenwei0917@126.comYan Wang
+wangyanps4@126.com
+Jason Klein Liu
+jasonkleinlove@gmail.comHuifeng Sun
+shelon_2008@126.comSiyue Wu
+wusy104@gmail.com
+Jian Hu
+janhu9527@gmail.comXiaolong Xu
+xlxu@ieee.org
+Abstract
+We introduce LeetCodeDataset, a high-quality benchmark for evaluating and
+training code-generation models, addressing two key challenges in LLM research:
+the lack of reasoning-focused coding benchmarks and self-contained training
+testbeds. By curating LeetCode1Python problems with rich metadata, broad
+coverage, 100+ test cases per problem, and temporal splits (pre/post July 2024),
+our dataset enables contamination-free evaluation and efficient supervised fine-
+tuning (SFT). Experiments show reasoning models significantly outperform non-
+reasoning counterparts, while SFT with only 2.6K model-generated solutions
+achieves performance comparable to 110K-sample counterparts. The dataset and
+evaluation framework are available on Hugging Face2and Github3.
+1 Introduction
+Code generation is critical in research and applications of large language models (LLMs). With
+the emergence of advanced reasoning models like OpenAI o1 (OpenAI, 2024) and DeepSeek-R1
+(DeepSeek-AI et al., 2025a), two key challenges are highlighted.
+The first challenge is the lack of coding benchmarks that accurately assess LLMs’ reasoning abilities.
+LiveCodeBench (Jain et al., 2024), a commonly used benchmark, addresses this by sourcing problems
+from platforms like LeetCode and AtCoder and using live updates to avoid data contamination.
+However, it has limitations: it covers a few problems per platform and lacks detailed tags for
+algorithms and data structures, making in-depth analysis difficult.
+The second challenge is the absence of a self-contained testbed for training LLMs to master
+competition-level coding through methods such as supervised fine-tuning (SFT) (Zhou et al.,
+2024), direct preference optimization (DPO) (Rafailov et al., 2023), and reinforcement learning (RL),
+∗Corresponding author
+1https://leetcode.com/
+2https://huggingface.co/datasets/newfacade/LeetCodeDataset
+3https://github.com/newfacade/LeetCodeDataset
+1arXiv:2504.14655v1  [cs.LG]  20 Apr 2025
+
+--- PAGE 2 ---
+which are widely used for aligning model behavior with desired coding performance (Shen &
+Zhang, 2024; Shen et al., 2025; Hu, 2025; Liu et al., 2025). While datasets such as APPS (Hendrycks
+et al., 2021), CodeContests (Li et al., 2022), and TACO (Li et al., 2023) provide competition prob-
+lems split into training and test sets, they lack live updates and easy tools to support RL training
+workflows. Recently released Open-R1 CodeForces-CoTs (Penedo et al., 2025) dataset, generated
+by DeepSeek-R1, fails to filter solutions for correctness, limiting its reliability for rigorous skill
+evaluation.
+To address these challenges, we introduce LeetCodeDataset, which fully leverages high-quality
+resources from LeetCode. LeetCode is a popular online platform for coding practice and technical
+interview preparation. It offers over 3,000 algorithm and data structure problems at varying
+difficulty levels. The platform supports multiple languages (Python, Java, C++, etc.), providing
+real-time code testing with execution feedback. Developers use LeetCode to improve their problem-
+solving skills, prepare for tech company interviews, and join global programming competitions. We
+meticulously curated a LeetCode dataset covering over 90% of Python problems on the platform.
+Each problem is annotated with rich metadata—including difficulty levels, release dates, and topic
+tags—and paired with 100+ test cases of varying complexity to minimize false positives. The
+dataset also includes an evaluation toolkit for fast and reliable assessment. To ensure temporal
+validity, we adopted a strict time-based split: problems released after July 1, 2024, form the test set
+for benchmarking, while those released earlier constitute the training set.
+Using this dataset, we evaluated popular models—including proprietary and open-source models-
+and reasoning and non-reasoning architectures. Our evaluation shows that reasoning models
+outperform non-reasoning ones in competitive programming tasks, with Claude 3.7 Sonnet (An-
+thropic, 2024) performing best in its category. Additionally, we conducted supervised fine-tuning
+(SFT) training on the LeetCode training set. Despite using only 2.6K samples, the resulting model
+achieves performance comparable to counterparts trained on 110K code examples, demonstrating
+the exceptional training efficiency of the LeetCodeDataset.
+2 LeetCodeDataset
+2.1 Data Collection
+As of the end of March 2025, the LeetCode platform hosted approximately 3,505 programming
+problems, among which 3,115 supported Python submissions. Our data collection process begins
+with this Python problem set, and we describe our process below.
+Metadata Acquisition: LeetCode provides a GraphQL API4for accessing problem metadata
+and platform-hosted information. The following metadata fields were systematically collected for
+each problem: slug (URL identifier and primary key), question_id (unique sequential number),
+difficulty (Easy /Medium /Hard ),problem_description (full text, with examples and constraints,
+see Figure 1), starter_code (language template code), and topic_tags (problem tags such as Array,
+Dynamic Programming).
+Canonical Solution Verification: We retrieved reference solutions from various open-source
+GitHub repositories56, and then verified the correctness of these solutions on the LeetCode platform,
+establishing ground truth solutions with a 100% acceptance rate.
+4https://github.com/fspv/python-leetcode
+5https://github.com/doocs/leetcode
+6https://github.com/walkccc/LeetCode
+2
+
+--- PAGE 3 ---
+Problem Statement
+In some array arr, the values were in arithmetic progression: the values arr[i + 1] -
+arr[i] are all equal for every 0 <= i < arr.length - 1. A value from arr was removed
+that was not the first or last value in the array . Given arr, return the removed
+value.
+Examples
+Example 1:
+Input: arr = [5,7,11,13]
+Output: 9
+Explanation: The previous array was [5,7,9,11,13].
+Example 2:
+Input: arr = [15,13,12]
+Output: 14
+Explanation: The previous array was [15,14,13,12].
+Constraints
+3 <= arr.length <= 1000
+0 <= arr[i] <= 105
+The given array is guaranteed to be a valid array .
+Starter Code
+class Solution :
+def missingNumber (self , arr: List[ int ]) -> int :
+1Figure 1: An example of a LeetCode problem.
+Entry Point Identification: The entry point refers to the function targeted for testing. In Figure 1,
+this is missingNum . Most starter codes contain a single function that is automatically identified
+as the entry point through text pattern matching. Specialized validation logic is necessary for
+problems requiring multiple functions (standard in design/simulation scenarios). However, such
+judgment codes are unavailable and challenging to develop. Therefore, our implementation focuses
+exclusively on single-function starter code scenarios.
+Input Generation: To generate inputs for the entry point as part of test case development, we
+use one-shot prompting (Figure 4) with the LLM. However, this method often produces overly
+simplistic inputs. To address this, we further prompt the LLM (Figure 5) to generate more complex
+inputs. By applying both approaches multiple times, we construct an average of over 100 inputs
+per problem, including many complex cases, significantly reducing the risk of false positives.
+Test Case Generation: Now we have all the necessary information to generate test cases: specif-
+ically, we compute the Canonical Solution’s entry point output using the previously generated
+inputs. To enable this, we developed a sandboxed execution environment for safe code evaluation,
+inserted the necessary imports before the canonical solution as part of the prompt, and handled
+special data structures such as binary trees (see Figure 7) and linked lists (see Figure 6) separately.
+After these steps, we successfully generated outputs for 2,869 problems, identifying the remaining
+cases as edge scenarios requiring additional investigation. Our pipeline ensures high dataset quality
+and comprehensive coverage, covering over 90% of all Python problems available on the platform.
+LeetCodeDataset for SFT: We designed LeetCodeDataset to serve dual purposes of model training
+and performance evaluation. The dataset employs a temporal split strategy: problems published
+after a predefined cutoff date (e.g., 2024-07-01) form our evaluation set, while earlier problems
+are allocated for supervised fine-tuning. The query of LeetCodeDataset is consistent with Live-
+3
+
+--- PAGE 4 ---
+CodeBench’s construction (Jain et al., 2024). For response generation, we intentionally avoided
+canonical solutions (often containing minimal comments or reasoning), which makes them sub-
+optimal for instructional tuning. The detailed analysis can be found in section 4. We employed
+Qwen2.5-Coder-32B-Instruct (Hui et al., 2024), a highly sample-efficient and capable model, to
+implement a multi-stage generation process:
+• High-temperature sampling ( T=1.0) produces diverse solution candidates.
+• Automated test case verification filters functionally correct responses.
+• For persistently failing problems, ground truth code snippets are integrated as contextual
+hints to improve the likelihood of correctness.
+Finally, we developed the LeetCodeDataset, which features broad coverage, reliable benchmarking,
+evaluation/training splits based on release dates, and verified model-generated (query, response)
+pairs for SFT. The dataset can also support RL training by leveraging test cases as verifiers, making
+it a self-contained testbed for LLM development in code generation.
+2.2 Dataset Overview
+Now let’s examine the constructed LeetCodeDataset. LeetCode problems can be categorized along
+multiple dimensions—we highlight three key ones below: difficulty, release date, and topic tags.
+Difficulty Levels: As shown in Table 1, LeetCode problems are categorized by difficulty into three
+levels:
+•Easy : Focuses on validating basic syntax and foundational data structure applications,
+typically solvable with straightforward logic.
+•Medium : Requires familiarity with classical algorithms (e.g., dynamic programming,
+greedy) and the ability to design efficient strategies.
+•Hard : Involves complex algorithmic combinations, mathematical insights, or specialized
+optimizations.
+Difficulty Release Year
+Type Count Proportion (%) Period Count Proportion (%)
+Easy 686 23.91 Before 2020 1077 37.54
+Medium 1498 52.21 2020–2022 1009 35.17
+Hard 686 23.88 2023–2025 783 27.29
+Table 1: Distribution of difficulty and release year on the LeetCodeDataset.
+Release Date: The release dates of LeetCode problems also offer valuable insights such as
+contamination-free evaluation of LLMs. Since LeetCode’s weekly contest release dates and ques-
+tion IDs are publicly available, we use them as anchors to estimate each problem’s release date.
+As shown in Table 1, the yearly release distribution indicates approximately 350 new problems
+added annually in recent years. We argue that using problems from the past 6–12 months for
+benchmarking strikes an effective balance between bias and variance.
+Topic Tags: The LeetCode platform labels each problem with algorithm and data structure tags
+(e.g., Array, Binary Search), allowing multiple tags per problem. As shown in Figure 2, we examine
+4
+
+--- PAGE 5 ---
+how problems are distributed across these categories. This tagging system can help learners focus
+on specific skills. We believe this will provide insights to LLMs as well.
+Array String
+Hash T able
+Dynamic ProgrammingMathSorting Greedy
+Binary Search
+Depth-First SearchMatrix
+Bit Manipulation
+Breadth-First SearchT wo PointersTree
+Prefix Sum
+Heap (Priority Queue)SimulationGraph
+CountingBinary Tree
+Sliding WindowStack
+Enumeration BacktrackingUnion Find
+Number TheoryMonotonic StackLinked ListBitmask
+Segment Tree
+T opic T ag02505007501000125015001750Frequency
+Figure 2: Topic frequency distribution.
+3 Holistic Evaluation
+We evaluate six models on the LeetCodeDataset test set, comprising 256 programming problems that
+were newly released after July 1, 2024. The evaluated models include two proprietary systems, GPT-
+4o (OpenAI et al., 2024) and Claude 3.7 Sonnet (Anthropic, 2024); and four open-source models,
+DeepSeek-V3 (DeepSeek-AI et al., 2025b), DeepSeek-R1 (DeepSeek-AI et al., 2025a), Qwen2.5-
+Max (Team, 2024), and QwQ-Plus (Team, 2025b). All experiments employ identical generation
+parameters with temperature=0.2 and top_p=0.95 to ensure fair comparisons.
+Following LiveCodeBench’s temporal evaluation methodology, we analyze monthly accuracy
+change relative to problem release months as shown in Figure 3, and summarize model pass rates
+across difficulty levels in Table 2. This approach identifies potential data contamination by detecting
+declines in post-release accuracy, which would indicate overfitting to pre-release training data. Our
+findings reveal three key insights:
+•Superior Performance of Reasoning Models: The evaluation highlights DeepSeek-R1
+(pass@1 rate = 65.23%) and QwQ-Plus (pass@1 rate = 56.25%) as top performers, demon-
+strating the substantial advantage of long-CoT reasoning models in solving complex
+competition-level coding problems.
+•Baseline Comparison: Claude-3.7-Sonnet, operating without extended thinking, achieves
+superior performance within its model category. The two models, GPT-4o and DeepSeek-
+5
+
+--- PAGE 6 ---
+V3, achieved the same overall score. GPT-4o performs slightly better on easy problems,
+while DeepSeek-V3 performs slightly better on hard problems.
+•Contamination Analysis: The minimal temporal overlap between GPT-4o-0806’s release
+date (August 2024) and our test problem release window (post-July 2024) strongly suggests
+authentic model capability measurements. We see similar curves among GPT-4o-0806,
+DeepSeek-V3, and Qwen2.5-Max; we believe the monthly accuracy fluctuations are mainly
+due to changes in problem difficulty.
+2024-07 2024-08 2024-09 2024-10 2024-11 2024-12 2025-01 2025-02
+LeetCode Problem Release Month20.0%30.0%40.0%50.0%60.0%70.0%80.0%Pass@1
+GPT-4o-0806
+Claude-3.7-Sonnet
+DeepSeek-V3
+DeepSeek-R1
+Qwen2.5-Max
+QwQ-Plus
+Figure 3: Monthly pass rates of various models on the LeetCodeDataset.
+Model Easy (%) Medium (%) Hard (%) Overall (%)
+GPT-4o-0806 81.48 32.76 10.47 35.55
+Claude-3.7-Sonnet 87.04 54.31 23.26 50.78
+DeepSeek-V3 77.78 31.90 13.95 35.55
+DeepSeek-R1 94.44 68.97 41.86 65.23
+Qwen2.5-Max 74.07 25.00 10.47 30.47
+QwQ-Plus 92.59 62.93 24.42 56.25
+Table 2: Model pass rates by difficulty level on the LeetCodeDataset.
+We also analyze model pass rates across different topic tags, as depicted in Table 3. By comparing
+these results, we identify each model’s strengths and weaknesses, which provides insights for
+future improvements. Our key findings include:
+6
+
+--- PAGE 7 ---
+•The reasoning model DeepSeek-R1 shows strong performance across all topic tags, with
+pass rates mostly ranging from 60% to 70% and minimal variation. In contrast, non-
+reasoning models like GPT-4o exhibit significant fluctuations, such as dropping to 7.7% in
+Binary Search tasks but reaching 63.2% in Simulation tasks.
+•We observe significant performance differences between reasoning and non-reasoning
+models in Dynamic Programming, Binary Search, and Tree-related tasks. This pattern
+demonstrates the need for additional reasoning capabilities in these domains.
+GPT-4oDeepSeek
+-V3Qwen2.5
+-MaxClaude-3.7
+-SonnetDeepSeek
+-R1QwQ
+-Plus
+Array 32.1 34.5 28.0 51.2 67.9 55.4
+String 37.3 38.8 35.8 49.3 68.7 50.7
+Dynamic Programming 10.5 15.8 8.8 31.6 70.2 40.4
+Hash Table 39.5 37.5 35.7 50.0 66.1 50.0
+Math 38.2 40.0 32.7 56.4 69.1 58.2
+Greedy 12.5 15.6 12.5 21.9 62.5 28.1
+Sorting 20.0 20.0 6.7 36.7 66.7 53.3
+Prefix Sum 17.9 14.3 14.3 35.7 71.4 35.7
+Binary Search 7.7 23.1 11.5 30.8 73.1 30.8
+Sliding Window 52.2 47.8 43.5 69.6 56.5 52.2
+Enumeration 27.3 31.8 9.1 45.5 63.6 50.0
+Matrix 19.0 33.3 19.0 52.4 76.2 61.9
+Simulation 63.2 57.9 42.1 63.2 63.2 84.2
+Depth-First Search 31.6 21.1 26.3 31.6 57.9 57.9
+Bit Manipulation 33.3 44.4 27.8 50.0 50.0 66.7
+Combinatorics 12.5 18.8 12.5 37.5 93.8 25.0
+Counting 20.0 26.7 26.7 46.7 53.3 46.7
+Graph 40.0 33.3 46.7 53.3 66.7 66.7
+Heap (Priority Queue) 40.0 53.3 33.3 66.7 66.7 66.7
+Number Theory 38.5 30.8 30.8 38.5 69.2 53.8
+Breadth-First Search 41.7 33.3 50.0 58.3 58.3 75.0
+Tree 27.3 18.2 9.1 9.1 72.7 54.5
+Two Pointers 20.0 30.0 30.0 40.0 80.0 40.0
+Segment Tree 30.0 30.0 30.0 70.0 80.0 30.0
+All 35.5 35.5 30.5 50.8 65.2 56.2
+Table 3: Pass rates of models across topic tags.
+4 Efficient Training
+4.1 Experiment Setup
+We conducted SFT using Qwen2.5-Coder-7B (Hui et al., 2024) as our base model. The model was
+trained for 3 epochs with an initial learning rate of 1e-5, employing a warmup ratio of 0.1 and
+cosine learning rate scheduling. All experiments utilized consistent hyperparameters, including a
+batch size of 32 across different datasets.
+7
+
+--- PAGE 8 ---
+4.2 Results
+To evaluate the training efficiency of LeetCodeDataset, we conducted comparative experiments with
+five widely-used coding datasets (Wei et al., 2024; Luo et al., 2023; Penedo et al., 2025; Team, 2025a)
+ranging from 9.5K to 111.1K samples - all substantially larger than our LeetCodeDataset training
+set. Under identical experimental configurations above, we trained models on each dataset and
+evaluated them across four benchmarks: HumanEval (Chen et al., 2021), MBPP (Austin et al., 2021),
+LiveCodeBench (Jain et al., 2024), alongside our newly developed LeetCodeDataset evaluation set.
+As demonstrated in Table 4, we summarize our key findings:
+•Superior Model-Generated Training Data. The SFT-trained model using model-generated
+responses from the pre-2024-07 LeetCodeDataset significantly outperformed the version
+trained on human-written responses (79.9% vs. 55.5% on HumanEval; 77.5% vs. 53.4%
+on MBPP), despite both response types being verified as correct. The result highlights the
+quality advantage of model-generated training data for code generation tasks.
+•High Data Efficiency. Training with only 2.6K model-generated LeetCode samples
+achieved superior performance on HumanEval (79.9%) and MBPP (77.5%), surpassing
+models trained on much larger datasets (9.5K–111.1K rows). The finding demonstrates
+exceptional data efficiency for domain-specific code generation.
+•Limitations on Hard Benchmarks. Despite being in-distribution for LeetCodeDataset
+(post-2024-07), the 2.6K-trained model underperformed on hard benchmarks. It suggests
+that small-scale SFT primarily develops basic programming skills.
+Training Data RowsHuman
+EvalMBPPLiveCode
+Bench
+24-08∼25-02LeetCode
+Dataset
+24-07∼25-03
+Magicoder
+Evol-Instruct-110K111.1K 77.4 74.1 15.1 13.7
+Magicoder
+OSS-Instruct-75K75.1K 73.8 76.5 15.1 12.9
+Open-R1
+CodeForces-CoT9.5K 79.9 74.1 15.8 13.3
+OpenThoughts
+114k19.9K 77.4 75.7 16.9 16.4
+LeetCodeDataset
+Pre 2024-07 human2.6K 55.5 53.4 14.0 10.9
+LeetCodeDataset
+Pre 2024-07 model2.6K 79.9 77.5 15.4 12.5
+Table 4: Model SFT-training results.
+5 Related Work
+Code Generation Benchmarks. Numerous benchmarks have been developed to evaluate the code
+generation capabilities of LLMs. For foundational Python programming, widely used benchmarks
+include HumanEval (Chen et al., 2021) and MBPP (Austin et al., 2021). EvalPlus (Liu et al., 2023)
+8
+
+--- PAGE 9 ---
+offers a more rigorous variant. Multiple-E (Cassano et al., 2022) further extends these two popular
+benchmarks by translating them into 18 other programming languages. As LLM capabilities
+advance, many of these benchmarks are becoming too easy to assess modern models adequately. A
+few specialized benchmarks focus on competitive programming challenges. APPS (Hendrycks et al.,
+2021), CodeContests (Li et al., 2022), and TACO (Li et al., 2023) source problems from platforms like
+Codeforces and AtCoder. LiveCodeBench (Jain et al., 2024) provides holistic and contamination-free
+evaluations by dynamically updating coding challenges from platforms like LeetCode and AtCoder.
+CODEELO (Quan et al., 2025) tries to align with the CodeForces platform by submitting directly to
+the platform and developing an Elo rating calculation system.
+Fine-tuning Dataset of Code. Synthetic data is one primary source of LLM SFT data. CodeAlpaca
+(Chaudhary, 2023) employs few-shot prompting and teacher models to synthesize data for code-
+specific fine-tuning. Magicoder (Wei et al., 2024) leverages open-source code snippets to generate
+high-quality instructional data for coding tasks. In competitive programming benchmarks like
+APPS and CodeTest, training splits are provided for SFT, utilizing competition-level problems
+to enhance model problem-solving capabilities. For advanced reasoning, pen-R1 CodeForces-
+CoTs (Penedo et al., 2025) includes 10K CodeForces problems with up to five reasoning traces
+generated by DeepSeek R1. In contrast, OpenThoughts (Team, 2025a) is a synthetic dataset with
+114K high-quality examples spanning math, science, code, and puzzles.
+6 Limitations
+While our LeetCode dataset effectively benchmarks and fine-tunes code models, it has three key
+limitations:
+False Positive Risks: Though we designed diverse inputs and test cases to reduce incorrect solutions
+passing, our dataset lacks extremely complex input patterns and suffers from an imbalanced test
+case distribution. These limitations present residual risks of false positives (e.g., solutions passing
+tests despite logic errors).
+Complexity Analysis Gap: Determining time/space complexity for problems requires LeetCode-
+style test cases tailored to each algorithm’s behavior. The limitation exceeds our current scope as it
+demands manual problem-specific validation.
+Coverage Gaps: We haven’t included certain problem types, particularly problems with multiple
+solution entry points.
+7 Conclusion
+We present LeetCodeDataset, a rigorously curated resource that addresses key challenges in code-
+generation research for large language models. By aggregating 2,869 Python LeetCode prob-
+lems—each annotated with rich metadata (difficulty, tags, release dates) and augmented with 100+
+diverse test cases—our dataset enables reliable, contamination-free model evaluation and highly
+efficient training. Its temporal split (with post-July 2024 problems as the test set) ensures clean
+benchmarking and supports longitudinal studies. This dataset comprehensively covers algorithms
+and data structures, facilitating robust overall evaluation and fine-grained skill analysis. With
+an integrated evaluation toolkit, LeetCodeDataset streamlines assessment and comparison across
+models. Notably, we show that models trained on just 2.6K curated samples from LeetCodeDataset
+can match the performance of those trained on 110K examples from previous benchmarks, demon-
+strating strong data efficiency. We expect LeetCodeDataset to become a foundational resource for
+developing, training, and evaluating advanced code-generation models.
+9
+
+--- PAGE 10 ---
+References
+Anthropic. Claude 3.5 sonnet, 2024. URL https://www.anthropic.com/claude/sonnet .
+Jacob Austin, Augustus Odena, Maxwell Nye, Maarten Bosma, Henryk Michalewski, David Dohan,
+Ellen Jiang, Carrie Cai, Michael Terry, Quoc Le, and Charles Sutton. Program synthesis with
+large language models, 2021. URL https://arxiv.org/abs/2108.07732 .
+Federico Cassano, John Gouwar, Daniel Nguyen, Sydney Nguyen, Luna Phipps-Costin, Donald
+Pinckney, Ming-Ho Yee, Yangtian Zi, Carolyn Jane Anderson, Molly Q Feldman, Arjun Guha,
+Michael Greenberg, and Abhinav Jangda. Multipl-e: A scalable and extensible approach to
+benchmarking neural code generation, 2022. URL https://arxiv.org/abs/2208.08227 .
+Sahil Chaudhary. Code alpaca: An instruction-following llama model for code generation. https:
+//github.com/sahil280114/codealpaca , 2023.
+Mark Chen, Jerry Tworek, Heewoo Jun, Qiming Yuan, Henrique Ponde de Oliveira Pinto, Jared
+Kaplan, Harri Edwards, Yuri Burda, Nicholas Joseph, Greg Brockman, Alex Ray, Raul Puri,
+Gretchen Krueger, Michael Petrov, Heidy Khlaaf, Girish, et al. Evaluating large language models
+trained on code, 2021. URL https://arxiv.org/abs/2107.03374 .
+DeepSeek-AI, Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song, Ruoyu Zhang, Runxin
+Xu, Qihao Zhu, Shirong Ma, Peiyi Wang, Xiao Bi, Xiaokang Zhang, Xingkai Yu, Yu Wu, et al.
+Deepseek-r1: Incentivizing reasoning capability in llms via reinforcement learning, 2025a. URL
+https://arxiv.org/abs/2501.12948 .
+DeepSeek-AI, Aixin Liu, Bei Feng, Bing Xue, Bingxuan Wang, Bochao Wu, Chengda Lu, Chenggang
+Zhao, Chengqi Deng, Chenyu Zhang, Chong Ruan, Damai Dai, Daya Guo, Dejian Yang, Deli
+Chen, Dongjie Ji, Erhang Li, Fangyun Lin, Fucong Dai, Fuli Luo, Guangbo Hao, Guanting Chen,
+Guowei Li, et al. Deepseek-v3 technical report, 2025b. URL https://arxiv.org/abs/2412.19437 .
+Dan Hendrycks, Steven Basart, Saurav Kadavath, Mantas Mazeika, Akul Arora, Ethan Guo, Collin
+Burns, Samir Puranik, Horace He, Dawn Song, and Jacob Steinhardt. Measuring coding challenge
+competence with apps. NeurIPS , 2021.
+Jian Hu. Reinforce++: A simple and efficient approach for aligning large language models. arXiv
+preprint arXiv:2501.03262 , 2025.
+Binyuan Hui, Jian Yang, Zeyu Cui, Jiaxi Yang, Dayiheng Liu, Lei Zhang, Tianyu Liu, Jiajun Zhang,
+Bowen Yu, Kai Dang, et al. Qwen2. 5-coder technical report. arXiv preprint arXiv:2409.12186 , 2024.
+Naman Jain, King Han, Alex Gu, Wen-Ding Li, Fanjia Yan, Tianjun Zhang, Sida Wang, Armando
+Solar-Lezama, Koushik Sen, and Ion Stoica. Livecodebench: Holistic and contamination free
+evaluation of large language models for code, 2024. URL https://arxiv.org/abs/2403.07974 .
+Rongao Li, Jie Fu, Bo-Wen Zhang, Tao Huang, Zhihong Sun, Chen Lyu, Guang Liu, Zhi Jin, and
+Ge Li. Taco: Topics in algorithmic code generation dataset. arXiv preprint arXiv:2312.14852 , 2023.
+Yujia Li, David Choi, Junyoung Chung, Nate Kushman, Julian Schrittwieser, Rémi Leblond, Tom
+Eccles, James Keeling, Felix Gimeno, Agustin Dal Lago, Thomas Hubert, Peter Choy, Cyprien
+de Masson d’Autume, Igor Babuschkin, Xinyun Chen, Po-Sen Huang, Johannes Welbl, Sven
+Gowal, Alexey Cherepanov, James Molloy, Daniel Mankowitz, Esme Sutherland Robson, Push-
+meet Kohli, Nando de Freitas, Koray Kavukcuoglu, and Oriol Vinyals. Competition-level code
+generation with alphacode. arXiv preprint arXiv:2203.07814 , 2022.
+10
+
+--- PAGE 11 ---
+Jiawei Liu, Chunqiu Steven Xia, Yuyao Wang, and Lingming Zhang. Is your code generated by
+chatgpt really correct? rigorous evaluation of large language models for code generation, 2023.
+URL https://arxiv.org/abs/2305.01210 .
+Yuliang Liu, Junjie Lu, Zhaoling Chen, Chaofeng Qu, Jason Klein Liu, Chonghan Liu, Zefan Cai,
+Yunhui Xia, Li Zhao, Jiang Bian, et al. Adaptivestep: Automatically dividing reasoning step
+through model confidence. arXiv preprint arXiv:2502.13943 , 2025.
+Ziyang Luo, Can Xu, Pu Zhao, Qingfeng Sun, Xiubo Geng, Wenxiang Hu, Chongyang Tao, Jing
+Ma, Qingwei Lin, and Daxin Jiang. Wizardcoder: Empowering code large language models with
+evol-instruct, 2023. URL https://arxiv.org/abs/2306.08568 .
+OpenAI. Introducing openai o1-preview, September 2024. URL https://openai.com/index/
+introducing-openai-o1-preview/ .
+OpenAI, :, Aaron Hurst, Adam Lerer, Adam P . Goucher, Adam Perelman, Aditya Ramesh, Aidan
+Clark, AJ Ostrow, Akila Welihinda, Alan Hayes, Alec Radford, Aleksander M ˛ adry, et al. Gpt-4o
+system card, 2024. URL https://arxiv.org/abs/2410.21276 .
+Guilherme Penedo, Anton Lozhkov, Hynek Kydlíˇ cek, Loubna Ben Allal, Edward Beeching,
+Agustín Piqueres Lajarín, Quentin Gallouédec, Nathan Habib, Lewis Tunstall, and Leandro von
+Werra. Codeforces cots. https://huggingface.co/datasets/open-r1/codeforces-cots , 2025.
+Shanghaoran Quan, Jiaxi Yang, Bowen Yu, Bo Zheng, Dayiheng Liu, An Yang, Xuancheng Ren, Bofei
+Gao, Yibo Miao, Yunlong Feng, Zekun Wang, Jian Yang, Zeyu Cui, Yang Fan, Yichang Zhang,
+Binyuan Hui, and Junyang Lin. Codeelo: Benchmarking competition-level code generation of
+llms with human-comparable elo ratings, 2025. URL https://arxiv.org/abs/2501.01257 .
+Rafael Rafailov, Archit Sharma, Eric Mitchell, Christopher D Manning, Stefano Ermon, and Chelsea
+Finn. Direct preference optimization: Your language model is secretly a reward model. Advances
+in Neural Information Processing Systems , 36:53728–53741, 2023.
+Wei Shen and Chuheng Zhang. Policy filtration in rlhf to fine-tune llm for code generation. arXiv
+preprint arXiv:2409.06957 , 2024.
+Wei Shen, Guanlin Liu, Zheng Wu, Ruofei Zhu, Qingping Yang, Chao Xin, Yu Yue, and Lin Yan.
+Exploring data scaling trends and effects in reinforcement learning from human feedback. arXiv
+preprint arXiv:2503.22230 , 2025.
+OpenThoughts Team. Open Thoughts. https://open-thoughts.ai, January 2025a.
+Qwen Team. Qwen2.5 technical report. arXiv preprint arXiv:2412.15115 , 2024.
+Qwen Team. Qwq-32b: Embracing the power of reinforcement learning, March 2025b. URL
+https://qwenlm.github.io/blog/qwq-32b/ .
+Yuxiang Wei, Zhe Wang, Jiawei Liu, Yifeng Ding, and Lingming Zhang. Magicoder: Empowering
+code generation with oss-instruct, 2024. URL https://arxiv.org/abs/2312.02120 .
+Jing Zhou, Chenglin Jiang, Wei Shen, Xiao Zhou, and Xiaonan He. Leveraging web-crawled data
+for high-quality fine-tuning. arXiv preprint arXiv:2408.08003 , 2024.
+11
+
+--- PAGE 12 ---
+A Appendix
+A.1 Prompts
+During input generation for entry points, we sample three tree, three linked list, and four other
+problem types, extracting input specifications from their descriptions to define entry points. These
+10 selected problems serve as one-shot examples in the Input-Generation-Prompt, with domain-
+specific constraints: tree problems use only tree examples; linked list problems draw from linked
+list cases; others follow the same principle, ensuring generated inputs align with each problem
+type’s structural requirements.
+Input-Generation-Prompt
+You are an expert Python programmer. You will be given a question (including a problem
+specification and starter code). Your task is to generate inputs that are consistent with the problem
+specification and starter code. An example will be provided for illustration.
+**** Example ****
+#### Question:
+{example problem description and starter code}
+#### Some valid inputs of the starter code (json format):
+```json
+{example problem inputs}
+```
+**** Now Your Task ****
+#### Question:
+{problem description and starter code}
+#### Some valid inputs of the starter code (json format):
+Figure 4: Prompt structure for input generation.
+Complex-Input-Generation-Prompt
+You are an expert Python programmer. You will be given a question (including a problem
+specification and starter code) along with a few sample inputs. Your task is to generate additional
+inputs that are consistent with the question and the provided sample inputs.
+#### Question:
+{problem description and starter code}
+#### Sample inputs (using json format):
+```json
+{sample inputs}
+```
+#### Generate some additional inputs that are more complex than the sample inputs (us-
+ing json format):
+Figure 5: Prompt structure for complex input generation.
+12
+
+--- PAGE 13 ---
+A.1.1 Handle Data Structures
+To ensure robust evaluation, we prepend essential imports (e.g., from typing import List ) to all
+code completions. Special handling is required for binary tree and linked list data structures, which
+involve additional utility functions for serialization/deserialization. Below are the supplementary
+imports and helper functions used to manage these structures:
+1from typing import Optional
+2from collections import deque
+3
+4
+5class ListNode :
+6 def __init__ (self , val =0, next = None ):
+7 self . val = val
+8 self . next = next
+9
+10
+11def list_node ( values : list ) -> Optional [ ListNode ]:
+12 if not values :
+13 return None
+14 head = ListNode ( values [0])
+15 p = head
+16 for val in values [1:]:
+17 node = ListNode ( val )
+18 p. next = node
+19 p = node
+20 return head
+21
+22
+23def linked_list_to_list ( head : Optional [ ListNode ]) -> list :
+24 result = []
+25 current = head
+26 while current :
+27 result . append ( current . val )
+28 current = current . next
+29 return result
+30
+31
+32def is_same_list (p1: Optional [ ListNode ], p2: Optional [ ListNode ]) -> bool :
+33 if p1 is None and p2 is None :
+34 return True
+35 if not p1 or not p2:
+36 return False
+37 return p1. val == p2. val and is_same_list (p1.next , p2. next )
+Figure 6: Additional imports related to linked list2.
+13
+
+--- PAGE 14 ---
+1from typing import Optional
+2from collections import deque
+3
+4
+5class TreeNode :
+6 def __init__ (self , val =0, left =None , right = None ):
+7 self . val = val
+8 self . left = left
+9 self . right = right
+10
+11
+12def tree_node ( values : list ) -> Optional [ TreeNode ]:
+13 if not values :
+14 return None
+15 root = TreeNode ( values [0])
+16 i = 1
+17 queue = deque ()
+18 queue . append ( root )
+19 while queue :
+20 node = queue . popleft ()
+21 if i < len ( values ) and values [i] is not None :
+22 node . left = TreeNode ( values [i])
+23 queue . append ( node . left )
+24 i += 1
+25 if i < len ( values ) and values [i] is not None :
+26 node . right = TreeNode ( values [i])
+27 queue . append ( node . right )
+28 i += 1
+29 return root
+30
+31
+32def tree_node_to_list ( root : Optional [ TreeNode ]) -> list :
+33 if not root :
+34 return []
+35
+36 result = []
+37 queue = deque ()
+38 queue . append ( root )
+39
+40 while queue :
+41 node = queue . popleft ()
+42 if node :
+43 result . append ( node . val )
+44 queue . append ( node . left )
+45 queue . append ( node . right )
+46 else :
+47 result . append ( None )
+48
+49 while result and result [ -1] is None :
+50 result . pop ()
+51
+52 return result
+53
+54
+55def is_same_tree (p: Optional [ TreeNode ], q: Optional [ TreeNode ]) -> bool :
+56 if not p and not q:
+57 return True
+58 elif not p or not q:
+59 return False
+60 elif p. val != q. val :
+61 return False
+62 else :
+63 return is_same_tree (p.left , q. left ) and is_same_tree (p.right , q. right )
+Figure 7: Additional imports related to binary tree.14

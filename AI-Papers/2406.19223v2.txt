@@ -1,0 +1,1760 @@
+# 2406.19223v2.pdf
+# Converted from PDF to TXT
+# Source path: D:\llm\notebooks\AI-Papers\2406.19223v2.pdf
+# File size: 2955205 bytes
+
+===============================================
+PDF FILE CONTENT
+===============================================
+
+
+--- PAGE 1 ---
+T-FREE: Subword Tokenizer-Free Generative LLMs via
+Sparse Representations for Memory-Efficient Embeddings
+Björn Deiseroth1,2,3Manuel Brack2,4Patrick Schramowski2,3,4
+Kristian Kersting2,3,4Samuel Weinbach1
+1Aleph Alpha @ IPAI2Technical University Darmstadt
+3Hessian Center for Artificial Intelligence (hessian.AI)
+4German Research Center for Artificial Intelligence (DFKI)
+Abstract
+Tokenizers are crucial for encoding information
+in Large Language Models, but their develop-
+ment has recently stagnated, and they contain
+inherent weaknesses. Major limitations include
+computational overhead, ineffective vocabulary
+use, and unnecessarily large embedding and
+head layers. Additionally, their performance
+is biased towards a reference corpus, leading
+to reduced effectiveness for underrepresented
+languages. To remedy these issues, we pro-
+pose T-F REE which directly embeds words
+through sparse activation patterns over charac-
+ter triplets, and does not require a reference
+corpus. T-F REEinherently exploits morpholog-
+ical similarities and allows for strong compres-
+sion of embedding layers. In our exhaustive ex-
+perimental evaluation, we achieve competitive
+downstream performance with a parameter re-
+duction of more than 85% on these layers. Fur-
+ther, T-F REE shows significant improvements
+in cross-lingual transfer learning.
+1 From Text Representations For
+Machine Learning
+Large language models (LLMs) have shown re-
+markable abilities in processing natural language
+and various data types. The tokenizer, an essential
+part of any language-based LLM, splits input text
+into subwords and converts textual data into integer
+representation. It is built by populating a fixed-size
+vocabulary based on statistical frequencies in a ref-
+erence corpus (Sennrich, 2016; Kudo and Richard-
+son, 2018). With the LLM’s trained embedding
+layers, these integers are converted into floating-
+point representations (Mikolov et al., 2013b; Press
+and Wolf, 2017; Vaswani et al., 2017). These com-
+ponents significantly shape the training objectives
+and influence what an LLM can process, interpret,
+and generate. Despite advances, the basic princi-
+ples of tokenization and embeddings have remainedlargely unchanged in recent years.
+Although this approach has served the LLM com-
+munity well, and influential characters target to tok-
+enize all kinds of data to “lead a new industrial revo-
+lution”1, it has significant inherent weaknesses. For
+one, subword tokenizers require dedicated training
+and, as such, additional computational resources.
+Design choices and errors at this stage can neg-
+atively impact the downstream model (Ali et al.,
+2023). Any tokenizer’s vocabulary is heavily opti-
+mized for the reference corpus, leading to strong
+drops in performance for, e.g., underrepresented
+languages. We also show that the resulting vocabu-
+lary of subword tokenizers is poorly utilized, where
+up to 34% of tokens are near duplicates with lim-
+ited additional information. Despite that, the cor-
+responding embeddings are trained independently.
+These issues have caused a significant expansion
+in the size of vocabularies and their correspond-
+ing embedding layers, with billions of parameters
+being allocated exclusively for text encoding and
+decoding.
+To remedy these issues and challenge the tradi-
+tional views, we propose a paradigm shift on how
+we embed and decode text for LLMs. We present
+tokenizer-free sparse representations for memory-
+efficient embeddings ( T-F REE) as an alternative
+to subword tokenizers. We directly embed each
+word in the input text with sparse activation pat-
+terns over hashed character triplets. Consequently,
+we eliminate the need for subword tokens, thus re-
+taining near-optimal performance across languages.
+Additionally, T-F REE explicitly models character
+overlaps between morphologically similar words
+without the need to learn an embedding for each
+variant from scratch through a one-to-one bijec-
+tion. The backbone of the language model will
+remain free of subword tokenization as we directly
+https://github.com/Aleph-Alpha/trigrams
+1https://x.com/tsarnick/status/1801884651986030820?s=12&t=5I_
+_mymj5rXz7lxfplR8GgarXiv:2406.19223v2  [cs.CL]  7 Jan 2025
+
+--- PAGE 2 ---
+(a) Classic Tokenizer.
+ (b) T-F REE.
+Figure 1: Method comparison of classic Tokenization (left) and T-F REE(right) for text encoding (top) and decoding
+(bottom). Classic subword tokenizers learn a single-label vocabulary, i.e. a token is bijectively mapped into a
+single entry of the vocabulary. Instead, T-F REE uses a bijective multi-label mapping over multiple activations of
+hashed character trigrams. As T-F REE explicitly models morphological similarities, it enables compression of the
+embedding layer.
+encode the textual representation. We argue that
+the converged embedding of such similar words
+should remain close and, thus, can be heavily com-
+pressed2. This exploitation of similarities allows
+T-F REEto reduce the size of the embedding layers
+by87.5%3and the average encoding length of text
+by56%4. In addition to the inherent benefits of
+T-F REE, the approach remains highly competitive
+on standard downstream model performance bench-
+marks. Finally, for transfer learning to an unseen
+language, the T-F REEmodel quickly improves per-
+formance, while the tokenizer baseline shows only
+minor adaptation.
+Our contributions can be summarized as follows:
+•We systematically demonstrate the inherent
+weaknesses of common tokenization and em-
+bedding approaches.
+•We propose T-F REE, a powerful and efficient
+alternative for tokenizer-free LLMs.
+•We exhaustively evaluate hyperparameters of
+T-F REE on established benchmarks by train-
+2The English language contains about 500kwords, while
+“native fluency” is achieved at 10kwords (Nation, 2006).
+3Compared to our 64kunigram baseline.
+4Compared to Mistral 32kavg. of EN, DE, RU, VI, AR.ing 1B LLMs from scratch. Our compari-
+son against equally trained models with clas-
+sic tokenization demonstrates competitive per-
+formance despite the significant reduction in
+compute resources and parameters.
+•We demonstrate the capabilities of T-F REEfor
+cross-lingual transfer on continual pre-
+training on a 3B LLM.
+2 Classic Tokenization Principles
+Before we derive T-F REEin detail, let us first estab-
+lish some basics of how LLMs traditionally encode
+and decode text. Most LLM operations are per-
+formed in floating-point numbers through a series
+of matrix multiplications and non-linear activation
+functions. Consequently, we require techniques
+that map discrete textual inputs into floating-point
+representations and inversely transform the predic-
+tions of the model back to text.
+Traditionally, the first step in this process is to
+split any textual input into small chunks referred to
+astokens . Generally, these tokens can take arbitrary
+formats, spanning numerous characters, a single or
+even multiple words, and may also contain special
+characters. The latter can be particularly useful to
+encode programming languages. A tokenizer com-
+
+--- PAGE 3 ---
+prises the steps and rules that are necessary to dis-
+sect a text into a sequence of tokens. Importantly,
+the total number of tokens is restricted, and we refer
+to the set of all unique tokens as the vocabulary .
+Each token in the vocabulary is assigned an in-
+teger token-id , wherefore tokenizers produce a se-
+quence of token-ids for any textual input. Next, a
+large matrix of dimensions vocab size ×hidden
+size, an LLM’s embedding layer , maps each token-
+id to an internal representation as a floating point
+vector (cf. Fig. 1a). To produce new text, gener-
+ative models are trained auto-regressively. That
+is, they iteratively predict the next token, which is
+appended to the input text. Therefore, the training
+objective is formulated as a classification problem:
+a one-label prediction of the next token over the
+entire vocabulary. Consequently, the last layer of
+the model—the LM head —is a projection into the
+size of the vocabulary and thus also of dimension
+vocab size ×hidden size . For decoding, we can, for
+example, always select the token with the highest
+assigned value, which is called greedy sampling .
+The output text is produced by looking up the cor-
+responding text snippet of each predicted token-id
+in the vocabulary.
+Generally, it is desirable to encode any text in
+as few tokens as possible to reduce computational
+cost. At the same time, different semantic concepts
+should be separated into distinct tokens to ensure
+good language comprehension. The combination
+of both objectives is usually best satisfied by en-
+coding each word as one token.
+2.1 Tokenizer Algorithms
+The vast majority of LLMs utilize a tokenizer built
+with one of two approaches. Both progressively
+build up tokenization rules and their vocabulary
+based on statistics in a reference corpus.
+Byte Pair Encoding (BPE). BPE (Sennrich,
+2016) starts with a set of all characters as individ-
+ual tokens. Progressively, the most frequent token
+pairs occurring together in the training documents
+are merged. The resulting new token and the merg-
+ing rule are added, and the training is completed
+when the desired number of tokens is reached.
+In order to encode text with the trained tokenizer,
+BPE splits the input into individual characters and
+applies the lowest-ranking merge rule until no more
+are applicable. This exhaustive search can become
+computationally intensive, especially for long input
+sequences and large vocabularies.
+Unigram. Unigram (Kudo and Richardson,2018) operates inversely to BPE. First, it splits the
+training corpus into a large set of reference words
+and their respective frequencies. The vocabulary is
+initially populated with all possible substrings of
+these words. At each iteration, Unigram computes
+a loss of the current vocabulary with respect to the
+training corpus for all possible tokenizations. The
+least influential tokens are then removed until the
+desired vocabulary size is reached. For text encod-
+ing, the Viterbi algorithm is applied to determine
+the most preferred segmentation of a given word
+based on the ranked available tokens.
+The text decoding in both cases maps directly
+back into the vocabulary list and the respective
+sub-words. To ensure that every word can be repre-
+sented, a “byte-fallback” into unicode is often used
+for characters not present in the vocabulary.
+2.2 Facing the Flaws
+Common to both methods is a set of distinct flaws.
+Large Vocabularies F1) Words that do not ap-
+pear in the vocabulary are split into multiple tokens
+and, as such, require more compute during model
+inference and training. To avoid out-of-vocabulary
+words and to achieve the best downstream repre-
+sentations on a diverse set of languages and tasks,
+researchers tend to use ever larger vocabularies. Al-
+though some models still rely on a 32kvocabulary
+(Touvron et al., 2023; Jiang et al., 2023), more re-
+cent releases go up to 128k(Meta, 2024) or even
+beyond 250k(Mesnard et al., 2024; Gomez, 2024).
+Large vocabularies, in turn, require large embed-
+ding and head layers. For example, Command-R
+(Gomez, 2024) with a hidden dimension of 12,288
+and a vocabulary of 256,000tokens uses 6.3Bpa-
+rameters only for the embedding and head layer.
+Naturally, a large number of parameters complicate
+model training and may require advanced sharding
+techniques such as “model parallelism”. Even the
+tokenization itself can become (CPU-) computa-
+tionally intense for large documents and vocabular-
+ies. Naturally, embedding matrices of this scale are
+generally not an option for smaller “on-the-edge”
+models. Nevertheless, they still occupy a large por-
+tion of parameters in smaller models, e.g. 40% for
+Gemma-2B (Mesnard et al., 2024).
+Duplicate Tokens F2) Furthermore, the allo-
+cated vocabulary is expected to be poorly utilized
+due to the statistically likely occurrence of near-
+duplicate tokens. Most prominently, a significant
+portion of tokens appears multiple times, only dif-
+fering in capitalization or the existence of a lead-
+
+--- PAGE 4 ---
+ing whitespace ( cf.Sec 4.3). For example, to
+spell all 64 substrings and variations of the word
+“_words”5, we require a total of 37 unique tokens
+(cf.App. Tab. 7). Since the corresponding embed-
+dings of all tokens are independent and randomly
+initialized, the representation of each duplicate to-
+ken needs to be learned from scratch without ex-
+ploiting morphological synergies. Further, large
+embedding layers are purely utilized since some
+tokens will rarely occur. The corresponding em-
+bedding weights of these tokens are thus seldom
+active while still requiring compute.
+Training data overfitting F3) As discussed
+above, these tokenizers require dedicated training
+before the actual model training. In addition to the
+added computational overhead, the data selection
+and potential mistakes during tokenizer training
+have significant impact on the subsequent LLM
+(Ali et al., 2023). For natural language, for exam-
+ple, this paradigm may result in a vocabulary tai-
+lored to one language (usually English) and conse-
+quently drops in performance for others, especially
+those not explicitly included. The resulting LLM
+may still be somewhat adapted to other languages
+since many similar low-level structures (Mikolov
+et al., 2013a). However, its overall training and
+inference performance will not be as efficient as
+we demonstrate.
+In contrast, T-F REE addresses all of these dis-
+advantages. It is computationally efficient and per-
+forms good tokenization across languages without
+duplicates. It drastically reduces the parameters re-
+quired for text encoding, exploiting word spelling
+similarities. Importantly, none of these improve-
+ments sacrifices downstream model performance.
+3 T-F REE
+A key motivation for T-F REE is the intuition that
+minor differences in spelling, like leading whites-
+paces or capitalization, do not hold enough entropy
+to justify entirely independent tokens. T-F REE di-
+rectly encodes morphological similarities by repre-
+senting each word as a multi-label encoding of its
+character triplets. This designed overlap between
+words allows us to significantly reduce the size of
+embedding layers.
+We now derive T-F REE’s approach to text en-
+coding and decoding and discuss implications on
+LLMs in general. We provide a visualization of
+each step in Fig. 1b and pseudo-code in App. A.
+5_ represents a whitespace.3.1 Text Encoding
+Step 1: Word splitting. First, we rigorously split
+the text by digits and non-alphanumeric characters.
+The resulting splits, therefore, contain entire words,
+digits, or special characters. We consider each
+digit separately, as it is standard in SOTA LLMs ( cf.
+Tab. 1). Specifically, we include the 10 digits 0to9,
+and otherwise, we rely on attention to comprehend
+larger numbers or mixtures with characters.
+By definition, we represent each word with a
+prefixed and suffixed whitespace. In particular, we
+assume that an entire word is encoded into a single
+embedding, and analogously, we predict an entire
+word at once. Consequently, we no longer need
+to explicitly model whitespace as a character and
+eliminate near-duplicate tokens. Nonetheless, we
+add a dedicated “whitespace” and “non-whitespace”
+token to the tokenizer. These special tokens allow
+us to model cases where substrings should (not) be
+concatenated with whitespace, e.g., single digits of
+larger numbers. To reduce their need, we further
+add a rule-set that favors (non-) whitespace in front
+or after certain characters. Generally, we prefer to
+add no whitespace after a digit embedding and sim-
+ilarly no whitespace before punctuation. A detailed
+description of the rule set is found in App. B.
+Considering the example in Fig. 1b, the in-
+put text “Hello_word!” would be tokenized as
+[‘Hello’,‘word’,‘!’].
+Step 2: Encoding. Next, we define a robust hash
+function that uniformly encodes a token into nde-
+scriptors, where nusually equals the word-length6.
+Specifically, we apply convolutions of size three
+and byte-wise stride to each word. This operation
+yields a set of character triplets, which we refer
+to as “trigrams”. Consequently, “Hello” is decom-
+posed into {_He,Hel,ell,llo,lo_}. Trigrams usually
+contain enough information about the relationship
+between letters to reassemble the word from the
+unordered set.
+Subsequently, we project each trigram descriptor
+into a sparse hidden representation vector of m“ac-
+tive entries” on the embedding layer. Specifically,
+T-F REE calculates mnumerical hashes of each tri-
+gram, which can be considered as identifiers. We
+map these into the LLMs embedding matrix by
+calculating each hash value modulo vto identify
+the active indices. The selection of vocab size vis
+further explained in Step 3.
+Overall, we obtain n·mtotal activations for any
+6Only exceptions are unicode fallbacks.
+
+--- PAGE 5 ---
+single word. To further exploit word similarities
+and bootstrap training, we calculate k∈[0, m)
+out of these hash calculations with the lowercased
+trigram. This mapping from trigram to hidden rep-
+resentation is static and can be precomputed7.
+Step 3: Aggregation. Similar to classic embed-
+ding approaches ( cf.Fig. 1a) T-F REE also utilizes
+an embedding matrix of dimension vwith hidden
+sizeh. However, we do not have a fixed vocabu-
+lary, whose size dictates v. Instead, we can inde-
+pendently choose vas a hyperparamter with words
+and trigrams sharing individual entries to better
+encode similarities. Lastly, we sum all n·mem-
+bedding entries to produce the final one embedding
+corresponding to a word, such as “Hello”.
+Note again, that we utilize a significantly smaller
+number of embeddings than there are trigrams.
+While their hashes may naturally overlap, we en-
+sure the uniqueness of the entire patterns through
+themsimultaneous hashes. As we ensure that
+trigram encodings do not collide, neither will the
+word encodings.
+3.2 Training Objective & Text Decoding
+AsT-F REE’s representation of a word is now a
+multitude of activations, we reflect this change in
+the LM head, as well ( cf. Decode sections in Fig. 1,
+App. Alg. 3,5). In particular, we change the target
+loss function from classic single-label binary cross-
+entropy (BCE) to a multi-label (ML) BCE over all
+n·mactivations of the next word targets:
+LML
+BCE =−Pv
+j=1[yjlog(ˆyj)+(1−yj) log(1 −ˆyj)],
+forˆybeing the LM’s prediction and ythe binary
+target vocab labels withPv
+j=1yj=n·m.
+Next token decoding is shown in Fig. 2. We first
+assemble a dictionary of all possible next words
+and pre-compute their activation patterns. Impor-
+tantly, only n·mout of ventries will be non-zero
+for each word, and since we choose m < < v , the
+dictionary matrix can be encoded as a sparse ma-
+trix, thus improving runtime. In addition, note the
+pattern similarity between similar words, as pre-
+viously described. The last hidden layers’ output
+his sigmoided, and multiplied with the dictionary
+matrix. Finally, we compute the average sigmoid
+value per dictionary entry, h′, to sample the next
+word, e.g. using standard argmax. Overall, for a
+dictionary with 512kentries, this procedure only
+marginally increases the decoding runtime due to
+7Note that there are only 2563≈16.7Mtrigrams.the sparse property of the activation patterns. Fur-
+ther description, along with pseudocode, detailed
+depictions, and step-wise runtime analysis can be
+found in App. 5.
+Note that the decode matrix is not required dur-
+ing training, and can dynamically be exchanged.
+We generate it by sampling the top- 500koccur-
+ring words in the training dataset, and dynamically
+adding the missing words of the prompt.
+3.3 Distinctions of paradigm shift
+Notably, this paradigm shift to a multi-class vocabu-
+lary allows for more semantically robust decoding.
+With the classical approach, the distinctly noisy
+learning process can lead to unrelated concepts ap-
+pearing among the top predictions ( cf.‘House ’ and
+‘Car’ in Fig. 1a). This effect can have a signifi-
+cant impact on next token sampling and potentially
+devastative outcomes for model modifications such
+as compression (Deiseroth et al., 2024). In con-
+trast, the trigrammification and resulting embed-
+ding overlap of similar words with T-F REE in-
+herently favors similar words during decoding ( cf.
+‘ouse’ in Fig. 1b). Moreover, activations in the
+embedding and LM head are more uniformly dis-
+tributed, leading to better parameter utilization, and
+more stable model behavior.
+The predictable words are still derived from a
+dictionary. However, this vocabulary list is ex-
+changeable, and is not required during training. As
+such, depending on the use-case, it may be kept in
+reasonable sizes. Moreover a hierarchical decoding
+exploiting morphological structures can straightfor-
+ward be implemented, e.g. first decoding lowercase
+words, and then uppercase variations (or similarly
+grouping by stems or endings).
+Lastly, our design of a robust hash function on
+words adresses the afore mentioned flaws (Sec. 2.2)
+as the results of the next section demonstrate.
+4 Empirical Evaluations
+We continue with an empirical demonstration of the
+performance of T-F REE, and how it remedies the
+flaws of standard tokenizers as outlined in Sec. 2.2.
+To thoroughly analyze the performance differences,
+we designed three consecutive experiments: First,
+we perform hyperparameter ablations on a series of
+1B parameter models, which achieve competitive
+scores on standard benchmarks with a reduced vo-
+cabulary, which in turn addresses F1. Second, we
+analyze the duplicates in the tokenizers of recent
+
+--- PAGE 6 ---
+∘=
+ =ℎ′
+σ(ℎ)
+11Figure 2: Example of the next word prediction with
+T-F REE. To the list of predictable words of dimension
+dwe generate once the corresponding patterns within
+the available vocabulary size v, as described in the en-
+coding step 2of Sec. 3.1. Note how morphologically
+close words will generate overlapping patterns. The
+element-wise sigmoid values of the output of the last
+hidden layer, σ(h), is multiplied with this pattern matrix
+using standard dot product. Finally, we use h′for the
+sampling process, the average sigmoid value of a word.
+C.f. App. A for further details.
+LLMs with respect to F2. Notably, T-F REE is by
+design free of duplicates. Lastly, we look at F3
+and evaluate the performance of various tokenizers
+across languages. Further, we trained 3B param-
+eter models on English and continued training on
+German data to practically investigate language
+adaptability. T-F REE has better tokenization per-
+formance across languages and outperforms classic
+tokenizers on language transfer.
+4.1 Experimental Details
+First, let us clarify some details about our exper-
+imental setup. We provide more details for each
+section in the Appendix.
+Data and Code. We use the slimpajama
+dataset (Soboleva et al., 2023) as our English and
+Occiglot Fineweb v0.5 (Brack et al., 2024) as our
+German data corpus. Both datasets contain a di-
+verse range of content and have been extensively
+filtered and deduplicated.
+As a baseline, we trained BPE and Unigram
+tokenizers of sizes 32 kand 64 kon a random 20GB
+slimpajama sample using Sentencepiece8. More
+details are described in App. C.
+To ensure fair comparisons, we trained 1B and
+3B models from scratch for the baselines and T-
+FREE using our adjusted code base9.
+LLM Pre-Training. All models are transformer,
+decoder-only architectures similar to Llama-2. We
+solely change the tokenizer, embedding layer and
+LM head. Consequently, ablations with smaller
+8https://github.com/google/sentencepiece
+9https://github.com/Aleph-Alpha/trigrams
+0.3
+ 0.2
+ 0.1
+ 0.0 0.1 0.2 0.3
+Difference to Unigram Baseline on 18 Benchmarksvocab size v
+1k
+2k
+4k
+8kImprovement over BaselineFigure 3: Hyperparameter search for V ocab Size of T-
+FREE on a series of 1B ablations. We fixed number of
+activations m= 10 , and do not apply lowercase overlap
+(k= 0). The boxplots show the differences of trained
+models to a 64kunigram baseline for 18 downstream
+benchmarks (0-shot). T-F REE outperforms in median
+the classical tokenizer architecture with a reduced vocab
+size of 8kentries ( 12.5%).
+sizes of vresult in a lower overall parameter count,
+heavily skewing the comparison in favor of the
+baseline . For hyper-parameter ablations of T-F REE,
+we train 1B models for 50ksteps with 2ksequence
+length and 1ktotal batch size. We then scale up
+the baseline and T-F REE models to 3B parame-
+ters and train for 110ksteps on slimpajama with
+4ksequence length. For the multilingual learn-
+ing experiment, we continue training this English
+3B model at a lower learning rate for another 20k
+steps on German Occiglot data with a 20% replay
+of English.
+Evaluation. We evaluate tokenizer performance
+in isolation using fertility measurements similar to
+Rust et al. (2021). Fertility benchmarks the number
+of tokens required per word with 1.0thus being
+the optimal value. Specifically, we compare differ-
+ent tokenizers across 5 diverse languages on the
+respective data from Wikipedia.
+Downstream benchmark comparisons are per-
+formed on 18 standardized benchmarks10in En-
+glish that measure a wide variety of LLM capabil-
+ities, including general language modeling, ques-
+tion answering, and common sense reasoning. To
+evaluate german and english in comparison we use
+german translations of the Hellaswag, Truthfulqa
+and Arc-Challenge benchmarks11.
+We built T-F REE’s prediction dictionary, from
+the top 80kwords that occurring in slimpajama,
+and additional top 20kwords from the German
+10https://github.com/EleutherAI/lm-evaluation-harness
+11https://github.com/bjoernpl/GermanBenchmark
+
+--- PAGE 7 ---
+Occiglot data.
+4.2 T-F REE performs at 8 kvocab size
+We present the results of our hyperparameter abla-
+tion study of T-F REE for1Bmodels in Fig. 3. All
+scores are reported as differences to the Unigram
+64kbaseline and for fixed parameters m= 10 and
+k= 0. Generally, T-F REE remains highly compet-
+itive with the baseline as all versions outperform
+the Unigram model on some of the benchmarks.
+Further, we achieve the best results for a vocab size
+vof8kat which T-F REE outperforms the base-
+line on average. In contrast, a vocab size of ≤2k
+seems insufficient with devastating outliers. We
+performed further ablations on parameters mand
+k, which are outlined in App. H.
+These results demonstrate that T-F REE success-
+fully addresses the flaw of large vocabularies and
+embedding layers ( cf.F1in Sec. 2.2). We are
+able to achieve competitive performance with only
+12.5%12of the embedding parameters using T-
+FREE instead of Unigram.
+Note, that we do not adjust any other model pa-
+rameters when reducing vocab size. As such, the
+benchmark results compare a Unigram model with
+1.07Bparameter against a T-F REE model with
+0.84Bparameters (for v= 8k). Consequently,
+we demonstrate that an LLM using T-F REEinstead
+of Unigram performs better, despite having over
+20% fewer parameters.
+4.3 T-F REE no duplicates by design
+Let us now look into (near) duplicate tokens in
+commonly used tokenizers ( cf.F2in Sec. 2.2).
+In general, there are three types of overlaps in vo-
+cabularies: 1) The same token with and without
+capitalization, 2) with and without leading whites-
+pace, and 3) dedicated tokens for multiple digits.
+In Tab. 1, we report the percentage of duplicate
+tokens for our baseline tokenizers and commonly
+used models. Overall, between 15% and 35% of the
+available vocabulary is spent on (near) duplicate in-
+formation with limited differences in entropy. Gen-
+erally, tokenizers contain the most duplicates for
+capitalization, slightly fewer for whitespaces, and
+only a few duplicate digits. The relative amount of
+overlap tends to decrease with larger vocabularies,
+although Gemma marks an inglorious exception.
+In contrast, T-F REE is inherently designed to be
+free of duplicates. We can even adjust the param-
+128kinstead of 64k.eterkto explicitly model the overlap of words
+to their lowercase representations. Consequently,
+all variants are inherently well represented in the
+emedding layer.
+4.4 T-F REE has lower fertility across,
+and is more adaptive to new languages
+Finally, we investigate the versatility of tokenizers
+beyond their (main) language ( cf.F3in Sec. 2.2).
+We report the fertility of our baselines and other
+popular models in English, German, and three
+dissimilar languages that also contain significant
+character-level differences in Tab. 1. Common to
+all tokenizers is a significantly decreasing perfor-
+mance for non-English languages, especially for
+Russian and Vietnamese. Naturally, larger vocab-
+ulary sizes tend to have better multilingual cover-
+age , in particular to language groups close to En-
+glish, but still suffer from significant performance
+drops. In comparison, the tokenization of T-F REE,
+which is mainly based on whitespace splitting, pro-
+vides comparably good performance across all 5
+languages13. The increases in fertility for Russian
+or Vietnamese remain small and there is no per-
+formance difference for German or Arabic. Note
+that these synergies were explicitly modeled, and
+no reference corpus is needed to train and bias the
+fertility of T-F REE. Consequently, T-F REE allows
+for easier and more efficient model adaptation to
+low-resource languages.
+We now explicitly show the devastating conse-
+quences of biased tokenizers on the language trans-
+fer capabilities of LLMs. As discussed above, we
+first train 3Bmodels for T-F REE and Unigram on
+English, and then transition to German. Through
+more ablations, we fixed the activations to m= 7
+and the lowercase trigram overlap to k= 3. Fig. 4
+shows the performance average on the English
+and German versions of the standard benchmarks.
+The baseline performance in German is already
+improved with T-F REE, indicating that syntactic
+and semantic similarities between the languages
+are better captured in the learned representations.
+Additionally, T-F REE almost achieves the English-
+level performance on German after 20ktraining
+steps. In contrast, the classical tokenizer variant
+improves only marginally with the same amount of
+training.
+We, again, do not adjust any other model pa-
+rameters when reducing the vocab size. As such,
+13More detailed evaluations are found in App. E.
+
+--- PAGE 8 ---
+Model/TokenizerPortion of duplicate tokens (%) ↓ Fertility across languages ↓
+Total Cap. Space Digits EN DE RU VI AR
+Unigram (64k) 35.24 23.27 13.47 0.00 1.280 2.004 11.431 5.060 9.455
+BPE (64k) 35.24 23.27 13.47 0.00 1.275 2.025 11.423 4.755 9.465
+Mistral (32k) 31.47 19.10 16.45 0.00 1.397 1.931 2.560 3.346 4.722
+Phi-2 (50k) 23.23 12.91 16.89 3.32 1.265 2.266 6.729 4.339 5.225
+Gemma (256k) 34.68 20.27 20.50 0.04 1.176 1.447 1.903 1.726 1.793
+Command-R (255k) 15.31 15.31 14.00 0.00 1.152 1.411 1.590 1.597 1.578
+T-F REE (Ours) 0.00 0.00 0.00 0.00 1.163 1.182 1.338 1.400 1.086
+Table 1: Demonstration of inherent benefits of T-F REE over traditional tokenizers. The performance no longer
+degrades when confronted with languages beyond the one primarily trained on. Additionally, the vocabularies
+of classic tokenizers contain large portions of tokens only differing in their capitalization or leading whitespace.
+T-F REE does not construct such a vocabulary in the first place and thus utilizes embeddings more efficiently.
+Baseline 5k 10k 15k 20k
+continual pre-training steps0.250.300.350.400.450.50
+Avg. benchmark score0-shot
+Baseline 5k 10k 15k 20k
+continual pre-training steps2-shot
+Unigram T-Free            English German
+Figure 4: Continual pre-training performance. Trained
+are3Bmodels on English slimpajama data for 90ksteps
+(“baseline”), and continued on German occiglot data for
+20ksteps. Plotted are the average scores of two bench-
+marks available in German and English: Hellaswag
+and Arc-Challenge. Notably, T-F REE outperforms in
+German already with the baseline. Within 20kcontin-
+ued steps, T-F REE improves by 5%on average in 0
+and 2-shot, while the classic tokenizer approach barely
+improves. Both models slightly drop performance in
+English, albeit the tokenizer version more drastically.
+Full evaluations are found in Appendix Tab. 8,9,10.
+T-F REE uses 10% fewer parameters than the base-
+line ( 2.77Binstead of 3.11B) and still strongly
+outperforms the Unigram variant. More detailed
+evaluations are found in App. J.
+5 Discussion
+Prior research has demonstrated that the mapping
+into a sparse hidden representation and the training
+of a dense aggregation layer as applied in T-F REE,
+is a universal function approximator (Aved’yan,
+1995). These results provide further theoretical
+motivation for our approach.
+T-F REE allows for significant compression of
+an LLMs’ vocabulary by more than 85% without
+performance degradation. Notably, the affectedembedding and head layers are by far the largest
+in LLMs in terms of parameter count. They are
+also the most influential to an LLM, as they dictate
+the mapping between text and numerical represen-
+tations. For one, these massive improvements al-
+low for better utilization of billions of parameters
+in large models. The compression of T-F REE in
+particular paves the way to building better low-
+resource models, by reducing model size and train-
+ing cost and improving adaptability. For exam-
+ple, in our experiments without pipe or model-
+parallelism, we were able to triple the micro-batch
+size, yielding faster training iterations.
+Furthermore, we observed more stable loss
+curves for T-F REE, in particular for higher learning
+rates. These improvements may be attributed to the
+explicit modeling of similar words, the removal of
+duplicates, and the less volatile multi-label train-
+ing target. Further, the uniform hashing distributes
+gradients evenly amongst the available vocab size,
+in contrast to classical approaches. We provide
+further details in App. D,G.
+The rules we use for obtaining word representa-
+tions are universal and well-defined at pre-training
+time. They do not change over time, particularly
+neither when adding languages later on. T-F REE
+also lowers computational costs due to its low fertil-
+ity and easy-to-process whitespace splitting. Con-
+sequently, pre-processing, training and inference
+of an LLM all require less compute.
+Lastly, T-F REE allows to explicitly model and
+steer the decoding process at inference time, by
+altering the available dictionary. Consequently,
+hallucinations will likely be reduced due to fewer
+“generic fall-back” word splits. Moreover, one can
+dynamically add or remove words. It is worth point-
+ing out that T-F REE’s compression benefits can
+also be combined with traditional tokenizers. In-
+
+--- PAGE 9 ---
+stead of the simple whitespace splitting one could
+keep traditional tokenization and trigramify “clas-
+sic tokens”.
+6 Related Work
+Few alternatives to BPE and Unigram have been
+found in recent LLMs and research. Tay et al.
+(2022) propose a gradient-based trainable tokeniza-
+tion module in contrast the otherwise statistical
+based approach.
+The naive approach of splitting the input text into
+bytes or characters maximizes fertility and thus
+increases computational requirements. Yu et al.
+(2023) employ a mix of multiple models to improve
+this drawback of byte-wise processing. I.p. they
+introduce a fixed character-embedding aggregation
+and a second character-decoder model. However,
+they use a fixed byte-width that is processed at
+once, which is not aligned with word splits.
+Consequently, prior research has proposed meth-
+ods for merging bytes, e.g., through state-space
+models (Wang et al., 2024). However, these ap-
+proaches still result in performance degradation.
+Finally, linguistically motivated approaches have
+built tokenizers based on known morphological
+rules (Jabbar, 2024). However, these methods are
+usually tailored to specific applications and are usu-
+ally too costly and error-prone for large, general-
+purpose models.
+Bojanowski et al. (2017) in particular discusses
+how adding subword informations, such as tri-
+grams, enriches the encoding of words and leads
+to reliable compressions. Svenstrup et al. (2017)
+conduct research on the overloading of different
+hashfunctions to further improve and compress em-
+bedding representations. Xue and Aletras (2022)
+train BERT-style encoder models based on a dif-
+ferent set of hashes on words. Clark et al. (2022)
+propose a multistage encoding scheme that uses
+hash functions and convolutions to enhance the
+BERT-encodings of words.
+Another line of work to reduce the vocabulary
+parameter count is the utilization of weight tying,
+effectively halving it, as the embedding and head
+layers become “tied” to the same matrix (Press and
+Wolf, 2017). However, the effects on performance
+are still not sufficiently explored, and it arguably
+imposes a more difficult training objective.7 Conclusion
+In this work we present T-F REE, an alternative
+to subword tokenizers with a simple and explic-
+itly modeled robust hash function on words. It
+removes the need and pitfalls to limit “a models
+potential” to a “pre-pre-trained” vocabulary. We,
+moreover, fundamentally shift the established tar-
+get of training language models, previously de-
+signed as a single-label problem, into a multi-label
+prediction based on word similarities. Similarities
+in particular include leading whitespaces and upper-
+case variations, for which subword tokenizers add
+specific tokens that are independently trained from
+scratch. These contributions allow us to train lan-
+guage models more robust, more adaptable when
+continuing pre-training with a new language, and
+with a significantly (to 12.5%) reduced parame-
+ter size without a decrease in benchmark scores.
+Due to the special role of the matrices, the latter in
+particular allows one to increase micro-batchsize,
+which further accelerates training time. Finally,
+the consequent convolution-like encoding achieves
+SOTA fertility scores across most languages and
+enables by design synergies to similar language
+groups. We demonstrated the latter showing that
+our3Balmost achieved “native-language” perfor-
+mance after a small amount of language-transfer
+training steps, in contrast to the tokenizer baseline.
+Limitations
+With T-F REEwe propose a fundamentally different
+approach to text encoding and decoding in LLMs.
+Due to the intense resources required to train LLMs,
+we have focused on evaluating models up to 3B
+parameters. Evaluations on even larger models and
+training datasets remain a relevant point of investi-
+gation for future work. Nonetheless, we observed
+an easy transfer from 1Bto3Bparameters, and we
+will continue to train and release more advanced
+models.
+We expect T-F REE to experience some numer-
+ical instabilities for very long words since single-
+word embeddings are calculated as the sum of their
+n·mactivations. However, less than 2%of the en-
+tire slimpajama dataset contains words with more
+than 10characters ( cf.App. I), and we did not
+encounter any issues with the benchmarks. Con-
+sequently, such potential instabilities remain sta-
+tistically insignificant. Nonetheless, we could ade-
+quately tackle long outliers with an additional split
+rule based on the words length or at the occur-
+
+--- PAGE 10 ---
+rence of repetitions. Subword tokenizers already
+demonstrate that such approaches will work, even
+when tokens are at first glance meaningless and
+underutilized—and again, these cases remain out-
+liers. Moreover, a hybrid setup utilizing a large
+tokenizer (>512k tokens) with T-F REE for opti-
+mized memory footprint is depicted in Figure 16.
+Similarly, we did not thoroughly study the ef-
+fect of repetitive trigrams in words. These did also
+not occur frequently enough to have any measur-
+able effect on our experiments. As of now, we
+only accumulate a word pattern in a binary fash-
+ion, not accounting for trigrams appearing mul-
+tiple times in a single word. As a fallback, one
+could again, split words at the position of repeti-
+tions. Another promising direction would overload
+embeddings with positional encodings similar to
+rotary (Su et al., 2024).
+Although T-F REE’s fertility on code is on par
+with that of LLama2 ( cf.App. E), it could be fur-
+ther improved by explicitly modeling code patterns.
+In this work, we have focused on natural language
+and leave detailed evaluations of T-F REE in down-
+stream coding tasks for future research. Further-
+more, we did not investigate languages entirely re-
+lying on Unicode byte-encodings, such as Chinese.
+However, as they seemingly work out-of-the-box
+with subword tokenizers, we do not expect issues
+here by splitting them character/ word-wise. In par-
+ticular for asian symbols, additionally translating
+the symbols to its romanization through the pho-
+netic alphabet such as pinyin may further improve
+the synergies of word encodings.
+Finally, we only studied a single constructed
+hash function for T-F REE. As this work paves
+the way to model required language features more
+explicitly, we are looking forward to variations of
+the proposed T-F REE method.
+Acknowledgments
+We gratefully acknowledge support by the German
+Center for Artificial Intelligence (DFKI) project
+“SAINT”, the Hessian Ministry of Higher Edu-
+cation, the Research and the Arts (HMWK) clus-
+ter projects “The Adaptive Mind” and “The Third
+Wave of AI”, and the ICT-48 Network of AI Re-
+search Excellence Center “TAILOR” (EU Horizon
+2020, GA No 952215).References
+Mehdi Ali, Michael Fromm, Klaudia Thellmann,
+Richard Rutmann, Max Lübbering, Johannes
+Leveling, Katrin Klug, Jan Ebert, Niclas Doll,
+Jasper Schulze Buschhoff, Charvi Jain, Alexan-
+der Arno Weber, Lena Jurkschat, Hammam Abdel-
+wahab, Chelsea John, Pedro Ortiz Suarez, Malte
+Ostendorff, Samuel Weinbach, Rafet Sifa, Stefan
+Kesselheim, and Nicolas Flores-Herr. 2023. Tok-
+enizer choice for LLM training: Negligible or cru-
+cial? arXiv:2310.08754 .
+Eduard Aved’yan. 1995. The cerebellar model articula-
+tion controller (cmac).
+Piotr Bojanowski, Edouard Grave, Armand Joulin, and
+Tomás Mikolov. 2017. Enriching word vectors with
+subword information. Trans. Assoc. Comput. Lin-
+guistics , 5:135–146.
+Manuel Brack, Malte Ostendorff, and Pedro Ortiz. 2024.
+Occiglot fineweb v0.5.
+Jonathan H. Clark, Dan Garrette, Iulia Turc, and John
+Wieting. 2022. Canine: Pre-training an efficient
+tokenization-free encoder for language representa-
+tion. Trans. Assoc. Comput. Linguistics , 10:73–91.
+Björn Deiseroth, Max Meuer, Nikolas Gritsch, Con-
+stantin Eichenberg, Patrick Schramowski, Matthias
+Aßenmacher, and Kristian Kersting. 2024. Divergent
+token metrics: Measuring degradation to prune away
+LLM components - and optimize quantization. In
+Proceedings of the Conference of the North Ameri-
+can Chapter of the Association for Computational
+Linguistics (NAACL) .
+Aidan Gomez. 2024. Command r: Retrieval-augmented
+generation at production scale.
+Haris Jabbar. 2024. Morphpiece : A linguistic tokenizer
+for large language models. arXi:2307.07262 .
+Albert Q. Jiang, Alexandre Sablayrolles, Arthur Men-
+sch, Chris Bamford, Devendra Singh Chaplot, Diego
+de Las Casas, Florian Bressand, Gianna Lengyel,
+Guillaume Lample, Lucile Saulnier, Lélio Re-
+nard Lavaud, Marie-Anne Lachaux, Pierre Stock,
+Teven Le Scao, Thibaut Lavril, Thomas Wang, Timo-
+thée Lacroix, and William El Sayed. 2023. Mistral
+7b.arXiv:2310.06825 .
+Taku Kudo and John Richardson. 2018. Sentencepiece:
+A simple and language independent subword tok-
+enizer and detokenizer for neural text processing.
+arXiv preprint arXiv:1808.06226 .
+Thomas Mesnard, Cassidy Hardin, Robert Dadashi,
+Surya Bhupatiraju, Shreya Pathak, Laurent Sifre,
+Morgane Rivière, Mihir Sanjay Kale, Juliette Love,
+Pouya Tafti, Léonard Hussenot, Aakanksha Chowdh-
+ery, Adam Roberts, Aditya Barua, Alex Botev, Alex
+Castro-Ros, Ambrose Slone, Amélie Héliou, Andrea
+Tacchetti, Anna Bulanova, Antonia Paterson, Beth
+
+--- PAGE 11 ---
+Tsai, Bobak Shahriari, Charline Le Lan, Christo-
+pher A. Choquette-Choo, Clément Crepy, Daniel Cer,
+Daphne Ippolito, David Reid, Elena Buchatskaya,
+Eric Ni, Eric Noland, Geng Yan, George Tucker,
+George-Cristian Muraru, Grigory Rozhdestvenskiy,
+Henryk Michalewski, Ian Tenney, Ivan Grishchenko,
+Jacob Austin, James Keeling, Jane Labanowski,
+Jean-Baptiste Lespiau, Jeff Stanway, Jenny Brennan,
+Jeremy Chen, Johan Ferret, Justin Chiu, and et al.
+2024. Gemma: Open models based on gemini re-
+search and technology. arXiv:2403.08295 .
+Meta. 2024. Introducing meta llama 3: The most capa-
+ble openly available llm to date.
+Tomás Mikolov, Quoc V . Le, and Ilya Sutskever. 2013a.
+Exploiting similarities among languages for machine
+translation. abs/1309.4168.
+Tomás Mikolov, Ilya Sutskever, Kai Chen, Gregory S.
+Corrado, and Jeffrey Dean. 2013b. Distributed rep-
+resentations of words and phrases and their compo-
+sitionality. In Proceedings of the Advances in Neu-
+ral Information Processing Systems: Annual Con-
+ference on Neural Information Processing Systems
+(NeurIPS) .
+I Nation. 2006. How large a vocabulary is needed for
+reading and listening? Canadian modern language
+review , 63(1):59–82.
+Ofir Press and Lior Wolf. 2017. Using the output embed-
+ding to improve language models. In Proceedings
+of the Conference of the European Chapter of the
+Association for Computational Linguistics (EACL) .
+Phillip Rust, Jonas Pfeiffer, Ivan Vulic, Sebastian Ruder,
+and Iryna Gurevych. 2021. How good is your tok-
+enizer? on the monolingual performance of multilin-
+gual language models. In Proceedings of the Annual
+Meeting of the Association for Computational Lin-
+guistics (ACL) .
+Rico Sennrich. 2016. How grammatical is character-
+level neural machine translation? assessing mt qual-
+ity with contrastive translation pairs. arXiv preprint
+arXiv:1612.04629 .
+Daria Soboleva, Faisal Al-Khateeb, Robert Myers, Ja-
+cob R Steeves, Joel Hestness, and Nolan Dey. 2023.
+SlimPajama: A 627B token cleaned and deduplicated
+version of RedPajama.
+Milan Straka. 2018. UDPipe 2.0 prototype at CoNLL
+2018 UD shared task. In Proceedings of the CoNLL
+2018 Shared Task: Multilingual Parsing from Raw
+Text to Universal Dependencies , pages 197–207,
+Brussels, Belgium. Association for Computational
+Linguistics.
+Jianlin Su, Murtadha H. M. Ahmed, Yu Lu, Shengfeng
+Pan, Wen Bo, and Yunfeng Liu. 2024. Roformer: En-
+hanced transformer with rotary position embedding.
+Neurocomputing , 568:127063.Dan Svenstrup, Jonas Meinertz Hansen, and Ole
+Winther. 2017. Hash embeddings for efficient word
+representations. In Advances in Neural Information
+Processing Systems 30: Annual Conference on Neu-
+ral Information Processing Systems 2017, December
+4-9, 2017, Long Beach, CA, USA , pages 4928–4936.
+Yi Tay, Vinh Q. Tran, Sebastian Ruder, Jai Prakash
+Gupta, Hyung Won Chung, Dara Bahri, Zhen Qin,
+Simon Baumgartner, Cong Yu, and Donald Metzler.
+2022. Charformer: Fast character transformers via
+gradient-based subword tokenization. In The Tenth
+International Conference on Learning Representa-
+tions, ICLR 2022, Virtual Event, April 25-29, 2022 .
+OpenReview.net.
+Hugo Touvron, Louis Martin, Kevin Stone, Peter Al-
+bert, Amjad Almahairi, Yasmine Babaei, Nikolay
+Bashlykov, Soumya Batra, Prajjwal Bhargava, Shruti
+Bhosale, Dan Bikel, Lukas Blecher, Cristian Canton-
+Ferrer, Moya Chen, Guillem Cucurull, David Esiobu,
+Jude Fernandes, Jeremy Fu, Wenyin Fu, Brian Fuller,
+Cynthia Gao, Vedanuj Goswami, Naman Goyal, An-
+thony Hartshorn, Saghar Hosseini, Rui Hou, Hakan
+Inan, Marcin Kardas, Viktor Kerkez, Madian Khabsa,
+Isabel Kloumann, Artem Korenev, Punit Singh Koura,
+Marie-Anne Lachaux, Thibaut Lavril, Jenya Lee, Di-
+ana Liskovich, Yinghai Lu, Yuning Mao, Xavier Mar-
+tinet, Todor Mihaylov, Pushkar Mishra, Igor Moly-
+bog, Yixin Nie, Andrew Poulton, Jeremy Reizen-
+stein, Rashi Rungta, Kalyan Saladi, Alan Schelten,
+Ruan Silva, Eric Michael Smith, Ranjan Subrama-
+nian, Xiaoqing Ellen Tan, Binh Tang, Ross Tay-
+lor, Adina Williams, Jian Xiang Kuan, Puxin Xu,
+Zheng Yan, Iliyan Zarov, Yuchen Zhang, Angela Fan,
+Melanie Kambadur, Sharan Narang, Aurélien Ro-
+driguez, Robert Stojnic, Sergey Edunov, and Thomas
+Scialom. 2023. Llama 2: Open foundation and fine-
+tuned chat models. arXiv:2307.09288 .
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob
+Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz
+Kaiser, and Illia Polosukhin. 2017. Attention is all
+you need. In Proceedings of the Advances in Neu-
+ral Information Processing Systems: Annual Con-
+ference on Neural Information Processing Systems
+(NeurIPS) .
+Junxiong Wang, Tushaar Gangavarapu, Jing Nathan
+Yan, and Alexander M. Rush. 2024. Mam-
+babyte: Token-free selective state space model.
+arXiv:2401.13660 .
+Huiyin Xue and Nikolaos Aletras. 2022. Hashformers:
+Towards vocabulary-independent pre-trained trans-
+formers. In Proceedings of the 2022 Conference on
+Empirical Methods in Natural Language Processing,
+EMNLP 2022, Abu Dhabi, United Arab Emirates, De-
+cember 7-11, 2022 , pages 7862–7874. Association
+for Computational Linguistics.
+Lili Yu, Daniel Simig, Colin Flaherty, Armen Agha-
+janyan, Luke Zettlemoyer, and Mike Lewis. 2023.
+MEGABYTE: predicting million-byte sequences
+with multiscale transformers. In Advances in Neural
+
+--- PAGE 12 ---
+Information Processing Systems 36: Annual Confer-
+ence on Neural Information Processing Systems 2023,
+NeurIPS 2023, New Orleans, LA, USA, December 10
+- 16, 2023 .
+
+--- PAGE 13 ---
+Appendix
+A T-F REE Algorithm
+Alg. 1,2,3,4,5 show the core steps to encode text
+into embeddings, and decode text from model pre-
+dictions with T-F REE. Here, regex.split denotes
+an algorithm that splits text based on a regular ex-
+pression, hash denotes an arbitrary hash function
+likemd5,%denotes the mathematical modulo op-
+eration. In style of python, f′{token}_′denotes
+text formatting to indicate the string with content
+of variable token being followed by an underscore,
+andEL[i]denotes the i−th entry of matrix EL
+and′string′[i:i+ 3] three consecutive characters
+in the text string starting from position i, where
+′s′is at position 0. Finally, v≈8,000is the cho-
+sen vocabulary size, d≈100,000is the chosen
+dictionary size, h≈3,072the LLMs hidden size.
+Finally, 0hdenotes a zero vector of dimension h
+and1v×da matrix with entries 0or1. Note that we
+included some normalization steps in Alg. 5, which
+we surprisingly found not beneficial for Alg. 3 in
+our ablations.
+Finally, refer to Figure. 14,15 for a step-wise
+comparison of the computation step, parameters
+and runtimes. Figure 16 shows a “hybrid” mode, in
+which embody a classical subword-tokenizer as a
+text preprocessing step, but utilize T-F REEto keep
+the “tokenizer free LLM backbone”. Arguably, this
+approach benefits from a compressed embedding
+layer, and the tokenizer may easier be exchanged
+afterwards—the encoding of the text-chunks in the
+backbone will be kept as proposed.
+Algorithm 1 token_split
+input: text
+tokens ←regex.split ((_|\W|\d), text )
+(cf. Sec. B if necessary)
+output: tokens
+B Whitespace encoding
+By default our model is trained to predict full words
+separated by whitespaces. To not be limited to this
+use-case, we add a special “non-whitespace” and
+“whitespace” token. We empirically evaluated each
+exception occuring in code tokenization. To fur-
+ther reduce its fertility, we favor “non-whitespace”
+before one of the following characters:
+$ . , ; : # ? ! = − + */ \ ( ) < > [ ] &@ %_~^Algorithm 2 trigramify
+input: token, k, m
+▷ k:lowercase activation, m:total activation
+pattern ←0v
+forl∈[0, len(token )−1]do
+trigram ←f′_{token}_′[l:l+ 3]
+fori∈[1, m]do
+ifi≤kthen
+string i=lower (trigram )
+else
+string i=trigram
+end if
+hash i=hash(f′{string i}_{i}′)
+pattern [hash i%v] = 1
+end for
+end for
+output: pattern
+Algorithm 3 encode
+input: token ,EL
+▷EL: Embedding Layer ( ∈Rv×h)
+embedding ←0h
+pattern ←trigramify (token )
+fori∈[0, v−1]do
+ifpattern [i] == 1 then
+embedding ←embedding +EL[i]
+end if
+end for
+output: embedding
+We further prefer non-whitespace after one of the
+following characters:
+#$ = −+ */ ’\"( <[~^&@ %_ \ n1234567890
+As such, the text “In 2024” would result in
+the split “[In,2,0,2,4]” without the need of any
+special annotations, while “In20 24” resolves to
+“[In,<no_ws>,2,0,<ws>,2,4]”.
+Finally, to further improve code fertility, we
+merge consecutive <ws> and newline tokens up
+to 3 times, i.e. 8consecutive whitespaces would
+result in a single <|8<ws>|> token.
+C Tokenizer trainings with sentencepiece
+For training of a unigram tokenizer with the cur-
+rent sentencepiece library, a 20GB reference data
+corpus reaches the limit of our available 1TB Ram
+compute node. We thus randomly sample 20GB
+of the slimpajama dataset and run the following
+
+--- PAGE 14 ---
+Algorithm 4 compile_dictionary
+input: tokens ▷ dtarget tokens
+dict←0d×v
+fori∈[0, d−1]do
+dict[i]←trigramify (tokens [i])
+end for
+output: dict
+Algorithm 5 decode
+input: logit,dict,tokens
+▷logit: single prediction ( ∈Rv×1),
+dict: compiled dictionary ( ∈1d×v),
+tokens :dtokens corresponding to dict
+scores ←dict·sigmoid (logit)
+fori∈[0, d−1]do
+scores [i]←scores [i]/sum(dict[i])
+end for
+scores ←softmax (scores )
+i←arg max lscores [l]
+output: tokens[i] ,scores[i]
+statement for training of the actual tokenizer:
+s p m _ t r a i n −− i n p u t =20 GB_sample . t x t \
+−− m o d e l _ p r e f i x =unigram_64k \
+−− v o c a b _ s i z e =64000 \
+−− c h a r a c t e r _ c o v e r a g e =0.99 \
+−− model_type = unigram \
+−− b y t e _ f a l l b a c k = t r u e \
+−− s p l i t _ b y _ n u m b e r = t r u e \
+−− s p l i t _ b y _ w h i t e s p a c e = t r u e \
+−− t r a i n _ e x t r e m e l y _ l a r g e _ c o r p u s = t r u e \
+−− s p l i t _ d i g i t s = t r u e \
+−− a l l o w _ w h i t e s p a c e _ o n l y _ p i e c e s = t r u e \
+−− r e m o v e _ e x t r a _ w h i t e s p a c e s = f a l s e \
+−− n o r m a l i z a t i o n _ r u l e _ n a m e = n fk c \
+−− num_threads 64 −− e o s _ i d =0 \
+−− b o s _ i d =−1 −− unk_id =2 \
+−− p a d _ i d =1 \
+−− e o s _ p i e c e =" <| e n d o f t e x t | > " \
+−− p a d _ p i e c e =" <| padding | > " \
+−− u n k _ p i e c e =" <| unknown | > "
+D Training Configurations
+D.1 1B
+Training Parameters are listed in Tab. 2.
+D.2 3B
+Training Parameters are listed in Tab. 3.Parameter Value
+hidden size 2,048
+layers 16
+attention heads 16
+norm layer
+mlp gelu
+mlp scale 5,456
+training steps 50k
+sequence length 2,048
+batch size 1,024
+precision bfloat16
+learning rate 6e-4
+minimum learning rate 6e-5
+annealing cosine
+annealing steps 50k
+warmup steps 200
+optimizer AdamW
+optimizer beta1/ beta2/ eps 0.9 / 0.95 / 1e-8
+weight decay 0.1
+Table 2: 1B Parameter configurations (for all ablations).
+Parameter Value
+hidden size 3,072
+layers 24
+attention heads 24
+norm rms
+mlp swilu
+mlp scale 8,192
+training steps 90k (20k)
+sequence length 4,096
+batch size 1,024
+precision bfloat16
+learning rate 3e-4 (1e-4)
+minimum learning rate 3e-5 (3e-5)
+annealing cosine
+annealing steps 90k (20k)
+warmup steps 200 (500)
+optimizer AdamW
+optimizer beta1/ beta2/ eps 0.9 / 0.95 / 1e-8
+weight decay 0.1
+Table 3: 3B Parameter configurations (for all ablations).
+In brackets are highlighted values for German continued
+pre-training.
+
+--- PAGE 15 ---
+E Fertility Analysis
+We subsequently provide further experimental de-
+tails on the fertility analysis conducted with respect
+toF3, Sec. 4.4. As a reference dataset, we used the
+November 23 dump of Wikipedia in the respective
+languages. We derived reference tokenization us-
+ing UDPipe (Straka, 2018). A tokenizer’s fertility
+is then calculated by dividing its total token count
+for a document by the number of tokens produced
+by UDPipe. We present results for more models on
+8 languages in Tab. 5.
+We also evaluated the white-space tokenization
+ofT-F REE for code. For 22 programming lan-
+guages, we took 10k random documents each from
+the starcoder dataset14. Since ground truth text
+splitting for code is hard to establish, we instead
+report the normalized sequence length with respect
+to a reference tokenizer. We here used Llama-2
+and report results in Tab. 4. Since T-F REE’s tok-
+enization achieves an NSL close to 1.0, it performs
+roughly on par with Llama-2.
+F Token Overlap/Duplicates
+For the empirical evaluation regarding F2,cf.
+Sec. 4.3, we present more exhaustive results with
+additional models in Tab. 6.
+G Training stability
+Memory footage comparing classic tokenizers to
+T-F REE is found in Fig. 6.
+Note that the hashing step of Alg. 2 uniformly
+distributes gradients amongst the available vocab-
+ulary, as discussed in Sec. 5. This is in contrast
+to classic tokenizers, as they depend on a bijective
+single-label mapping, and as such each vocabu-
+lary entry update is dependent on its the occurance
+frequency of the corresponding token within the
+dataset. Moreover, we explicitly let trigram acti-
+vations overlap with their lowercase version. We
+assume that these are responsible for the more sta-
+ble training dynamics as shown in Fig. 5. Moreover,
+we found that the lowercase overlap bootstraps
+learning as shown with the downstream benchmark
+ablations Fig. 8.
+H Hyperparameter Ablations
+Some 1,500 determined experiments later...
+14https://huggingface.co/datasets/bigcode/
+starcoderdatalang Ours (NSL) ↓Starcoder (NSL) ↓
+c-sharp 1.034783 0.816206
+c 0.996308 0.860453
+cpp 1.084867 0.855094
+css 1.109492 0.903693
+cuda 1.018222 0.857034
+dockerfile 0.954086 0.851568
+go 1.142476 0.883456
+html 1.164936 0.885237
+java 1.003201 0.835858
+javascript 1.183923 0.850398
+json 1.071685 0.892871
+kotlin 0.925868 0.846053
+makefile 1.006108 0.862994
+markdown 0.965325 0.892784
+php 1.179374 0.838566
+python 1.005064 0.857439
+ruby 0.979135 0.846597
+rust 1.086027 0.857645
+shell 1.041322 0.879112
+sql 0.954786 0.859785
+typescript 1.121119 0.847393
+yaml 0.974146 0.856218
+Overall 1.045557 0.860748
+Table 4: Normalized sequence length wrt Llama-2 on
+code tokenization.
+
+--- PAGE 16 ---
+Model EN DE FR ES IT RU VI AR
+Unigram Baseline (32k) 1.3584 2.2577 2.1354 2.1524 1.9508 11.4448 5.1826 9.4740
+Unigram Baseline (64k) 1.2802 2.0043 1.9492 1.9163 1.7263 11.4305 5.0603 9.4555
+BPE Baseline (32k) 1.3585 2.2784 2.0625 2.0977 1.9396 11.4321 4.8717 9.4694
+BPE Baseline (64k) 1.2759 2.0253 1.9059 1.8894 1.7212 11.4231 4.7545 9.4656
+Mistral (32k) 1.3973 1.9316 1.6613 1.7569 1.7591 2.5601 3.3458 4.7228
+Llama-2 (32k) 1.4014 1.7702 1.5495 1.6413 1.6160 2.3242 3.3540 4.8255
+Phi-2: (50k) 1.2654 2.2660 1.8183 1.9736 1.9132 6.7289 4.3392 5.2246
+Gemma (256k) 1.1761 1.4470 1.2754 1.3163 1.3253 1.9028 1.7257 1.7938
+DBRX (100k) 1.2381 1.8311 1.5423 1.6142 1.6191 3.2385 2.6617 3.6821
+Jais (85k) 1.3029 2.1391 1.7347 1.8514 1.8244 3.6730 3.4382 1.2653
+Command-R (255k) 1.1525•1.4110 1.2079 1.2527 1.2460 1.5899 1.5967 1.5787
+Llama-3 (128k) 1.2330 1.8221 1.5351 1.6033 1.6130 2.2144 1.8261 1.9660
+NeMo-Tekken (131k) 1.2313 1.5178 1.3061 1.3845 1.4171 2.0521 1.8378 1.6045
+Ours 1.1636◦1.1829 1.2363 1.1695 1.1274 1.3386 1.4001 1.0863
+Table 5: Additional evaluations of fertility evaluations. Cf.Sec. 4.3.
+Model/TokenizerPortion of duplicate tokens (%) ↓
+Total Cap. Space Digits
+Unigram Baseline (32k) 32.99 21.44 11.76 0.00
+Unigram Baseline (64k) 35.24 23.27 13.47 0.00
+BPE Baseline (32k) 32.12 21.30 13.85 0.00
+BPE Baseline (64k) 35.32 23.82 15.52 0.00
+Phi-2: (50k) 23.23 12.91 16.89 3.32
+DBRX (100k) 24.87 23.77 16.17 1.10
+GPT-2 (50k) 25.25 21.93 16.99 3.32
+Gemma (256k) 34.68 20.27 20.50 0.04
+Command-R (255k) 15.31 15.31 14.00 0.00
+Mistral (32k) 31.47 19.10 16.45 0.00
+Llama-2 (32k) 30.23 17.10 16.98 0.00
+Llama-3 (128k) 21.22 20.17 15.28 1.05
+NeMo-Tekken (131k) 23.12 13.30 11.99 0.00
+T-Free (Ours) 0 0 0 0
+Table 6: Additional evaluations of overlap of full tokens occuring multiple times, only with capitalization or
+whitespace in difference. Note that there are still plenty more redundancies with sub-token reconstructions. Cf.
+Sec. 4.3.
+(a) Classic Tokenizer.
+(b) T-F REE.
+Figure 5: Exemplary comparison of classic tokenizer ( v= 64k) training loss curve (top) and T-F REE (v= 16k)
+training loss (bottom). Overall we noticed less spikey training behavior when using T-F REE. Both 3B models were
+trained on same slimpajama data, token-batchsize and learning rate 4.5e-4.
+
+--- PAGE 17 ---
+(a) Classic Tokenizer.
+(b) T-F REE.
+Figure 6: Pytorch Profiler Memory Footprint of a single
+forward and backward pass on a 1B, each with batch
+size8and4ksequence length. Top is classical tokenizer
+version with 64kvocab size, bottom trigram with 8k
+vocabulary. Note how AdamW aggregates peak memory
+consumption until 68GB for classic tokenizer, while
+ours remains at 38GB.
+0.3
+ 0.2
+ 0.1
+ 0.0 0.1 0.2 0.3
+Difference to Unigram Baseline on 18 Benchmarksvocab size v
+1k
+2k
+4k
+8k
+16k
+32kImprovement over Baseline
+Figure 7: Further ablations on hyper paramters in ac-
+cordance to Fig. 3. Note that after peaking at v= 8k,
+performance slightly decreases again, which may be at-
+tributed to the undertrained stage of the model trainings.
+Albeit pretty scarse, some more hyper-parameter
+ablations are found in Fig. 7,8.
+We will continue to polish and add more...
+I Some Statistics
+Trigram combinatorics. As there are more than
+vpossible words, there will naturally be some over-
+lap in the activations between words. However,
+assuming an embedding dimension of v≈8,000,
+m≈8activations per trigram, and a word of length
+n= 5, there are (in theory) v
+n·m
+≈10108unique
+activation patterns.
+This overlap can be interpreted as an interpola-
+tion between input states. For entirely independent
+inputs, this overlap should be kept small as the re-
+−0.3−0.2−0.1 0.0 0.1 0.2 0.3
+Diﬀerence toUnigram Baseline on18 Benchmarksv= 2000,m= 6,k= 2
+v= 2000,m= 10,k= 0
+v= 4000,m= 5,k= 0
+v= 4000,m= 6,k= 0
+v= 4000,m= 6,k= 2
+v= 4000,m= 10,k= 0
+v= 4000,m= 10,k= 4
+v= 8000,m= 6,k= 2
+v= 8000,m= 10,k= 0vocab sizev
+2k
+4k
+8kImprovement over Baseline ConﬁgurationFigure 8: Further ablations on hyper paramters.
+sults cannot benefit from the states of the shared
+activations. As such, we require a robust hash func-
+tionon text, i.e. a mapping from text into sparse
+activation patterns, for which the overlapping of
+activations is proportional to the similarity of the
+input words. We model this through trigrams, and
+as such, letter-similarity.
+Tokenizer Duplicates. Tab. 7 shows the curse of
+token-based vocabularies: to produce all 64 upper
+and whitespace variations of the word “_words”,
+one requires on average 3 tokens per writing.
+Dataset-Coverages. Fig. 9 shows the covered
+percentages of the entire dataset, by word-lengths,
+for all slimpajama datasets. If we successfully can
+encode all words of length ≤10, we can cover
+≥95% of the entire slimpajama dataset. Or con-
+versely, we would only require 5% outlier handling/
+additional splits for longer words ( cf.Sec. 7).
+Fig. 10 and Fig. 11 show dataset coverage (y-
+axis) of top-n words and trigrams (x-axis) for each
+slimpajama category. Notably 10k trigrams, and
+100k words consistently cover >95% of each
+slimpajama category.
+J More Benchmarks
+We used the code of the eleuther eval harness, and
+evaluated each benchmark in 0-shot and 2-shot. All
+18 benchmarks, namely arc (easy and challenge),
+hellaswag, winogrande, triviaqa, xnli, truthfulqa,
+boolq, copa, openbook, piqa, multirc, lambada
+(openai and standard), race, rte, wic, webqs are vi-
+sualized in Fig. 12 and Fig. 13 for a baseline model
+trained on english slimpajama only and continued
+finetuning on german occiglot. Arc-challenge, hel-
+laswag, xnli and truthfulqa are also evaluated in ger-
+man translations. Detailed numbers can be found
+in Tab. 8,9 and 10.
+
+--- PAGE 18 ---
+Figure 9: Top 5 and top 10 occuring word lengths (x-axis) per slimpajama data category, with coverage-percentage
+(y-axis). Headline indicates total percentage covered by top n-length words. With words of length ≤5, one always
+covers ≥74% of all occuring words. With all words of length ≤10, one achieves ≥95%.
+10^0 10^2 10^4 10^6 10^80.700.750.800.850.900.951.00Crawl   12554  *10^3
+10^0 10^2 10^4 10^6 10^80.700.750.800.850.900.951.00Exchange   914 *10^3
+10^0 10^2 10^4 10^6 10^80.700.750.800.850.900.951.00C4  6401  *10^3
+10^0 10^2 10^4 10^6 10^80.700.750.800.850.900.951.00Github   1433  *10^3
+10^0 10^2 10^4 10^6 10^80.700.750.800.850.900.951.00Wikipedia   621 *10^3
+10^0 10^2 10^4 10^6 10^80.700.750.800.850.900.951.00ArXiv   1719  *10^3
+10^0 10^2 10^4 10^6 10^80.700.750.800.850.900.951.00Book   756 *10^3roc plot for num words covering datasets
+Figure 10: Most-frequent word coverage of Slimpajama categories. Title shows the total number of words per
+dataset sample, x-axis the top-n chosen words, y-axis the percentage covered within dataset. With only 100k words
+we can consistenly cover >95% of each category.
+
+--- PAGE 19 ---
+0 5000 10000 15000 200000.8000.8250.8500.8750.9000.9250.9500.9751.000Crawl  1863226  *10^3
+0 10000 20000 30000 400000.8000.8250.8500.8750.9000.9250.9500.9751.000Exchange  93565  *10^3
+0 5000 10000 15000 20000 250000.8000.8250.8500.8750.9000.9250.9500.9751.000C4 999983  *10^3
+0 10000 20000 300000.8000.8250.8500.8750.9000.9250.9500.9751.000Github  126208  *10^3
+0 10000 20000 300000.8000.8250.8500.8750.9000.9250.9500.9751.000Wikipedia  78184  *10^3
+0 10000 20000 30000 400000.8000.8250.8500.8750.9000.9250.9500.9751.000ArXiv  135689  *10^3
+0 5000 10000 15000 200000.8000.8250.8500.8750.9000.9250.9500.9751.000Book  126197  *10^3roc plot for num trigrams covering datasetsFigure 11: Number of trigrams ( x-axis) required to cover ( y-axis) percentage of the categories of slimpajama (total
+number words sampled in title). With only 10k trigrams we can cover >95% of all occuring words.
+string token id
+‘_’ 49594
+‘_w’ 15997
+‘W’ 40669
+‘_W’ 46854
+‘w’ 63048
+‘Wo’ 7411
+‘_wo’ 14297
+‘_WO’ 14883
+‘wo’ 34034
+‘_Wo’ 39790
+‘WO’ 44468
+‘WOR’ 1916
+‘_WOR’ 6606
+‘_Wor’ 40813
+‘_Word’ 1971
+‘Word’ 3212
+‘_word’ 14272
+‘WORD’ 48022
+‘word’ 49922
+‘_words’ 12555
+‘words’ 28689
+‘WORDS’ 32751
+‘_Words’ 37912
+‘Words’ 51858
+Table 7: The 24 possible first tokens to construct up-
+percase and whitespace variations of “_words”, where
+“_” denotes a whitespace. In total, there are 64 ways to
+write “_words”, which requires 32·6 + 32 ·5 = 342
+characters. The tokenizer requires in total 194 tokens, of
+which 37 are unique, leading to an average (neglecting
+the occurrence frequencies) of ≈3tokens per writing.
+
+--- PAGE 20 ---
+mean
+arc_challenge
+arc_de
+hellaswag
+hellaswag_de
+xnli_de
+xnli_en
+task_name0.00.10.20.30.40.50.6acc0-shot
+mean
+arc_challenge
+arc_de
+hellaswag
+hellaswag_de
+xnli_de
+xnli_en
+task_name0.00.10.20.30.40.50.6acc2-shot
+baseline
+5k
+10k
+15k
+20k
+baseline
+5k
+10k
+15k
+20kT-Free
+Unigram
+mean
+tfqa_de_mc1
+tfqa_de_mc2
+tfqa_mc_mc1
+tfqa_mc_mc2
+task_name0.00.10.20.30.4acc0-shot
+baseline
+5k
+10k
+15k
+20k
+baseline
+5k
+10k
+15k
+20kT-Free
+Unigram
+mean
+lbd_openai
+lbd_openai_cloze
+lbd_stdrd
+lbd_stdrd_cloze
+task_name0.00.20.4acc0-shot
+mean
+lbd_openai
+lbd_openai_cloze
+lbd_stdrd
+lbd_stdrd_cloze
+task_name0.00.10.20.30.40.5acc2-shot
+baseline
+5k
+10k
+15k
+20k
+baseline
+5k
+10k
+15k
+20kT-Free
+Unigram
+mean
+boolq
+copa
+rte
+wic
+task_name0.00.20.40.60.8acc0-shot
+mean
+boolq
+copa
+rte
+wic
+task_name0.00.20.40.60.8acc2-shot
+baseline
+5k
+10k
+15k
+20k
+baseline
+5k
+10k
+15k
+20kT-Free
+UnigramFigure 12: Detailed benchmark results on evaluations of Sec. 4.4.
+
+--- PAGE 21 ---
+mean
+arc_challenge
+arc_easy
+webqs
+task_name0.00.10.20.30.40.50.6acc0-shot
+mean
+arc_challenge
+arc_easy
+webqs
+task_name0.00.20.40.6acc2-shot
+baseline
+5k
+10k
+15k
+20k
+baseline
+5k
+10k
+15k
+20kT-Free
+Unigram
+mean
+hellaswag
+multirc
+openbookqa
+piqa
+race
+triviaqa
+winogrande
+task_name0.00.20.40.60.8acc0-shot
+mean
+hellaswag
+multirc
+openbookqa
+piqa
+race
+triviaqa
+winogrande
+task_name0.00.20.40.60.8acc2-shot
+baseline
+5k
+10k
+15k
+20k
+baseline
+5k
+10k
+15k
+20kT-Free
+UnigramFigure 13: Further detailed benchmark results on evaluations of Sec. 4.4.
+Modelenglish benchmarks german benchmarks
+arcch hella xnli tf mc1tfmc2 arcch hella xnli tf mc1tfmc2baseT-Free 34.5/36.2 63.1/62.2 33.4/34.8 25.9/- 44.1/- 24.3/25.0 27.7/28.1 37.1/32.7 31.1/- 44.3/-
+Unigram 32.6/34.8 64.5/64.8 31.4/32.1 22.3/- 38.8/- 22.5/23.5 26.8/27.0 35.7/33.1 31.3/- 43.1/-5kT-Free 34.7/35.1 63.0/61.9 32.5/33.2 24.7/- 44.1/- 30.9/32.5 28.3/28.4 38.1/34.9 31.1/- 44.3/-
+Unigram 31.3/36.1 63.8/64.7 31.1/31.5 22.6/- 39.6/- 25.2/25.1 26.6/27.2 37.3/35.0 31.3/- 43.2/-10kT-Free 34.1/35.1 61.9/61.1 32.2/33.8 24.2/- 44.1/- 32.1/33.4 29.6/29.7 35.7/34.0 30.0/- 44.3/-
+Unigram 31.7/35.0 63.9/64.5 32.0/32.9 22.5/- 39.4/- 25.1/26.6 26.9/27.8 37.0/33.5 31.5/- 43.1/-15kT-Free 33.9/36.3 61.8/61.8 32.3/34.9 24.2/- 44.1/- 33.2/33.9 30.7/30.4 35.9/35.1 30.8/- 44.3/-
+Unigram 30.6/35.8 63.5/63.9 31.4/30.5 22.6/- 39.4/- 25.3/26.4 26.9/27.6 36.5/33.4 30.2/- 43.2/-20kT-Free 35.3/35.5 62.2/59.9 32.4/35.1 24.4/- 44.1/- 32.0/33.7 31.9/31.5 35.6/35.9 29.1/- 44.2/-
+Unigram 30.6/33.2 58.9/59.3 33.1/31.9 22.6/- 40.2/- 25.7/26.5 26.3/26.1 36.0/36.9 30.7/- 44.4/-
+Table 8: Accuracy scores of english and german translated benchmarks for continued pre-training. First value
+denotes 0-shot, second value 2-shot (if available). Notably, the T-Free baseline model slightly outperforms (or
+performs on par with) the Unigram baseline model on all of these tasks. On german evals of arc and hellaswag, the
+T-Free baseline outperforms Unigram, and achieves larger gains during continued training on the german/ english
+data mix. The german versions of xnli and truthfulqa mostly remain unchainged.
+Modelenglish benchmarks
+arcez boolq copa wino obook piqa trivia mrcbaseT-Free 62.1/69.4 62.9/59.8 70.0/71.0 58.7/58.3 35.4/35.0 74.0/73.8 15.7/29.3 36.0/38.1
+Unigram 61.3/68.4 59.2/55.8 72.0/68.0 59.0/60.4 38.8/37.6 76.5/76.0 17.2/25.6 40.9/42.45kT-Free 60.8/64.8 62.6/60.7 70.0/70.0 59.0/57.9 35.2/35.4 73.0/73.0 13.1/22.9 37.8/36.9
+Unigram 62.0/68.0 58.7/53.5 70.0/70.0 59.2/61.6 36.4/39.0 77.1/75.9 15.2/25.5 34.1/43.510kT-Free 58.8/66.3 60.5/60.6 71.0/73.0 59.2/57.8 34.2/34.2 74.4/72.9 10.9/22.8 38.0/36.6
+Unigram 59.0/67.7 61.2/61.4 70.0/74.0 58.4/63.2 36.0/37.8 76.2/75.9 11.4/25.6 34.1/44.615kT-Free 60.2/66.6 63.8/60.0 72.0/76.0 58.6/59.3 34.4/35.6 73.9/73.3 13.8/24.9 38.6/37.3
+Unigram 59.4/67.8 59.0/52.6 72.0/68.0 59.9/62.2 38.4/38.6 76.2/75.5 15.7/25.4 34.0/43.820kT-Free 62.5/66.0 62.0/62.6 70.0/72.0 57.9/57.1 35.6/36.5 74.6/74.1 12.5/22.4 39.7/36.7
+Unigram 60.1/66.0 63.8/62.9 72.0/71.0 58.5/61.8 35.0/37.4 73.5/74.2 13.4/21.3 34.0/42.7
+Table 9: Accuracy scores of english benchmarks for continued pre-training. First value denotes 0-shot, second value
+2-shot. Notably, the T-Free model performs on par to the Unigram model on all of these tasks, throughout the entire
+continued training.
+
+--- PAGE 22 ---
+Modelenglish benchmarks
+lbdoailbdoai
+clz lbdstdrlbdstdr
+clz race rte wic webqsbaseT-Free 53.9/46.4 18.5/42.9 48.0/44.8 12.2/39.3 37.8/39.1 58.5/55.2 50.0/53.8 5.7/26.5
+Unigram 54.3/47.6 5.2/35.8 47.8/44.9 4.7/24.9 38.6/39.7 56.7/54.9 49.8/49.5 5.2/14.65kT-Free 52.7/45.7 6.6/41.9 45.6/43.0 7.8/44.0 38.4/40.8 59.6/55.6 50.0/54.5 7.6/20.8
+Unigram 54.4/47.1 3.9/33.4 44.6/43.2 3.5/24.0 38.7/38.9 54.5/53.4 50.0/53.6 3.0/14.310kT-Free 53.1/47.3 13.1/42.8 46.2/44.7 7.5/44.7 37.3/39.9 56.7/54.9 50.0/54.7 5.4/19.8
+Unigram 51.6/47.6 4.3/34.1 46.0/44.3 5.2/29.4 39.0/39.9 54.5/54.5 49.7/53.9 3.0/13.815kT-Free 52.8/46.2 12.5/40.4 44.7/42.6 9.5/42.7 37.1/40.0 57.4/50.9 50.0/54.2 7.6/21.8
+Unigram 53.6/47.7 4.8/30.1 46.5/42.0 5.4/23.5 39.0/38.5 53.4/53.4 49.8/50.6 3.0/14.620kT-Free 53.5/46.0 9.9/36.2 46.1/44.6 11.9/41.6 37.4/39.1 54.9/55.6 50.0/54.5 7.4/20.3
+Unigram 52.2/45.2 3.7/30.8 40.1/36.4 1.0/16.6 38.8/38.8 54.2/57.0 49.5/53.9 3.2/13.1
+Table 10: Accuracy scores of english benchmarks for continued pre-training. First value denotes 0-shot, second
+value 2-shot. The T-Free model performs on par with the Unigram model on all of these tasks, throughout the entire
+continued training. Notably, the clozed variants of lambada are most fragile, at which T-Free outperforms.
+Input text TokenizerEmbedding
+LayerTransformerHead
+LayerDecoder525M 525M 65M 65M 25M (sparse) 0 6.9BModel
+Parameter
+Inference
+Runtime
+(per token)LLama3 -8B trigramified  (to 16k embedding, 512k decode -vocab)
+tokenization model execution
+Fig. 1 Fig. 14EN    DE
+* 1.2    1.8
+* 1.2    1.2
+fertility multiplier
+c.f. Tab. 57.1e-5 s
+6.3e-5 s1.6e-4 s
+2.9e-4 s2.5e-2 s
+2.5e-2 s 3.1e-5 s0.9e-4 s
+1.0e-3 sOutput TextInference decode
+4.9e-5 s
+Figure 14: Comparison of the end-to-end LLM processing steps for the standard LLama3-8B model versus a
+proposed trigramified version. In particular, the two biggest matrices of the model, the embedding layer and the head
+can be significantly compressed, which can half the training resources when using standard libraries ( c.f.Fig. 6).
+Otherwise, the training execution time is mostly on par. For decoding, the proposed T-Free version requires an
+additional step to predict the next word. We assumed a vocabulary of 512 kentries with an average of 50 activations
+per entry. This leads to additional 25M nonzero parameters that can be casted into a sparse matrix format ( c.f.
+Fig. 15). The overall inference run-time increases slightly when averaging the entire pipeline processing time, but
+the biggest consumption remains at the actual transformer backbone. However, note that in addition training and
+inference time benefit from the improved fertility factors of T-Free. Furthermore, depending on the use case, smaller
+dictionaries, faster sparse hardware accelerators, or different decoding strategies may be applicable.
+
+--- PAGE 23 ---
+TransformerHead
+LayerDecoderLLama3 -8B trigramified  (16k vocab)
+T-Free
+classic
+128k16k
+dictionary d =  512 k, average active per row (c.f. Fig. 1) a ≈ 50 
+⇒𝑑⋅𝑎=25𝑀 summations  (no multiplications!)
+ℎ𝑜𝑢𝑡=𝐻⋅ℎ 
+𝐻∈ℝ4𝑘×128𝑘
+ℎ∈ℝ4𝑘𝐻∈ℝ4𝑘×16𝑘
+ℎ∈ℝ4𝑘ℎ𝑜𝑢𝑡=s𝑖𝑔𝑚𝑜𝑖𝑑(𝐻⋅ℎ) 
+∘=
+ =ℎ𝑜𝑢𝑡′argmax(ℎ′𝑜𝑢𝑡)  
+≈𝟔𝟓𝒎 𝑚𝑢𝑙𝑡𝑖𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛𝑠
+≈𝟓𝟏𝟐𝒎 𝑚𝑢𝑙𝑡𝑖𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛𝑠ℎ𝑜𝑢𝑡  ℎ
+ℎ′𝑜𝑢𝑡=ℎ𝑜𝑢𝑡
+ Figure 15: “Greedy” text-decoding example for T-Free (top) and classic decoder LLMs (bottom). T-Free applies
+a head of significantly reduced parameters which results in less dense matrix multiplications and smaller vector
+sizes. As an additional step, during inference, T-Free computes the average activation score h′
+out, which is sparsely
+computed by multiplying (and averaging) the once precomputed decodable dictionary with the sigmoid scores of
+the head. Finally, in both cases argmax is taken to lookup the resulting word.
+Input textTokens
+(subword  
+strings)Embedding
+LayerTransformerHead
+LayerDecoder525M 525M 65M 65M 25M (sparse) 0 6.9BModel
+ParameterPotential 1: Tokenizer -Free backbone, large (exchangeable) tokenizer
+trigramified  hybrid LLM backbone/ example LLama3 8B
+tokenization model execution
+Output TextInference decode
+Apply specific dialect tokenizers
+- dependent on prompt/ can be exchanged
+- ensure its meaningful, low -fertility on use case, 
+   ≈ 250 -500k vocab
+- can be rule -based/ dictionary/ BPE
+- validate robust hash function is meaningful
+actual model training remains subword  tokenizer -free
+- will be accelerated during training
+- lower parameters/ efficient use
+- better cross task/ lingual transfer learning
+Figure 16: Hybrid “T-Free” (tokenizer-free/adaptable) LLM Backbone applying large scale (500k+) tokenizers.
+Major advantages of a T-Free backbone in a hybrid setting are the compression of embedding and head matrices,
+and the potential flexibility to lateron exchange (with some finetuning) the tokenizer — the backbone remains with
+the same tokenizer-free encoding rules.

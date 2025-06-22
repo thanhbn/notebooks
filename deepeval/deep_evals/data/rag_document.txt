@@ -1,0 +1,3 @@
+DeepEval là một framework Python mã nguồn mở hỗ trợ đánh giá mô hình ngôn ngữ lớn (LLM) và hệ thống RAG.
+Tài liệu này được dùng để sinh tập dữ liệu đánh giá tự động bằng deepeval.Synthesizer.
+Nội dung lấy từ bài viết Wikipedia về Thành phố Hồ Chí Minh.
