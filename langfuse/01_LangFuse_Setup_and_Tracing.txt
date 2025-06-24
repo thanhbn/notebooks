@@ -1,0 +1,107 @@
+REASONING FILE: 01_LangFuse_Setup_and_Tracing.ipynb
+
+1. MỤC ĐÍCH VÀ PHẠM VI:
+- Notebook này được thiết kế như một introduction toàn diện về LangFuse tracing
+- Target audience: Developers mới bắt đầu với LLM observability
+- Focus vào practical implementation với Anthropic Claude thông qua LangChain
+
+2. CẤU TRÚC NOTEBOOK:
+
+2.1. Phần mở đầu (Mục tiêu & Giới thiệu):
+- Giải thích rõ ràng về tracing và tầm quan trọng trong LLM applications
+- Liệt kê các pain points mà LangFuse giải quyết (debugging, cost control, quality assurance)
+- Tạo motivation cho người học hiểu "why" trước "how"
+
+2.2. Cài đặt và Cấu hình:
+- Step-by-step guide với visual hints về cách lấy API keys
+- Sử dụng dotenv cho security best practices
+- Verification step để ensure setup thành công
+
+2.3. Progression của các ví dụ:
+- Ví dụ 1: Simplest case - single LLM call
+  + Introduce CallbackHandler concept
+  + Show immediate value với trace URL
+  
+- Ví dụ 2: Chain tracing - real-world use case
+  + Demonstrate automatic span creation
+  + Show hierarchy trong complex flows
+  
+- Ví dụ 3: Advanced metadata - production patterns
+  + Custom spans và nested structure
+  + Scoring và quality metrics
+  + Error handling patterns
+
+3. TECHNICAL DECISIONS:
+
+3.1. Model Choice:
+- Sử dụng Claude 3 Haiku cho cost efficiency trong demos
+- ChatAnthropic interface quen thuộc với LangChain users
+
+3.2. Code Style:
+- Comments bằng tiếng Việt để accessibility
+- Variable names bằng tiếng Anh theo convention
+- Extensive inline documentation
+
+3.3. Error Handling:
+- Try-except blocks cho connection testing
+- Graceful failures với informative messages
+- Production-ready patterns trong advanced examples
+
+4. PEDAGOGICAL APPROACH:
+
+4.1. Learning Flow:
+- Concept → Implementation → Explanation → Practice
+- Mỗi section build on previous knowledge
+- Clear transitions và summaries
+
+4.2. Code Examples:
+- Self-contained và runnable
+- Progressive complexity
+- Real-world relevant scenarios
+
+4.3. Visual Learning:
+- UI navigation guidance
+- Expected outputs được describe
+- Links to further resources
+
+5. BEST PRACTICES HIGHLIGHTED:
+
+5.1. Security:
+- Environment variables cho sensitive data
+- No hardcoded credentials
+- PII handling mentions
+
+5.2. Performance:
+- Batch processing patterns
+- Async considerations mentioned
+- Cost optimization tips
+
+5.3. Maintainability:
+- Consistent naming conventions
+- Metadata strategies
+- Tag organization
+
+6. INTEGRATION CONSIDERATIONS:
+
+6.1. LangChain Ecosystem:
+- Native integration via callbacks
+- Chain và prompt template examples
+- Output parser usage
+
+6.2. Production Readiness:
+- Session management
+- User tracking
+- Error recovery patterns
+
+7. NEXT STEPS GUIDANCE:
+- Clear progression path
+- Links to advanced topics
+- Community resources
+
+8. NOTEBOOK FEATURES:
+- Markdown cells cho explanation
+- Code cells với expected outputs
+- Tips và warnings highlighted
+- Clean section breaks
+
+Notebook này serves như foundation cho LangFuse learning path, cung cấp solid base để explore advanced features trong subsequent notebooks.

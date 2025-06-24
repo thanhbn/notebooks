@@ -1,0 +1,48 @@
+# LangGraph Simple Tutorial Requirements
+# Core LangGraph and LangChain packages
+langgraph>=0.1.0
+langchain>=0.1.0
+langchain-openai>=0.1.0
+langchain-anthropic>=0.1.0
+langchain-core>=0.1.0
+langchain-community>=0.1.0
+
+# Tools for agents
+duckduckgo-search>=4.0.0
+
+# Environment management
+python-dotenv>=1.0.0
+
+# Jupyter notebook support
+jupyter>=1.0.0
+ipykernel>=6.0.0
+
+# Data manipulation and utilities
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Async support
+asyncio-mqtt>=0.13.0
+
+# Visualization (for debugging graphs)
+matplotlib>=3.7.0
+graphviz>=0.20.0
+
+# RAG dependencies (for part 8)
+chromadb>=0.4.0
+faiss-cpu>=1.7.4
+sentence-transformers>=2.2.0
+
+# Document processing
+pypdf>=3.0.0
+beautifulsoup4>=4.12.0
+requests>=2.31.0
+
+# Optional: Additional LLM providers
+# anthropic>=0.25.0
+# openai>=1.0.0
+
+# Development tools
+black>=23.0.0
+ruff>=0.1.0
+pytest>=7.0.0

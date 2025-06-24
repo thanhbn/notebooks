@@ -1,0 +1,220 @@
+# Reasoning cho 06_LangFuse_Code_Review.ipynb
+
+## Tổng quan quyết định thiết kế
+
+### 1. Lựa chọn Use Case: Code Review Tự động
+**Rationale**: Code review là một use case thực tế và có giá trị cao trong software development:
+- Có thể đo lường được hiệu quả (số lỗi phát hiện, thời gian review)
+- Có feedback loop rõ ràng từ developers
+- Demonstrate được multiple aspects của LangFuse (tracing, scoring, prompt management)
+- Practical value cao cho developers
+
+### 2. Kiến trúc Multi-aspect Review
+**Quyết định**: Chia review thành 3 categories riêng biệt:
+- Security Review
+- Performance Review  
+- Best Practices Review
+
+**Lý do**:
+- Mỗi aspect cần expertise và prompt khác nhau
+- Có thể track performance của từng loại review riêng biệt
+- Developers có thể focus vào specific concerns
+- Dễ dàng A/B test và optimize từng prompt template
+
+### 3. Structured Output với JSON
+**Quyết định**: Sử dụng JSON format cho output thay vì free text
+
+**Advantages**:
+- Structured data dễ parse và process
+- Consistent format cho analytics
+- Có thể extract metrics (severity, line numbers, categories)
+- Integration dễ dàng với CI/CD tools
+- Standardized format cho feedback collection
+
+### 4. Comprehensive Examples Selection
+
+#### Example 1: Vulnerable Python Code
+**Lý do chọn**: 
+- Demonstrate security issues rõ ràng (SQL injection, command injection)
+- Common mistakes mà developers hay mắc phải
+- High-impact vulnerabilities để show giá trị của tool
+
+#### Example 2: JavaScript Performance Issues
+**Lý do chọn**:
+- Nested loops với O(n²) complexity
+- Memory leaks potential
+- Common performance anti-patterns
+- Language khác để show flexibility
+
+#### Example 3: Poor Python Practices
+**Lý do chọn**:
+- Readability và maintainability issues
+- Naming conventions problems
+- Error handling issues
+- Show "softer" issues beyond security/performance
+
+### 5. LangFuse Integration Strategy
+
+#### Tracing Design
+**Quyết định**: Nested traces với:
+- Top-level: comprehensive_review
+- Sub-traces: security_review, performance_review, best_practices_review
+
+**Benefits**:
+- Granular performance monitoring
+- Individual prompt optimization
+- Debugging specific review types
+- Cost tracking per review type
+
+#### Metadata Strategy
+**Key metadata fields**:
+- `language`: Programming language
+- `review_type`: Type of review (security/performance/best_practices)
+- `filename`: Source file name
+- `total_issues`: Number of issues found
+- `overall_score`: Quality score
+
+**Rationale**: Metadata enables filtering và analytics trong LangFuse dashboard
+
+#### Scoring Framework
+**Multiple score types**:
+- `review_quality`: Overall quality của review
+- `review_helpfulness`: Usefulness cho developer
+- `review_accuracy`: Correctness của findings
+
+**Purpose**: Multi-dimensional feedback để improve model comprehensively
+
+### 6. Batch Processing Feature
+**Quyết định**: Include batch review functionality
+
+**Justification**:
+- Real-world teams cần review multiple files
+- Demonstrate scalability
+- Show aggregation và reporting capabilities
+- More realistic production scenario
+
+### 7. Production Deployment Patterns
+**Inclusion rationale**:
+- Bridge gap giữa tutorial và real-world usage
+- Show CI/CD integration possibilities
+- Address security và monitoring concerns
+- Provide actionable next steps
+
+### 8. Language Detection Logic
+**Simple heuristic approach**:
+- Pattern matching trên common keywords
+- Pragmatic solution cho demo purposes
+- In production sẽ dùng sophisticated tools (tree-sitter, linguist)
+
+### 9. Error Handling Strategy
+**Graceful degradation**:
+- JSON parsing failures fallback to raw response
+- Continue processing nếu một review type fails
+- Provide meaningful defaults
+
+**Rationale**: Production systems cần robust error handling
+
+### 10. Analytics và Monitoring Section
+**Focus areas**:
+- Key metrics to track
+- Optimization strategies
+- Dashboard usage guidance
+
+**Purpose**: Help users understand how to actionably improve their system
+
+## Technical Implementation Decisions
+
+### 1. Prompt Engineering Approach
+**Structured prompts với clear sections**:
+- Context setting
+- Specific instructions  
+- Output format specification
+- Examples trong prompt
+
+**Benefits**: Better consistency và reliability của outputs
+
+### 2. ChatAnthropic Integration
+**Claude Haiku choice**:
+- Balance giữa cost và capability
+- Good cho structured outputs
+- Fast response times for code review
+- Sufficient capability cho use case
+
+### 3. Code Examples Design
+**Realistic but clear problems**:
+- Not overly complex để không distract từ LangFuse concepts
+- Clear, obvious issues để demonstrate effectiveness
+- Variety of severity levels
+- Different languages để show flexibility
+
+### 4. Feedback Loop Implementation
+**Multiple score dimensions**:
+- Allows nuanced feedback
+- Helps identify specific improvement areas
+- Enables targeted prompt optimization
+- Provides rich data for model improvement
+
+## Educational Value Design
+
+### 1. Progressive Complexity
+**Structure**:
+1. Simple single review
+2. Comprehensive multi-aspect review
+3. Batch processing
+4. Production considerations
+
+**Rationale**: Gradual learning curve từ basic đến advanced concepts
+
+### 2. Practical Focus
+**Emphasis on real-world applicability**:
+- CI/CD integration examples
+- Production deployment patterns
+- Security considerations
+- Monitoring và analytics
+
+**Purpose**: Ensure learners có thể apply knowledge immediately
+
+### 3. Documentation Strategy
+**Comprehensive references**:
+- Direct links to LangFuse docs
+- Related resources
+- Best practices guides
+
+**Value**: Provide pathways cho further learning
+
+## Potential Improvements và Extensions
+
+### 1. Advanced Features for Future Versions
+- Context-aware review (understand project structure)
+- Learning from developer fixes
+- Multi-model ensemble approaches
+- Team-specific customization
+
+### 2. Integration Opportunities
+- IDE plugins
+- Git hooks
+- Slack/Teams notifications
+- JIRA/Linear ticket creation
+
+### 3. Analytics Enhancements
+- Trend analysis over time
+- Developer productivity metrics
+- False positive rate tracking
+- Custom rule creation interface
+
+## Success Metrics for This Tutorial
+
+### 1. Learning Outcomes
+- Users hiểu cách structure multi-step LLM workflows
+- Practical knowledge về LangFuse observability features
+- Understanding của production deployment considerations
+
+### 2. Practical Application
+- Users có thể adapt code cho their own use cases
+- Clear path từ tutorial đến production implementation
+- Understanding của cost và performance implications
+
+### 3. Community Value
+- Template cho other code analysis use cases
+- Reference implementation cho best practices
+- Foundation cho more advanced tutorials

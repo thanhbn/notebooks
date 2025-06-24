@@ -1,0 +1,236 @@
+# 01_LangGraph_Basics - Reasoning và Quy trình Suy luận
+
+## Mục tiêu và Định hướng
+
+### Lý do tạo notebook này
+1. **Nhu cầu học tập cơ bản**: Cần một điểm khởi đầu rõ ràng cho người học LangGraph từ đầu
+2. **Gap trong tài liệu**: Nhiều tài liệu LangGraph bắt đầu với các ví dụ phức tạp, thiếu phần giải thích cơ bản
+3. **Tiếng Việt**: Tạo tài liệu học tập bằng tiếng Việt để dễ tiếp cận hơn cho người Việt
+
+### Cấu trúc suy luận
+- Bắt đầu từ "tại sao" trước khi đến "như thế nào"
+- Giải thích khái niệm trước khi code
+- Ví dụ từ đơn giản đến phức tạp
+- Thực hành ngay sau lý thuyết
+
+## Thiết kế Nội dung
+
+### 1. Phần Giới thiệu
+**Suy luận**: Người học cần hiểu rõ LangGraph giải quyết vấn đề gì trước khi học cách sử dụng.
+
+**Nội dung chính**:
+- Định nghĩa LangGraph một cách dễ hiểu
+- So sánh với LangChain truyền thống (chain tuyến tính)
+- Lý do tại sao cần graph-based approach
+- Các use cases phổ biến
+
+**Phương pháp truyền đạt**:
+- Sử dụng analogy (ví dụ: flowchart trong công việc)
+- Không đi sâu vào technical details ở đây
+- Tập trung vào benefits và motivation
+
+### 2. Phần Khái niệm Cốt lõi
+**Suy luận**: Cần xây dựng foundation knowledge vững chắc trước khi code.
+
+**Cách tiếp cận**:
+- Giải thích từng khái niệm một cách độc lập
+- Sử dụng visual thinking (mô tả bằng words)
+- Kết nối các khái niệm với nhau
+
+**Graph**: Không phải mathematical graph, mà là workflow representation
+**Nodes**: Không chỉ là functions, mà là processing units
+**Edges**: Không chỉ là connections, mà là control flow
+**State**: Không chỉ là data, mà là shared context
+
+### 3. Phần Cài đặt & Cấu hình
+**Suy luận**: Người học cần environment sẵn sàng để chạy code examples.
+
+**Tư duy**:
+- Không assume người học đã có sẵn API keys
+- Cung cấp clear instructions cho setup
+- Kiểm tra environment trước khi tiếp tục
+- Graceful handling nếu thiếu API key
+
+**Best practices được áp dụng**:
+- Sử dụng .env file thay vì hardcode API keys
+- Kiểm tra và thông báo rõ ràng
+- Cung cấp fallback options nếu có thể
+
+### 4. Phần Code Examples
+**Suy luận tổng thể**: Learn by doing - người học cần thấy code chạy thật để hiểu concepts.
+
+#### Ví dụ 1: State Definition
+**Suy luận**: State là backbone của LangGraph, cần hiểu rõ trước tiên.
+
+**Thiết kế**:
+- Sử dụng TypedDict cho type safety
+- Include các fields phổ biến: messages, step tracking
+- Giải thích tại sao cần Annotated với add_messages
+- Đơn giản nhưng realistic
+
+#### Ví dụ 2: Node Functions
+**Suy luận**: Nodes là building blocks, cần show cách tạo nodes đa dạng.
+
+**Chiến lược**:
+- 3 loại nodes: initialization, processing (LLM), finalization
+- Mỗi node có mục đích rõ ràng
+- Show cách nodes interact với state
+- Include logging để người học thấy execution flow
+
+**Tư duy khi thiết kế**:
+- `initialize_node`: Setup phase, establish baseline state
+- `llm_node`: Core processing với actual LLM call
+- `finalize_node`: Cleanup và summary
+
+#### Ví dụ 3: Graph Construction
+**Suy luận**: Đây là phần "kết nối" các pieces lại với nhau.
+
+**Cách tiếp cận**:
+- Step-by-step construction
+- Explain từng bước: add_node, add_edge, compile
+- Visual representation bằng text
+- Emphasize linear flow cho bài đầu tiên
+
+#### Ví dụ 4: Graph Execution
+**Suy luận**: Người học cần thấy graph hoạt động thực tế.
+
+**Thiết kế execution**:
+- Clear initial state
+- Execution với logging
+- Show final state analysis
+- Extract meaningful information từ kết quả
+
+#### Ví dụ 5: Graph Inspection
+**Suy luận**: Debugging và understanding là key skills.
+
+**Mục tiêu**:
+- Show cách examine graph structure
+- Understand nodes và edges relationship
+- Lay foundation cho debugging skills sau này
+
+#### Ví dụ 6: Streaming Execution
+**Suy luận**: Streaming giúp hiểu step-by-step execution, rất quan trọng cho learning.
+
+**Lý do include**:
+- Visibility vào execution process
+- Debugging capabilities
+- Real-time feedback
+- Prepare cho advanced features
+
+## Phương pháp Giảng dạy
+
+### 1. Scaffolding Approach
+- Mỗi concept được build dựa trên concept trước đó
+- No cognitive overload - introduce một concept tại một thời điểm
+- Reinforcement thông qua repetition và examples
+
+### 2. Practical Learning
+- Mỗi concept đều có corresponding code
+- Code examples có thể chạy được thật
+- Output rõ ràng để người học verify understanding
+
+### 3. Error Prevention
+- Anticipate common mistakes và address preemptively
+- Clear error messages và troubleshooting tips
+- Defensive programming trong examples
+
+### 4. Progressive Disclosure
+- Start với simplest possible example
+- Gradually introduce complexity
+- Each level builds upon previous understanding
+
+## Considerations cho Target Audience
+
+### Beginner-Friendly Elements
+- Extensive comments trong code
+- Step-by-step explanations
+- Clear input/output examples
+- No assumptions về prior knowledge
+
+### Vietnamese Context
+- Terminology giải thích bằng tiếng Việt
+- Cultural context khi appropriate
+- Examples relevant cho Vietnamese learners
+
+### Technical Depth
+- Balance giữa simplicity và accuracy
+- Enough detail để hiểu concepts
+- Not too much để avoid confusion
+- Pointers tới advanced topics cho later learning
+
+## Quality Assurance
+
+### Content Verification
+- Mỗi code example đã được test mentally
+- Logical flow từ concept đến implementation
+- Consistency trong terminology và approach
+
+### Learning Objectives Alignment
+- Mỗi section maps tới specific learning objective
+- Progressive skill building
+- Clear outcomes cho mỗi section
+
+### Accessibility
+- Clear language và structure
+- Multiple learning modalities (text, code, examples)
+- Self-paced learning support
+
+## Future Extensions
+
+### Immediate Next Steps
+Notebook này lay foundation cho:
+- Conditional edges và branching logic
+- Multi-agent interactions
+- Error handling và recovery
+- State persistence
+- Human-in-the-loop patterns
+
+### Advanced Topics
+- Performance optimization
+- Production deployment considerations
+- Integration với existing systems
+- Custom node types và advanced patterns
+
+## Reflection on Design Decisions
+
+### Why This Structure?
+1. **Concept First**: Understanding before implementation
+2. **Incremental Complexity**: Avoid overwhelming beginners
+3. **Practical Focus**: Every concept has runnable code
+4. **Vietnamese Language**: Accessibility cho target audience
+5. **Complete Examples**: End-to-end working code rather than fragments
+
+### Alternative Approaches Considered
+1. **Code-First Approach**: Rejected vì có thể confuse beginners
+2. **Mathematical Graph Theory**: Too academic cho practical learning
+3. **Multiple Small Examples**: Rejected vì lack continuity
+4. **English-Only**: Rejected vì accessibility concerns
+
+### Key Success Metrics
+- Người học có thể tạo basic graph sau khi đọc xong
+- Understanding của core concepts: state, nodes, edges
+- Confidence để move lên advanced topics
+- Practical skills: setup, execution, debugging
+
+## Technical Implementation Notes
+
+### Code Quality Standards
+- Clear variable naming
+- Comprehensive comments
+- Error handling where appropriate
+- Consistent code style
+- Type hints for better understanding
+
+### Dependencies Management
+- Minimal required dependencies
+- Clear installation instructions
+- Version compatibility notes
+- Fallback options khi possible
+
+### Example Data Design
+- Realistic but simple data
+- Clear input/output relationships
+- Meaningful state transitions
+- Debugging-friendly formats
+
+Notebook này được thiết kế như một comprehensive introduction tới LangGraph, balancing giữa accessibility cho beginners và technical accuracy cho real-world applications.

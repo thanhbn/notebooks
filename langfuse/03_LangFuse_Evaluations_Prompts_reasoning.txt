@@ -1,0 +1,128 @@
+03_LangFuse_Evaluations_Prompts.ipynb - Reasoning và Thiết kế
+
+=== TỔNG QUAN ===
+
+Notebook này được thiết kế để dạy về đánh giá (evaluation) và quản lý prompt trong LangFuse, là các kỹ năng quan trọng để phát triển và duy trì hệ thống LLM chất lượng cao trong production.
+
+Tập trung vào hai khía cạnh quan trọng của LangFuse:
+1. Evaluations (Đánh giá) - cả human feedback và automated checks
+2. Prompt Management - quản lý version và tối ưu hóa prompt
+
+=== CẤU TRÚC VÀ REASONING ===
+
+1. **Mục tiêu học tập**
+   - Mở đầu rõ ràng về những gì học viên sẽ học được
+   - Nhấn mạnh tầm quan trọng của evaluation trong LLM production
+
+2. **Giới thiệu**
+   - Giải thích sự khác biệt giữa human feedback và automated evaluation
+   - Tầm quan trọng của prompt management trong team collaboration
+   - Kết nối với thực tế production deployment
+
+3. **Cài đặt & Cấu hình**
+   - Tái sử dụng setup từ notebook trước để consistency
+   - Import các thư viện cần thiết cho evaluation và prompt management
+
+4. **Ví dụ 1: Human Feedback Collection**
+   REASONING: 
+   - Bắt đầu với human feedback vì đây là gold standard cho evaluation
+   - Sử dụng customer service scenario - practical và dễ hiểu
+   - Implement rating scale (1-5) và comment system
+   - Tạo multiple metrics: satisfaction, helpfulness
+   - Demo cách ghi nhận feedback vào LangFuse với proper metadata
+
+5. **Ví dụ 2: Automated Evaluations**
+   REASONING:
+   - Automated evaluation scales better than human feedback
+   - Implement multiple evaluation functions:
+     * Safety check - critical cho production
+     * Politeness evaluation - quan trọng cho customer service
+     * Length validation - practical constraint
+     * JSON format validation - technical requirement
+   - Show cách combine multiple evaluations
+   - Demonstrate both binary và continuous scoring
+
+6. **Ví dụ 3: Prompt Management**
+   REASONING:
+   - Version control prompts như code
+   - Template system với variable substitution
+   - Demo prompt evolution (v1 → v2) với improvements
+   - A/B testing approach để compare versions
+   - Show collaborative workflow potential
+
+=== TECHNICAL DECISIONS ===
+
+**Evaluation Framework:**
+- Multiple evaluation types: safety, politeness, length, format
+- Both binary (0/1) và continuous (0-1) scoring
+- Automated sourcing để distinguish từ human feedback
+- Comprehensive comment system cho debugging
+
+**Prompt Management:**
+- Template-based approach với variable substitution
+- Version control với changelog tracking
+- Structured improvements (user personalization, format enhancement)
+- Metadata tracking cho performance comparison
+
+**Integration Points:**
+- Seamless integration với LangFuse tracing
+- Proper span management cho detailed observability
+- Error handling và fallback mechanisms
+- Production-ready patterns
+
+=== LEARNING PROGRESSION ===
+
+Notebook có progression logic:
+1. Human feedback (foundation) → 2. Automated evaluation (scale) → 3. Prompt management (optimization)
+
+Mỗi ví dụ build upon previous knowledge:
+- Trace creation và management
+- Span organization
+- Metadata utilization
+- Score recording patterns
+
+=== PRACTICAL APPLICATIONS ===
+
+**Real-world scenarios covered:**
+- Customer service quality assurance
+- Content safety moderation
+- API response validation
+- Team collaboration on prompts
+- Performance monitoring
+
+**Production considerations:**
+- Scalable evaluation pipelines
+- Automated quality gates
+- Collaborative prompt development
+- Performance tracking
+
+=== EDUCATIONAL VALUE ===
+
+**Key learning outcomes:**
+1. Understand difference between human và automated evaluation
+2. Implement comprehensive evaluation framework
+3. Master prompt version control
+4. Learn production monitoring strategies
+5. Develop quality assurance mindset
+
+**Skills developed:**
+- Evaluation criteria design
+- Automated testing implementation
+- Prompt optimization techniques
+- Team collaboration workflows
+- Production monitoring setup
+
+=== EXTENSIBILITY ===
+
+Framework designed cho easy extension:
+- Pluggable evaluation functions
+- Template inheritance system
+- Configurable evaluation thresholds
+- Custom metadata tracking
+- Multi-language support potential
+
+Notebook cung cấp foundation solid cho advanced topics như:
+- Semantic similarity evaluation
+- Domain-specific metrics
+- Automated prompt optimization
+- Real-time quality monitoring

@@ -1,0 +1,253 @@
+Summary,Issue key,Issue id,Issue Type,Status,Project key,Project name,Project type,Project lead,Project lead id,Project description,Project url,Priority,Resolution,Assignee,Assignee Id,Reporter,Reporter Id,Creator,Creator Id,Created,Updated,Last Viewed,Resolved,Components,Due date,Votes,Description,Environment,Watchers,Watchers,Watchers Id,Watchers Id,Original estimate,Remaining Estimate,Time Spent,Work Ratio,Σ Original Estimate,Σ Remaining Estimate,Σ Time Spent,Security Level,Attachment,Custom field (Category),Custom field (Department),Custom field (Department),Custom field (Department),Custom field (Department),Custom field (Department),Custom field (Department),Custom field (Department),Custom field (Department),Custom field (Development),Custom field (Environments),Custom field (Epic Color),Custom field (Epic Name),Custom field (Epic Status),Custom field (Goals),Custom field (Issue color),Custom field (Locked forms),Custom field (Open forms),Custom field (Project overview key),Custom field (Project overview status),Custom field (Rank),Custom field (Request Type),Custom field (Request participants),Satisfaction rating,Custom field (Sentiment),Sprint,Custom field (Start date),Custom field (Story Points),Custom field (Story point estimate),Custom field (Submitted forms),Custom field (Target end),Custom field (Target start),Custom field (Team),Custom field (Test Part),Custom field (Test Type),Custom field (Total forms),Custom field (Vulnerability),Custom field ([CHART] Date of First Response),Custom field ([CHART] Time in Status),Custom field ([For Automation] Sprint Start Date),Comment,Comment,Parent,Parent key,Parent summary,Status Category,Status Category Changed
+[LangGraph] Deploy langgraph app,DA-107930,166481,Task,In Progress,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,Medium,,Tyler Nong,63b64110082abdd71bb6ec60,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,16/Jun/25 10:00 AM,24/Jun/25 9:02 AM,24/Jun/25 10:51 AM,,NonFunctional,,0,Update after have the environment information from dev ops,,Bill-Thanh Bui Ngoc-NF,Tyler Nong,63f3466f1223974bc04a19ff,63b64110082abdd71bb6ec60,,,,,,,,,,,,,,,,,,,{},,,,,,,,,,,0|i0jqyj:,,,,,Technical Sprint 122,,2.0,,,,,,Mobile & Web Application,,,,2025-06-24 02:02:29.216,,,24/Jun/25 9:02 AM;63b64110082abdd71bb6ec60;Update after have the environment information from dev ops,,156787,DA-104493,AI/ML Initiative: Building In-House LLM Solution​​,To Do,16/Jun/25 10:00 AM
+[Sprint-122][Collaboration][KMSSupport][SkuadAndAbInitio] For new partners,DA-107743,166048,Task,Done,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,Medium,Done,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 11:28 AM,23/Jun/25 4:25 PM,23/Jun/25 4:25 PM,23/Jun/25 4:25 PM,NonFunctional,,0,"{panel:bgColor=#deebff}
+Dev notes
+{panel}
+
+* Create guideline and document to support client migrate to KMS.
+* Request public key kms for this partner with correct alias (same with predefined client_ref_id) for each environment.
+* Assign permission for the user digital_portal on SIT/UAT/Prod to access the kms alias.
+* Recheck about the ability of encrypt/decrypt.
+* Collaborate with PM/Partners to make integration faster and done.",,Bill-Thanh Bui Ngoc-NF,,63f3466f1223974bc04a19ff,,,,,,,,,,,,,,,,,,,,{},,,,,,,,,,,0|i0jpqv:,,,,,Technical Sprint 122,,3.0,,,,,,Mobile & Web Application,,,,,3_*:*_1_*:*_0_*|*_10000_*:*_1_*:*_1054580706,,"23/Jun/25 4:25 PM;63f3466f1223974bc04a19ff;Requested the key, waiting for assign permission and perform test.",,71275,DA-50884,Use  AWS KMS to another encrypt decrypt channel,Done,23/Jun/25 4:25 PM
+[Sprint-122][ImpactAnalysis][KMSSupport][SkuadAndAbInitio] For new partners,DA-107742,166047,Task,Done,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,High,Done,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 11:28 AM,23/Jun/25 4:24 PM,23/Jun/25 4:24 PM,23/Jun/25 4:24 PM,NonFunctional,,0,"
+
+{panel:bgColor=#deebff}
+Dev notes
+{panel}
+
+Check the flow that client will call.
+
+Check the impact that may relating to that partner.
+
+Check the following documents:
+
+* initial-sql: N/A
+* sequence diagram: N/A
+* relevant digital layer code: N/A
+* the way that client communicated with our system (api-gateway/operation portal…): N/A
+* jmeter code: [Comment|https://digidigi.atlassian.net/browse/DA-107742?focusedCommentId=164352]
+* existing client ref id/client id on SIT/UAT: [Comment|https://digidigi.atlassian.net/browse/DA-107742?focusedCommentId=164352]",,Bill-Thanh Bui Ngoc-NF,,63f3466f1223974bc04a19ff,,,,,,,,,,,,,,,,,,,,{},,,,,,,,,,,0|i0jpqn:,,,,,Technical Sprint 122,,3.0,,,,,,Mobile & Web Application,,,,,3_*:*_1_*:*_0_*|*_10000_*:*_1_*:*_524340658,,"23/Jun/25 4:17 PM;63f3466f1223974bc04a19ff;{{1. DB info: Skuad and Ab Initio}}
+
+{noformat}select * from partner.partner where id in ('1012', '1088');
+select * from partner.client where partner_id in ('1012', '1088');
+select * from partner.identity where partner_id in ('1012', '1088');
+select * from api_gateway.oauth_client_details
+where client_id in (select id from partner.client where partner_id in ('1012', '1088'));{noformat}
+
+{noformat}
+===== SIT 
+ID: 1012
+Name: Skuad and Ab Initio
+SIT Client ID: 0s8BqS2hNyT3Y7hPITFrORbt9jMca3Sx
+SIT client secret: FHXyg2fPnotqfa4VlqBYKGBRmo7VpwNDwJkGFJctB0BsUEbzuUG3av7uV2D1KpG1
+
+ID: 1088
+Name: Skuad and Ab Initio 2
+SIT Client ID: zwB2yxX1eUhACB5KoMzsC2abz5ljUhiI
+SIT client secret: dvlgPkpZ27RMNMBAPasCMRjBt5BpihOe7MHzIZvbfXV2SRsq0XxG2l2FWeeCy6Wf{noformat}
+
+{noformat}===== UAT 
+ID: 135
+Name: Skuad and Ab Initio
+Client ID: JMxf8zfMXW2bQjG7QBTje76gAcDFqRAl{noformat}","23/Jun/25 4:20 PM;63f3466f1223974bc04a19ff;{panel:bgColor=#deebff}
+Jmeter
+{panel}
+
+Jmeter:
+
+# SIT
+
+{noformat}SIT Client ID: 0s8BqS2hNyT3Y7hPITFrORbt9jMca3Sx
+
+Graceful_Shutdown/partner/partner_notification.jmx:            <stringProp name=""Argument.value"">0s8BqS2hNyT3Y7hPITFrORbt9jMca3Sx</stringProp>
+
+Graceful_Shutdown_EKS/partner/partner_notification.jmx:            <stringProp name=""Argument.value"">0s8BqS2hNyT3Y7hPITFrORbt9jMca3Sx</stringProp>
+
+SIT Client ID: zwB2yxX1eUhACB5KoMzsC2abz5ljUhiI
+
+EKS/Platform2/partner_notification.jmx:            <stringProp name=""Argument.value"">zwB2yxX1eUhACB5KoMzsC2abz5ljUhiI</stringProp>
+
+partner_notification.jmx:            <stringProp name=""Argument.value"">zwB2yxX1eUhACB5KoMzsC2abz5ljUhiI</stringProp>{noformat}
+
+ 
+
+# UAT:
+
+{noformat}Client ID: JMxf8zfMXW2bQjG7QBTje76gAcDFqRAl
+
+EKS/Platform2/partner_notification.jmx:            <stringProp name=""Argument.value"">JMxf8zfMXW2bQjG7QBTje76gAcDFqRAl</stringProp>
+
+Graceful_Shutdown/partner/partner_notification.jmx:            <stringProp name=""Argument.value"">JMxf8zfMXW2bQjG7QBTje76gAcDFqRAl</stringProp>
+
+Graceful_Shutdown_EKS/partner/partner_notification.jmx:            <stringProp name=""Argument.value"">JMxf8zfMXW2bQjG7QBTje76gAcDFqRAl</stringProp>
+
+partner_notification.jmx:            <stringProp name=""Argument.value"">JMxf8zfMXW2bQjG7QBTje76gAcDFqRAl</stringProp>{noformat}",71275,DA-50884,Use  AWS KMS to another encrypt decrypt channel,Done,23/Jun/25 4:24 PM
+[N8N-BEDROCK-LangGraph] Integrate AWS Bedrock Models into n8n LangGraph Workflow,DA-107741,166046,Task,Done,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,High,Done,Tyler Nong,63b64110082abdd71bb6ec60,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 11:25 AM,24/Jun/25 8:10 AM,19/Jun/25 2:33 PM,24/Jun/25 8:10 AM,NonFunctional,,0,"Integrate AWS Bedrock foundation models (Claude, Titan) into the existing n8n workflow system through  LangGraph service (via webhook), enabling seamless AI model invocation for code analysis and review generation.
+
+h3. Technical Requirements
+
+# *AWS Bedrock Configuration*
+#* Set up AWS credentials and IAM roles for Bedrock access
+#* Configure model access for Claude 3 and Titan models
+#* Implement region-specific endpoints (us-east-1, us-west-2)
+# *LangGraph Integration*
+#* Create custom LangGraph service for Bedrock invocation
+#* Support multiple model types (Claude for code review, Titan for embeddings)
+#* Implement streaming responses for long-form content
+#* Handle model-specific parameters (temperature, max_tokens, top_p)
+# *n8n Custom Node Development*
+#* Build n8n-nodes-bedrock-langgraph via webhook to langgraph
+#* Support both direct Bedrock calls and LangGraph pipeline execution
+#* Implement credential management in n8n/langgraph, langchain service.
+#* Add model selection in the config.",,Bill-Thanh Bui Ngoc-NF,,63f3466f1223974bc04a19ff,,,,,,,,,,,,,,,,,,,,{},,,,,,,,,,,0|i0jpnv:,,,,,Technical Sprint 122,,5.0,,,,,,Mobile & Web Application,,,,,10000_*:*_1_*:*_1111555211_*|*_10001_*:*_1_*:*_0,,,,156787,DA-104493,AI/ML Initiative: Building In-House LLM Solution​​,Done,24/Jun/25 8:10 AM
+[NOTIFY] Implement Microsoft Team/Gitlab Comment Integration,DA-107740,166045,Task,In Progress,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,Low,,Tyler Nong,63b64110082abdd71bb6ec60,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 11:19 AM,19/Jun/25 8:39 AM,19/Jun/25 3:05 PM,,NonFunctional,,0,"* Build notification system to post AI code review results to Microsoft Team channels or Gitlab PR comments.
+* *Acceptance Criteria*:
+** Implement Microsoft Team webhook integration
+** Format review results for readability
+** Add GitHub PR comment API integration
+** Support multiple notification channels
+** Include review summary and details
+** Handle rate limits and retries",,Bill-Thanh Bui Ngoc-NF,,63f3466f1223974bc04a19ff,,,,,,,,,,,,,,,,,,,,{},,,,,,,,,,,0|i0jpqf:,,,,,Technical Sprint 122,,2.0,,,,,,Mobile & Web Application,,,,,,,,,156787,DA-104493,AI/ML Initiative: Building In-House LLM Solution​​,To Do,11/Jun/25 11:19 AM
+[INTEGRATION] Connect LangFuse Monitoring to Pipeline,DA-107739,166044,Task,Done,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,Low,Done,Tyler Nong,63b64110082abdd71bb6ec60,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 11:18 AM,19/Jun/25 8:39 AM,24/Jun/25 10:51 AM,19/Jun/25 8:39 AM,NonFunctional,,0,"* Implement LangFuse integration for monitoring and tracing all LangGraph executions and LLM calls.
+* *Acceptance Criteria*:
+** Set up LangFuse project and API keys
+** Instrument LangGraph service with tracing
+** Track LLM token usage and costs
+** Monitor embedding generation performance
+** Create custom dashboards for insights
+** Set up alerts for failures/anomalies",,Bill-Thanh Bui Ngoc-NF,,63f3466f1223974bc04a19ff,,,,,,,,,,,,,,,,,,,,{},,,,,,,,,,,0|i0jpq7:,,,,,Technical Sprint 122,,3.0,,,,,,Mobile & Web Application,,,,,10000_*:*_1_*:*_681655953_*|*_10001_*:*_1_*:*_0,,,,156787,DA-104493,AI/ML Initiative: Building In-House LLM Solution​​,Done,19/Jun/25 8:39 AM
+[N8N-FLOW] Build Automated Code Review Workflow,DA-107738,166043,Task,Done,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,Low,Done,Tyler Nong,63b64110082abdd71bb6ec60,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 11:18 AM,24/Jun/25 9:02 AM,19/Jun/25 3:02 PM,24/Jun/25 9:02 AM,NonFunctional,,0,"* Create n8n workflow that calls LangGraph pipeline and processes AI code review results.
+* *Acceptance Criteria*:
+** Design complete n8n workflow from trigger to output
+** Integrate with code review API
+** Handle async processing and retries
+** Implement error notifications
+** Add workflow monitoring
+** Create workflow documentation",,Bill-Thanh Bui Ngoc-NF,,63f3466f1223974bc04a19ff,,,,,,,,,,,,,,,,,,,,{},,,,,,,,,,,0|i0jppz:,,,,,Technical Sprint 122,,3.0,,,,,,Mobile & Web Application,,,,,10000_*:*_1_*:*_1115021350_*|*_10001_*:*_1_*:*_0,,,,156787,DA-104493,AI/ML Initiative: Building In-House LLM Solution​​,Done,24/Jun/25 9:02 AM
+[Langgraph-WEBHOOK] Configure Gitlab Webhook Integration,DA-107737,166042,Task,In Progress,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,Low,,Tyler Nong,63b64110082abdd71bb6ec60,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 11:17 AM,19/Jun/25 8:39 AM,19/Jun/25 3:02 PM,,NonFunctional,,0,"* Set up langgraph webhook to receive gitlab events and trigger automated code review workflow.
+* *Acceptance Criteria*:
+** Configure langgraph webhook endpoint
+** Set up gitlab webhook for push/PR events
+** Parse webhook payload for commit information
+** Implement webhook security (signatures)
+** Add event filtering (branch patterns)
+** Create webhook debugging tools",,Bill-Thanh Bui Ngoc-NF,,63f3466f1223974bc04a19ff,,,,,,,,,,,,,,,,,,,,{},,,,,,,,,,,0|i0jppr:,,,,,Technical Sprint 122,,2.0,,,,,,Mobile & Web Application,,,,,,,,,156787,DA-104493,AI/ML Initiative: Building In-House LLM Solution​​,To Do,11/Jun/25 11:17 AM
+[API-REVIEW] Create Code Review Generation Service,DA-107736,166041,Task,Done,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,Medium,Done,Tyler Nong,63b64110082abdd71bb6ec60,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 11:17 AM,24/Jun/25 9:01 AM,19/Jun/25 2:59 PM,24/Jun/25 9:01 AM,NonFunctional,,0,"* Build API service that orchestrates the complete code review process from commit to AI-generated suggestions.
+* *Acceptance Criteria*:
+** Accept git commit hash or branch as input
+** Integrate diff processor, context retrieval, and LLM
+** Return structured review with suggestions
+** Support async processing for large reviews
+** Include review metadata (model used, context sources)
+** Implement rate limiting and error handling",,Bill-Thanh Bui Ngoc-NF,,63f3466f1223974bc04a19ff,,,,,,,,,,,,,,,,,,,,{},,,,,,,,,,,0|i0jppj:,,,,,Technical Sprint 122,,3.0,,,,,,Mobile & Web Application,,,,,10000_*:*_1_*:*_1115062616_*|*_10001_*:*_1_*:*_0,,,,156787,DA-104493,AI/ML Initiative: Building In-House LLM Solution​​,Done,24/Jun/25 9:01 AM
+[LLM-REVIEW] Design and Test Code Review Prompts,DA-107735,166040,Task,To Do,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,Medium,,,,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 11:16 AM,11/Jun/25 11:22 AM,19/Jun/25 2:57 PM,,NonFunctional,,0,"* Create and optimize prompt templates for generating high-quality code reviews using Bedrock with diff and context.
+* *Acceptance Criteria*:
+** Design prompts for different review types (security, performance, style)
+** Include code diff + context in prompt structure
+** Test with various Bedrock models (Claude, Titan)
+** Measure and optimize response quality
+** Create prompt versioning system
+** Document best practices and examples",,Bill-Thanh Bui Ngoc-NF,,63f3466f1223974bc04a19ff,,,,,,,,,,,,,,,,,,,,{},,,,,,,,,,,0|i0jppb:,,,,,Technical Sprint 122,,5.0,,,,,,Mobile & Web Application,,,,,,,,,156787,DA-104493,AI/ML Initiative: Building In-House LLM Solution​​,To Do,11/Jun/25 11:16 AM
+[ML-CONTEXT] Build RAG Pipeline for Code Review Context,DA-107734,166039,Task,To Do,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,High,,Hanh Nguyen,6385c9593e79f12e57233074,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 11:16 AM,24/Jun/25 11:25 AM,23/Jun/25 1:19 PM,,NonFunctional,,0,"* Implement Retrieval-Augmented Generation pipeline to fetch relevant code standards and patterns from OpenSearch for code review context.
+* *Acceptance Criteria*:
+** Query OpenSearch for similar code patterns
+** Implement smart context selection (relevance + diversity)
+** Manage context window limits for LLM
+** Retrieve historical code implementations as standards
+** Rank and filter context by relevance scores (Refer Bedrock reranking model/strategies/best practices)
+** Create context formatting for optimal LLM performance",,Bill-Thanh Bui Ngoc-NF,,63f3466f1223974bc04a19ff,,,,,,,,,,,,,,,,,,,,{},,,,,,,,,,,0|i0jpp3:,,,,,Technical Sprint 122,,5.0,,,,,,Mobile & Web Application,,,,,,,,,156787,DA-104493,AI/ML Initiative: Building In-House LLM Solution​​,To Do,11/Jun/25 11:16 AM
+[PY-DIFF] Implement Git Commit Diff Processor,DA-107733,166038,Task,To Do,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,High,,Dat Trinh Van,63d73e3ebf837c6893d68228,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 11:15 AM,19/Jun/25 2:45 PM,24/Jun/25 1:01 PM,,NonFunctional,,0,"* Build service to process git commits, extract diffs, and identify related files for comprehensive code review.
+* *Acceptance Criteria*:
+** Parse git commit/branch differences
+** Extract added/modified/deleted lines with context
+** Identify related files through imports and references
+** Support multiple diff formats (unified, split)
+** Handle merge commits and multi-file changes
+** Create structured output for LLM consumption",,Bill-Thanh Bui Ngoc-NF,,63f3466f1223974bc04a19ff,,,,,,,,,,,,,,,,,,,,{},,,,,,,,,,,0|i0jpov:,,,,,Technical Sprint 122,,5.0,,,,,,Mobile & Web Application,,,,,,,,,156787,DA-104493,AI/ML Initiative: Building In-House LLM Solution​​,To Do,11/Jun/25 11:15 AM
+[RESEARCH] Study Git Diff Analysis and Context Retrieval Patterns,DA-107732,166037,Task,In Progress,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,High,,Hanh Nguyen,6385c9593e79f12e57233074,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 11:15 AM,24/Jun/25 11:25 AM,24/Jun/25 10:51 AM,,NonFunctional,,0,"* Research effective methods for analyzing git diffs and retrieving relevant context from vector database for code reviews.
+* *Acceptance Criteria*:
+** Document git diff parsing strategies
+** Identify patterns for finding related files (imports, dependencies)
+** Research RAG techniques for code review context
+** Create sample prompts for different review scenarios
+** Document context window management strategies",,Bill-Thanh Bui Ngoc-NF,,63f3466f1223974bc04a19ff,,,,,,,,,,,,,,,,,,,,{},,,,,,,,,,,0|i0jpon:,,,,,Technical Sprint 122,,3.0,,,,,,Mobile & Web Application,,,,,,,,,156787,DA-104493,AI/ML Initiative: Building In-House LLM Solution​​,To Do,11/Jun/25 11:15 AM
+[API-SEARCH] Create Semantic Code Search API,DA-107731,166036,Task,In Progress,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,Medium,,Dat Trinh Van,63d73e3ebf837c6893d68228,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 11:14 AM,19/Jun/25 3:35 PM,19/Jun/25 2:44 PM,,NonFunctional,,0,"* Build REST API endpoint for semantic code search using OpenSearch vector similarity.
+* *Acceptance Criteria*:
+** Implement search endpoint accepting code snippet or natural language query
+** Return similar code chunks with scores as per specification
+** Support filtering by repo_name, file_type, chunk_type
+** Implement ""exclude_self"" functionality
+** Add pagination for results
+** Response format matching the specification (source_chunk, similar_results)",,Bill-Thanh Bui Ngoc-NF,,63f3466f1223974bc04a19ff,,,,,,,,,,,,,,,,,,,,{},,,,,,,,,,,0|i0jpof:,,,,,Technical Sprint 122,,3.0,,,,,,Mobile & Web Application,,,,,,,,,156787,DA-104493,AI/ML Initiative: Building In-House LLM Solution​​,To Do,11/Jun/25 11:14 AM
+[PY-GIT] Build Git Repository Parser and File Walker,DA-107730,166035,Task,Done,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,Medium,Done,Tyler Nong,63b64110082abdd71bb6ec60,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 11:13 AM,24/Jun/25 8:59 AM,24/Jun/25 1:28 PM,24/Jun/25 8:59 AM,NonFunctional,,0,"* Develop Python service to clone repositories and walk through all folders/files, preparing them for embedding pipeline.
+* *Acceptance Criteria*:
+** Support Git clone from URL with authentication
+** Implement file tree traversal with filtering (.gitignore support)
+** Extract file metadata (path, extension, size)
+** Support for multiple programming languages detection: prefer Java, Kotlin, python
+** Handle large repositories efficiently (streaming/pagination)
+** -Create configuration for supported file types-",,Bill-Thanh Bui Ngoc-NF,Tyler Nong,63f3466f1223974bc04a19ff,63b64110082abdd71bb6ec60,,,,,,,,,,,,,,,,,,,{},,,,,,,,,,,0|i0jpo7:,,,,,Technical Sprint 122,,3.0,,,,,,Mobile & Web Application,,,,2025-06-24 01:59:04.448,10000_*:*_1_*:*_1115139304_*|*_10001_*:*_1_*:*_0,,24/Jun/25 8:59 AM;63b64110082abdd71bb6ec60;Use n8n Node and Gitlab API v4 instead.,,156787,DA-104493,AI/ML Initiative: Building In-House LLM Solution​​,Done,24/Jun/25 8:59 AM
+[OPS-OS-VECTOR] Configure OpenSearch Vector Index for Code,DA-107729,166034,Task,Done,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,High,Done,Tyler Nong,63b64110082abdd71bb6ec60,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 11:12 AM,24/Jun/25 8:57 AM,22/Jun/25 1:12 PM,24/Jun/25 8:57 AM,NonFunctional,,0,"* Set up and configure OpenSearch domain with appropriate vector indices for storing code embeddings with metadata.
+* *Acceptance Criteria*:
+** Create OpenSearch index with vector field (dimension matching Bedrock embeddings)
+** Configure mapping for metadata fields: code_content, code_name, file_path, repo_name, chunk_type
+** Set up appropriate analyzers for code search
+** Implement index settings for performance optimization
+** Create index template for future repositories
+** Document index configuration and maintenance procedures",,Bill-Thanh Bui Ngoc-NF,,63f3466f1223974bc04a19ff,,,,,,,,,,,,,,,,,,,,{},,,,,,,,,,,0|i0jpnz:,,,,,Technical Sprint 122,,3.0,,,,,,Mobile & Web Application,,,,,10000_*:*_1_*:*_1115101547_*|*_10001_*:*_1_*:*_0,,,,156787,DA-104493,AI/ML Initiative: Building In-House LLM Solution​​,Done,24/Jun/25 8:57 AM
+[ML-EMBED] Implement Code Chunking Service with LangGraph,DA-107727,166032,Task,In Progress,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,Highest,,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 11:11 AM,23/Jun/25 4:43 PM,24/Jun/25 1:29 PM,,NonFunctional,,0,"* Build a LangGraph pipeline that processes repository files and splits them into logical code chunks using Bedrock, outputting structured JSON.
+* *Acceptance Criteria*:
+** Implement file-by-file processing as specified in requirements
+** Create LangGraph service for: file reading, code analysis, JSON generation
+** Handle multiple programming languages (Python, JS, Java minimum)
+** Output JSON structure matching the specification (DataLoader, methods, functions, global_code)
+** POC lamda for this service on AWS
+** -Include error handling for malformed code files-",,Bill-Thanh Bui Ngoc-NF,,63f3466f1223974bc04a19ff,,,,,,,,,,,,,,,,,,,,{},,,,,,,,,,,0|i0jpnr:,,,,,Technical Sprint 122,,5.0,,,,,,Mobile & Web Application,,,,,,,,,156787,DA-104493,AI/ML Initiative: Building In-House LLM Solution​​,To Do,11/Jun/25 11:11 AM
+[RESEARCH] Analyze Code Splitting Strategies with Bedrock,DA-107724,166029,Task,Done,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,High,Done,Dat Trinh Van,63d73e3ebf837c6893d68228,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 11:10 AM,19/Jun/25 3:35 PM,24/Jun/25 1:32 PM,19/Jun/25 3:35 PM,NonFunctional,,0,"* Research and document best practices for splitting code into logical chunks using AWS Bedrock. Analyze different approaches for function/class extraction and JSON formatting.
+* *Acceptance Criteria*:
+** Document at least 3 different code splitting strategies
+** Create sample JSON output format for different code types (functions, classes, methods)
+** Check Bedrock's ability to parse Python, JavaScript, Kotlin, Swift and Java files
+** Recommend optimal chunk sizes for embedding
+** Document prompt templates for code splitting",,Bill-Thanh Bui Ngoc-NF,Dat Trinh Van,63f3466f1223974bc04a19ff,63d73e3ebf837c6893d68228,,,,,,,,,19/Jun/25 3:34 PM;63d73e3ebf837c6893d68228;SCIENTIFIC_REPORT.md;https://digidigi.atlassian.net/rest/api/3/attachment/content/548633,,,,,,,,,,{},,,,,,,,,,,0|i0jpnj:,,,,,Technical Sprint 122,,3.0,,,,,,Mobile & Web Application,,,,2025-06-19 08:34:54.203,3_*:*_1_*:*_0_*|*_10000_*:*_1_*:*_430369802,,"19/Jun/25 3:34 PM;63d73e3ebf837c6893d68228;[^SCIENTIFIC_REPORT.md]
+
+",,156787,DA-104493,AI/ML Initiative: Building In-House LLM Solution​​,Done,19/Jun/25 3:35 PM
+[UAT][ScreenPrevention][Testing] Test deposit account screen with screen prevention,DA-107679,165982,Task,Done,DA,Digital Attacker,software,Sathapanic Sriprom (Stop),6278942466eb5800697e2c5c,,,Medium,Done,Hai Nguyen,63b4fd4a6f068efec8f8047c,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,Bill-Thanh Bui Ngoc-NF,63f3466f1223974bc04a19ff,11/Jun/25 9:28 AM,12/Jun/25 9:34 AM,12/Jun/25 4:37 PM,12/Jun/25 9:34 AM,NonFunctional,,0,"Retest these scenarios on UAT:
+
+* *Given (Test data/Prerequisite)*
+** Turn on the screen prevention feature on Web Operator at : Mobile Configuration > Mobile Configuration V2 > Select role Anonymous: Default > BaseLauchScreen (My CIMB iOS) / (My CIMB Android) > key “secure_screen_v2_min_support_version” , set value to “9.9.9” or “0.9.9” to toggle on or toggle off feature
+** Note: In order to avoid affecting to other squads, testing on a specific app version (iOS is 8.8.8, Android is 9.0.1) and set secure_screen_v2_min_support_version = 8.0.0
+* *When (Test steps)*
+
+||*Item to be tested*||*Steps to reproduce*||*Expected result*||
+|Account Summary|# Start record screen before open CIMB
+# Onboard ETB then open Accounts mini app
+# On this screen of Account summary flows, capture the screen.
+!image-20250611-022158.png|width=345,height=406,alt=""image-20250611-022158.png""!
+# After the flows finished, stop record screen
+# Verify recorded video to be saved to mobile gallery. 
+# Log out then open Home page again, on each screen of Onboarding biometric, start record the screen|On step 3: show system toast message, no image saved to mobile Gallery
+On step 5: Recorded video saved to mobile gallery but CIMB app screen is in black 
+On step 6: show system toast message, no recorded video saved to mobile Gallery|
+
+Content of the system toast message when user start record/capture is localized as *system language and OS* 
+
+* Record only Account Summary scenario.
+* For other case if failed, we need to record it.
+
+{panel:bgColor=#deebff}
+References
+{panel}
+
+
+[https://digidigi.atlassian.net/browse/DA-80225|https://digidigi.atlassian.net/browse/DA-80225|smart-link] ",,Bill-Thanh Bui Ngoc-NF,Hai Nguyen,63f3466f1223974bc04a19ff,63b4fd4a6f068efec8f8047c,,,,,,,,,11/Jun/25 9:28 AM;63f3466f1223974bc04a19ff;image-20250611-022158.png;https://digidigi.atlassian.net/rest/api/3/attachment/content/545769,,,,,,,,,,{},,,,,,,,,,,0|i0jpqz:,,,,,Technical Sprint 122,,0.0,,,,,,Mobile & Web Application,,,,2025-06-11 09:40:21.527,10000_*:*_1_*:*_86765460_*|*_10001_*:*_1_*:*_0,,"11/Jun/25 4:40 PM;63b4fd4a6f068efec8f8047c;For the recorded video below, the Account Summary screen is able to be taken screenshot with the following configs
+
+|secure_screen_min_support_version = 0.9.9|
+|secure_screen_v2_min_support_version =999.9.9|
+
+[https://cimbt-my.sharepoint.com/personal/digital_attacker_cimbthai_com/_layouts/15/stream.aspx?id=%2Fpersonal%2Fdigital%5Fattacker%5Fcimbthai%5Fcom%2FDocuments%2FDigital%20Banking%2FDigital%20Technology%2FSoftware%20Engineering%2FTechnical%2FUAT%2DScreen%20record%2Dcapture%2Emov&referrer=StreamWebApp%2EWeb&referrerScenario=AddressBarCopied%2Eview%2E5b47e5ce%2Df87c%2D4651%2D8e17%2D7d3ec330bee1|https://cimbt-my.sharepoint.com/personal/digital_attacker_cimbthai_com/_layouts/15/stream.aspx?id=%2Fpersonal%2Fdigital%5Fattacker%5Fcimbthai%5Fcom%2FDocuments%2FDigital%20Banking%2FDigital%20Technology%2FSoftware%20Engineering%2FTechnical%2FUAT%2DScreen%20record%2Dcapture%2Emov&referrer=StreamWebApp%2EWeb&referrerScenario=AddressBarCopied%2Eview%2E5b47e5ce%2Df87c%2D4651%2D8e17%2D7d3ec330bee1|smart-link] 
+
+The screen Account Summary is only be captured/recorded screen when the {{secure_screen_v2_min_support_version}} is configured  OFF
+
+|secure_screen_min_support_version = 0.9.9|Able to capture the Account Summary screen|
+|secure_screen_v2_min_support_version =0.9.9|Not able to capture the screen|",,,,,Done,12/Jun/25 9:34 AM

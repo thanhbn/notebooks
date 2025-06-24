@@ -1,0 +1,162 @@
+# Quá Trình Suy Luận: Tạo Notebook 09_LangFuse_AB_Testing_Prompts.ipynb
+
+## Tổng quan về quyết định thiết kế
+
+### 1. Lựa chọn Use Case: Tóm tắt văn bản
+**Quyết định**: Chọn A/B testing cho prompt tóm tắt văn bản
+**Lý do**:
+- Use case dễ hiểu và phổ biến trong thực tế
+- Có thể đánh giá kết quả một cách trực quan (độ dài, cấu trúc, chất lượng)
+- Cho phép so sánh rõ ràng giữa hai phong cách prompt khác nhau
+- Metrics dễ đo lường (processing time, output length, compression ratio)
+
+### 2. Thiết kế hai phiên bản Prompt
+
+**Prompt A - Phong cách ngắn gọn**:
+```
+Hãy tóm tắt văn bản sau trong 2-3 câu ngắn gọn:
+{text}
+```
+
+**Prompt B - Phong cách có cấu trúc**:
+```
+Bạn là một chuyên gia tóm tắt văn bản. Hãy phân tích và tóm tắt văn bản sau theo cấu trúc:
+**Chủ đề chính:** [1 câu]
+**Điểm quan trọng:** [2-3 điểm chính] 
+**Kết luận:** [1 câu]
+```
+
+**Lý do thiết kế này**:
+- Tạo sự tương phản rõ ràng: đơn giản vs chi tiết
+- Prompt A tối ưu cho tốc độ và tính ngắn gọn
+- Prompt B tối ưu cho cấu trúc và độ chi tiết
+- Cả hai đều có mục tiêu rõ ràng và có thể đo lường được
+
+### 3. Chiến lược Tracking với LangFuse
+
+**Tags sử dụng**:
+- `prompt_version_A` / `prompt_version_B`: Phân biệt phiên bản prompt
+- `ab_testing`: Nhóm tất cả experiments
+- `summarization`: Nhóm theo loại task
+
+**Lý do chọn tags này**:
+- Cho phép filtering dễ dàng trong LangFuse dashboard
+- Hierarchy rõ ràng: task type → experiment type → version
+- Tương thích với best practices của LangFuse
+
+### 4. Metrics được theo dõi
+
+**Primary Metrics**:
+- Processing time: Đo hiệu suất về tốc độ
+- Output length: So sánh độ chi tiết
+- Success rate: Reliability của từng prompt
+
+**Secondary Metrics**:
+- Compression ratio: Hiệu quả nén thông tin
+- Structure score: Đánh giá format và tổ chức
+- Manual evaluation scores: Quality và relevance
+
+**Lý do chọn metrics này**:
+- Covering các khía cạnh quan trọng: speed, quality, reliability  
+- Có thể đo lường objective và subjective aspects
+- Phù hợp với thực tế production deployment
+
+### 5. Dữ liệu Test
+
+**Chọn 3 văn bản về các chủ đề khác nhau**:
+1. Trí tuệ nhân tạo (công nghệ)
+2. Biến đổi khí hậu (môi trường)
+3. Giáo dục trực tuyến (giáo dục)
+
+**Lý do chọn dữ liệu này**:
+- Đa dạng về chủ đề để test tính tổng quát
+- Độ dài phù hợp cho tóm tắt (không quá ngắn/dài)
+- Nội dung tiếng Việt phù hợp với target audience
+- Có cấu trúc rõ ràng giúp đánh giá chất lượng tóm tắt
+
+### 6. Cấu trúc Code Architecture
+
+**Function `run_ab_test_with_tracking`**:
+- Single responsibility: Chạy một test và track với LangFuse
+- Error handling comprehensive
+- Return consistent data structure
+- Timing measurement accurate
+
+**Lý do thiết kế function này**:
+- Tái sử dụng cho nhiều test cases
+- Isolation tốt cho debugging
+- Consistent tracking cho tất cả experiments
+- Easy to extend cho thêm metrics
+
+### 7. Evaluation Strategy
+
+**Manual Evaluation**:
+- Quality score (1-10): Đánh giá chất lượng tổng thể
+- Relevance score (1-10): Đánh giá độ liên quan với input
+
+**Automated Evaluation**:
+- Compression ratio: Metrics objective về độ nén
+- Structure score: Detect formatting structure
+- Conciseness score: Penalty cho output quá dài
+
+**Lý do kết hợp cả hai**:
+- Manual evaluation cho subjective quality assessment
+- Automated evaluation cho scalability và consistency
+- Combination cho comprehensive evaluation
+
+### 8. Reporting và Analysis
+
+**Phân tích đa chiều**:
+- Speed comparison: Ai nhanh hơn và nhanh bao nhiêu
+- Quality comparison: Structure vs conciseness trade-off
+- Use case recommendations: Khi nào dùng prompt nào
+
+**Lý do design reporting này**:
+- Actionable insights cho decision making
+- Clear trade-offs understanding
+- Practical recommendations cho production use
+
+### 9. Documentation và Tham khảo
+
+**Links đến LangFuse docs**:
+- Experimentation guide
+- Prompt management
+- Evaluation & scoring
+- Best practices
+
+**Lý do include documentation**:
+- Help users đi sâu hơn vào features
+- Provide official guidance
+- Support continuous learning
+
+### 10. Educational Value
+
+**Học hỏi key concepts**:
+- A/B testing methodology cho LLM applications
+- LangFuse tracking và analysis capabilities  
+- Data-driven decision making trong AI development
+- Production considerations cho prompt optimization
+
+**Progression logic**:
+1. Concept introduction
+2. Hands-on implementation
+3. Results analysis
+4. Advanced techniques
+5. Production considerations
+6. Next steps
+
+**Lý do cấu trúc này**:
+- Từ lý thuyết đến thực hành
+- Build up complexity gradually
+- Practical application focus
+- Prepare cho real-world usage
+
+## Kết luận về Design Decisions
+
+Notebook này được thiết kế để:
+1. **Practical**: Giải quyết real-world problem với clear use case
+2. **Educational**: Dạy methodology và best practices
+3. **Comprehensive**: Cover từ implementation đến analysis
+4. **Actionable**: Provide clear next steps và recommendations
+
+Tất cả các quyết định đều hướng tới việc tạo ra một learning experience hoàn chỉnh về A/B testing prompts với LangFuse, từ concept đến production-ready implementation.

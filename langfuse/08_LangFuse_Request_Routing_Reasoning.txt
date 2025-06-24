@@ -1,0 +1,126 @@
+# 08_LangFuse_Request_Routing_Reasoning.txt
+
+## Quyết định Thiết kế và Lý do Triển khai
+
+### 1. Lựa chọn Use Case: Request Routing
+**Quyết định**: Chọn hệ thống phân loại và định tuyến yêu cầu khách hàng
+**Lý do**:
+- Đây là một use case thực tế và phổ biến trong doanh nghiệp
+- Thể hiện được tầm quan trọng của monitoring và evaluation trong production
+- Có nhiều metrics có thể đo lường: accuracy, latency, escalation rate
+- Cho phép demo các tính năng advanced của LangFuse như human feedback và analytics
+
+### 2. Cấu trúc Pipeline Design
+**Quyết định**: Chia thành 2 bước riêng biệt: Classification -> Routing
+**Lý do**:
+- Separation of concerns: mỗi component có responsibility rõ ràng
+- Easier debugging: có thể trace từng bước độc lập
+- Flexible optimization: có thể optimize classification và routing logic riêng biệt
+- Better monitoring: metrics riêng cho từng stage
+
+### 3. LangFuse Integration Strategy
+**Quyết định**: Sử dụng decorator @observe cho từng function và update metadata chi tiết
+**Lý do**:
+- Provides granular tracing cho từng step
+- Metadata giúp filter và analyze dễ dàng trong LangFuse dashboard
+- Tags cho phép group traces theo dimensions khác nhau
+- Context update giúp track business metrics alongside technical metrics
+
+### 4. Định nghĩa Categories và Rules
+**Quyết định**: Sử dụng Enum classes và structured routing rules
+**Lý do**:
+- Type safety và code clarity
+- Dễ maintain và extend categories
+- Business rules được centralized và configurable
+- Supports complex routing logic với escalation rules
+
+### 5. Sample Data Design
+**Quyết định**: Tạo diverse sample requests với Vietnamese content
+**Lý do**:
+- Realistic scenarios từ customer support
+- Mix of different priorities và categories
+- Vietnamese content phù hợp với audience
+- Edge cases như complaint + billing để test multi-category routing
+
+### 6. Enhanced Routing Logic
+**Quyết định**: Implement business rules như business hours, VIP customers, confidence thresholds
+**Lý do**:
+- Shows production-ready considerations
+- Demonstrates context-aware AI systems
+- Realistic business requirements
+- Opportunity để showcase LangFuse metadata tracking
+
+### 7. Human Feedback Integration
+**Quyết định**: Simulate human feedback với multiple score types
+**Lý do**:
+- Critical cho continuous improvement trong production
+- Shows LangFuse evaluation capabilities
+- Realistic feedback categories: classification accuracy, routing appropriateness
+- Foundation cho model improvement workflows
+
+### 8. Performance Analytics
+**Quyết định**: Build comprehensive insights generation với actionable recommendations
+**Lý do**:
+- Demonstrates value of LangFuse data beyond basic monitoring
+- Shows how to turn metrics into business insights
+- Practical recommendations teams có thể implement
+- ROI justification cho AI monitoring tools
+
+### 9. Error Handling và Fallbacks
+**Quyết định**: Include error handling patterns và fallback mechanisms
+**Lý do**:
+- Production systems cần reliability
+- Shows best practices cho AI system resilience
+- LangFuse helps track error patterns
+- Critical cho customer-facing applications
+
+### 10. Code Organization và Documentation
+**Quyết định**: Structure code with clear functions, comprehensive comments, và step-by-step explanations
+**Lý do**:
+- Educational value cho learners
+- Production-ready code patterns
+- Easy to modify và extend
+- Clear mapping giữa concepts và implementation
+
+### 11. Metrics Selection
+**Quyết định**: Focus on business-relevant metrics: confidence, escalation rate, distribution analysis
+**Lý do**:
+- Metrics that matter cho customer support operations
+- Actionable insights rather than vanity metrics
+- Balance giữa technical và business KPIs
+- Foundation cho optimization decisions
+
+### 12. Integration with Claude Haiku
+**Quyết định**: Use Claude Haiku model thay vì GPT
+**Lý do**:
+- Consistent với project requirements
+- Cost-effective cho classification tasks
+- Good performance cho structured outputs
+- Supports Vietnamese language well
+
+### 13. Real-time Processing Focus
+**Quyết định**: Design for real-time request processing với latency tracking
+**Lý do**:
+- Customer support requires real-time responses
+- Latency is critical business metric
+- Shows LangFuse performance monitoring capabilities
+- Realistic production deployment scenario
+
+### 14. Scalability Considerations
+**Quyết định**: Include discussions về batch processing, caching, load balancing
+**Lý do**:
+- Production systems cần scale
+- Educational value về system design
+- Shows how monitoring scales với system growth
+- Practical considerations cho enterprise deployment
+
+### 15. Future Roadmap
+**Quyết định**: Include clear next steps và advanced integration possibilities
+**Lý do**:
+- Gives learners direction cho continued learning
+- Shows evolution path từ prototype to production
+- Demonstrates ecosystem thinking
+- Encourages practical application của concepts learned
+
+## Kết luận
+Notebook này được thiết kế để cung cấp một practical, comprehensive example của việc sử dụng LangFuse cho production AI systems. Mỗi quyết định thiết kế đều hướng đến việc balance educational value với production readiness, ensuring learners có thể apply concepts ngay trong real-world projects.

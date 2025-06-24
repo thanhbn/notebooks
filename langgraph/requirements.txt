@@ -1,0 +1,79 @@
+# LangGraph Multi-Agent Systems Requirements
+# Core LangGraph and LangChain packages
+langgraph>=0.1.0
+langchain>=0.1.0
+langchain-openai>=0.1.0
+langchain-anthropic>=0.1.0
+langchain-core>=0.1.0
+langchain-community>=0.1.0
+
+# Multi-agent specific dependencies
+typing>=3.7.0
+typing-extensions>=4.0.0
+
+# Environment management
+python-dotenv>=1.0.0
+
+# Jupyter notebook support
+jupyter>=1.0.0
+ipykernel>=6.0.0
+nbconvert>=7.0.0
+
+# Data manipulation and utilities
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Async support
+asyncio>=3.4.3
+
+# Visualization and debugging
+matplotlib>=3.7.0
+graphviz>=0.20.0
+
+# State management and persistence
+sqlalchemy>=2.0.0
+
+# API and HTTP clients
+requests>=2.31.0
+httpx>=0.25.0
+
+# Development and testing tools
+black>=23.0.0
+ruff>=0.1.0
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+
+# Optional: Direct LLM provider packages
+anthropic>=0.25.0
+openai>=1.0.0
+
+# Security and validation
+pydantic>=2.0.0
+cryptography>=41.0.0
+
+# Monitoring and observability
+langfuse>=2.0.0
+
+# Additional utilities for complex workflows and real-world pipelines
+jinja2>=3.1.0
+pyyaml>=6.0.0
+jsonschema>=4.0.0
+regex>=2023.0.0
+dateutils>=0.6.12
+
+# RAG and document processing (required for real-world pipelines)
+chromadb>=0.4.0
+faiss-cpu>=1.7.4
+sentence-transformers>=2.2.0
+pypdf>=3.0.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+html5lib>=1.1
+unstructured>=0.10.0
+
+# Tools for agents
+duckduckgo-search>=4.0.0
+
+# Web scraping and API tools
+aiohttp>=3.9.0
+websockets>=11.0.0
