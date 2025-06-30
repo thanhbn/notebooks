@@ -1,0 +1,1167 @@
+# 2002.08155v4.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2002.08155v4.pdf
+# Kích thước file: 1320360 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+CodeBERT:
+Một Mô hình Pre-trained cho Ngôn ngữ Lập trình và Ngôn ngữ Tự nhiên
+Zhangyin Feng1, Daya Guo2, Duyu Tang3, Nan Duan3, Xiaocheng Feng1
+Ming Gong4, Linjun Shou4, Bing Qin1, Ting Liu1, Daxin Jiang4, Ming Zhou3
+1Trung tâm Nghiên cứu Tính toán Xã hội và Truy xuất Thông tin, Học viện Công nghệ Harbin, Trung Quốc
+2Trường Khoa học Dữ liệu và Máy tính, Đại học Sun Yat-sen, Trung Quốc
+3Microsoft Research Asia, Bắc Kinh, Trung Quốc
+4Microsoft Search Technology Center Asia, Bắc Kinh, Trung Quốc
+fzyfeng,xcfeng,qinb,tliu g@ir.hit.edu.cn
+guody5@mail2.sysu.edu.cn
+fdutang,nanduan,migon,lisho,djiang,mingzhou g@microsoft.com
+
+Tóm tắt
+Chúng tôi giới thiệu CodeBERT, một mô hình pre-trained 
+hai chiều (bimodal) cho ngôn ngữ lập trình (PL) và 
+ngôn ngữ tự nhiên (NL). CodeBERT học 
+các biểu diễn mục đích chung hỗ trợ 
+các ứng dụng NL-PL downstream như tìm 
+kiếm mã nguồn bằng ngôn ngữ tự nhiên, tạo 
+tài liệu mã nguồn, v.v. Chúng tôi phát triển Code-
+BERT với kiến trúc mạng neural dựa trên Transformer, 
+và huấn luyện nó với hàm mục tiêu lai 
+kết hợp nhiệm vụ pre-training của 
+phát hiện token thay thế, có nhiệm vụ phát hiện 
+các lựa chọn thay thế hợp lý được lấy mẫu từ generators. 
+Điều này cho phép chúng tôi sử dụng cả dữ liệu "hai chiều" 
+của các cặp NL-PL và dữ liệu "một chiều", trong đó 
+dữ liệu trước cung cấp input tokens cho việc huấn luyện mô hình 
+trong khi dữ liệu sau giúp học 
+generators tốt hơn. Chúng tôi đánh giá CodeBERT trên 
+hai ứng dụng NL-PL bằng cách fine-tuning các tham số 
+mô hình. Kết quả cho thấy CodeBERT 
+đạt được hiệu suất tiên tiến nhất trên cả 
+tìm kiếm mã nguồn bằng ngôn ngữ tự nhiên và tạo tài liệu 
+mã nguồn. Hơn nữa, để điều tra 
+loại kiến thức nào được học trong 
+CodeBERT, chúng tôi xây dựng một dataset cho việc thăm dò 
+NL-PL, và đánh giá trong setting zero-shot 
+nơi các tham số của mô hình pre-trained được 
+cố định. Kết quả cho thấy CodeBERT hoạt động 
+tốt hơn các mô hình pre-trained trước đó trên việc thăm dò NL-
+PL.1
+
+1 Giới thiệu
+Các mô hình pre-trained lớn như ELMo (Peters
+et al., 2018), GPT (Radford et al., 2018), BERT
+(Devlin et al., 2018), XLNet (Yang et al., 2019)
+Công việc được thực hiện khi tác giả này là thực tập sinh tại Microsoft
+Research Asia.
+1Tất cả mã nguồn và dữ liệu có sẵn tại https://
+github.com/microsoft/CodeBERTvà RoBERTa (Liu et al., 2019) đã cải thiện 
+đáng kể state-of-the-art trên nhiều 
+nhiệm vụ xử lý ngôn ngữ tự nhiên (NLP). Những 
+mô hình pre-trained này học các biểu diễn ngữ cảnh hiệu quả 
+từ văn bản không nhãn khổng lồ được tối ưu hóa 
+bởi các mục tiêu tự giám sát, chẳng hạn như masked 
+language modeling, dự đoán từ 
+bị che (masked) gốc từ một chuỗi đầu vào 
+bị che giả tạo. Sự thành công của các mô hình pre-trained trong 
+NLP cũng thúc đẩy sự bùng nổ của các mô hình pre-trained 
+đa phương thức, chẳng hạn như ViLBERT (Lu et al., 2019) cho 
+ngôn ngữ-hình ảnh và VideoBERT (Sun et al., 2019) 
+cho ngôn ngữ-video, được học từ dữ liệu hai 
+chiều như các cặp ngôn ngữ-hình ảnh với các mục tiêu 
+tự giám sát hai chiều.
+
+Trong công việc này, chúng tôi giới thiệu CodeBERT, một mô hình 
+pre-trained hai chiều cho ngôn ngữ tự nhiên (NL) và 
+ngôn ngữ lập trình (PL) như Python, Java, 
+JavaScript, v.v. CodeBERT nắm bắt kết nối ngữ nghĩa 
+giữa ngôn ngữ tự nhiên và ngôn ngữ lập trình, 
+và tạo ra các biểu diễn mục đích chung 
+có thể hỗ trợ rộng rãi các nhiệm vụ hiểu 
+NL-PL (ví dụ: tìm kiếm mã nguồn bằng ngôn ngữ tự nhiên) 
+và các nhiệm vụ sinh (ví dụ: tạo tài liệu 
+mã nguồn). Nó được phát triển với 
+Transformer đa lớp (Vaswani et al., 2017), được 
+áp dụng trong đa số các mô hình pre-trained lớn.
+
+Để sử dụng cả các instance hai chiều 
+của các cặp NL-PL và lượng lớn mã nguồn một chiều 
+có sẵn, chúng tôi huấn luyện CodeBERT với hàm 
+mục tiêu lai, bao gồm masked language 
+modeling tiêu chuẩn (Devlin et al., 2018) và phát hiện 
+token thay thế (Clark et al., 2020), trong đó mã nguồn 
+một chiều giúp học generators tốt hơn để 
+tạo ra các token thay thế tốt hơn cho mục tiêu 
+sau.
+
+Chúng tôi huấn luyện CodeBERT từ các repository mã nguồn Github
+arXiv:2002.08155v4  [cs.CL]  18 Sep 2020
+
+--- TRANG 2 ---
+với 6 ngôn ngữ lập trình, trong đó các datapoint hai chiều 
+là các mã nguồn được ghép nối với tài liệu 
+ngôn ngữ tự nhiên cấp độ hàm (Husain et al., 
+2019). Huấn luyện được tiến hành trong setting tương tự 
+như multilingual BERT (Pires et al., 2019), 
+trong trường hợp này một mô hình pre-trained được học cho 
+6 ngôn ngữ lập trình không có marker rõ ràng nào 
+được sử dụng để biểu thị ngôn ngữ lập trình 
+đầu vào. Chúng tôi đánh giá CodeBERT trên hai 
+nhiệm vụ NL-PL downstream, bao gồm tìm kiếm mã nguồn 
+bằng ngôn ngữ tự nhiên và tạo tài liệu mã nguồn. 
+Kết quả cho thấy fine-tuning các tham số của 
+CodeBERT đạt được hiệu suất tiên tiến nhất 
+trên cả hai nhiệm vụ. Để tiếp tục điều tra loại 
+kiến thức nào được học trong CodeBERT, chúng tôi xây dựng 
+một dataset cho việc thăm dò NL-PL, và kiểm tra CodeBERT 
+trong kịch bản zero-shot, tức là không fine-tuning 
+các tham số của CodeBERT. Chúng tôi thấy rằng CodeBERT 
+liên tục vượt trội hơn RoBERTa, một mô hình pre-trained 
+dựa hoàn toàn trên ngôn ngữ tự nhiên. Những đóng góp 
+của công việc này như sau:
+
+CodeBERT là mô hình pre-trained NL-PL 
+lớn đầu tiên cho nhiều ngôn ngữ lập trình.
+
+Kết quả thực nghiệm cho thấy CodeBERT hiệu quả 
+trong cả nhiệm vụ tìm kiếm mã nguồn và tạo 
+code-to-text.
+
+Chúng tôi tiếp tục tạo ra một dataset là dataset 
+đầu tiên để điều tra khả năng thăm dò của các 
+mô hình pre-trained dựa trên mã nguồn.
+
+2 Kiến thức nền tảng
+2.1 Mô hình Pre-trained trong NLP
+Các mô hình pre-trained lớn (Peters et al., 2018; Rad-
+ford et al., 2018; Devlin et al., 2018; Yang et al., 
+2019; Liu et al., 2019; Raffel et al., 2019) đã 
+mang lại những cải thiện thực nghiệm đáng kể trên hầu như 
+mọi nhiệm vụ NLP trong vài năm qua. Các 
+phương pháp thành công huấn luyện mạng neural sâu trên 
+văn bản thuần túy quy mô lớn với các mục tiêu học 
+tự giám sát. Một trong những kiến trúc neural 
+đại diện nhất là Transformer (Vaswani et al., 
+2017), cũng là kiến trúc được sử dụng trong công việc này. Nó 
+chứa nhiều lớp self-attention, và có thể được 
+học theo cách thông thường với gradient descent theo 
+cách end-to-end vì mọi thành phần đều có thể 
+vi phân. Thuật ngữ "tự giám sát" có nghĩa 
+rằng các supervision được sử dụng cho pre-training được tự động 
+thu thập từ dữ liệu thô mà không cần chú thích thủ công. Các mục tiêu học chủ đạo là language 
+modeling và các biến thể của nó. Ví dụ, 
+trong GPT (Radford et al., 2018), mục tiêu học 
+là language modeling, cụ thể là dự đoán 
+từ tiếp theo wk cho trước các từ ngữ cảnh trước đó 
+fw1;w2;:::;wk 1g. Vì mục tiêu cuối cùng của pre-
+training không phải là huấn luyện một language model tốt, nên 
+mong muốn xem xét cả ngữ cảnh trước và sau 
+để học các biểu diễn ngữ cảnh mục đích chung tốt hơn. 
+Điều này dẫn chúng ta đến mục tiêu masked language 
+modeling được sử dụng trong BERT (Devlin 
+et al., 2018), học dự đoán các từ 
+bị che của một chuỗi từ bị che ngẫu nhiên cho trước 
+các ngữ cảnh xung quanh. Masked language modeling 
+cũng được sử dụng như một trong hai mục tiêu học 
+để huấn luyện CodeBERT.
+
+2.2 Mô hình Pre-trained Đa phương thức
+Sự thành công đáng kể của mô hình pre-trained 
+trong NLP đã thúc đẩy việc phát triển mô hình pre-trained 
+đa phương thức học sự liên kết ẩn 
+giữa các đầu vào của các phương thức khác nhau. Những mô hình 
+này thường được học từ dữ liệu hai chiều, chẳng hạn 
+như các cặp ngôn ngữ-hình ảnh hoặc các cặp ngôn ngữ-
+video. Ví dụ, ViLBERT (Lu et al., 2019) 
+học từ dữ liệu chú thích hình ảnh, trong đó mô hình 
+học bằng cách tái tạo các category của vùng hình ảnh 
+bị che hoặc các từ bị che cho trước các 
+đầu vào quan sát được, và đồng thời dự đoán liệu chú thích 
+có mô tả nội dung hình ảnh hay không. Tương tự, 
+VideoBERT (Sun et al., 2019) học từ 
+dữ liệu ngôn ngữ-video và được huấn luyện bằng dự đoán 
+token bị che của video và văn bản. Công việc của chúng tôi thuộc 
+về dòng nghiên cứu này vì chúng tôi coi NL và PL 
+như các phương thức khác nhau. Phương pháp của chúng tôi khác với 
+các công việc trước đó ở chỗ nhiên liệu để huấn luyện mô hình 
+không chỉ bao gồm dữ liệu hai chiều của các cặp NL-PL, 
+mà còn lượng lớn dữ liệu một chiều như mã nguồn 
+không có tài liệu được ghép nối.
+
+Một công việc đồng thời (Kanade et al., 2019) sử dụng 
+masked language modeling và next sentence prediction 
+làm mục tiêu để huấn luyện một mô hình BERT trên 
+mã nguồn Python, trong đó một câu là một dòng 
+mã nguồn logic như được định nghĩa bởi tiêu chuẩn Python. 
+Về mặt quá trình pre-training, CodeBERT 
+khác với công việc của họ ở chỗ (1) CodeBERT được 
+huấn luyện theo phong cách cross-modal và tận dụng cả 
+dữ liệu NL-PL hai chiều và dữ liệu PL/NL một chiều, (2) 
+CodeBERT được pre-trained trên sáu ngôn ngữ lập trình, 
+và (3) CodeBERT được huấn luyện với mục tiêu học 
+mới dựa trên phát hiện token thay thế.
+
+--- TRANG 3 ---
+
+3 CodeBERT
+Chúng tôi mô tả chi tiết về CodeBERT trong 
+phần này, bao gồm kiến trúc mô hình, các biểu diễn 
+đầu vào và đầu ra, các mục tiêu và dữ liệu 
+được sử dụng để huấn luyện CodeBERT, và cách fine-tune 
+CodeBERT khi nó được áp dụng cho các nhiệm vụ downstream.
+
+3.1 Kiến trúc Mô hình
+Chúng tôi theo BERT (Devlin et al., 2018) và 
+RoBERTa (Liu et al., 2019), và sử dụng 
+Transformer hai chiều đa lớp (Vaswani et al., 2017) làm 
+kiến trúc mô hình của CodeBERT. Chúng tôi sẽ không 
+xem xét lại kiến trúc Transformer phổ biến một cách 
+chi tiết. Chúng tôi phát triển CodeBERT bằng cách sử dụng chính xác 
+kiến trúc mô hình giống như RoBERTa-base. 
+Tổng số tham số mô hình là 125M.
+
+3.2 Biểu diễn Đầu vào/Đầu ra
+Trong giai đoạn pre-training, chúng tôi đặt đầu vào là 
+phép nối của hai đoạn với token phân tách 
+đặc biệt, cụ thể là [CLS ];w1;w2;::wn;[SEP ]; 
+c1;c2;:::;cm;[EOS ]. Một đoạn là văn bản ngôn ngữ tự nhiên, 
+và đoạn khác là mã nguồn từ một ngôn ngữ lập trình 
+nhất định. [CLS ] là token đặc biệt ở 
+phía trước hai đoạn, biểu diễn ẩn cuối cùng của nó 
+được coi là biểu diễn chuỗi tổng hợp 
+cho phân loại hoặc xếp hạng. Theo 
+cách xử lý văn bản tiêu chuẩn trong Trans-
+former, chúng tôi coi một văn bản ngôn ngữ tự nhiên như một chuỗi 
+các từ, và chia nó thành WordPiece (Wu 
+et al., 2016). Chúng tôi coi một đoạn mã nguồn như một chuỗi 
+các token.
+
+Đầu ra của CodeBERT bao gồm (1) biểu diễn 
+vector ngữ cảnh của mỗi token, cho cả ngôn ngữ tự nhiên 
+và mã nguồn, và (2) biểu diễn của 
+[CLS ], hoạt động như biểu diễn chuỗi 
+tổng hợp.
+
+3.3 Dữ liệu Pre-training
+Chúng tôi huấn luyện CodeBERT với cả dữ liệu hai chiều, 
+tham chiếu đến dữ liệu song song của các cặp 
+ngôn ngữ tự nhiên-mã nguồn, và dữ liệu một chiều, 
+đại diện cho mã nguồn không có văn bản ngôn ngữ tự nhiên 
+được ghép nối và ngôn ngữ tự nhiên không có mã nguồn được ghép nối.
+
+Chúng tôi sử dụng các datapoint từ các repository Github, 
+trong đó mỗi datapoint hai chiều là một hàm 
+riêng lẻ với tài liệu được ghép nối, và mỗi mã nguồn 
+một chiều là một hàm không có tài liệu được ghép nối. 
+Cụ thể, chúng tôi sử dụng một dataset lớn gần đây DỮ LIỆU HUẤN LUYỆN DỮ LIỆU HAI CHIỀU MÃ NGUỒN MỘT CHIỀU
+GO 319,256 726,768
+JAVA 500,754 1,569,889
+JAVASCRIPT 143,252 1,857,835
+PHP 662,907 977,821
+PYTHON 458,219 1,156,085
+RUBY 52,905 164,048
+TẤT CẢ 2,137,293 6,452,446
+
+Bảng 1: Thống kê của dataset được sử dụng để huấn luyện Code-
+BERT.
+
+được cung cấp bởi Husain et al. (2019), bao gồm 
+2.1M datapoint hai chiều và 6.4M mã nguồn một chiều 
+trên sáu ngôn ngữ lập trình (Python, Java, 
+JavaScript, PHP, Ruby, và Go). Thống kê dữ liệu được 
+hiển thị trong Bảng 1.2
+
+Dữ liệu đến từ các repository GitHub 
+mã nguồn mở công khai không phải fork và được lọc 
+với một tập hợp các ràng buộc và quy tắc. Ví dụ, 
+(1) mỗi project nên được sử dụng bởi ít nhất 
+một project khác, (2) mỗi tài liệu được cắt ngắn 
+đến đoạn đầu tiên, (3) các tài liệu 
+ngắn hơn ba token bị loại bỏ, (4) các hàm 
+ngắn hơn ba dòng bị loại bỏ, và (5) 
+tên hàm có substring "test" bị loại bỏ. 
+Một ví dụ về dữ liệu được đưa ra trong Hình 13.
+
+Hình 1: Một ví dụ về cặp NL-PL, trong đó NL là 
+đoạn đầu tiên (được tô màu đỏ) từ tài liệu 
+(đường nét đứt màu đen) của một hàm.
+
+3.4 Pre-training CodeBERT
+Chúng tôi mô tả hai mục tiêu được sử dụng để huấn luyện 
+CodeBERT ở đây. Mục tiêu đầu tiên là masked 
+language modeling (MLM), đã được chứng minh hiệu quả 
+trong tài liệu (Devlin et al., 2018; Liu et al.,
+
+2Vì chúng tôi sẽ đánh giá trên nhiệm vụ tìm kiếm mã nguồn 
+bằng ngôn ngữ tự nhiên, chúng tôi chỉ sử dụng dữ liệu huấn luyện của Husain et al. 
+(2019) để huấn luyện CodeBERT mà không truy cập vào dữ liệu dev và testing.
+
+3Nguồn của ví dụ minh họa đến từ 
+https://github.com/apache/spark/blob/
+618d6bff71073c8c93501ab7392c3cc579730f0b/
+python/pyspark/rdd.py#L125-L138
+
+--- TRANG 4 ---
+6NL Generator
+NL-Code 
+Discriminator[𝑀𝐴𝑆𝐾]𝑤CodeBERT V2:
+Một Mô hình Pre-trained cho Hiểu và Sinh NL-Code 
+𝑤2
+𝑤3
+𝑤4
+[𝑀𝐴𝑆𝐾]𝑤𝑤1
+𝑤2
+𝑤3
+𝑤4
+𝑤5
+[𝑀𝐴𝑆𝐾]𝑐
+𝑐5𝑐3
+𝑐4
+[𝑀𝐴𝑆𝐾]𝑐𝑐1
+𝑐2
+𝑐3
+𝑐4
+𝑐5
+𝑐6𝑐1𝑤51
+𝑤2
+𝑤3
+𝑤4
+𝑤5
+𝑐29
+𝑐5𝑐3
+𝑐4
+𝑐162𝑐1gốc
+thay thế
+
+Code Generatorgốc
+gốc
+gốc
+thay thếgốc
+gốc
+gốc
+gốc
+thay thếlấy mẫu
+lấy mẫu
+lấy mẫu
+lấy mẫu
+
+Hình 2: Một minh họa về mục tiêu phát hiện token thay thế. Cả NL và code generators đều là language 
+models, tạo ra các token hợp lý cho các vị trí bị che dựa trên ngữ cảnh xung quanh. NL-Code discriminator 
+là mô hình pre-trained mục tiêu, được huấn luyện thông qua việc phát hiện các token thay thế hợp lý được lấy mẫu từ 
+NL và PL generators. NL-Code discriminator được sử dụng để tạo ra các biểu diễn mục đích chung trong bước fine-
+tuning. Cả NL và code generators đều bị loại bỏ trong bước fine-tuning.
+
+2019; Sun et al., 2019). Chúng tôi áp dụng masked language 
+modeling trên dữ liệu hai chiều của các cặp NL-PL. Mục tiêu 
+thứ hai là phát hiện token thay thế (RTD), 
+sử dụng thêm một lượng lớn dữ liệu một chiều, 
+chẳng hạn như mã nguồn không có văn bản ngôn ngữ tự nhiên được ghép nối. 
+Các siêu tham số chi tiết cho pre-training mô hình 
+được đưa ra trong Phụ lục B.1.
+
+Mục tiêu #1: Masked Language Modeling 
+(MLM) Cho một datapoint của cặp NL-PL ( x= 
+fw,cg) làm đầu vào, trong đó w là một chuỗi từ NL 
+và c là một chuỗi token PL, trước tiên chúng tôi 
+chọn một tập hợp vị trí ngẫu nhiên cho cả NL và PL 
+để che (tức là mw và mc, tương ứng), và 
+sau đó thay thế các vị trí được chọn bằng token 
+[MASK ] đặc biệt. Theo Devlin et al. (2018), 
+15% các token từ x bị che.
+
+mw
+iuniff1;jwjgfori= 1tojwj (1)
+mc
+iuniff1;jcjgfori= 1tojcj (2)
+wmasked=REPLACE (w;mw;[MASK ])(3)
+cmasked=REPLACE (c;mc;[MASK ]) (4)
+x=w+c (5)
+
+Mục tiêu MLM là dự đoán các token 
+gốc bị che, được công thức hóa như sau, 
+trong đó pD1 là discriminator dự đoán một 
+token từ từ vựng lớn.
+
+LMLM()=X
+i2mw[mc logpD1(xijwmasked;cmasked)
+(6)
+
+Mục tiêu #2: Phát hiện Token Thay thế (RTD)
+Trong mục tiêu MLM, chỉ dữ liệu hai chiều (tức là data-
+points của các cặp NL-PL) được sử dụng để huấn luyện. Ở đây chúng tôi 
+trình bày mục tiêu của phát hiện token thay thế. 
+Mục tiêu RTD (Clark et al., 2020) ban đầu 
+được phát triển để học hiệu quả mô hình pre-trained 
+cho ngôn ngữ tự nhiên. Chúng tôi điều chỉnh nó trong kịch bản 
+của chúng tôi, với lợi thế của việc sử dụng cả dữ liệu hai chiều 
+và một chiều để huấn luyện. Cụ thể, có 
+hai data generators ở đây, một NL generator pGw 
+và một PL generator pGc, cả hai để tạo ra các lựa chọn 
+thay thế hợp lý cho tập hợp các vị trí 
+bị che ngẫu nhiên.
+
+^wipGw(wijwmasked)fori2mw(7)
+^cipGc(cijcmasked)fori2mc(8)
+wcorrupt=REPLACE (w;mw;^w) (9)
+ccorrupt=REPLACE (c;mc;^c) (10)
+xcorrupt=wcorrupt+ccorrupt(11)
+
+Discriminator được huấn luyện để xác định liệu 
+một từ có phải là từ gốc hay không, đây là bài toán 
+phân loại nhị phân. Đáng chú ý rằng mục tiêu 
+RTD được áp dụng cho mọi vị trí trong 
+đầu vào, và nó khác với GAN (generative adversarial 
+network) ở chỗ nếu một generator tình cờ 
+tạo ra token đúng, nhãn của token đó 
+là "real" thay vì "fake" (Clark et al., 2020). Hàm 
+loss của RTD liên quan đến discrimina-
+tor được tham số hóa bởi được đưa ra dưới đây, trong đó (i) là
+
+--- TRANG 5 ---
+một hàm chỉ thị và pD2 là discriminator 
+dự đoán xác suất từ thứ i-th là 
+gốc.
+
+LRTD() =jwj+jcjX
+i=1
+(i)logpD2(xcorrupt;i)+
+
+1 (i)
+1 logpD2(xcorrupt;i)
+(12)
+
+(i) =(
+1;ifxcorrupt
+i =xi:
+0;otherwise:(13)
+
+Có nhiều cách khác nhau để triển khai các 
+generators. Trong công việc này, chúng tôi triển khai hai 
+mô hình ngôn ngữ n-gram hiệu quả (Jurafsky, 2000) 
+với ngữ cảnh hai chiều, một cho NL và một 
+cho PL, và học chúng từ các datapoint một chiều 
+tương ứng, tương ứng. Phương pháp này 
+dễ dàng tổng quát hóa để học các generators hai chiều hoặc 
+sử dụng các generators phức tạp hơn như kiến trúc 
+neural dựa trên Transformer được học theo cách joint. 
+Chúng tôi để lại điều này cho công việc tương lai. Dữ liệu huấn luyện PL 
+là các mã nguồn một chiều như được hiển thị trong Bảng 1, và dữ liệu 
+huấn luyện NL đến từ các tài liệu 
+từ dữ liệu hai chiều. Có thể dễ dàng mở rộng hai 
+dataset huấn luyện này thành lượng lớn hơn. Hàm 
+loss cuối cùng được đưa ra dưới đây.
+
+min
+LMLM() +LRTD() (14)
+
+3.5 Fine-tuning CodeBERT
+Chúng tôi có các setting khác nhau để sử dụng CodeBERT trong 
+các nhiệm vụ NL-PL downstream. Ví dụ, trong tìm kiếm 
+mã nguồn bằng ngôn ngữ tự nhiên, chúng tôi đưa đầu vào theo 
+cách tương tự như giai đoạn pre-training và sử dụng 
+biểu diễn của [CLS ] để đo sự liên quan ngữ nghĩa 
+giữa mã nguồn và truy vấn ngôn ngữ tự nhiên, 
+trong khi trong sinh code-to-text, chúng tôi sử dụng framework encoder-
+decoder và khởi tạo encoder của 
+một mô hình generative với CodeBERT. Chi tiết được 
+đưa ra trong phần thực nghiệm.
+
+4 Thực nghiệm
+Chúng tôi trình bày kết quả thực nghiệm trong phần này để xác minh 
+tính hiệu quả của CodeBERT. Trước tiên chúng tôi mô tả 
+việc sử dụng CodeBERT trong tìm kiếm mã nguồn 
+bằng ngôn ngữ tự nhiên (x4.1), theo cách mà các tham số mô hình của 
+CodeBERT được fine-tuned. Sau đó, chúng tôi trình bày 
+nhiệm vụ thăm dò NL-PL ( x4.2), và đánh giá Code-
+BERT trong setting zero-shot nơi các tham số của CodeBERT được cố định. Cuối cùng, chúng tôi đánh giá Code-
+BERT trên một bài toán sinh, tức là tạo tài liệu 
+mã nguồn (x4.3), và tiếp tục đánh giá trên một 
+ngôn ngữ lập trình chưa bao giờ được thấy trong 
+giai đoạn huấn luyện (x4.4).
+
+4.1 Tìm kiếm Mã nguồn bằng Ngôn ngữ Tự nhiên
+Cho một ngôn ngữ tự nhiên làm đầu vào, mục tiêu 
+của tìm kiếm mã nguồn là tìm mã nguồn có liên quan ngữ nghĩa 
+nhất từ một tập hợp các mã nguồn. Chúng tôi tiến hành 
+thực nghiệm trên corpus CodeSearchNet 
+(Husain et al., 2019)4. Chúng tôi theo metric đánh giá 
+chính thức để tính Mean Reciprocal Rank 
+(MRR) cho mỗi cặp dữ liệu kiểm tra ( c,w) trên một tập hợp 
+cố định 999 mã nguồn phân tâm. Chúng tôi tiếp tục tính 
+macro-average MRR cho tất cả ngôn ngữ như một metric 
+đánh giá tổng thể. Hữu ích khi lưu ý rằng metric này 
+khác với metric AVG trong paper 
+gốc, nơi câu trả lời được truy xuất từ các ứng cử viên 
+từ tất cả sáu ngôn ngữ. Chúng tôi fine-tune một mô hình 
+cụ thể cho ngôn ngữ cho mỗi ngôn ngữ lập trình5.
+
+Chúng tôi huấn luyện mỗi mô hình với hàm loss 
+phân loại nhị phân, trong đó một lớp softmax được kết nối 
+với biểu diễn của [CLS ]. Cả dataset huấn luyện và 
+validation đều được tạo theo cách mà các mẫu 
+tích cực và tiêu cực được cân bằng. Các mẫu tiêu cực 
+gồm số lượng cân bằng các instance 
+với NL được thay thế ngẫu nhiên (tức là ( c,^w)) và PL 
+(tức là ( ^c,w)). Các siêu tham số chi tiết cho fine-tuning 
+mô hình được đưa ra trong Phụ lục B.2.
+
+So sánh Mô hình Bảng 2 hiển thị kết quả 
+của các phương pháp khác nhau trên corpus CodeSearchNet. 
+Bốn hàng đầu tiên được báo cáo bởi Husain 
+et al. (2019), là các embedding joint của NL và 
+PL (Gu et al., 2018; Mitra et al., 2018). NBOW 
+đại diện cho neural bag-of-words. CNN ,BIRNN 
+và SELFATT đại diện cho mạng neural tích chập 
+1D (Kim, 2014), mạng neural tái phát dựa trên GRU 
+hai chiều (Cho et al., 2014), và 
+multi-head attention (Vaswani et al., 2017), tương ứng.
+
+Chúng tôi báo cáo các con số còn lại trong Bảng 2. 
+Chúng tôi huấn luyện tất cả các mô hình pre-trained này bằng cách coi 
+mã nguồn như một chuỗi các token. Chúng tôi cũng tiếp tục 
+huấn luyện RoBERTa chỉ trên mã nguồn từ Code-
+SearchNet với masked language modeling. Kết quả 
+cho thấy CodeBERT liên tục hoạt động
+
+4Chi tiết thêm về dataset được đưa ra trong Phụ lục A.
+5Chúng tôi đã fine-tuned một mô hình đa ngôn ngữ cho sáu ngôn ngữ lập 
+trình, nhưng thấy rằng nó hoạt động kém hơn việc fine-tuning 
+một mô hình cụ thể cho ngôn ngữ cho mỗi ngôn ngữ lập trình.
+
+--- TRANG 6 ---
+MÔ HÌNH RUBY JAVASCRIPT GO PYTHON JAVA PHP MA-AVG
+NBOW 0.4285 0.4607 0.6409 0.5809 0.5140 0.4835 0.5181
+CNN 0.2450 0.3523 0.6274 0.5708 0.5270 0.5294 0.4753
+BIRNN 0.0835 0.1530 0.4524 0.3213 0.2865 0.2512 0.2580
+SELF ATT 0.3651 0.4506 0.6809 0.6922 0.5866 0.6011 0.5628
+ROBERTA 0.6245 0.6060 0.8204 0.8087 0.6659 0.6576 0.6972
+PT W/ CODE ONLY (INIT=S) 0.5712 0.5557 0.7929 0.7855 0.6567 0.6172 0.6632
+PT W/ CODE ONLY (INIT=R) 0.6612 0.6402 0.8191 0.8438 0.7213 0.6706 0.7260
+CODEBERT (MLM, INIT=S) 0.5695 0.6029 0.8304 0.8261 0.7142 0.6556 0.6998
+CODEBERT (MLM, INIT=R) 0.6898 0.6997 0.8383 0.8647 0.7476 0.6893 0.7549
+CODEBERT (RTD, INIT=R) 0.6414 0.6512 0.8285 0.8263 0.7150 0.6774 0.7233
+CODEBERT (MLM+RTD, INIT=R) 0.6926 0.7059 0.8400 0.8685 0.7484 0.7062 0.7603
+
+Bảng 2: Kết quả trên truy xuất mã nguồn bằng ngôn ngữ tự nhiên. Baselines bao gồm bốn embedding joint (nhóm đầu tiên) của NL 
+và PL, RoBERTa, và RoBERTa được huấn luyện tiếp tục với masked language modeling chỉ trên mã nguồn 
+(nhóm thứ hai). PT đại diện cho pre-training. Chúng tôi huấn luyện CodeBERT (nhóm thứ ba) với các setting khác nhau, bao gồm 
+sử dụng khởi tạo khác nhau (từ đầu ( INIT=S) hoặc khởi tạo với các tham số của RoBERTa ( INIT=R)) và 
+sử dụng các mục tiêu học khác nhau (MLM, RTD, hoặc kết hợp của cả hai).
+
+tốt hơn RoBERTa và mô hình pre-trained 
+chỉ với mã nguồn. CodeBERT (MLM) được học từ 
+đầu hoạt động tốt hơn RoBERTa. Không 
+ngạc nhiên, khởi tạo CodeBERT với RoBERTa 
+cải thiện hiệu suất6.
+
+4.2 Thăm dò NL-PL
+Trong phần phụ trước, chúng tôi cho thấy tính hiệu quả thực nghiệm 
+của CodeBERT trong setting mà các 
+tham số của CodeBERT được fine-tuned trong các 
+nhiệm vụ downstream. Trong phần phụ này, chúng tôi tiếp tục điều tra 
+loại kiến thức nào được học trong Code-
+BERT mà không sửa đổi các tham số.
+
+Công thức Nhiệm vụ và Xây dựng Dữ liệu Theo 
+các thực nghiệm thăm dó trong NLP (Petroni 
+et al., 2019; Talmor et al., 2019), chúng tôi nghiên cứu thăm dò 
+NL-PL ở đây. Vì không có công việc hiện tại nào 
+hướng tới mục tiêu này, chúng tôi công thức hóa bài toán 
+thăm dò NL-PL và tạo dataset bằng chính chúng tôi. 
+Cho một cặp NL-PL ( c,w), mục tiêu của thăm dò 
+NL-PL là kiểm tra khả năng của mô hình để dự đoán/khôi phục 
+chính xác token bị che quan tâm (hoặc là 
+token mã nguồn ci hoặc token từ wj) giữa các distractor. 
+Có hai loại distractor chính: một là 
+toàn bộ từ vựng mục tiêu được sử dụng cho mục tiêu masked language 
+modeling (Petroni et al., 2019), và 
+loại khác có ít ứng cử viên hơn được lọc hoặc 
+được tuyển chọn dựa trên hiểu biết của chuyên gia về 
+khả năng được kiểm tra (Talmor et al., 2019). Chúng tôi theo 
+hướng thứ hai và công thức hóa thăm dò NL-PL 
+như một nhiệm vụ trả lời câu hỏi đa lựa chọn, trong đó 
+câu hỏi có dạng cloze-style mà một token nhất định được thay thế bởi [MASK ] và các câu trả lời ứng cử viên 
+distractor được tuyển chọn dựa trên chuyên môn của chúng tôi.
+
+Cụ thể, chúng tôi đánh giá trên phía NL và phía PL, 
+tương ứng. Để giảm nhẹ nỗ lực thu thập dữ liệu, chúng tôi thu thập 
+dữ liệu tự động từ các cặp NL-PL 
+trong cả tập validation và testing của Code-
+SearchNet, cả hai đều không được thấy trong giai đoạn 
+pre-training. Để đánh giá trên phía NL, chúng tôi 
+chọn các cặp NL-PL có tài liệu NL bao gồm 
+một trong sáu từ khóa ( max,maximize ,min, 
+minimize ,less,greater ), và nhóm chúng thành bốn 
+ứng cử viên bằng cách gộp hai từ khóa đầu tiên và hai 
+từ khóa giữa. Nhiệm vụ là yêu cầu các mô hình pre-trained 
+chọn đúng thay vì ba 
+distractor khác. Có nghĩa là, đầu vào trong setting 
+này bao gồm mã nguồn hoàn chỉnh và tài liệu 
+NL bị che. Mục tiêu là chọn câu trả lời 
+đúng từ bốn ứng cử viên. Cho phía PL, chúng tôi 
+chọn mã nguồn chứa từ khóa max và min, và 
+công thức hóa nhiệm vụ như một bài toán lựa chọn câu trả lời 
+hai lựa chọn. Ở đây, đầu vào bao gồm tài liệu NL 
+hoàn chỉnh và mã nguồn PL bị che, và mục tiêu 
+là chọn câu trả lời đúng từ hai ứng cử viên.
+
+Vì hoàn thành mã nguồn là một kịch bản quan trọng, 
+chúng tôi muốn kiểm tra khả năng của mô hình trong việc dự đoán 
+token đúng chỉ dựa trên ngữ cảnh PL 
+trước đó. Do đó, chúng tôi thêm một setting bổ sung 
+cho phía PL, nơi đầu vào bao gồm tài liệu 
+NL hoàn chỉnh và mã nguồn PL trước đó. Thống kê dữ liệu 
+được đưa ra trong hai hàng đầu trong Bảng 3.
+
+So sánh Mô hình Kết quả được đưa ra trong Bảng 
+3. Chúng tôi báo cáo độ chính xác, cụ thể là số lượng instance 
+được dự đoán chính xác trên số lượng tất cả 
+instance, cho mỗi ngôn ngữ lập trình. Vì
+
+--- TRANG 7 ---
+RUBY JAVASCRIPT GO PYTHON JAVA PHP TẤT CẢ
+SỐ LƯỢNG DATAPOINT CHO THĂM DÒ
+PL (2 LỰA CHỌN) 38 272 152 1,264 482 407 2,615
+NL (4 LỰA CHỌN) 20 65 159 216 323 73 856
+THĂM DÒ PL
+ROBERTA 73.68 63.97 72.37 59.18 59.96 69.78 62.45
+PRE-TRAIN W / CODE ONLY 71.05 77.94 89.47 70.41 70.12 82.31 74.11
+CODEBERT (MLM) 86.84 86.40 90.79 82.20 90.46 88.21 85.66
+THĂM DÒ PL VỚI CHỈ NGỮ CẢNH TRƯỚC ĐÓ
+ROBERTA 73.68 53.31 51.32 55.14 42.32 52.58 52.24
+PRE-TRAIN W / CODE ONLY 63.16 48.53 61.84 56.25 58.51 58.97 56.71
+CODEBERT (MLM) 65.79 50.74 59.21 62.03 54.98 59.95 59.12
+THĂM DÒ NL
+ROBERTA 50.00 72.31 54.72 61.57 61.61 65.75 61.21
+PRE-TRAIN W / CODE ONLY 55.00 67.69 60.38 68.06 65.02 68.49 65.19
+CODEBERT (MLM) 65.00 89.23 66.67 76.85 73.37 79.45 74.53
+
+Bảng 3: Thống kê dữ liệu cho thăm dò NL-PL và hiệu suất của các mô hình pre-trained khác nhau. Độ chính xác 
+(%) được báo cáo. Kết quả tốt nhất trong mỗi nhóm được in đậm.
+
+dataset trong các ngôn ngữ lập trình khác nhau cực kỳ 
+không cân bằng, chúng tôi báo cáo metric tích lũy 
+theo cách tương tự. Chúng tôi sử dụng CodeBERT 
+(MLM) ở đây vì lớp đầu ra của nó phù hợp tự nhiên 
+cho thăm dò. Kết quả cho thấy CodeBERT hoạt động 
+tốt hơn baselines trên hầu như tất cả ngôn ngữ 
+trên cả thăm dò NL và PL. Các con số với 
+chỉ ngữ cảnh trước đó thấp hơn so với có 
+ngữ cảnh hai chiều, điều này cho thấy hoàn thành mã nguồn 
+là thách thức. Chúng tôi để lại nó như một công việc 
+tương lai.
+
+Chúng tôi tiếp tục đưa ra một nghiên cứu trường hợp về thăm dò PL-NL. 
+Chúng tôi che token NL và token PL riêng biệt, và 
+báo cáo các xác suất dự đoán của RoBERTa và 
+CodeBERT. Hình 3 minh họa ví dụ về một 
+mã nguồn python7. Chúng ta có thể thấy rằng RoBERTa thất bại trong 
+cả hai trường hợp, trong khi CodeBERT đưa ra dự đoán 
+đúng trong cả setting NL và PL.
+
+4.3 Tạo Tài liệu Mã nguồn
+Mặc dù mục tiêu pre-training của Code-
+BERT không bao gồm các mục tiêu dựa trên sinh 
+(Lewis et al., 2019), chúng tôi muốn điều tra 
+mức độ CodeBERT hoạt động trên các nhiệm vụ 
+sinh. Cụ thể, chúng tôi nghiên cứu sinh code-to-NL, 
+và báo cáo kết quả cho nhiệm vụ tạo tài liệu 
+trên Corpus CodeSearchNet trong 
+sáu ngôn ngữ lập trình. Vì các tài liệu 
+được tạo ra ngắn và các n-gram bậc cao hơn 
+có thể không trùng khớp, chúng tôi khắc phục vấn đề này bằng cách sử dụng 
+điểm BLEU được làm mịn (Lin and Och, 2004).
+
+7Ví dụ đến từ https://
+github.com/peri-source/peri/blob/
+61beed5deaaf978ab31ed716e8470d86ba639867/
+peri/comp/psfcalc.py#L994-L1002
+
+defvec_to_halfvec (vec):
+d =vec[1:] -vec[:-1]
+if((d/d.mean ()).std() >1e-14) or(d.mean () <0):
+raise ValueError ('vec phải là np.arange () theo thứ tự tăng dần' )
+dx =d.mean ()
+lowest =np.abs(vec). min ()
+highest =np.abs(vec).max ()
+return np.arange (lowest, highest +0.1* dx, dx). astype (vec.dtype )"Biến đổi một vector np.arange( -N, M, dx) thành np.arange( min (|vec|), 
+max(N,M),dx)]"
+
+token NL bị che
+token PL bị che
+
+max min less greater
+NLRoberta 96.24% 3.73% 0.02% 0.01%
+CodeBERT (MLM) 39.38% 60.60% 0.02% 0.0003%
+PLRoberta 95.85% 4.15% - -
+CodeBERT (MLM) 0.001% 99.999% - -
+
+Hình 3: Nghiên cứu trường hợp về ngôn ngữ python. Các token 
+bị che trong NL (màu xanh) và PL (màu vàng) được áp dụng 
+riêng biệt. Xác suất dự đoán của RoBERTa và Code-
+BERT được đưa ra.
+
+So sánh Mô hình Chúng tôi so sánh mô hình của chúng tôi 
+với một số baseline, bao gồm một mô hình 
+dựa trên RNN với cơ chế attention (Sutskever et al., 
+2014), Transformer (Vaswani et al., 2017), 
+RoBERTa và mô hình pre-trained chỉ trên mã nguồn. 
+Để chứng minh tính hiệu quả của CodeBERT 
+trên các nhiệm vụ sinh code-to-NL, chúng tôi áp dụng các 
+mô hình pre-trained khác nhau làm encoder và giữ các siêu-
+tham số nhất quán. Các siêu tham số chi tiết 
+được đưa ra trong Phụ lục B.3.
+
+Bảng 4 hiển thị kết quả với các mô hình 
+khác nhau cho nhiệm vụ tạo tài liệu code-to-documentation. 
+Như chúng ta có thể thấy, các mô hình pre-trained trên ngôn ngữ 
+lập trình vượt trội hơn RoBERTa, điều này minh họa 
+rằng pre-training mô hình trên ngôn ngữ lập trình
+
+--- TRANG 8 ---
+MÔ HÌNH RUBY JAVASCRIPT GO PYTHON JAVA PHP TỔNG THỂ
+SEQ2SEQ 9.64 10.21 13.98 15.93 15.09 21.08 14.32
+TRANSFORMER 11.18 11.59 16.38 15.81 16.26 22.12 15.56
+ROBERT A 11.17 11.90 17.72 18.14 16.47 24.02 16.57
+PRE-TRAIN W /CODE ONLY 11.91 13.99 17.78 18.58 17.50 24.34 17.35
+CODEBERT ( RTD) 11.42 13.27 17.53 18.29 17.35 24.10 17.00
+CODEBERT ( MLM ) 11.57 14.41 17.78 18.77 17.38 24.85 17.46
+CODEBERT ( RTD+MLM ) 12.16 14.90 18.07 19.06 17.65 25.16 17.83
+
+Bảng 4: Kết quả trên sinh Code-to-Documentation, được đánh giá bằng điểm BLEU-4 được làm mịn.
+
+có thể cải thiện sinh code-to-NL. 
+Bên cạnh đó, kết quả trong Bảng 4 cho thấy CodeBERT 
+pre-trained với các mục tiêu RTD và MLM mang lại 
+một cải thiện 1.3 điểm BLEU so với RoBERTa tổng thể 
+và đạt được hiệu suất tiên tiến nhất8.
+
+4.4 Tổng quát hóa đến Ngôn ngữ Lập trình 
+KHÔNG có trong Pre-training
+Chúng tôi muốn đánh giá CodeBERT trên ngôn ngữ lập trình 
+chưa bao giờ được thấy trong bước 
+pre-training. Để đạt được mục tiêu này, chúng tôi nghiên cứu nhiệm vụ tạo 
+một tóm tắt ngôn ngữ tự nhiên của một đoạn mã nguồn 
+C#. Chúng tôi tiến hành thực nghiệm trên dataset 
+của CodeNN (Iyer et al., 2016)9, bao gồm 
+66,015 cặp câu hỏi và câu trả lời được thu thập 
+tự động từ StackOverflow. Dataset này 
+khó khăn vì quy mô của dataset nhỏ hơn 
+nhiều bậc so với Corpus CodeSearchNet. 
+Chúng tôi đánh giá các mô hình sử dụng điểm BLEU-4 được làm mịn 
+và sử dụng các script đánh giá tương tự như Iyer et al. 
+(2016).
+
+MÔ HÌNH BLEU
+MOSES (K OEHN ET AL ., 2007) 11.57
+IR 13.66
+SUM-NN (R USH ET AL ., 2015) 19.31
+2-LAYER BILSTM 19.78
+TRANSFORMER (VASWANI ET AL ., 2017) 19.68
+TREELSTM (T AI ET AL ., 2015) 20.11
+CODENN (I YER ET AL ., 2016) 20.53
+CODE 2SEQ (ALON ET AL ., 2019) 23.04
+ROBERT A 19.81
+PRE-TRAIN W /CODE ONLY 20.65
+CODEBERT (RTD) 22.14
+CODEBERT (MLM) 22.32
+CODEBERT (MLM+RTD) 22.36
+
+Bảng 5: Sinh Code-to-NL trên ngôn ngữ C#.
+
+So sánh Mô hình Bảng 5 cho thấy mô hình 
+của chúng tôi với các mục tiêu pre-training MLM và RTD 
+đạt được 22.36 điểm BLEU và cải thiện 2.55 
+điểm so với RoBERTa, điều này minh họa CodeBERT
+
+8Chúng tôi tiếp tục đưa ra một số ví dụ đầu ra trong Phụ lục E.
+9https://github.com/sriniiyer/codenn
+
+có thể tổng quát hóa tốt hơn đến ngôn ngữ lập trình khác 
+chưa bao giờ được thấy trong bước pre-training. 
+Tuy nhiên, mô hình của chúng tôi đạt được kết quả thấp hơn một chút 
+so với code2seq (Alon et al., 2019). Lý do chính 
+có thể là code2seq sử dụng các đường dẫn compositional 
+trong cây cú pháp trừu tượng (AST) của nó trong khi Code-
+BERT chỉ lấy mã nguồn gốc làm đầu vào. Chúng tôi 
+đã huấn luyện một phiên bản CodeBERT bằng cách duyệt 
+cấu trúc cây của AST theo một thứ tự nhất định, 
+nhưng việc áp dụng mô hình đó không mang lại cải thiện 
+trên các nhiệm vụ sinh. Điều này cho thấy một hướng 
+tiềm năng để cải thiện CodeBERT bằng cách kết hợp 
+AST.
+
+5 Kết luận
+Trong paper này, chúng tôi trình bày CodeBERT, theo hiểu biết 
+tốt nhất của chúng tôi là mô hình pre-trained hai chiều 
+lớn đầu tiên cho ngôn ngữ tự nhiên và ngôn ngữ 
+lập trình. Chúng tôi huấn luyện CodeBERT trên cả 
+dữ liệu hai chiều và một chiều, và cho thấy fine-
+tuning CodeBERT đạt được hiệu suất tiên tiến nhất 
+trên các nhiệm vụ downstream bao gồm tìm kiếm mã nguồn 
+bằng ngôn ngữ tự nhiên và tạo code-to-documentation. 
+Để tiếp tục điều tra kiến thức được thể hiện 
+trong các mô hình pre-trained, chúng tôi công thức hóa nhiệm vụ 
+thăm dò NL-PL và tạo một dataset cho thăm dò. 
+Chúng tôi coi nhiệm vụ thăm dò như một bài toán lựa chọn câu trả lời 
+dạng cloze-style, và tuyển chọn các distractor cho cả 
+phần NL và PL. Kết quả cho thấy, với các tham số mô hình 
+được cố định, CodeBERT hoạt động tốt hơn 
+RoBERTa và một mô hình được huấn luyện tiếp tục chỉ sử dụng 
+mã nguồn.
+
+Có nhiều hướng tiềm năng cho nghiên cứu 
+tiếp theo trong lĩnh vực này. Thứ nhất, có thể học các 
+generators tốt hơn với bằng chứng hai chiều hoặc kiến trúc 
+neural phức tạp hơn để cải thiện mục tiêu phát hiện token 
+thay thế. Thứ hai, các hàm loss 
+của CodeBERT chủ yếu nhắm vào các nhiệm vụ hiểu 
+NL-PL. Mặc dù CodeBERT đạt được điểm 
+BLEU mạnh trên tạo code-to-documentation, 
+bản thân CodeBERT có thể được cải thiện thêm 
+bằng các mục tiêu học liên quan đến sinh.
+
+--- TRANG 9 ---
+Cách kết hợp thành công AST vào bước 
+pre-training cũng là một hướng hấp dẫn. Thứ ba, 
+chúng tôi có kế hoạch áp dụng CodeBERT vào nhiều nhiệm vụ 
+liên quan đến NL-PL hơn, và mở rộng nó sang nhiều ngôn ngữ 
+lập trình hơn. Các phương pháp thích ứng domain/ngôn ngữ 
+linh hoạt và mạnh mẽ là cần thiết để tổng quát hóa 
+tốt.
+
+Lời cảm ơn
+Xiaocheng Feng là tác giả liên hệ của công việc 
+này. Chúng tôi cảm ơn các nhà phản biện ẩn danh vì những 
+bình luận sâu sắc của họ. Zhangyin Feng, Xiaocheng 
+Feng, Bing Qin và Ting Liu được hỗ trợ bởi 
+Chương trình R&D Trọng điểm Quốc gia Trung Quốc thông qua grant 
+2018YFB1005103 và Quỹ Khoa học Tự nhiên Quốc gia 
+Trung Quốc (NSFC) thông qua grant 61632011 
+và 61772156.
+
+Tài liệu tham khảo
+Uri Alon, Shaked Brody, Omer Levy, và Eran Yahav. 
+2019. code2seq: Tạo chuỗi từ biểu diễn 
+có cấu trúc của mã nguồn. International Confer-
+ence on Learning Representations .
+
+Kyunghyun Cho, Bart Van Merri ¨enboer, Caglar Gul-
+cehre, Dzmitry Bahdanau, Fethi Bougares, Holger 
+Schwenk, và Yoshua Bengio. 2014. Học 
+biểu diễn cụm từ sử dụng rnn encoder-decoder 
+cho dịch máy thống kê. arXiv preprint 
+arXiv:1406.1078 .
+
+Kevin Clark, Minh-Thang Luong, Quoc V . Le, và 
+Christopher D. Manning. 2020. fELECTRAg: Pre-
+training text encoders như discriminator thay vì 
+generators. In International Conference on Learn-
+ing Representations .
+
+Jacob Devlin, Ming-Wei Chang, Kenton Lee, và 
+Kristina Toutanova. 2018. Bert: Pre-training của deep 
+bidirectional transformers cho hiểu ngôn ngữ. 
+arXiv preprint arXiv:1810.04805 .
+
+Xiaodong Gu, Hongyu Zhang, và Sunghun Kim. 2018. 
+Deep code search. In 2018 IEEE/ACM 40th Interna-
+tional Conference on Software Engineering (ICSE) , 
+pages 933–944. IEEE.
+
+Hamel Husain, Ho-Hsiang Wu, Tiferet Gazit, Miltiadis 
+Allamanis, và Marc Brockschmidt. 2019. Code-
+searchnet challenge: Đánh giá state of seman-
+tic code search. arXiv preprint arXiv:1909.09436 .
+
+Srinivasan Iyer, Ioannis Konstas, Alvin Cheung, và 
+Luke Zettlemoyer. 2016. Tóm tắt mã nguồn 
+sử dụng mô hình attention neural. In Proceedings 
+of the 54th Annual Meeting of the Association for 
+Computational Linguistics (Volume 1: Long Papers) , 
+pages 2073–2083.
+
+Dan Jurafsky. 2000. Speech & language processing . 
+Pearson Education India.
+
+Aditya Kanade, Petros Maniatis, Gogul Balakrish-
+nan, và Kensen Shi. 2019. Pre-trained contex-
+tual embedding của mã nguồn. arXiv preprint 
+arXiv:2001.00059 .
+
+Yoon Kim. 2014. Convolutional neural net-
+works cho phân loại câu. arXiv preprint 
+arXiv:1408.5882 .
+
+Philipp Koehn, Hieu Hoang, Alexandra Birch, Chris 
+Callison-Burch, Marcello Federico, Nicola Bertoldi, 
+Brooke Cowan, Wade Shen, Christine Moran, 
+Richard Zens, et al. 2007. Moses: Open source 
+toolkit cho dịch máy thống kê. In Pro-
+ceedings of the 45th annual meeting of the associ-
+ation for computational linguistics companion vol-
+ume proceedings of the demo and poster sessions , 
+pages 177–180.
+
+Mike Lewis, Yinhan Liu, Naman Goyal, Mar-
+jan Ghazvininejad, Abdelrahman Mohamed, Omer 
+Levy, Ves Stoyanov, và Luke Zettlemoyer. 2019. 
+Bart: Denoising sequence-to-sequence pre-training 
+cho sinh ngôn ngữ tự nhiên, dịch thuật, và 
+hiểu. arXiv preprint arXiv:1910.13461 .
+
+Chin-Yew Lin và Franz Josef Och. 2004. Orange: một 
+phương pháp để đánh giá các metric đánh giá tự động 
+cho dịch máy. In Proceedings of the 20th 
+international conference on Computational Linguis-
+tics, page 501. Association for Computational Lin-
+guistics.
+
+Yinhan Liu, Myle Ott, Naman Goyal, Jingfei Du, Man-
+dar Joshi, Danqi Chen, Omer Levy, Mike Lewis, 
+Luke Zettlemoyer, và Veselin Stoyanov. 2019. 
+Roberta: Một phương pháp pre-training bert được tối ưu hóa 
+mạnh mẽ. arXiv preprint arXiv:1907.11692 .
+
+Jiasen Lu, Dhruv Batra, Devi Parikh, và Stefan 
+Lee. 2019. Vilbert: Pretraining task-agnostic visi-
+olinguistic representations cho vision-and-language 
+tasks. In Advances in Neural Information Process-
+ing Systems , pages 13–23.
+
+Bhaskar Mitra, Nick Craswell, et al. 2018. Một giới thiệu 
+về neural information retrieval. Foundations 
+and Trends Rin Information Retrieval , 13(1):1–126.
+
+Matthew E Peters, Mark Neumann, Mohit Iyyer, Matt 
+Gardner, Christopher Clark, Kenton Lee, và Luke 
+Zettlemoyer. 2018. Deep contextualized word repre-
+sentations. arXiv preprint arXiv:1802.05365 .
+
+Fabio Petroni, Tim Rockt ¨aschel, Patrick Lewis, Anton 
+Bakhtin, Yuxiang Wu, Alexander H Miller, và Se-
+bastian Riedel. 2019. Language models như knowl-
+edge bases? arXiv preprint arXiv:1909.01066 .
+
+Telmo Pires, Eva Schlinger, và Dan Garrette. 2019. 
+How multilingual is multilingual bert? arXiv 
+preprint arXiv:1906.01502 .
+
+--- TRANG 10 ---
+Alec Radford, Karthik Narasimhan, Tim Salimans, 
+và Ilya Sutskever. 2018. Cải thiện hiểu ngôn ngữ 
+bằng generative pre-training. URL 
+https://s3-us-west-2. amazonaws. com/openai-
+assets/researchcovers/languageunsupervised/language
+understanding paper. pdf .
+
+Colin Raffel, Noam Shazeer, Adam Roberts, Katherine 
+Lee, Sharan Narang, Michael Matena, Yanqi Zhou, 
+Wei Li, và Peter J Liu. 2019. Khám phá giới hạn 
+của transfer learning với một uniﬁed text-to-text trans-
+former. arXiv preprint arXiv:1910.10683 .
+
+Alexander M Rush, Sumit Chopra, và Jason We-
+ston. 2015. Một mô hình attention neural cho tóm tắt 
+câu trừu tượng. arXiv preprint 
+arXiv:1509.00685 .
+
+Chen Sun, Austin Myers, Carl V ondrick, Kevin Mur-
+phy, và Cordelia Schmid. 2019. Videobert: Một mô hình joint 
+cho học biểu diễn video và ngôn ngữ. 
+arXiv preprint arXiv:1904.01766 .
+
+Ilya Sutskever, Oriol Vinyals, và Quoc V Le. 2014. 
+Sequence to sequence learning với neural networks. 
+In Advances in neural information processing sys-
+tems, pages 3104–3112.
+
+Kai Sheng Tai, Richard Socher, và Christopher D 
+Manning. 2015. Cải thiện biểu diễn ngữ nghĩa 
+từ tree-structured long short-term memory net-
+works. arXiv preprint arXiv:1503.00075 .
+
+Alon Talmor, Yanai Elazar, Yoav Goldberg, và 
+Jonathan Berant. 2019. olmpics–on what lan-
+guage model pre-training captures. arXiv preprint 
+arXiv:1912.13283 .
+
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob 
+Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz 
+Kaiser, và Illia Polosukhin. 2017. Attention is all 
+you need. In Advances in neural information pro-
+cessing systems , pages 5998–6008.
+
+Yonghui Wu, Mike Schuster, Zhifeng Chen, Quoc V 
+Le, Mohammad Norouzi, Wolfgang Macherey, 
+Maxim Krikun, Yuan Cao, Qin Gao, Klaus 
+Macherey, et al. 2016. Hệ thống dịch máy neural của Google: 
+Kết nối khoảng cách giữa dịch thuật 
+con người và máy. arXiv preprint 
+arXiv:1609.08144 .
+
+Zhilin Yang, Zihang Dai, Yiming Yang, Jaime Car-
+bonell, Ruslan Salakhutdinov, và Quoc V Le. 
+2019. Xlnet: Generalized autoregressive pretrain-
+ing cho hiểu ngôn ngữ. arXiv preprint 
+arXiv:1906.08237 .
+
+A Thống kê Dữ liệu
+Thống kê dữ liệu của các phần chia training/validation/testing 
+cho sáu ngôn ngữ lập trình được đưa ra trong 
+Bảng 6.
+
+TÌM KIẾM MÃ NGUỒN TRAINING DEV TESTING
+GO 635,635 28,483 14,291
+JAVA 908,886 30,655 26,909
+JAVASCRIPT 247,773 16,505 6,483
+PHP 1,047,406 52,029 28,391
+PYTHON 824,342 46,213 22,176
+RUBY 97,580 4,417 2,279
+
+Bảng 6: Thống kê dữ liệu về Corpus CodeSearchNet 
+cho tìm kiếm mã nguồn bằng ngôn ngữ tự nhiên.
+
+B Chi tiết Huấn luyện
+B.1 Pre-training
+Chúng tôi huấn luyện CodeBERT trên một máy NVIDIA DGX-2 
+sử dụng FP16. Nó kết hợp 16 
+NVIDIA Tesla V100 kết nối với nhau với bộ nhớ 32GB. Chúng tôi sử dụng 
+tập hợp siêu tham số sau để huấn luyện mô hình: 
+batchsize là 2,048 và learning rate là 5e-4. Chúng tôi 
+sử dụng Adam để cập nhật các tham số và đặt số lượng 
+warmup steps là 10K. Chúng tôi đặt max length 
+là 512 và max training step là 100K. Huấn luyện 
+1,000 batch dữ liệu tốn 600 phút với mục tiêu MLM, 
+120 phút với mục tiêu RTD.
+
+B.2 CodeSearch
+Trong bước fine-tuning, chúng tôi đặt learning rate là 
+1e-5, batch size là 64, max sequence length 
+là 200 và max fine-tuning epoch là 8. Tương tự 
+như pre-training, chúng tôi sử dụng Adam để cập nhật 
+các tham số. Chúng tôi chọn mô hình hoạt động tốt nhất 
+trên tập development, và sử dụng nó để đánh giá trên 
+tập test.
+
+B.3 Tóm tắt Mã nguồn trên Sáu 
+Ngôn ngữ Lập trình
+Chúng tôi sử dụng Transformer với 6 lớp, 768 chiều 
+hidden states và 12 attention heads làm decoder 
+trong tất cả các setting. Chúng tôi đặt max length của đầu vào 
+và suy luận là 256 và 64, tương ứng. Chúng tôi sử dụng 
+optimizer Adam để cập nhật các tham số mô hình. 
+Learning rate và batch size là 5e-5 và 
+64, tương ứng. Chúng tôi tinh chỉnh siêu tham số và 
+thực hiện early stopping trên tập development.
+
+B.4 Tóm tắt Mã nguồn trên C#
+Vì các phương pháp tiên tiến nhất sử dụng RNN làm de-
+coder, chúng tôi chọn GRU 2 lớp với cơ chế 
+attention làm decoder để so sánh. Chúng tôi 
+fine-tune các mô hình sử dụng grid search với tập hợp 
+siêu tham số sau: batchsize trong f32, 
+64g và learning rate trong f2e-5, 5e-5g. Chúng tôi báo cáo
+
+--- TRANG 11 ---
+con số khi các mô hình đạt được hiệu suất tốt nhất 
+trên tập development.
+
+C Đường cong Học của CodeSearch
+Từ Hình 4, chúng ta có thể thấy rằng CodeBERT hoạt động 
+tốt hơn ở giai đoạn đầu, điều này phản ánh rằng 
+CodeBERT cung cấp khởi tạo tốt cho việc học 
+các nhiệm vụ downstream.
+
+1 2 3 4 5 6 7 8
+Số Epoch84.585.085.586.086.587.087.588.088.5Dev Accuracy của Python
+Roberta
+CodeBERT
+Pre-train w/ code only
+
+1 2 3 4 5 6 7 8
+Số Epoch79.580.080.581.081.582.082.583.0Dev Accuracy của Java
+Roberta
+CodeBERT
+Pre-train w/ code only
+
+Hình 4: Đường cong học của các mô hình pre-trained 
+khác nhau trong bước fine-tuning. Chúng tôi hiển thị kết quả trên Python 
+và Java.
+
+D Late Fusion
+Trong phần x4.1 , chúng tôi cho thấy rằng CodeBERT hoạt động 
+tốt trong setting nơi ngôn ngữ tự nhiên 
+và mã nguồn có tương tác sớm. Ở đây, chúng tôi điều tra 
+liệu CodeBERT có tốt trong việc hoạt động 
+như một encoder thống nhất hay không. Chúng tôi áp dụng CodeBERT cho 
+tìm kiếm mã nguồn bằng ngôn ngữ tự nhiên trong setting fusion muộn hơn, 
+nơi CodeBERT trước tiên encode NL và PL 
+riêng biệt, và sau đó tính similarity bằng dot-
+product. Theo cách này, tìm kiếm mã nguồn tương đương với 
+tìm các mã nguồn gần nhất trong không gian vector chung. 
+Kịch bản này cũng tạo thuận lợi cho việc sử dụng CodeBERT 
+trong hệ thống online, nơi các biểu diễn của 
+mã nguồn được tính toán trước. Trong runtime, một 
+hệ thống chỉ cần tính biểu diễn 
+của NL và dot-product dựa trên vector.
+
+Chúng tôi fine-tune CodeBERT với mục tiêu 
+sau, tối đa hóa dot-product của 
+ground truth trong khi tối thiểu hóa dot-product của 
+các distractor.
+
+ 1
+NX
+ilogexp 
+Enc(ci)|Enc(wi)
+P
+jexp 
+Enc(cj)|Enc(wi)
+(15)
+
+Kết quả được đưa ra trong Bảng 7. Chúng tôi chỉ thực hiện setting 
+này trên hai ngôn ngữ với lượng dữ liệu 
+tương đối nhỏ.
+
+MÔ HÌNH RUBY GO
+ROBERT A 0.0043 0.0030
+PRE-TRAIN W /CODE ONLY 0.1648 0.4179
+CODEBERT 0.6870 0.8372
+
+Bảng 7: Kết quả trên tìm kiếm mã nguồn bằng ngôn ngữ tự nhiên bằng 
+late fusion.
+
+Chúng ta có thể thấy rằng CodeBERT hoạt động tốt hơn 
+RoBERTa và mô hình pre-trained chỉ với mã nguồn. 
+Và late fusion hoạt động tương đương với 
+cách tiêu chuẩn. Hơn nữa, late fusion hiệu quả hơn 
+và setting này có thể được sử dụng trong hệ thống 
+online.
+
+E Nghiên cứu Trường hợp
+Để phân tích định tính tính hiệu quả của Code-
+BERT, chúng tôi đưa ra một số trường hợp cho tìm kiếm mã nguồn và 
+các nhiệm vụ tạo tài liệu mã nguồn.
+
+Xem xét không gian hạn chế, chúng tôi chỉ đưa ra 
+top2 kết quả của truy vấn cho ngôn ngữ lập trình python. 
+Như hiển thị trong Hình 5, kết quả tìm kiếm rất 
+liên quan với truy vấn.
+
+Hình 6 và Hình 7 hiển thị các đầu ra với 
+các mô hình khác nhau cho nhiệm vụ tạo tài liệu 
+mã nguồn. Như chúng ta có thể thấy, CodeBERT hoạt động 
+tốt hơn tất cả baselines.
+
+--- TRANG 12 ---
+Hình 5: Ví dụ CodeSearch Python. Kết quả được tìm kiếm từ 1,156,085 dữ liệu mã nguồn python. Chúng tôi chỉ đưa ra 
+top2 kết quả vì không gian bị giới hạn.
+
+Hình 6: Ví dụ đầu ra tạo tài liệu mã nguồn Java.
+
+Hình 7: Ví dụ đầu ra tạo tài liệu mã nguồn Python.

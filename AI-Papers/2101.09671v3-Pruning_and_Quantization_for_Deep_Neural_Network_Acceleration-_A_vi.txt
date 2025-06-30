@@ -1,0 +1,625 @@
+# 2101.09671v3.pdf - Bản dịch tiếng Việt
+# Chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2101.09671v3.pdf
+# Kích thước file: 1786864 bytes
+
+===============================================
+NỘI DUNG FILE PDF (DỊCH TIẾNG VIỆT)
+===============================================
+
+
+--- TRANG 1 ---
+Cắt tỉa và Lượng tử hóa để Tăng tốc Mạng Neural Sâu: Một Khảo sát
+
+Tailin Lianga,b, John Glossnera,b,c, Lei Wanga, Shaobo Shia,b và Xiaotong Zhanga,*
+
+aKhoa Kỹ thuật Máy tính và Truyền thông, Đại học Khoa học và Công nghệ Bắc Kinh, Bắc Kinh 100083, Trung Quốc
+bHua Xia General Processor Technologies, Bắc Kinh 100080, Trung Quốc  
+cGeneral Processor Technologies, Tarrytown, NY 10591, Hoa Kỳ
+
+THÔNG TIN BÀI BÁO
+Từ khóa:
+mạng neural tích chập
+tăng tốc mạng neural
+lượng tử hóa mạng neural
+cắt tỉa mạng neural
+toán học bit thấp
+
+TÓM TẮT
+Mạng neural sâu đã được ứng dụng trong nhiều lĩnh vực và thể hiện khả năng phi thường trong lĩnh vực thị giác máy tính. Tuy nhiên, các kiến trúc mạng phức tạp gây thách thức cho việc triển khai hiệu quả thời gian thực và đòi hỏi nguồn tài nguyên tính toán và chi phí năng lượng đáng kể. Những thách thức này có thể được khắc phục thông qua các tối ưu hóa như nén mạng. Nén mạng thường có thể thực hiện với ít mất mát độ chính xác. Trong một số trường hợp, độ chính xác thậm chí có thể được cải thiện. Bài báo này cung cấp một khảo sát về hai loại nén mạng: cắt tỉa và lượng tử hóa. Cắt tỉa có thể được phân loại là tĩnh nếu nó được thực hiện ngoại tuyến hoặc động nếu nó được thực hiện tại thời gian chạy. Chúng tôi so sánh các kỹ thuật cắt tỉa và mô tả các tiêu chí được sử dụng để loại bỏ các phép tính dư thừa. Chúng tôi thảo luận về sự đánh đổi trong cắt tỉa theo phần tử, theo kênh, theo hình dạng, theo bộ lọc, theo tầng và thậm chí theo mạng. Lượng tử hóa giảm phép tính bằng cách giảm độ chính xác của kiểu dữ liệu. Trọng số, bias và activation có thể được lượng tử hóa thường xuống số nguyên 8-bit mặc dù các triển khai với độ rộng bit thấp hơn cũng được thảo luận bao gồm mạng neural nhị phân. Cả cắt tỉa và lượng tử hóa đều có thể được sử dụng độc lập hoặc kết hợp. Chúng tôi so sánh các kỹ thuật hiện tại, phân tích điểm mạnh và điểm yếu của chúng, trình bày kết quả độ chính xác mạng nén trên một số framework, và cung cấp hướng dẫn thực tế để nén mạng.
+
+1. Giới thiệu
+
+Mạng Neural Sâu (DNN) đã thể hiện khả năng phi thường trong các ứng dụng phức tạp như phân loại hình ảnh, phát hiện đối tượng, tổng hợp giọng nói và phân đoạn ngữ nghĩa [138]. Các thiết kế mạng neural gần đây với hàng tỷ tham số đã chứng minh khả năng ngang bằng con người nhưng với chi phí là độ phức tạp tính toán đáng kể. DNN với nhiều tham số cũng tốn thời gian để huấn luyện [26]. Những mạng lớn này cũng khó triển khai trong môi trường nhúng. Băng thông trở thành yếu tố hạn chế khi di chuyển trọng số và dữ liệu giữa các Đơn vị Tính toán (CU) và bộ nhớ. Tham số hóa quá mức là tính chất của một mạng neural trong đó các neuron dư thừa không cải thiện độ chính xác của kết quả. Sự dư thừa này thường có thể được loại bỏ với ít hoặc không mất mát độ chính xác [225].
+
+Hình 1 cho thấy ba cân nhắc thiết kế có thể góp phần vào tham số hóa quá mức: 1) cấu trúc mạng, 2) tối ưu hóa mạng, và 3) thiết kế bộ tăng tốc phần cứng. Những cân nhắc thiết kế này đặc trưng cho Mạng Neural Tích chập (CNN) nhưng cũng liên quan chung đến DNN.
+
+Cấu trúc mạng bao gồm ba phần: 1) các thành phần mới, 2) tìm kiếm kiến trúc mạng, và 3) chưng cất kiến thức. Các thành phần mới là thiết kế các khối hiệu quả như tích chập tách biệt, khối inception và khối residual. Chúng được thảo luận trong Phần 2.4. Các thành phần mạng cũng bao gồm các loại kết nối trong các tầng. Mạng neural hoàn toàn kết nối sâu đòi hỏi N² kết nối giữa các neuron.
+
+*Tác giả liên hệ:
+tailin.liang@xs.ustb.edu.cn (T. Liang); jglossner@ustb.edu.cn (J. Glossner); wanglei@ustb.edu.cn (L. Wang); sbshi@hxgpt.com (S. Shi); zxt@ies.ustb.edu.cn (X. Zhang)
+ORCID(s): 0000-0002-7643-912X (T. Liang)
+
+Các tầng feed forward giảm kết nối bằng cách chỉ xem xét các kết nối theo hướng tiến. Điều này giảm số lượng kết nối xuống N. Các loại thành phần khác như các tầng dropout có thể giảm số lượng kết nối hơn nữa.
+
+Tìm kiếm Kiến trúc Mạng (NAS) [63], còn được gọi là tìm kiếm tự động mạng, tìm kiếm theo chương trình một cấu trúc mạng hiệu quả cao từ một không gian tìm kiếm lớn được định nghĩa trước. Một estimator được áp dụng cho mỗi kiến trúc được tạo ra. Mặc dù tốn thời gian để tính toán, kiến trúc cuối cùng thường vượt trội hơn các mạng được thiết kế thủ công.
+
+Chưng cất Kiến thức (KD) [80,206] phát triển từ chuyển giao kiến thức [27]. Mục tiêu là tạo ra một mô hình nén đơn giản hơn hoạt động tốt như một mô hình lớn hơn. KD huấn luyện một mạng học sinh cố gắng bắt chước một mạng giáo viên. Mạng học sinh thường nhưng không phải lúc nào cũng nhỏ hơn và nông hơn so với giáo viên. Mô hình học sinh được huấn luyện nên ít phức tạp tính toán hơn so với giáo viên.
+
+Tối ưu hóa mạng [137] bao gồm: 1) tối ưu hóa tính toán tích chập, 2) phân tích nhân tử tham số, 3) cắt tỉa mạng, và 4) lượng tử hóa mạng. Các phép toán tích chập hiệu quả hơn so với tính toán hoàn toàn kết nối vì chúng giữ thông tin chiều cao như một tensor 3D thay vì làm phẳng các tensor thành vector loại bỏ thông tin không gian ban đầu. Tính năng này giúp CNN phù hợp với cấu trúc cơ bản của dữ liệu hình ảnh đặc biệt. Các tầng tích chập cũng yêu cầu ít hệ số hơn đáng kể so với các Tầng Hoàn toàn Kết nối (FCL). Các tối ưu hóa tính toán tích chập bao gồm tích chập dựa trên Biến đổi Fourier Nhanh (FFT) [168], tích chập Winograd [135], và phương pháp hình ảnh thành cột (im2col) [34] phổ biến. Chúng tôi thảo luận chi tiết im2col trong Phần 2.3 vì nó liên quan trực tiếp
+
+đến các kỹ thuật cắt tỉa chung.
+
+Phân tích nhân tử tham số là một kỹ thuật phân tách các tensor hạng cao thành các tensor hạng thấp hơn để đơn giản hóa truy cập bộ nhớ và nén kích thước mô hình. Nó hoạt động bằng cách chia các tầng lớn thành nhiều tầng nhỏ hơn, do đó giảm số lượng phép tính. Nó có thể được áp dụng cho cả tầng tích chập và tầng hoàn toàn kết nối. Kỹ thuật này cũng có thể được áp dụng với cắt tỉa và lượng tử hóa.
+
+Cắt tỉa mạng [201,24,12,250] liên quan đến việc loại bỏ các tham số không ảnh hưởng đến độ chính xác mạng. Cắt tỉa có thể được thực hiện theo nhiều cách và được mô tả chi tiết trong Phần 3.
+
+Lượng tử hóa mạng [131,87] liên quan đến việc thay thế các kiểu dữ liệu bằng các kiểu dữ liệu có độ rộng giảm. Ví dụ, thay thế Điểm Nổi 32-bit (FP32) bằng Số nguyên 8-bit (INT8). Các giá trị thường có thể được mã hóa để bảo tồn thông tin nhiều hơn so với chuyển đổi đơn giản. Lượng tử hóa được mô tả chi tiết trong Phần 4.
+
+Bộ tăng tốc phần cứng [151,202] được thiết kế chủ yếu để tăng tốc mạng. Ở mức độ cao, chúng bao gồm toàn bộ nền tảng processor và thường bao gồm phần cứng được tối ưu hóa cho mạng neural. Các nền tảng processor bao gồm các lệnh Đơn vị Xử lý Trung tâm (CPU) chuyên biệt, Đơn vị Xử lý Đồ họa (GPU), Mạch Tích hợp Chuyên dụng Ứng dụng (ASIC), và Mảng Cổng Có thể Lập trình Hiện trường (FPGA).
+
+CPU đã được tối ưu hóa với các lệnh Trí tuệ Nhân tạo (AI) chuyên biệt thường trong các đơn vị Một Lệnh Nhiều Dữ liệu (SIMD) chuyên biệt [49,11]. Mặc dù CPU có thể được sử dụng để huấn luyện, chúng chủ yếu được sử dụng để suy luận trong các hệ thống không có bộ tăng tốc suy luận chuyên biệt.
+
+GPU đã được sử dụng cho cả huấn luyện và suy luận. nVidia có các đơn vị tensor chuyên biệt được tích hợp vào GPU của họ được tối ưu hóa để tăng tốc mạng neural [186]. AMD [7], ARM [10], và Imagination [117] cũng có GPU với các lệnh để tăng tốc mạng neural.
+
+ASIC chuyên biệt cũng đã được thiết kế để tăng tốc mạng neural. Chúng thường nhắm mục tiêu suy luận tại edge, trong camera an ninh, hoặc trên thiết bị di động. Các ví dụ bao gồm: General Processor Technologies (GPT) [179], ARM, nVidia, và hơn 60 công ty khác [202] đều có các processor nhắm mục tiêu không gian này. ASIC cũng có thể nhắm mục tiêu cả huấn luyện và suy luận trong trung tâm dữ liệu. Đơn vị xử lý tensor (TPU) từ Google [125], Habana từ Intel [169], Kunlun từ Baidu [191], Hanguang từ Alibaba [124], và Đơn vị Xử lý Thông minh (IPU) từ Graphcore [121].
+
+FPGA có thể lập trình được đã được sử dụng để tăng tốc mạng neural [86,3,234,152]. FPGA được sử dụng rộng rãi bởi các nhà nghiên cứu do chu kỳ thiết kế ASIC dài. Các thư viện mạng neural có sẵn từ Xilinx [128] và Intel [69]. Các bộ tăng tốc mạng neural cụ thể cũng đang được tích hợp vào cấu trúc FPGA [248,4,203]. Vì FPGA hoạt động ở mức cổng, chúng thường được sử dụng trong các mạng neural độ rộng bit thấp và nhị phân [178, 267, 197].
+
+Các tối ưu hóa cụ thể cho mạng neural thường được tích hợp vào phần cứng ASIC tùy chỉnh. Bảng tra cứu có thể được sử dụng để tăng tốc các hàm kích hoạt lượng giác [46] hoặc trực tiếp tạo kết quả cho phép toán số học độ rộng bit thấp [65], các tích số một phần có thể được lưu trữ trong các thanh ghi đặc biệt và tái sử dụng [38], và thứ tự truy cập bộ nhớ với phần cứng địa chỉ chuyên biệt có thể giảm số chu kỳ để tính toán đầu ra mạng neural [126]. Bộ tăng tốc phần cứng không phải là trọng tâm chính của bài báo này. Tuy nhiên, chúng tôi ghi nhận các triển khai phần cứng kết hợp các kỹ thuật tăng tốc cụ thể. Thông tin nền bổ sung về xử lý hiệu quả và triển khai phần cứng của DNN có thể tìm thấy trong [225].
+
+Chúng tôi tóm tắt những đóng góp chính như sau:
+• Chúng tôi cung cấp một đánh giá về hai kỹ thuật nén mạng: cắt tỉa và lượng tử hóa. Chúng tôi thảo luận các phương pháp nén, công thức toán học, và so sánh các phương pháp nén Tiên tiến nhất (SOTA) hiện tại.
+• Chúng tôi phân loại các kỹ thuật cắt tỉa thành các phương pháp tĩnh và động, tùy thuộc vào việc chúng được thực hiện ngoại tuyến hay tại thời gian chạy, tương ứng.
+• Chúng tôi phân tích và so sánh định lượng các kỹ thuật và framework lượng tử hóa.
+• Chúng tôi cung cấp hướng dẫn thực tế về lượng tử hóa và cắt tỉa.
+
+Bài báo này tập trung chủ yếu vào tối ưu hóa mạng cho mạng neural tích chập. Nó được tổ chức như sau: Trong Phần 2, chúng tôi giới thiệu về mạng neural và cụ thể là mạng neural tích chập. Chúng tôi cũng mô tả một số tối ưu hóa mạng của các phép tích chập. Trong Phần 3, chúng tôi mô tả cả kỹ thuật cắt tỉa tĩnh và động. Trong Phần 4, chúng tôi thảo luận lượng tử hóa và tác động của nó đến độ chính xác. Chúng tôi cũng so sánh các thư viện và framework lượng tử hóa. Sau đó chúng tôi trình bày kết quả độ chính xác đã được lượng tử hóa cho một số mạng phổ biến. Chúng tôi trình bày kết luận và cung cấp hướng dẫn về việc sử dụng ứng dụng phù hợp trong Phần 5. Cuối cùng, chúng tôi trình bày nhận xét kết luận trong Phần 7.
+
+--- TRANG 2 ---
+
+2. Mạng Neural Tích chập
+
+Mạng neural tích chập là một lớp của DNN feed-forward sử dụng các phép toán tích chập để trích xuất đặc trưng từ nguồn dữ liệu. CNN đã được ứng dụng thành công nhất cho các nhiệm vụ liên quan đến thị giác tuy nhiên chúng cũng tìm thấy ứng dụng trong xử lý ngôn ngữ tự nhiên [95], nhận dạng giọng nói [2], hệ thống đề xuất [214], phát hiện mã độc [223], và dự đoán chuỗi thời gian cảm biến công nghiệp [261]. Để cung cấp hiểu biết tốt hơn về các kỹ thuật tối ưu hóa, trong phần này, chúng tôi giới thiệu hai giai đoạn triển khai CNN - huấn luyện và suy luận, thảo luận các loại phép toán tích chập, mô tả Batch Normalization (BN) như một kỹ thuật tăng tốc cho huấn luyện, mô tả pooling như một kỹ thuật giảm độ phức tạp, và mô tả sự tăng trưởng theo cấp số nhân trong các tham số được triển khai trong các cấu trúc mạng hiện đại.
+
+2.1. Định nghĩa
+
+Phần này tóm tắt các thuật ngữ và định nghĩa được sử dụng để mô tả mạng neural cũng như các từ viết tắt được thu thập trong Bảng 1.
+
+• Hệ số - Một hằng số mà một thuật ngữ đại số được nhân với. Thông thường, một hệ số được nhân với dữ liệu trong một bộ lọc CNN.
+
+• Tham số - Tất cả các yếu tố của một tầng, bao gồm hệ số và bias.
+
+• Siêu tham số - Một tham số được định nghĩa trước trước khi huấn luyện mạng, hoặc tinh chỉnh (huấn luyện lại).
+
+• Activation (A ∈ ℝ^(h×w×c)) - Đầu ra được kích hoạt (ví dụ: ReLU, Leaky, Tanh, v.v.) của một tầng trong kiến trúc mạng đa tầng, thường theo chiều cao h, rộng w, và kênh c. Ma trận h×w đôi khi được gọi là bản đồ kích hoạt. Chúng tôi cũng ký hiệu activation là đầu ra (O) khi hàm kích hoạt không quan trọng.
+
+• Đặc trưng (F ∈ ℝ^(h×w×c)) - Dữ liệu đầu vào của một tầng, để phân biệt với đầu ra A. Thông thường đặc trưng cho tầng hiện tại là activation của tầng trước đó.
+
+• Kernel (k ∈ ℝ^(k1×k2)) - Hệ số tích chập cho một kênh, không bao gồm bias. Thông thường chúng có dạng vuông (ví dụ: k1 = k2) và có kích thước 1, 3, 7.
+
+• Bộ lọc (w ∈ ℝ^(k1×k2×c×n)) - Bao gồm tất cả các kernel tương ứng với c kênh của đặc trưng đầu vào. Số lượng bộ lọc, n, tạo ra các kênh đầu ra khác nhau.
+
+• Trọng số - Hai cách sử dụng phổ biến: 1) hệ số kernel khi mô tả một phần của mạng, và 2) tất cả các tham số đã huấn luyện trong một mô hình mạng neural khi thảo luận về toàn bộ mạng.
+
+2.2. Huấn luyện và Suy luận
+
+CNN được triển khai như một quá trình hai bước: 1) huấn luyện và 2) suy luận. Huấn luyện được thực hiện trước với kết quả là một giá trị số liên tục (hồi quy) hoặc một nhãn lớp rời rạc (phân loại). Huấn luyện phân loại bao gồm việc áp dụng một tập dữ liệu được chú thích cho trước làm đầu vào cho CNN, truyền nó qua mạng, và so sánh đầu ra phân loại với nhãn ground-truth. Các trọng số mạng sau đó được cập nhật thường sử dụng chiến lược lan truyền ngược như Stochastic Gradient Descent (SGD) để giảm lỗi phân loại. Điều này thực hiện một tìm kiếm cho các giá trị trọng số tốt nhất. Lan truyền ngược được thực hiện lặp đi lặp lại cho đến khi đạt được một lỗi tối thiểu có thể chấp nhận hoặc không có sự giảm thêm nào trong lỗi được đạt được. Lan truyền ngược tốn nhiều tính toán và thường được thực hiện trong các trung tâm dữ liệu tận dụng GPU chuyên dụng hoặc các bộ tăng tốc huấn luyện chuyên biệt như TPU.
+
+Tinh chỉnh được định nghĩa là huấn luyện lại một mô hình đã được huấn luyện trước đó. Việc khôi phục độ chính xác của một mô hình đã được lượng tử hóa hoặc cắt tỉa với tinh chỉnh dễ dàng hơn so với huấn luyện từ đầu.
+
+Suy luận phân loại CNN lấy một mô hình phân loại đã được huấn luyện trước đó và dự đoán lớp từ dữ liệu đầu vào không có trong tập dữ liệu huấn luyện. Suy luận không tốn nhiều tính toán như huấn luyện và có thể được thực thi trên các thiết bị edge, di động và nhúng. Kích thước của mạng suy luận thực thi trên thiết bị di động có thể bị hạn chế do ràng buộc về bộ nhớ, băng thông hoặc xử lý [79]. Cắt tỉa được thảo luận trong Phần 3 và lượng tử hóa được thảo luận trong Phần 4 là hai kỹ thuật có thể giảm nhẹ những ràng buộc này.
+
+Trong bài báo này, chúng tôi tập trung vào tăng tốc suy luận phân loại CNN. Chúng tôi so sánh các kỹ thuật sử dụng các benchmark tiêu chuẩn như ImageNet [122], CIFAR [132], và MNIST [139]. Các kỹ thuật nén là tổng quát và việc lựa chọn miền ứng dụng không hạn chế việc sử dụng trong phát hiện đối tượng, xử lý ngôn ngữ tự nhiên, v.v.
+
+2.3. Phép toán Tích chập
+
+Đầu của Hình 2 cho thấy một hình ảnh 3 kênh (ví dụ: RGB) làm đầu vào cho một tầng tích chập. Vì hình ảnh đầu vào có 3 kênh, kernel tích chập cũng phải có 3 kênh. Trong hình này, bốn bộ lọc tích chập 2×2×3 được hiển thị, mỗi bộ bao gồm ba kernel 2×2. Dữ liệu được nhận từ tất cả 3 kênh đồng thời. 12 giá trị hình ảnh được nhân với trọng số kernel tạo ra một đầu ra duy nhất. Kernel được di chuyển qua hình ảnh 3 kênh chia sẻ 12 trọng số.
+
+Nếu hình ảnh đầu vào là 12×12×3 thì đầu ra kết quả sẽ là 11×11×1 (sử dụng stride bằng 1 và không có padding). Các bộ lọc hoạt động bằng cách trích xuất nhiều bitmap nhỏ hơn được gọi là feature map. Nếu muốn thêm bộ lọc để học các đặc trưng khác nhau, chúng có thể được thêm dễ dàng. Trong trường hợp này, 4 bộ lọc được hiển thị tạo ra 4 feature map.
+
+Phép toán tích chập tiêu chuẩn có thể được tính toán song song bằng thư viện GEneral Matrix Multiply (GEMM) [60]. Hình 3 cho thấy một phương pháp cột song song. Các tensor 3D đầu tiên được làm phẳng thành ma trận 2D. Các ma trận kết quả được nhân với kernel tích chập mà lấy mỗi neuron đầu vào (đặc trưng), nhân nó, và tạo ra các neuron đầu ra (activation) cho tầng tiếp theo [138].
+
+Phương trình 1 cho thấy biểu diễn toán học theo tầng của tầng tích chập trong đó W biểu diễn trọng số (bộ lọc) của tensor với m kênh đầu vào và n kênh đầu ra, b biểu diễn vector bias, và F^l biểu diễn tensor đặc trưng đầu vào (thường từ activation của tầng trước A^(l-1)). A^l là đầu ra tích chập đã được kích hoạt. Mục tiêu của nén là giảm kích thước của W và F (hoặc A) mà không ảnh hưởng đến độ chính xác.
+
+F^(l+1)_n = A^l_n = activate(∑^M_(m=1) W^l_(mn) * F^l_m + b^l_n) (1)
+
+--- TRANG 3 ---
+
+[Bảng 1: Từ viết tắt và Viết tắt]
+
+Từ viết tắt | Giải thích
+2D | Hai Chiều
+3D | Ba Chiều  
+FP16 | Điểm Nổi 16-Bit
+FP32 | Điểm Nổi 32-Bit
+INT16 | Số nguyên 16-Bit
+INT8 | Số nguyên 8-Bit
+IR | Biểu diễn Trung gian
+OFA | Một-Cho-Tất cả
+RGB | Đỏ, Xanh lá, và Xanh dương
+SOTA | Tiên tiến nhất
+AI | Trí tuệ Nhân tạo
+BN | Batch Normalization
+CBN | Conditional Batch Normalization
+CNN | Mạng Neural Tích chập
+DNN | Mạng Neural Sâu
+EBP | Expectation Back Propagation
+FCL | Tầng Hoàn toàn Kết nối
+FCN | Mạng Hoàn toàn Kết nối
+FLOP | Phép toán Điểm Nổi
+GAP | Global Average Pooling
+GEMM | General Matrix Multiply
+GFLOP | Giga Phép toán Điểm Nổi
+ILSVRC | Imagenet Large Visual Recognition Challenge
+Im2col | Image To Column
+KD | Chưng cất Kiến thức
+LRN | Local Response Normalization
+LSTM | Long Short Term Memory
+MAC | Multiply Accumulate
+NAS | Tìm kiếm Kiến trúc Mạng
+NN | Mạng Neural
+PTQ | Post Training Quantization
+QAT | Quantization Aware Training
+ReLU | Rectiﬁed Linear Unit
+RL | Reinforcement Learning
+RNN | Recurrent Neural Network
+SGD | Stochastic Gradient Descent
+STE | Straight-Through Estimator
+ASIC | Application Speciﬁc Integrated Circuit
+AVX-512 | Advance Vector Extension 512
+CPU | Central Processing Unit
+CU | Computing Unit
+FPGA | Field Programmable Gate Array
+GPU | Graphic Processing Unit
+HSA | Heterogeneous System Architecture
+ISA | Instruction Set Architectures
+PE | Processing Element
+SIMD | Single Instruction Multiple Data
+SoC | System on Chip
+DPP | Determinantal Point Process
+FFT | Fast Fourier Transfer
+FMA | Fused Multiply-Add
+KL-divergence | Kullback-Leibler Divergence
+LASSO | Least Absolute Shrinkage And Selection Operator
+MDP | Markov Decision Process
+OLS | Ordinary Least Squares
+
+Hình 4 cho thấy một FCL - còn được gọi là tầng dày đặc hoặc kết nối dày đặc. Mỗi neuron được kết nối với mỗi neuron khác trong cấu hình crossbar yêu cầu nhiều trọng số. Ví dụ, nếu kênh đầu vào và đầu ra lần lượt là 1024 và 1000, số lượng tham số trong bộ lọc sẽ là một triệu bởi 1024 × 1000. Khi kích thước hình ảnh tăng hoặc số lượng đặc trưng tăng, số lượng trọng số tăng nhanh.
+
+2.4. Cấu trúc Hiệu quả
+
+Phần dưới của Hình 2 cho thấy tích chập tách được triển khai trong MobileNet [105]. Tích chập tách kết hợp một tích chập theo chiều sâu theo sau bởi một tích chập điểm. Tích chập theo chiều sâu nhóm đặc trưng đầu vào theo kênh, và xử lý mỗi kênh như một tensor đầu vào đơn tạo ra activation với cùng số lượng kênh. Tích chập điểm là một tích chập tiêu chuẩn với kernel 1×1. Nó trích xuất thông tin lẫn nhau qua các kênh với overhead tính toán tối thiểu. Đối với hình ảnh 12×12×3 đã thảo luận trước đó, một tích chập tiêu chuẩn cần 2×2×3×4 phép nhân để tạo ra đầu ra 1×1. Tích chập tách chỉ cần 2×2×3 cho tích chập theo chiều sâu và 1×1×3×4 cho tích chập điểm. Điều này giảm tính toán một nửa từ 48 xuống 24. Số lượng trọng số cũng giảm từ 48 xuống 24.
+
+Trường nhận thức là kích thước của feature map được sử dụng trong một kernel tích chập. Để trích xuất dữ liệu với trường nhận thức lớn hơn và độ chính xác cao, các tầng nối tiếp nên được áp dụng như ở đầu Hình 5. Tuy nhiên, số lượng tính toán có thể được giảm bằng cách mở rộng chiều rộng mạng với bốn loại bộ lọc như được hiển thị trong Hình 5. Kết quả nối hoạt động tốt hơn một tầng tích chập với cùng khối lượng công việc tính toán [226].
+
+Một khối kiến trúc mạng residual [98] là một tầng feed forward với một mạch ngắn giữa các tầng như được hiển thị ở giữa Hình 6. Mạch ngắn giữ thông tin từ khối trước để tăng độ chính xác và tránh vanishing gradient trong quá trình huấn luyện. Mạng residual giúp mạng sâu phát triển về chiều sâu bằng cách truyền thông tin trực tiếp giữa các tầng sâu hơn và nông hơn.
+
+Phần dưới của Hình 6 cho thấy khối tích chập kết nối dày đặc từ DenseNet [109], khối này mở rộng cả chiều sâu mạng và trường nhận thức bằng cách chuyển đặc trưng của các tầng trước đó đến tất cả các tầng sau trong một khối dày đặc sử dụng nối. ResNet chuyển đầu ra từ một tầng trước đó duy nhất. DenseNet xây dựng kết nối qua các tầng để tận dụng đầy đủ các đặc trưng trước đó. Điều này cung cấp hiệu quả trọng số.
+
+2.5. Batch Normalization
+
+BN được giới thiệu năm 2015 để tăng tốc giai đoạn huấn luyện và cải thiện hiệu suất mạng neural [119]. Hầu hết các mạng neural SOTA áp dụng BN sau một tầng tích chập. BN giải quyết internal covariate shift (một sự thay đổi của phân phối activation mạng gây ra bởi các sửa đổi tham số trong quá trình huấn luyện) bằng cách chuẩn hóa đầu vào tầng. Điều này đã được chứng minh giảm thời gian huấn luyện lên đến 1/4. Santurkar [210] lập luận rằng hiệu quả của BN là từ khả năng làm mượt giá trị trong quá trình tối ưu hóa.
+
+y = (x - μ)/√(σ² + ε) * γ + β (2)
+
+Phương trình 2 đưa ra công thức tính toán BN suy luận, trong đó x và y là đặc trưng đầu vào và đầu ra của BN, γ và β là các tham số đã học, μ và σ² là giá trị trung bình và độ lệch chuẩn được tính từ tập huấn luyện, và ε là giá trị nhỏ bổ sung (ví dụ: 1e-6) để ngăn mẫu số bằng 0. Các biến của Phương trình 2 được xác định trong lượt huấn luyện và tích hợp vào trọng số đã huấn luyện. Nếu các đặc trưng trong một kênh chia sẻ cùng tham số, nó trở thành một phép biến đổi tuyến tính trên mỗi kênh đầu ra. Tham số BN theo kênh có khả năng giúp cắt tỉa theo kênh. BN cũng có thể nâng cao hiệu suất của kỹ thuật lượng tử hóa dựa trên cluster bằng cách giảm phụ thuộc tham số [48].
+
+Vì các tham số của phép toán BN không được sửa đổi trong giai đoạn suy luận, chúng có thể được kết hợp với trọng số và bias đã huấn luyện. Điều này được gọi là BN folding hoặc BN merging. Phương trình 3 cho thấy một ví dụ về BN folding. Trọng số mới W̃ và bias b̃ được tính bằng cách sử dụng trọng số đã huấn luyện W và tham số BN từ Phương trình 2. Vì trọng số mới được tính sau huấn luyện và trước suy luận, số lượng phép nhân được giảm và do đó BN folding giảm độ trễ suy luận và độ phức tạp tính toán.
+
+W̃ = W * γ/√(σ² + ε); b̃ = (b - μ) * γ/√(σ² + ε) + β (3)
+
+2.6. Pooling
+
+Pooling được xuất bản lần đầu vào những năm 1980 với neocognitron [71]. Kỹ thuật này lấy một nhóm giá trị và giảm chúng thành một giá trị duy nhất. Việc lựa chọn giá trị thay thế duy nhất có thể được tính như trung bình của các giá trị (average pooling) hoặc đơn giản chọn giá trị lớn nhất (max pooling).
+
+Pooling phá hủy thông tin không gian vì nó là một dạng down-sampling. Kích thước cửa sổ định nghĩa vùng giá trị được pooled. Đối với xử lý hình ảnh, nó thường là một cửa sổ vuông với kích thước điển hình là 2×2, 3×3 hoặc 4×4. Cửa sổ nhỏ cho phép đủ thông tin được truyền đến các tầng tiếp theo trong khi giảm tổng số lượng tính toán [224].
+
+Global pooling là một kỹ thuật mà thay vì giảm một vùng lân cận của các giá trị, toàn bộ feature map được giảm thành một giá trị duy nhất [154]. Global Average Pooling (GAP) trích xuất thông tin từ đặc trưng đa kênh và có thể được sử dụng với cắt tỉa động [153, 42].
+
+Cấu trúc capsule đã được đề xuất như một thay thế cho pooling. Mạng capsule thay thế neuron vô hướng bằng vector. Các vector biểu diễn một thực thể cụ thể với thông tin chi tiết hơn, như vị trí và kích thước của một đối tượng. Mạng capsule tránh mất thông tin không gian bằng cách nắm bắt nó trong biểu diễn vector. Thay vì giảm một vùng lân cận của các giá trị thành một giá trị duy nhất, mạng capsule thực hiện một thuật toán định tuyến động để loại bỏ kết nối [209].
+
+2.7. Tham số
+
+Hình 7 cho thấy phần trăm độ chính xác top-1 so với số lượng phép toán cần thiết cho một số mạng neural phổ biến [23]. Số lượng tham số trong mỗi mạng được biểu diễn bằng kích thước của vòng tròn. Một xu hướng (không được hiển thị trong hình) là sự tăng hàng năm về độ phức tạp tham số. Năm 2012, AlexNet [133] được xuất bản với 60 triệu tham số. Năm 2013, VGG [217] được giới thiệu với 133 triệu tham số và đạt được 71.1% độ chính xác top-1. Những điều này là một phần của thử thách nhận dạng thị giác quy mô lớn ImageNet (ILSVRC) [207]. Metric của cuộc thi là độ chính xác tuyệt đối top-1. Thời gian thực thi không phải là một yếu tố. Điều này khuyến khích thiết kế mạng neural với sự dư thừa đáng kể. Tính đến năm 2020, các mô hình với hơn 175 tỷ tham số đã được xuất bản [26].
+
+Các mạng thực thi trong trung tâm dữ liệu có thể chứa các mô hình với số lượng lớn tham số. Trong môi trường hạn chế tài nguyên như triển khai edge và di động, các mô hình tham số giảm đã được thiết kế. Ví dụ, GoogLeNet [226] đạt được độ chính xác top-1 tương tự 69.78% như VGG-16 nhưng chỉ với 7 triệu tham số. MobileNet [105] có độ chính xác top-1 70% chỉ với 4.2 triệu tham số và chỉ 1.14 Giga FLoating-point OPerations (GFLOP). So sánh mạng chi tiết hơn có thể tìm thấy trong [5].
+
+T Liang et al.: Preprint submitted to Elsevier Trang 2 trên 41
+
+--- TRANG 7 ---
+Khảo sát về cắt tỉa và lượng tử hóa
+
+3. Cắt tỉa (Pruning)
+
+Cắt tỉa mạng neural là một kỹ thuật quan trọng để giảm cả kích thước bộ nhớ và băng thông. Vào đầu những năm 1990, các kỹ thuật cắt tỉa được phát triển để giảm một mạng lớn đã huấn luyện thành một mạng nhỏ hơn mà không cần huấn luyện lại [201]. Điều này cho phép mạng neural được triển khai trong các môi trường hạn chế như hệ thống nhúng. Cắt tỉa loại bỏ các tham số hoặc neuron dư thừa không đóng góp đáng kể vào độ chính xác của kết quả. Điều kiện này có thể xảy ra khi các hệ số trọng số bằng không, gần bằng không, hoặc được nhân đôi. Do đó, cắt tỉa giảm độ phức tạp tính toán. Nếu mạng đã cắt tỉa được huấn luyện lại, nó cung cấp khả năng thoát khỏi local minima trước đó [43] và cải thiện độ chính xác hơn nữa.
+
+Nghiên cứu về cắt tỉa mạng có thể được phân loại thô thành các phương pháp tính toán độ nhạy và penalty-term [201]. Nghiên cứu gần đây quan tâm đáng kể đã tiếp tục cho thấy cải thiện cho cả hai loại cắt tỉa mạng hoặc kết hợp chúng.
+
+Gần đây, các kỹ thuật cắt tỉa mạng neural mới đã được tạo ra. Các kỹ thuật cắt tỉa hiện đại có thể được phân loại theo nhiều khía cạnh khác nhau bao gồm: 1) cắt tỉa có cấu trúc và không có cấu trúc tùy thuộc vào việc mạng đã cắt tỉa có đối xứng hay không, 2) cắt tỉa neuron và kết nối tùy thuộc vào loại phần tử được cắt tỉa, hoặc 3) cắt tỉa tĩnh và động. Hình 8 cho thấy sự khác biệt xử lý giữa cắt tỉa tĩnh và động. Cắt tỉa tĩnh có tất cả các bước cắt tỉa được thực hiện offline trước khi suy luận trong khi cắt tỉa động được thực hiện trong runtime. Mặc dù có sự chồng chéo giữa các loại, trong bài báo này chúng tôi sẽ sử dụng cắt tỉa tĩnh và cắt tỉa động để phân loại các kỹ thuật cắt tỉa mạng.
+
+Hình 9 cho thấy độ chi tiết của các cơ hội cắt tỉa. Bốn hình chữ nhật ở bên phải tương ứng với bốn bộ lọc màu nâu ở đầu Hình 2. Cắt tỉa có thể xảy ra trên cơ sở từng phần tử, từng hàng, từng cột, từng bộ lọc, hoặc từng tầng. Thông thường cắt tỉa từng phần tử có tác động sparsity nhỏ nhất và dẫn đến một mô hình không có cấu trúc. Sparsity giảm từ trái sang phải trong Hình 9.
+
+arg min p L(N(x;W), Np(x;Wp))
+trong đó Np(x;Wp) = P(N(x;W))                                                     (4)
+
+Độc lập với phân loại, cắt tỉa có thể được mô tả toán học như Phương trình 4. N đại diện cho toàn bộ mạng neural chứa một chuỗi các tầng (ví dụ: tầng tích chập, tầng pooling, v.v.) với x là đầu vào. L đại diện cho mạng đã cắt tỉa với Np là mất mát hiệu suất so với mạng chưa cắt tỉa. Hiệu suất mạng thường được định nghĩa là độ chính xác trong phân loại. Hàm cắt tỉa P(·) dẫn đến cấu hình mạng khác Np cùng với trọng số đã cắt tỉa Wp. Các phần tiếp theo chủ yếu quan tâm đến ảnh hưởng của P(·) lên Np. Chúng tôi cũng xem xét cách thu được Wp.
+
+3.1. Cắt tỉa Tĩnh
+
+Cắt tỉa tĩnh là một kỹ thuật tối ưu hóa mạng loại bỏ các neuron offline khỏi mạng sau khi huấn luyện và trước khi suy luận. Trong quá trình suy luận, không có cắt tỉa bổ sung nào của mạng được thực hiện. Cắt tỉa tĩnh thường có ba phần: 1) lựa chọn tham số để cắt tỉa, 2) phương pháp cắt tỉa các neuron, và 3) tùy chọn fine-tuning hoặc huấn luyện lại [92]. Huấn luyện lại có thể cải thiện hiệu suất của mạng đã cắt tỉa để đạt được độ chính xác tương đương với mạng chưa cắt tỉa nhưng có thể yêu cầu thời gian tính toán và năng lượng offline đáng kể.
+
+3.1.1. Tiêu chí Cắt tỉa
+
+Do sự dư thừa của mạng, các neuron hoặc kết nối thường có thể được loại bỏ mà không mất đáng kể độ chính xác. Như được hiển thị trong Phương trình 1, hoạt động cốt lõi của mạng là một phép tích chập. Nó bao gồm ba phần: 1) đặc trưng đầu vào được tạo bởi tầng trước, 2) trọng số được tạo từ giai đoạn huấn luyện, và 3) giá trị bias được tạo từ giai đoạn huấn luyện. Đầu ra của phép tích chập có thể dẫn đến trọng số có giá trị không hoặc đặc trưng dẫn đến đầu ra bằng không. Một khả năng khác là các trọng số hoặc đặc trưng tương tự có thể được tạo ra. Chúng có thể được hợp nhất cho các tích chập phân phối.
+
+Một phương pháp sớm để cắt tỉa mạng là cắt tỉa brute-force. Trong phương pháp này, toàn bộ mạng được duyệt theo từng phần tử và các trọng số không ảnh hưởng đến độ chính xác sẽ được loại bỏ. Một nhược điểm của cách tiếp cận này là không gian giải pháp lớn cần duyệt qua.
+
+Một metric điển hình để xác định giá trị nào cần cắt tỉa được đưa ra bởi lp-norm, s.t. p ∈ {N, ∞}, trong đó N là số tự nhiên. lp-norm của một vector x bao gồm n phần tử được mô tả toán học bởi Phương trình 5.
+
+||x||p = (Σⁿᵢ₌₁ |xᵢ|ᵖ)^(1/p)                                                    (5)
+
+Trong số các phép đo được áp dụng rộng rãi, l1-norm còn được gọi là Manhattan norm và l2-norm còn được gọi là Euclidean norm. Các l1 và l2 regularization tương ứng có tên là LASSO (least absolute shrinkage and selection operator) và Ridge, tương ứng [230]. Sự khác biệt giữa tensor đã cắt tỉa l2-norm và tensor chưa cắt tỉa được gọi là l2-distance. Đôi khi các nhà nghiên cứu cũng sử dụng thuật ngữ l0-norm được định nghĩa là tổng số phần tử khác không trong một vector.
+
+arg min Σᴺᵢ₌₁ ||xᵢ||₂²
+subject to ||β||₁ ≤ t                                                           (6)
+
+Phương trình 6 mô tả toán học l2-LASSO regularization. Xem xét một mẫu bao gồm N trường hợp, mỗi trường hợp bao gồm p covariates và một kết quả duy nhất yᵢ. Cho xᵢ = (xᵢ₁, ..., xᵢₚ)ᵀ là vector covariate chuẩn hóa cho trường hợp thứ i (đặc trưng đầu vào trong DNN), vì vậy chúng ta có Σᵢ xᵢⱼ/N = 0, Σᵢ x²ᵢⱼ/N = 1. β đại diện cho các hệ số.
+
+3.1.2. Cắt tỉa kết hợp với Tuning hoặc Huấn luyện lại
+
+Cắt tỉa loại bỏ sự dư thừa mạng và có lợi ích giảm số lượng tính toán mà không ảnh hưởng đáng kể đến độ chính xác đối với một số kiến trúc mạng. Tuy nhiên, vì tiêu chí ước lượng không phải lúc nào cũng chính xác, một số phần tử quan trọng có thể bị loại bỏ dẫn đến giảm độ chính xác. Do mất mát độ chính xác, fine-tuning hoặc huấn luyện lại tốn thời gian có thể được sử dụng để tăng độ chính xác [258].
+
+Deep compression [92], ví dụ, mô tả một phương pháp tĩnh để cắt tỉa các kết nối không đóng góp vào độ chính xác phân loại. Ngoài cắt tỉa feature map, họ cũng loại bỏ các trọng số có giá trị nhỏ. Sau khi cắt tỉa, họ huấn luyện lại mạng để cải thiện độ chính xác. Quá trình này được thực hiện lặp lại ba lần dẫn đến giảm 9× đến 13× tổng số tham số mà không mất độ chính xác. Hầu hết các tham số bị loại bỏ đến từ FCL.
+
+Cắt tỉa Khôi phục: Các phần tử đã cắt tỉa thường không thể được khôi phục. Điều này có thể dẫn đến giảm khả năng mạng. Khôi phục khả năng mạng đã mất yêu cầu huấn luyện lại đáng kể. Deep compression yêu cầu hàng triệu vòng lặp để huấn luyện lại mạng [92]. Để tránh thiếu sót này, nhiều cách tiếp cận áp dụng thuật toán cắt tỉa khôi phục. Các phần tử đã cắt tỉa cũng có thể tham gia vào quá trình huấn luyện tiếp theo và điều chỉnh bản thân để phù hợp với mạng đã cắt tỉa.
+
+Guo [88] mô tả một phương pháp cắt tỉa khôi phục sử dụng ma trận mặt nạ nhị phân để chỉ ra liệu một giá trị trọng số đơn có bị cắt tỉa hay không. Các trọng số đã cắt tỉa l1-norm có thể được ghép ngẫu nhiên trở lại mạng. Sử dụng cách tiếp cận này, AlexNet có thể được giảm một yếu tố 17.7× mà không mất độ chính xác. Các vòng lặp huấn luyện lại được giảm đáng kể xuống 14.58% của Deep compression [92]. Tuy nhiên, loại cắt tỉa này vẫn dẫn đến một mạng bất đối xứng làm phức tạp việc thực hiện phần cứng.
+
+Soft Filter Pruning (SFP) [99] mở rộng thêm cắt tỉa khôi phục sử dụng một chiều của bộ lọc. SFP thu được kết quả nén có cấu trúc với lợi ích bổ sung là giảm thời gian suy luận. Hơn nữa, SFP có thể được sử dụng trên các mạng khó nén đạt được tăng tốc 29.8% trên ResNet-50 với mất mát độ chính xác top-1 ILSVRC-2012 là 1.54%. So với kỹ thuật trọng số khôi phục của Guo [88], SFP đạt được tăng tốc suy luận gần hơn với kết quả lý thuyết trên phần cứng mục đích chung bằng cách tận dụng cấu trúc của bộ lọc.
+
+Tăng Sparsity: Một động lực khác để áp dụng fine-tuning là tăng sparsity mạng. Sparse constraints [270] áp dụng low rank tensor constraints [157] và group sparsity [57] đạt được giảm 70% neuron với giảm 0.57% độ chính xác top-1 ILSVRC-2012 của AlexNet.
+
+Sparsity Thích ứng: Bất kể loại tiêu chí cắt tỉa nào được áp dụng, tỷ lệ cắt tỉa theo tầng thường yêu cầu quyết định của con người. Tỷ lệ quá cao dẫn đến sparsity rất cao có thể khiến mạng phân kỳ yêu cầu re-tuning nặng. Network slimming [158], đã thảo luận trước đó, giải quyết vấn đề này bằng cách tự động tính toán sparsity theo tầng. Điều này đạt được nén kích thước mô hình 20×, giảm tính toán 5×, và mất độ chính xác dưới 0.1% trên mạng VGG.
+
+Cắt tỉa cũng có thể được thực hiện bằng module tối ưu hóa min-max [218] duy trì độ chính xác mạng trong quá trình tuning bằng cách giữ tỷ lệ cắt tỉa. Kỹ thuật này nén mạng VGG với hệ số 17.5× và dẫn đến thời gian thực thi lý thuyết (FLOP) là 15.56× của mạng chưa cắt tỉa. Một cách tiếp cận tương tự được đề xuất với ước lượng của tập trọng số [33]. Bằng cách tránh sử dụng tìm kiếm tham lam để giữ tỷ lệ cắt tỉa tốt nhất, họ đạt được độ chính xác phân loại ResNet tương tự chỉ với 5% đến 10% kích thước trọng số gốc.
+
+AutoPruner [163] tích hợp cắt tỉa và fine-tuning của pipeline ba giai đoạn như một tầng training-friendly độc lập. Tầng này giúp cắt tỉa dần dần trong quá trình huấn luyện cuối cùng dẫn đến một mạng ít phức tạp hơn. AutoPruner cắt tỉa 73.59% phép toán trên VGG-16 với mất mát top-1 ILSVRC-2012 là 2.39%. ResNet-50 dẫn đến 65.80% phép toán với mất mát độ chính xác 3.10%.
+
+Huấn luyện từ Đầu: Quan sát cho thấy hiệu quả huấn luyện mạng và độ chính xác tỷ lệ nghịch với sparsity cấu trúc. Mạng càng dày đặc, thời gian huấn luyện càng ít [94, 147, 70]. Đây là một lý do tại sao các kỹ thuật cắt tỉa hiện tại có xu hướng theo pipeline train-prune-tune thay vì huấn luyện cấu trúc đã cắt tỉa từ đầu.
+
+Tuy nhiên, giả thuyết lottery ticket [70] cho thấy rằng việc giữ nguyên trọng số gốc không quan trọng bằng việc khởi tạo. Thí nghiệm cho thấy các sub-network dày đặc, được khởi tạo ngẫu nhiên đã cắt tỉa có thể được huấn luyện hiệu quả và đạt độ chính xác tương đương với mạng gốc với cùng số vòng lặp huấn luyện. Hơn nữa, các kỹ thuật cắt tỉa tiêu chuẩn có thể khám phá các sub-network nói trên từ một mạng quá lớn - Winning Tickets. Trái ngược với các kỹ thuật cắt tỉa tĩnh hiện tại, giả thuyết lottery ticket sau một khoảng thời gian loại bỏ tất cả trọng số được huấn luyện tốt và đặt lại chúng về trạng thái ngẫu nhiên ban đầu. Kỹ thuật này phát hiện rằng ResNet-18 có thể duy trì hiệu suất tương đương với tỷ lệ cắt tỉa lên đến 88.2% trên tập dữ liệu CIFAR-10.
+
+Hướng tới Độ chính xác Tốt hơn: Bằng cách giảm số lượng tham số mạng, các kỹ thuật cắt tỉa cũng có thể giúp giảm overfitting. Huấn luyện Dense-Sparse-Dense (DSD) [93] giúp các mạng khác nhau cải thiện độ chính xác phân loại từ 1.1% đến 4.3%. DSD sử dụng pipeline ba giai đoạn: 1) huấn luyện dày đặc để xác định các kết nối quan trọng, 2) cắt tỉa trọng số không đáng kể và huấn luyện thưa với ràng buộc sparsity để giảm số lượng tham số, và 3) làm dày đặc lại cấu trúc để khôi phục cấu trúc đối xứng gốc, điều này cũng tăng khả năng mô hình. Cách tiếp cận DSD cũng cho thấy hiệu suất ấn tượng trên các loại mạng sâu khác như Recurrent Neural Networks (RNN) và Long Short Term Memory networks (LSTM).
+
+3.2. Cắt tỉa Động
+
+Ngoại trừ các kỹ thuật khôi phục, cắt tỉa tĩnh phá hủy vĩnh viễn cấu trúc mạng gốc có thể dẫn đến giảm khả năng mô hình. Các kỹ thuật đã được nghiên cứu để khôi phục khả năng mạng đã mất nhưng một khi đã cắt tỉa và huấn luyện lại, cách tiếp cận cắt tỉa tĩnh không thể khôi phục thông tin đã bị phá hủy. Thêm vào đó, quan sát cho thấy tầm quan trọng của neuron binding là input-independent [73].
+
+Cắt tỉa động xác định tại runtime các tầng, kênh, hoặc neuron nào sẽ không tham gia vào hoạt động tiếp theo. Cắt tỉa động có thể vượt qua các hạn chế của cắt tỉa tĩnh bằng cách tận dụng dữ liệu đầu vào thay đổi có khả năng giảm tính toán, băng thông và tiêu thụ năng lượng. Cắt tỉa động thường không thực hiện fine-tuning hoặc huấn luyện lại runtime.
+
+Trong Hình 11, chúng tôi cho thấy tổng quan về hệ thống cắt tỉa động. Xem xét quan trọng nhất là hệ thống quyết định quyết định cắt tỉa gì. Các vấn đề liên quan là:
+
+1. Loại của các thành phần quyết định: a) các kết nối bổ sung gắn vào mạng gốc được sử dụng trong giai đoạn suy luận và/hoặc giai đoạn huấn luyện, b) đặc điểm của các kết nối có thể được học bởi thuật toán backpropagation tiêu chuẩn [73], và c) một mạng quyết định bên cạnh có xu hướng hoạt động tốt nhưng thường khó huấn luyện [153].
+
+2. Mức cắt tỉa (hình dạng): a) theo kênh [153, 73, 42], b) theo tầng [145], c) theo khối [246], hoặc d) theo mạng [25]. Mức cắt tỉa được chọn ảnh hưởng đến thiết kế phần cứng.
+
+3. Dữ liệu đầu vào: a) feeding thông tin one-shot [246] đưa toàn bộ đầu vào vào hệ thống quyết định, và b) feeding thông tin theo tầng [25, 68] trong đó một cửa sổ dữ liệu được đưa vào hệ thống quyết định lặp đi lặp lại cùng với forwarding.
+
+4. Tính toán điểm quyết định: lp-norm [73], hoặc b) các cách tiếp cận khác [108].
+
+5. So sánh điểm: a) kinh nghiệm con người/kết quả thí nghiệm [145] hoặc b) ngưỡng tự động hoặc cơ chế động [108].
+
+6. Tiêu chí dừng: a) trong trường hợp cắt tỉa theo tầng và theo mạng, một số thuật toán cắt tỉa bỏ qua tầng/mạng đã cắt tỉa [19, 246], b) một số thuật toán tiếp tục tính toán và thực hiện early exit [146], và c) một số thuật toán thực hiện cả hai tùy thuộc vào điều kiện input-dependent [108].
+
+7. Huấn luyện các thành phần quyết định: a) huấn luyện cùng với mạng chính [73], b) huấn luyện trước các thành phần quyết định [153], hoặc c) các phương pháp khác [108].
+
+T Liang et al.: Preprint submitted to Elsevier Trang 7 trên 41
+
+--- TRANG 14 ---
+
+4. LƯỢNG TỬ HÓA (QUANTIZATION)
+
+Lượng tử hóa được biết đến như quá trình xấp xỉ một tín hiệu liên tục bằng một tập hợp các ký hiệu rời rạc hoặc giá trị số nguyên. Clustering và chia sẻ tham số cũng nằm trong định nghĩa này [92]. Lượng tử hóa một phần sử dụng các thuật toán clustering như k-means để lượng tử hóa các trạng thái trọng số và sau đó lưu trữ các tham số trong một tập tin nén. Các trọng số có thể được giải nén bằng cách sử dụng bảng tra cứu hoặc biến đổi tuyến tính. Điều này thường được thực hiện trong thời gian chạy suy luận. Sơ đồ này chỉ giảm chi phí lưu trữ của một mô hình. Điều này được thảo luận trong Phần 4.2.4. Trong phần này chúng tôi tập trung vào lượng tử hóa số bit thấp.
+
+Nén CNN bằng cách giảm độ chính xác giá trị đã được đề xuất trước đây. Việc chuyển đổi các tham số dấu phẩy động thành các kiểu dữ liệu độ chính xác số thấp để lượng tử hóa mạng neural đã được đề xuất từ những năm 1990 [67,14]. Sự quan tâm mới đối với lượng tử hóa bắt đầu vào những năm 2010 khi các giá trị trọng số 8-bit được chứng minh tăng tốc suy luận mà không có sự sụt giảm đáng kể về độ chính xác [233].
+
+Trong lịch sử, hầu hết các mạng được huấn luyện sử dụng số FP32 [225]. Đối với nhiều mạng, biểu diễn FP32 có độ chính xác lớn hơn mức cần thiết. Chuyển đổi các tham số FP32 sang các biểu diễn bit thấp hơn có thể giảm đáng kể băng thông, năng lượng và diện tích on-chip.
+
+Hình 12 cho thấy sự phát triển của các kỹ thuật lượng tử hóa. Ban đầu, chỉ có trọng số được lượng tử hóa. Bằng cách lượng tử hóa, clustering và chia sẻ, yêu cầu lưu trữ trọng số có thể được giảm gần 4 lần. Han [92] đã kết hợp những kỹ thuật này để giảm yêu cầu lưu trữ trọng số từ 27MB xuống 6.9MB. Lượng tử hóa sau huấn luyện bao gồm việc lấy một mô hình đã huấn luyện, lượng tử hóa các trọng số, và sau đó tối ưu hóa lại mô hình để tạo ra một mô hình lượng tử hóa với các thang đo [16]. Huấn luyện nhận thức lượng tử hóa bao gồm việc tinh chỉnh một mô hình độ chính xác đầy đủ ổn định hoặc huấn luyện lại mô hình lượng tử hóa. Trong quá trình này, các trọng số giá trị thực thường được thu nhỏ thành các giá trị số nguyên - thường là 8-bit [120]. Lượng tử hóa bão hòa có thể được sử dụng để tạo ra các thang đo đặc trưng sử dụng thuật toán hiệu chuẩn với một tập hiệu chuẩn. Các activation đã lượng tử hóa cho thấy phân phối tương tự với dữ liệu giá trị thực trước đó [173]. Lượng tử hóa hiệu chuẩn phân kỳ Kullback-Leibler (KL-divergence, còn được biết đến như entropy tương đối hoặc phân kỳ thông tin) thường được áp dụng và có thể tăng tốc mạng mà không mất độ chính xác cho nhiều mô hình nổi tiếng [173]. Tinh chỉnh cũng có thể được áp dụng với cách tiếp cận này.
+
+KL-divergence là một thước đo để hiển thị entropy tương đối của các phân phối xác suất giữa hai tập hợp. Phương trình 11 đưa ra phương trình cho KL-divergence. P và Q được định nghĩa là các phân phối xác suất rời rạc trên cùng một không gian xác suất. Cụ thể, P là phân phối dữ liệu gốc (dấu phẩy động) rơi vào một số bin. Q là histogram dữ liệu lượng tử hóa.
+
+DKL(P||Q) = Σᵢ₌₀ᴺ P(xᵢ) log(P(xᵢ)/Q(xᵢ))                                    (11)
+
+Tùy thuộc vào processor và môi trường thực thi, các tham số lượng tử hóa thường có thể tăng tốc suy luận mạng neural.
+
+Nghiên cứu lượng tử hóa có thể được phân loại thành hai lĩnh vực trọng tâm: 1) huấn luyện nhận thức lượng tử hóa (QAT) và 2) lượng tử hóa sau huấn luyện (PTQ). Sự khác biệt phụ thuộc vào việc tiến trình huấn luyện có được tính đến trong quá trình huấn luyện hay không. Ngoài ra, chúng ta cũng có thể phân loại lượng tử hóa theo nơi dữ liệu được nhóm để lượng tử hóa: 1) theo tầng và 2) theo kênh. Hơn nữa, khi đánh giá độ rộng tham số, chúng ta có thể phân loại thêm theo độ dài: lượng tử hóa N-bit.
+
+Các kỹ thuật độ chính xác giảm không phải lúc nào cũng đạt được tăng tốc như mong đợi. Ví dụ, suy luận INT8 không đạt được chính xác 4× tăng tốc so với dấu phẩy động 32-bit do các phép toán bổ sung của lượng tử hóa và khử lượng tử hóa. Chẳng hạn, TensorFlow-Lite [227] của Google và TensorRT [173] của nVidia có tăng tốc suy luận INT8 khoảng 2-3×. Kích thước batch là khả năng xử lý nhiều hơn một hình ảnh trong lượt forward. Sử dụng kích thước batch lớn hơn, TensorRT đạt được 3-4× tăng tốc với INT8 [173].
+
+Phần 8 tóm tắt các kỹ thuật lượng tử hóa hiện tại được sử dụng trên tập dữ liệu ILSVRC-2012 cùng với độ rộng bit của chúng cho trọng số và activation.
+
+4.1. Đại số Lượng tử hóa
+
+Xq = f(s·g(Xr) + z)                                                      (12)
+
+Có nhiều phương pháp để lượng tử hóa một mạng đã cho. Nói chung, chúng được công thức hóa như Phương trình 12 trong đó s là một scalar có thể được tính bằng nhiều phương pháp khác nhau. g(·) là hàm clamp được áp dụng cho các giá trị dấu phẩy động Xr thực hiện lượng tử hóa. z là điểm zero để điều chỉnh số không thực trong một số cách tiếp cận lượng tử hóa bất đối xứng. f(·) là hàm làm tròn. Phần này giới thiệu lượng tử hóa sử dụng framework toán học của Phương trình 12.
+
+clamp(x, α, β) = max(min(x, β), α)                                       (13)
+
+Phương trình 13 định nghĩa một hàm clamp. Phương pháp min-max được đưa ra bởi Phương trình 14 trong đó [m, M] là các ràng buộc cho giá trị tối thiểu và tối đa của các tham số, tương ứng. n là số lớn nhất có thể biểu diễn được từ độ rộng bit (ví dụ: 256 = 2⁸ trong trường hợp 8-bit), và z, s giống như trong Phương trình 12. z thường khác không trong phương pháp min-max [120].
+
+g(x) = clamp(x, m, M)
+s = (n-1)/(M-m), z = m(1-n)/(M-m)
+trong đó m = min{Xi}, M = max{Xi}                                        (14)
+
+Phương pháp max-abs sử dụng ràng buộc đối xứng được hiển thị trong Phương trình 15. Thang đo lượng tử hóa s được tính từ giá trị lớn nhất R trong số dữ liệu cần lượng tử hóa. Vì ràng buộc là đối xứng, điểm zero z sẽ bằng không. Trong tình huống như vậy, overhead của việc tính toán tích chập có liên quan đến offset sẽ được giảm nhưng dải động được giảm vì phạm vi hợp lệ hẹp hơn. Điều này đặc biệt đáng chú ý đối với dữ liệu được kích hoạt ReLU nơi tất cả các giá trị nằm trên trục dương.
+
+g(x) = clamp(x, -M, M)
+s = (n-1)/R, z = 0
+trong đó R = max{abs{Xi}}                                               (15)
+
+Lượng tử hóa có thể được áp dụng trên các đặc trưng đầu vào F, trọng số W và bias b. Lấy đặc trưng F và trọng số W làm ví dụ (bỏ qua bias) và sử dụng phương pháp min-max cho ta Phương trình 16. Các chỉ số dưới r và q biểu thị dữ liệu giá trị thực và dữ liệu lượng tử hóa, tương ứng. Hậu tố max là từ R trong Phương trình 15, trong khi sf = (n-1)/Fmax, sw = (n-1)/Wmax.
+
+Fq = ((n-1)/Fmax)Fr, Wq = ((n-1)/Wmax)Wr                               (16)
+
+Tích chập lượng tử hóa số nguyên được hiển thị trong Phương trình 17 và tuân theo cùng dạng như tích chập với giá trị thực. Trong Phương trình 17, * biểu thị phép toán tích chập, F là đặc trưng, W là trọng số, và Oq là kết quả tích chập lượng tử hóa. Nhiều thư viện bên thứ ba hỗ trợ loại tăng tốc tích chập lượng tử hóa số nguyên này. Chúng được thảo luận trong Phần 4.3.2.
+
+Oq = Fq * Wq với F, W ∈ Z                                              (17)
+
+Khử lượng tử hóa chuyển đổi giá trị lượng tử hóa Oq trở lại dấu phẩy động Or sử dụng thang đo đặc trưng sf và thang đo trọng số sw. Ví dụ đối xứng với z = 0 được hiển thị trong Phương trình 18. Điều này hữu ích cho các tầng xử lý tensor dấu phẩy động. Các thư viện lượng tử hóa được thảo luận trong Phần 4.3.2.
+
+Or = Oq/(sf·sw) = Oq·Fmax·Wmax/((n-1)²)                               (18)
+
+Trong hầu hết các trường hợp, các tầng liên tiếp có thể tính toán với các tham số lượng tử hóa. Điều này cho phép khử lượng tử hóa được hợp nhất trong một phép toán như trong Phương trình 19. F^(l+1)_q là đặc trưng lượng tử hóa cho tầng tiếp theo và s^(l+1)_f là thang đo đặc trưng cho tầng tiếp theo.
+
+F^(l+1)_q = Oq · s^(l+1)_f/(sf·sw)                                     (19)
+
+Hàm kích hoạt có thể được đặt theo sau đầu ra lượng tử hóa Oq, đầu ra khử lượng tử hóa Or, hoặc sau một đầu ra lượng tử hóa lại F^(l+1)_q. Các vị trí khác nhau có thể dẫn đến kết quả số học khác nhau vì chúng thường có độ chính xác khác nhau.
+
+Tương tự như các tầng tích chập, FCL cũng có thể được lượng tử hóa. Clustering K-means có thể được sử dụng để hỗ trợ nén trọng số. Năm 2014, Gong [76] đã sử dụng clustering k-means trên FCL và đạt được tỷ lệ nén hơn 20 với 1% mất độ chính xác top-5.
+
+Các hạng bias trong mạng neural giới thiệu các đoạn chắn trong phương trình tuyến tính. Chúng thường được coi là hằng số giúp mạng huấn luyện và phù hợp tốt nhất với dữ liệu đã cho. Lượng tử hóa bias không được đề cập rộng rãi trong tài liệu. [120] duy trì bias 32-bit trong khi lượng tử hóa trọng số thành 8-bit. Vì bias chiếm sử dụng bộ nhớ tối thiểu (ví dụ: 12 giá trị cho FCL 10-in/12-out so với 120 giá trị trọng số) nên được khuyến nghị để bias ở độ chính xác đầy đủ. Nếu lượng tử hóa bias được thực hiện, nó có thể là một phép nhân với cả thang đo đặc trưng và thang đo trọng số [120], như được hiển thị trong Phương trình 20. Tuy nhiên, trong một số trường hợp chúng có thể có thừa số thang đo riêng. Ví dụ, khi độ dài bit bị hạn chế ngắn hơn kết quả nhân.
+
+sb = sw·sf, bq = br·sb                                                  (20)
+
+4.2. Phương pháp học Lượng tử hóa
+
+Chúng tôi mô tả các cách tiếp cận lượng tử hóa PTQ và QAT dựa trên việc sử dụng lan truyền ngược. Chúng ta cũng có thể phân loại chúng dựa trên độ rộng bit. Trong các phần phụ sau, chúng tôi giới thiệu các phương pháp lượng tử hóa phổ biến. Trong Phần 4.2.1, lượng tử hóa độ rộng bit thấp được thảo luận. Trong Phần 4.2.2 và Phần 4.2.3, các trường hợp đặc biệt của lượng tử hóa độ rộng bit thấp được thảo luận. Trong Phần 4.2.5, các khó khăn với việc huấn luyện mạng lượng tử hóa được thảo luận. Cuối cùng, trong Phần 4.2.4, các cách tiếp cận thay thế cho lượng tử hóa được thảo luận.
+
+4.2.1. Độ Chính xác Số Thấp hơn
+
+Dấu phẩy động độ chính xác một nửa (16-bit dấu phẩy động, FP16) đã được sử dụng rộng rãi trong GPU nVidia và bộ tăng tốc ASIC với mất độ chính xác tối thiểu [54]. Huấn luyện độ chính xác hỗn hợp với trọng số, activation và gradient sử dụng FP16 trong khi lỗi tích lũy để cập nhật trọng số vẫn ở FP32 đã cho thấy hiệu suất SOTA - đôi khi thậm chí hiệu suất được cải thiện [172].
+
+Các nhà nghiên cứu [165,98,233] đã chỉ ra rằng các tham số FP32 được tạo ra trong quá trình huấn luyện có thể được giảm xuống số nguyên 8-bit để suy luận mà không mất đáng kể độ chính xác. Jacob [120] đã áp dụng số nguyên 8-bit cho cả huấn luyện và suy luận, với mất độ chính xác 1.5% trên ResNet-50. Xilinx [212] cho thấy rằng độ chính xác số 8-bit cũng có thể đạt được hiệu suất không mất mát chỉ với một batch suy luận để điều chỉnh các tham số lượng tử hóa và không cần huấn luyện lại.
+
+Lượng tử hóa có thể được coi là một tìm kiếm toàn diện tối ưu hóa thang đo được tìm thấy để giảm một hạng lỗi. Cho một mạng dấu phẩy động, bộ lượng tử hóa sẽ lấy một thang đo ban đầu, thường được tính bằng cách giảm thiểu lỗi l2, và sử dụng nó để lượng tử hóa trọng số tầng đầu tiên. Sau đó, bộ lượng tử hóa sẽ điều chỉnh thang đo để tìm lỗi đầu ra thấp nhất. Nó thực hiện phép toán này trên mọi tầng.
+
+Suy luận Chỉ Số học Số nguyên (IAI) [120] đề xuất một sơ đồ lượng tử hóa thực tế có thể được áp dụng bởi ngành công nghiệp sử dụng các kiểu dữ liệu chuẩn. IAI đánh đổi độ chính xác và độ trễ suy luận bằng cách nén các mạng compact thành số nguyên. Các kỹ thuật trước đó chỉ nén trọng số của các mạng dư thừa dẫn đến hiệu quả lưu trữ tốt hơn. IAI lượng tử hóa z≠0 trong Phương trình 12 yêu cầu xử lý điểm zero bổ sung nhưng dẫn đến hiệu quả cao hơn bằng cách sử dụng số nguyên 8-bit không dấu. Luồng dữ liệu được mô tả trong Hình 13. TensorFlow-Lite [120,131] triển khai IAI với mất độ chính xác 2.1% sử dụng ResNet-150 trên tập dữ liệu ImageNet. Điều này được mô tả chi tiết hơn trong Phần 4.3.2.
+
+Các kiểu dữ liệu khác ngoài INT8 đã được sử dụng để lượng tử hóa các tham số. Điểm cố định, nơi điểm cơ số không ở chữ số nhị phân bên phải nhất, là một định dạng đã được tìm thấy hữu ích. Nó cung cấp ít mất mát hoặc thậm chí độ chính xác cao hơn nhưng với ngân sách tính toán thấp hơn. Biểu diễn điểm cố định thang đo động [233] đạt được 4× tăng tốc trên CPU. Tuy nhiên, nó yêu cầu phần cứng chuyên biệt bao gồm điểm cố định 16-bit [89], điểm flex 16-bit [130], và các phép toán 12-bit sử dụng định dạng điểm cố định động (DFXP) [51]. Phần cứng chuyên biệt được đề cập trong Phần 4.3.3.
+
+--- TRANG 17 ---
+
+[Hình 13: Suy luận Chỉ Số học Số nguyên: Phép toán tích chập lấy trọng số và đầu vào uint8 không dấu, tích lũy chúng thành uint32 không dấu, và sau đó thực hiện phép cộng 32-bit với bias. Phép toán ReLU6 xuất ra số nguyên 8-bit. Được chấp nhận từ [120]]
+
+4.2.2. Lượng tử hóa Logarithmic
+
+Các phép toán bit-shift rẻ để triển khai trong phần cứng so với các phép toán nhân. Triển khai FPGA [6] đặc biệt có lợi bằng cách chuyển đổi phép nhân dấu phẩy động thành bit shift. Suy luận mạng có thể được tối ưu hóa thêm nếu trọng số cũng bị ràng buộc là lũy thừa của hai với mã hóa độ dài biến. Lượng tử hóa logarithmic tận dụng điều này bằng cách có thể biểu thị một dải động lớn hơn so với lượng tử hóa tuyến tính.
+
+Được truyền cảm hứng bởi mạng nhị phân [52], được giới thiệu trong Phần 4.2.3, Lin [156] buộc đầu ra neuron thành một giá trị lũy thừa của hai. Điều này chuyển đổi phép nhân thành các phép toán bit-shift bằng cách lượng tử hóa các biểu diễn ở mỗi tầng của mạng nhị phân. Cả thời gian huấn luyện và suy luận đều được giảm bằng cách loại bỏ phép nhân.
+
+Lượng tử hóa Mạng Gia tăng (INQ) [269] thay thế trọng số bằng các giá trị lũy thừa của hai. Điều này giảm thời gian tính toán bằng cách chuyển đổi phép nhân thành phép dịch chuyển. Lượng tử hóa trọng số INQ được thực hiện lặp đi lặp lại. Trong một vòng lặp, phân vùng trọng số lấy cảm hứng từ cắt tỉa được thực hiện sử dụng lượng tử hóa theo nhóm. Những trọng số này sau đó được tinh chỉnh bằng cách sử dụng đo lường giống như cắt tỉa [92,88]. Huấn luyện lại theo nhóm tinh chỉnh một tập con trọng số ở độ chính xác đầy đủ để bảo tồn độ chính xác ensemble. Các trọng số khác được chuyển đổi thành định dạng lũy thừa của hai. Sau nhiều vòng lặp, hầu hết các trọng số độ chính xác đầy đủ được chuyển đổi thành lũy thừa của hai. Các mạng cuối cùng có trọng số từ 2 (ternary) đến 5 bit với các giá trị gần zero được đặt thành zero. Kết quả của lượng tử hóa lặp theo nhóm cho thấy tỷ lệ lỗi thấp hơn chiến lược lũy thừa của hai ngẫu nhiên. Cụ thể, INQ đạt được 71× nén với mất độ chính xác top-1 0.52% trên ILSVRC-2012 với AlexNet.
+
+Mạng Neural Logarithmic (LogNN) [175] lượng tử hóa trọng số và đặc trưng thành biểu diễn dựa trên log. Lan truyền ngược logarithmic trong quá trình huấn luyện được thực hiện sử dụng các phép toán shift. Các cơ số khác ngoài log₂ có thể được sử dụng. Số học dựa trên log₂ được mô tả như một sự đánh đổi giữa dải động và độ chính xác biểu diễn. log₂ cho thấy 7× nén với mất độ chính xác top-5 6.2% trên AlexNet, trong khi log√2 cho thấy mất độ chính xác top-5 1.7%.
+
+Mạng neural tích chập shift (ShiftCNN) [84] cải thiện hiệu quả bằng cách lượng tử hóa và phân tách ma trận trọng số giá trị thực thành N×B phạm vi bit-shift, và mã hóa chúng với code-book C như được hiển thị trong Phương trình 21. idx_i(n) là chỉ số cho trọng số thứ i trong code-book thứ n. Mỗi trọng số được mã hóa w_i có thể được lập chỉ mục bởi biểu thức NB-bit.
+
+wi = Σⁿ₌₁ᴺ Cₙ[idxᵢ(n)]
+Cₙ = {0, ±2ⁿ⁺¹, ±2ⁿ, ±2ⁿ⁻¹, ..., ±2ⁿ⁻⌊M/2⌋+2}
+trong đó M = 2ᴮ - 1                                                     (21)
+
+Lưu ý rằng số lượng code-book Cₙ có thể lớn hơn một. Điều này có nghĩa là trọng số được mã hóa có thể là một tổ hợp của nhiều phép toán shift. Tính chất này cho phép ShiftCNN mở rộng đến lượng tử hóa quy mô tương đối lớn hoặc thu nhỏ thành trọng số nhị phân hoặc ternary. Chúng tôi thảo luận trọng số ternary trong Phần 4.2.3. ShiftCNN được triển khai trên nền tảng FPGA và đạt được độ chính xác tương đương trên tập dữ liệu ImageNet với 75% tiết kiệm năng lượng và tăng tốc lên đến 1090× chu kỳ đồng hồ. ShiftCNN đạt được kết quả ấn tượng này mà không yêu cầu huấn luyện lại. Với mã hóa N=2 và B=4, SqueezeNet [115] chỉ có mất độ chính xác top-1 1.01%. Mất mát cho GoogLeNet, ResNet-18 và ResNet-50 lần lượt là 0.39%, 0.54% và 0.67%, trong khi nén trọng số thành 7/32 kích thước gốc. Điều này ngụ ý rằng trọng số có sự dư thừa đáng kể.
+
+Dựa trên LogNN, Cai [30] đề xuất cải tiến bằng cách vô hiệu hóa lượng tử hóa activation để giảm overhead trong quá trình suy luận. Điều này cũng giảm việc điều chỉnh siêu tham số ràng buộc clamp trong quá trình huấn luyện. Những thay đổi này dẫn đến nhiều trọng số giá trị thấp được làm tròn đến giá trị gần nhất trong quá trình mã hóa. Khi 2ⁿ với n∈ℕ tăng, độ thưa của trọng số lượng tử hóa tăng khi n tăng. Trong nghiên cứu này, n được phép là số thực n∈ℝ để lượng tử hóa trọng số. Điều này làm cho lượng tử hóa trọng số phức tạp hơn. Tuy nhiên, code-book giúp giảm độ phức tạp.
+
+Năm 2019, Huawei đề xuất DeepShift, một phương pháp tiết kiệm năng lượng tính toán bằng tích chập shift [62]. DeepShift loại bỏ tất cả các phép toán nhân dấu phẩy động và thay thế chúng bằng bit reverse và bit shift. Biến đổi trọng số lượng tử hóa Wq được hiển thị toán học trong Phương trình 22, trong đó S là ma trận dấu, P là ma trận shift, và Z là tập hợp số nguyên.
+
+Wq = S ⊙ 2ᴾ, với P∈Z, S∈{-1,0,+1}                                    (22)
+
+Kết quả chỉ ra rằng mạng DeepShift không thể dễ dàng được huấn luyện từ đầu. Chúng cũng cho thấy rằng mạng định dạng shift không học trực tiếp cho các tập dữ liệu lớn hơn như ImageNet. Tương tự như INQ, chúng cho thấy rằng tinh chỉnh một mạng đã được huấn luyện trước có thể cải thiện hiệu suất. Ví dụ, với cùng cấu hình activation 32-bit và trọng số định dạng shift 6-bit, mất độ chính xác top-1 ILSVRC-2012 trên ResNet-18 cho huấn luyện từ đầu và điều chỉnh từ mô hình đã được huấn luyện trước lần lượt là 4.48% và 1.09%.
+
+DeepShift đề xuất các mô hình với lan truyền ngược vi phân để tạo ra các hệ số shift trong quá trình huấn luyện lại. DeepShift-Q [62] được huấn luyện với các tham số dấu phẩy động trong lan truyền ngược với các giá trị được làm tròn thành định dạng phù hợp trong quá trình suy luận. DeepShift-PS trực tiếp áp dụng các tham số shift P và dấu S như các tham số có thể huấn luyện.
+
+Vì mã hóa logarithmic có dải động lớn hơn, các mạng dư thừa đặc biệt có lợi. Tuy nhiên, các mạng ít dư thừa hơn cho thấy mất độ chính xác đáng kể. Ví dụ, VGG-16 là một mạng dư thừa cho thấy mất độ chính xác top-1 1.31% trong khi DenseNet-121 cho thấy mất 4.02%.
+
+4.2.3. Lượng tử hóa Cộng-trừ
+
+Lượng tử hóa cộng-trừ có từ năm 1990 [208]. Kỹ thuật này giảm tất cả trọng số thành biểu diễn 1-bit. Tương tự như lượng tử hóa logarithmic, các phép nhân đắt tiền được loại bỏ. Trong phần này, chúng tôi cung cấp tổng quan về các kết quả mạng nhị phân đáng kể. Simons [216] và Qin [198] cung cấp đánh giá chuyên sâu về BNN.
+
+Mạng neural nhị phân (BNN) chỉ có trọng số 1-bit và thường activation 1-bit. 0 và 1 được mã hóa để biểu diễn -1 và +1, tương ứng. Tích chập có thể được tách thành phép nhân và phép cộng. Trong số học nhị phân, các phép toán bit đơn có thể được thực hiện sử dụng and, xnor và bit-count. Chúng tôi theo giới thiệu từ [273] để giải thích phép toán bit-wise. Tích vô hướng điểm cố định bit đơn được tính như trong Phương trình 23, trong đó and là phép toán AND bit-wise và bitcount đếm số lượng 1 trong chuỗi bit.
+
+x⊙y = bitcount(and(x,y)), với ∀i, xi, yi ∈ {0,1}                      (23)
+
+Điều này có thể được mở rộng thành tính toán multi-bit như trong Phương trình 24 [53]. x và y là số nguyên điểm cố định M-bit và K-bit, phụ thuộc vào x = Σᵐ⁼⁰ᴹ⁻¹ cm(x)2ᵐ và y = Σᵏ⁼⁰ᴷ⁻¹ ck(y)2ᵏ, trong đó (cm(x))ᴹ⁻¹ₘ₌₀ và (ck(y))ᴷ⁻¹ₖ₌₀ là các vector bit.
+
+x⊙y = Σᵐ⁼⁰ᴹ⁻¹ Σᵏ⁼⁰ᴷ⁻¹ 2ᵐ⁺ᵏ bitcount(and(cm(x), ck(y))),
+với cm(x)i, ck(y)i ∈ {0,1} ∀i,m,k                                      (24)
+
+Bằng cách loại bỏ các phép nhân dấu phẩy động phức tạp, các mạng được đơn giản hóa đáng kể với phần cứng tích lũy đơn giản. Nhị phân hóa không chỉ giảm kích thước mạng lên đến 32×, mà còn giảm đáng kể việc sử dụng bộ nhớ dẫn đến tiêu thụ năng lượng thấp hơn đáng kể [174,112]. Tuy nhiên, việc giảm các tham số 32-bit thành một bit duy nhất dẫn đến mất thông tin đáng kể, làm giảm độ chính xác dự đoán. Hầu hết các mạng nhị phân lượng tử hóa hoạt động kém đáng kể so với các đối thủ 32-bit.
+
+Có hai phương pháp chính để giảm giá trị dấu phẩy động thành một bit: 1) ngẫu nhiên và 2) xác định [52]. Các phương pháp ngẫu nhiên xem xét thống kê toàn cầu hoặc giá trị của dữ liệu đầu vào để xác định xác suất của một tham số nào đó là -1 hoặc +1. Nhị phân hóa xác định tính toán trực tiếp giá trị bit dựa trên một ngưỡng, thường là 0, dẫn đến một hàm dấu. Nhị phân hóa xác định đơn giản hơn nhiều để triển khai trong phần cứng.
+
+Binary Connect (BC), được đề xuất bởi Courbariaux [52], là một cách tiếp cận ngẫu nhiên sớm để nhị phân hóa mạng neural. Họ nhị phân hóa các trọng số trong cả lan truyền tiến và lan truyền ngược. Phương trình 25 cho thấy nhị phân hóa ngẫu nhiên xb với xác suất hard sigmoid σ(x). Cả activation và gradient đều sử dụng dấu phẩy động độ chính xác đơn 32-bit. Mạng BC được huấn luyện cho thấy lỗi phân loại 1.18% trên tập dữ liệu MNIST nhỏ nhưng 8.27% phân loại trên tập dữ liệu CIFAR-10 lớn hơn.
+
+xb = {+1, với xác suất p = σ(x)
+     {-1, với xác suất 1-p
+trong đó σ(x) = clamp((x+1)/2, 0, 1)                                   (25)
+
+Courbariaux mở rộng mạng BC bằng cách nhị phân hóa các activation. Ông đặt tên chúng là BinaryNets [53], được công nhận là BNN đầu tiên. Họ cũng báo cáo một kernel nhân ma trận nhị phân GPU tùy chỉnh tăng tốc tính toán 7×. BNN được coi là mạng neural nhị phân đầu tiên trong đó cả trọng số và activation đều được lượng tử hóa thành giá trị nhị phân [216]. Xem xét chi phí phần cứng của nhị phân hóa ngẫu nhiên, họ thực hiện một sự đánh đổi để áp dụng nhị phân hóa xác định trong hầu hết các trường hợp. BNN báo cáo lỗi 0.86% trên MNIST, lỗi 2.53% trên SVHN và lỗi 10.15% trên CIFAR-10. Kết quả độ chính xác tập dữ liệu ILSVRC-2012 cho AlexNet và GoogleNet nhị phân lần lượt là 36.1% top-1 và 47.1%, trong khi các mạng FP32 gốc đạt được 57% và 68%, tương ứng [112].
+
+Rastegari [200] khám phá mạng trọng số nhị phân (BWN) trên tập dữ liệu ILSVRC với AlexNet và đạt được cùng độ chính xác phân loại như phiên bản độ chính xác đơn. Chìa khóa là một thừa số thang đo α∈ℝ⁺ được áp dụng cho toàn bộ tầng trọng số nhị phân B. Điều này dẫn đến các giá trị trọng số tương tự như thể chúng được tính toán sử dụng FP32 W≈α⊙B. Họ cũng áp dụng nhị phân hóa trọng số trên ResNet-18 và GoogLeNet, dẫn đến mất độ chính xác top-1 9.5% và 5.8% so với phiên bản FP32, tương ứng. Họ cũng mở rộng nhị phân hóa đến activation được gọi là XNOR-Net và đánh giá nó trên tập dữ liệu ILSVRC-2012 lớn. So với BNN, XNOR-Net cũng áp dụng một thừa số thang đo trên đặc trưng đầu vào và một sắp xếp lại cấu trúc mạng (hoán đổi tích chập, activation và BN). Cuối cùng, XNOR-Net đạt được độ chính xác phân loại top-1 44.2% trên ILSVRC-2012 với AlexNet, trong khi tăng tốc thời gian thực thi 58× trên CPU. Thừa số thang đo đính kèm mở rộng biểu thức giá trị nhị phân, giảm biến dạng mạng và dẫn đến độ chính xác ImageNet tốt hơn.
+
+DoReFa-Net [272] cũng áp dụng số học cộng-trừ cho mạng lượng tử hóa. DoReFa bổ sung lượng tử hóa gradient thành độ rộng bit thấp trong biểu thức 8-bit trong lượt backward. Các gradient được lượng tử hóa ngẫu nhiên trong lan truyền ngược. Ví dụ, nó lấy 1 bit để biểu diễn trọng số theo tầng, activation 2-bit và 6-bit cho gradient. Chúng tôi mô tả chi tiết huấn luyện trong Phần 4.2.5. Họ tìm thấy mất độ chính xác top-1 9.8% trên AlexNet với ILSVRC-2012 sử dụng tổ hợp 1-2-6. Kết quả cho tổ hợp 1-4-32 là 2.9%.
+
+Li [146] và Leng [144] cho thấy rằng đối với trọng số ternary (-1, 0 và +1), trong Mạng Trọng số Ternary (TWN), chỉ có mất độ chính xác nhẹ được nhận ra. So với BNN, TWN có một giá trị bổ sung để giảm mất thông tin trong khi vẫn giữ độ phức tạp tính toán tương tự như BNN. Logic ternary có thể được triển khai rất hiệu quả trong phần cứng, vì giá trị bổ sung (zero) không thực sự tham gia vào tính toán [50]. TWN áp dụng l2-distance để tìm thang đo và định dạng trọng số thành -1, 0 và +1 với ngưỡng được tạo ra bởi giả định rằng trọng số được phân phối đều như trong [-a,a]. Điều này dẫn đến nén mô hình lên đến 16× với mất độ chính xác top-1 ResNet-18 3.6% trên ILSVRC-2012.
+
+Lượng tử hóa Ternary Được huấn luyện (TTQ) [274] mở rộng TWN bằng cách giới thiệu hai ràng buộc động để điều chỉnh ngưỡng lượng tử hóa. TTQ vượt trội hơn AlexNet độ chính xác đầy đủ trên độ chính xác phân loại top-1 ILSVRC-2012 0.3%. Nó cũng vượt trội hơn TWN 3%.
+
+Mạng Neural Ternary (TNN) [6] mở rộng TWN bằng cách lượng tử hóa các activation thành giá trị ternary. Một mạng giáo viên được huấn luyện với độ chính xác đầy đủ và sau đó sử dụng học chuyển giao, cùng cấu trúc được sử dụng nhưng thay thế các giá trị độ chính xác đầy đủ bằng một học sinh ternary hóa theo phương pháp tham lam theo tầng. Một sự khác biệt nhỏ giữa mạng giáo viên giá trị thực và mạng học sinh ternary hóa là chúng kích hoạt đầu ra với một hàm kích hoạt đầu ra ternary để mô phỏng đầu ra TNN thực. TNN đạt được lỗi phân loại MNIST 1.67% và lỗi phân loại 12.11% trên CIFAR10. TNN có độ chính xác thấp hơn một chút so với TWN (thêm lỗi MNIST 1.02%).
+
+Intel đề xuất Lượng tử hóa Tinh Hạt (FGQ) [170] để tổng quát hóa trọng số ternary bằng cách chia chúng thành nhiều nhóm và với các giá trị ternary độc lập. Mạng ResNet-101 lượng tử hóa FGQ đạt được độ chính xác top-1 73.85% trên tập dữ liệu ImageNet (so với 77.5% cho baseline) sử dụng trọng số bốn nhóm và không cần huấn luyện lại. FGQ cũng cho thấy cải thiện trong (re)training chứng minh cải thiện độ chính xác top-1 từ 48% trên không được huấn luyện lên 71.1% top-1 trên ResNet-50. Độ chính xác baseline của ResNet-50 là 75%. FGQ bốn nhóm với trọng số ternary và activation độ rộng bit thấp đạt được khoảng 9× tăng tốc.
+
+MeliusNet [21] là một mạng neural nhị phân bao gồm hai loại khối nhị phân. Để giảm thiểu nhược điểm của mạng độ rộng bit thấp, chất lượng thông tin giảm và khả năng mạng giảm, MeliusNet sử dụng một sự kết hợp của khối dày đặc [22] tăng các kênh mạng bằng cách nối các kênh được suy ra từ đầu vào để cải thiện khả năng và khối cải thiện [161] cải thiện chất lượng đặc trưng bằng cách thêm các activation tích chập bổ sung vào các kênh thêm hiện có từ khối dày đặc. Họ đạt được kết quả độ chính xác tương đương với MobileNet trên tập dữ liệu ImageNet với MeliusNet-59 báo cáo độ chính xác top-1 70.7% trong khi chỉ yêu cầu 0.532 BFLOP. MobileNet 17MB kích thước tương tự yêu cầu 0.569 BFLOP đạt được độ chính xác 70.6%.
+
+AdderNet [35] là một kỹ thuật khác thay thế số học nhân nhưng cho phép tham số lớn hơn 1-bit. Nó thay thế tất cả tích chập bằng phép cộng. Phương trình 26 cho thấy rằng đối với tích chập tiêu chuẩn, AdderNet công thức hóa nó như một bài toán đo độ tương tự.
+
+Y(m,n,t) = Σᵢ₌₀ᵈ Σⱼ₌₀ᵈ Σₖ₌₀ᶜⁱⁿ S(X(m+i,n+j,k), F(i,j,k,t))            (26)
+
+trong đó F∈ℝᵈˣᵈˣᶜⁱⁿˣᶜᵒᵘᵗ là một bộ lọc, d là kích thước kernel, cᵢₙ là kênh đầu vào và cₒᵤₜ là kênh đầu ra. X∈ℝʰˣʷˣᶜⁱⁿ đại diện cho chiều cao h và chiều rộng w của đặc trưng đầu vào. Với công thức này, đầu ra Y được tính với độ tương tự S(·,·), tức là S(x,y) = x⊙y cho tích chập thông thường trong đó thước đo độ tương tự được tính bằng tương quan chéo. Phương trình 27 mô tả toán học AdderNet, thay thế phép nhân bằng phép trừ. Khoảng cách l1 được áp dụng để tính khoảng cách giữa bộ lọc và đặc trưng đầu vào. Bằng cách thay thế phép nhân bằng phép trừ, AdderNet tăng tốc suy luận bằng cách chuyển đổi 3.9 tỷ phép nhân thành phép trừ với mất mát trong độ chính xác ResNet-50 là 1.3%.
+
+Y(m,n,t) = -Σᵢ₌₀ᵈ Σⱼ₌₀ᵈ Σₖ₌₀ᶜⁱⁿ |X(m+i,n+j,k) - F(i,j,k,t)|        (27)
+
+NAS có thể được áp dụng cho xây dựng BNN. Shen [213] áp dụng thuật toán tiến hóa để tìm các mô hình compact nhưng chính xác đạt được độ chính xác top-1 69.65% trên ResNet-18 với ImageNet ở 2.8× tăng tốc. Đây là hiệu suất tốt hơn so với độ chính xác baseline ResNet-18 độ chính xác đơn 32-bit là 69.6%. Tuy nhiên, cách tiếp cận tìm kiếm tốn thời gian mất 1440 giờ trên GPU nVidia V100 để tìm kiếm 50k hình ảnh ImageNet để xử lý một mạng ban đầu.
+
+4.2.4. Các Cách tiếp cận Khác cho Lượng tử hóa
+
+Chia sẻ trọng số bằng lượng tử hóa vector cũng có thể được coi là một loại lượng tử hóa. Để nén các tham số nhằm giảm sử dụng không gian bộ nhớ, các tham số có thể được clustering và chia sẻ. K-means là một thuật toán clustering được sử dụng rộng rãi và đã được áp dụng thành công cho DNN với mất độ chính xác tối thiểu [76,243,143] đạt được nén 16-24 lần với mất độ chính xác 1% trên tập dữ liệu ILSVRC-2012 [76,243].
+
+HashNet [37] sử dụng hash để cluster trọng số. Mỗi nhóm hash được thay thế bằng một giá trị trọng số dấu phẩy động duy nhất. Điều này được áp dụng cho FCL và các mô hình CNN nông. Họ tìm thấy hệ số nén 64× vượt trội hơn các mạng kích thước tương đương trên MNIST và bảy tập dữ liệu khác mà họ đánh giá.
+
+Năm 2016, Han áp dụng mã hóa Huffman với Deep Compression [92]. Sự kết hợp của chia sẻ trọng số, cắt tỉa và mã hóa Huffman đạt được nén 49× trên VGG-16 không mất độ chính xác trên ILSVRC-2012, đây là SOTA vào thời điểm đó.
+
+Phương pháp Hessian được áp dụng để đo tầm quan trọng của các tham số mạng và do đó cải thiện lượng tử hóa trọng số [45]. Họ giảm thiểu lỗi lượng tử hóa có trọng số Hessian trung bình để cluster các tham số. Họ tìm thấy tỷ lệ nén 40.65× trên AlexNet với mất độ chính xác 0.94% trên ILSVRC-2012. Regularization trọng số có thể cải thiện nhẹ độ chính xác của mạng lượng tử hóa bằng cách phạt các trọng số có độ lớn lớn [215]. Thí nghiệm cho thấy rằng regularization l2 cải thiện độ chính xác top-1 MobileNet lượng tử hóa 8-bit 0.23% trên ILSVRC-2012.
+
+BN đã được chứng minh có nhiều lợi thế bao gồm giải quyết vấn đề internal covariate shift [119]. Nó cũng có thể được coi là một loại lượng tử hóa. Tuy nhiên, lượng tử hóa được thực hiện với BN có thể có bất ổn định số. Tầng BN có các phép toán bình phương và căn bậc hai phi tuyến. Các biểu diễn bit thấp có thể có vấn đề khi sử dụng các phép toán phi tuyến. Để giải quyết điều này, BN l1-norm [245] chỉ có các phép toán tuyến tính trong cả huấn luyện forward và backward. Nó cung cấp tăng tốc 1.5× ở một nửa công suất trên nền tảng FPGA và có thể được sử dụng với cả huấn luyện và suy luận.
+
+4.2.5. Huấn luyện Nhận thức Lượng tử hóa
+
+Hầu hết các phương pháp lượng tử hóa sử dụng lượng tử hóa toàn cầu (theo tầng) để giảm mô hình độ chính xác đầy đủ thành mô hình bit giảm. Điều này có thể dẫn đến mất độ chính xác không đáng kể. Một nhược điểm đáng kể của lượng tử hóa là mất thông tin gây ra bởi biến đổi giảm độ chính xác không thể đảo ngược. Mất độ chính xác đặc biệt rõ ràng trong mạng nhị phân và mạng nông. Áp dụng trọng số và activation nhị phân cho ResNet-34 hoặc GoogLeNet dẫn đến mất độ chính xác 29.10% và 24.20%, tương ứng [53]. Đã được chỉ ra rằng tinh chỉnh lan truyền ngược (huấn luyện lại) một mạng lượng tử hóa có thể khôi phục mất mát độ chính xác gây ra bởi quá trình lượng tử hóa [171]. Việc huấn luyện lại thậm chí còn kiên cường với biến dạng thông tin nhị phân hóa. Do đó thuật toán huấn luyện đóng vai trò quan trọng khi sử dụng lượng tử hóa. Trong phần này, chúng tôi giới thiệu (re)training của mạng lượng tử hóa.
+
+Huấn luyện BNN: Đối với một mạng nhị phân có trọng số giá trị nhị phân, việc cập nhật trọng số sử dụng các phương pháp gradient descent không hiệu quả do các đạo hàm thường nhỏ. Các mạng lượng tử hóa sớm được huấn luyện với một biến thể của suy luận Bayesian được gọi là Expectation Back Propagation (EBP) [220,41]. Phương pháp này gán độ chính xác tham số giới hạn (ví dụ: nhị phân) trọng số và activation. EBP suy luận mạng với trọng số lượng tử hóa bằng cách cập nhật các phân phối posterior trên trọng số. Các phân phối posterior được cập nhật bằng cách lấy đạo hàm các tham số của lan truyền ngược.
+
+Binary Connect [52] áp dụng ý tưởng xác suất của EBP nhưng thay vì tối ưu hóa phân phối posterior trọng số, BC bảo tồn trọng số dấu phẩy động để cập nhật và sau đó lượng tử hóa chúng thành giá trị nhị phân. Trọng số giá trị thực cập nhật sử dụng lỗi lan truyền ngược bằng cách đơn giản bỏ qua nhị phân hóa trong cập nhật.
+
+Một mạng nhị phân chỉ có tham số 1-bit ±1 lượng tử hóa từ một hàm dấu. Các tham số bit đơn không khả vi và do đó không thể tính gradient cần thiết để cập nhật tham số [208]. Các thuật toán SGD đã được chỉ ra cần 6 đến 8 bit để hiệu quả [180]. Để giải quyết những hạn chế này, Straight-Through Estimator (STE), trước đây được giới thiệu bởi Hinton [102], được áp dụng để lan truyền gradient bằng cách sử dụng rời rạc hóa [112]. Phương trình 28 cho thấy STE cho nhị phân hóa dấu, trong đó c biểu thị hàm chi phí, wr là trọng số giá trị thực, và wb là trọng số nhị phân được tạo ra bởi hàm dấu. STE bỏ qua hàm nhị phân hóa để tính toán trực tiếp gradient giá trị thực. Các trọng số dấu phẩy động sau đó được cập nhật sử dụng các phương pháp như SGD. Để tránh trọng số giá trị thực tiến đến vô cực, BNN thường clamp trọng số dấu phẩy động đến phạm vi mong muốn ±1 [112].
+
+Forward: wb = sign(wr)
+Backward: ∂c/∂wr = ∂c/∂wb · 1|wr|≤1                                    (28)
+
+Không giống như giai đoạn forward nơi trọng số và activation được tạo ra với lượng tử hóa xác định, trong giai đoạn gradient, các gradient bit thấp nên được tạo ra bởi lượng tử hóa ngẫu nhiên [89,271]. DoReFa [272] đầu tiên huấn luyện thành công một mạng với độ rộng bit gradient ít hơn tám và đạt được kết quả tương đương với số học lượng tử hóa k-bit. Sơ đồ gradient độ rộng bit thấp này có thể tăng tốc huấn luyện trong các thiết bị edge với ít tác động đến độ chính xác mạng nhưng tăng tốc suy luận tối thiểu so với BNN. DoReFa lượng tử hóa trọng số, đặc trưng và gradient thành nhiều cấp độ đạt được dải động lớn hơn BNN. Họ huấn luyện AlexNet trên ImageNet từ đầu với trọng số 1-bit, activation 2-bit và gradient 6-bit. Họ đạt được độ chính xác top-1 46.1% (mất 9.8% so với đối tác độ chính xác đầy đủ). Phương trình 29 cho thấy cách tiếp cận lượng tử hóa trọng số. w là trọng số (giống như trong Phương trình 28), limit là hàm giới hạn được áp dụng cho trọng số giữ chúng trong phạm vi [0,1], và quantizek lượng tử hóa trọng số thành k-cấp độ. Lượng tử hóa đặc trưng được thực hiện sử dụng hàm fkA = quantizek.
+
+fkw = 2·quantizek(limit(wr)) - 1
+trong đó quantizek(wr) = 1/(2k-1)·round((2k-1)·wr),
+và limit(x) = tanh(x)/(2·max(|tanh(x)|)) + 1/2                         (29)
+
+Trong DoReFa, lượng tử hóa gradient được hiển thị trong Phương trình 30, trong đó dr = ∂c/∂r là gradient lan truyền ngược của hàm chi phí c đến đầu ra r.
+
+fkG = 2·max(|dr|)⁻¹·quantizek(dr/(2·max(|dr|)) + 1/2) - 1            (30)
+
+Như trong mạng feed forward sâu, vấn đề gradient bùng nổ có thể gây ra BNN không huấn luyện được. Để giải quyết vấn đề này, Hou [104] công thức hóa tác động nhị phân hóa trên mất mát mạng như một bài toán tối ưu hóa được giải quyết bởi thuật toán Newton gần đúng với xấp xỉ Hessian đường chéo trực tiếp giảm thiểu mất mát đối với trọng số nhị phân. Tối ưu hóa này tìm thấy cải thiện 0.09% trên tập dữ liệu MNIST so với BNN.
+
+Alpha-Blending (AB) [162] được đề xuất như một sự thay thế cho STE. Vì STE trực tiếp đặt gradient hàm lượng tử hóa thành 1, một giả thuyết được đưa ra rằng mạng được điều chỉnh STE có thể chịu mất độ chính xác. Hình 14 cho thấy rằng AB giới thiệu một hệ số thang đo bổ sung α. Trọng số giá trị thực và trọng số lượng tử hóa đều được giữ. Trong quá trình huấn luyện, α được tăng dần lên 1 cho đến khi một mạng lượng tử hóa hoàn toàn được thực hiện.
+
+[Hình 14: STE và AB: STE trực tiếp bỏ qua bộ lượng tử hóa trong khi AB tính gradient cho trọng số giá trị thực bằng cách giới thiệu các hệ số bổ sung [162]]
+
+Huấn luyện Độ Chính xác Số Thấp: Huấn luyện với độ chính xác số thấp bao gồm việc lấy các giá trị độ chính xác thấp vào cả lan truyền tiến và lan truyền ngược trong khi duy trì kết quả tích lũy độ chính xác đầy đủ. Huấn luyện Độ chính xác Hỗn hợp [172,54] sử dụng FP16 hoặc số nguyên 16-bit (INT16) cho độ chính xác trọng số. Điều này đã được chỉ ra là không chính xác cho các giá trị gradient. Như được hiển thị trong Hình 15, trọng số độ chính xác đầy đủ được duy trì để cập nhật gradient, trong khi các toán hạng khác sử dụng half-float. Một kỹ thuật thang đo mất mát được áp dụng để giữ các gradient độ lớn rất nhỏ khỏi ảnh hưởng đến tính toán vì bất kỳ giá trị nào nhỏ hơn 2⁻²⁴ trở thành zero trong độ chính xác một nửa [172]. Cụ thể, một scaler được giới thiệu vào giá trị mất mát trước lan truyền ngược. Thông thường, scaler là một giá trị tối ưu bit-shift 2ⁿ được lấy theo kinh nghiệm hoặc bởi thông tin thống kê.
+
+Trong TensorFlow-Lite [120], huấn luyện tiến hành với giá trị thực trong khi các hiệu ứng lượng tử hóa được mô phỏng trong lượt forward. Các tham số giá trị thực được lượng tử hóa thành độ chính xác thấp hơn trước các tầng tích chập. Các tầng BN được gấp vào các tầng tích chập. Chi tiết hơn được mô tả trong Phần 4.3.2.
+
+Như trong mạng nhị phân, STE cũng có thể được áp dụng cho huấn luyện độ chính xác giảm như số nguyên 8-bit [131].
+
+[Hình 15: Huấn luyện Độ chính xác Hỗn hợp [172]: FP16 được áp dụng trong lượt forward và backward, trong khi trọng số FP32 được duy trì để cập nhật.]
+
+4.3. Triển khai Lượng tử hóa
+
+Trong phần này, chúng tôi mô tả các triển khai lượng tử hóa được triển khai trong các framework và phần cứng phổ biến. Trong Phần 4.3.1, chúng tôi đưa ra giới thiệu về các vấn đề triển khai.
+
+5. Tóm tắt
+
+Trong phần này, chúng tôi tóm tắt các kết quả của Pruning và Quantization.
+
+5.1. Pruning
+
+Phần 3 cho thấy pruning là một kỹ thuật quan trọng để nén mạng neural. Trong bài báo này, chúng tôi đã thảo luận các kỹ thuật pruning được phân loại thành 1) static pruning và 2) dynamic pruning. Trước đây, static pruning là lĩnh vực nghiên cứu chủ đạo. Gần đây, dynamic pruning đã trở thành trọng tâm vì nó có thể cải thiện hiệu suất hơn nữa ngay cả khi static pruning đã được thực hiện trước.
+
+Pruning có thể được thực hiện theo nhiều cách. Element-wise pruning cải thiện nén trọng số và lưu trữ. Channel-wise và shape-wise pruning có thể được tăng tốc với phần cứng chuyên dụng và thư viện tính toán. Filter-wise và layer-wise pruning có thể giảm đáng kể độ phức tạp tính toán.
+
+Mặc dù pruning đôi khi giới thiệu cải thiện gia tăng độ chính xác bằng cách thoát khỏi cực tiểu địa phương [12], cải thiện độ chính xác được thực hiện tốt hơn bằng cách chuyển sang kiến trúc mạng tốt hơn [24]. Ví dụ, một khối separable có thể cung cấp độ chính xác tốt hơn với độ phức tạp tính toán giảm [105]. Xem xét sự phát triển của các cấu trúc mạng, hiệu suất cũng có thể bị cản trở bởi chính cấu trúc. Từ quan điểm này, Network Architecture Search và Knowledge Distillation có thể là các lựa chọn để nén thêm. Network pruning có thể được xem như một tập con của NAS nhưng với không gian tìm kiếm nhỏ hơn. Điều này đặc biệt đúng khi kiến trúc pruned không còn cần sử dụng trọng số từ mạng chưa pruned (xem Phần 3.3). Ngoài ra, một số kỹ thuật NAS cũng có thể được áp dụng cho phương pháp pruning bao gồm mượn các hệ số đã huấn luyện và tìm kiếm học tăng cường.
+
+Thông thường, nén được đánh giá trên các tập dữ liệu lớn như tập dữ liệu ILSVRC-2012 với một nghìn danh mục đối tượng. Trong thực tế, các ràng buộc tài nguyên trong các thiết bị nhúng không cho phép dung lượng lớn của các mạng tối ưu hóa. Nén một mô hình để phù hợp nhất với môi trường ràng buộc nên xem xét nhưng không giới hạn ở môi trường triển khai, thiết bị mục tiêu, đánh đổi tốc độ/nén, và yêu cầu độ chính xác [29].
+
+Dựa trên các kỹ thuật pruning đã được xem xét, chúng tôi khuyến nghị như sau để pruning hiệu quả:
+
+• Uniform pruning gây mất độ chính xác do đó việc đặt tỷ lệ pruning thay đổi theo từng tầng sẽ tốt hơn [159].
+
+• Dynamic pruning có thể dẫn đến độ chính xác cao hơn và duy trì dung lượng mạng cao hơn [246].
+
+• Pruning mạng theo cấu trúc có thể được hưởng lợi từ các thư viện hoàn thiện đặc biệt khi pruning ở mức cao [241].
+
+• Huấn luyện một mô hình pruned từ đầu đôi khi, nhưng không phải lúc nào cũng vậy (xem Phần 3.3), hiệu quả hơn việc tinh chỉnh từ các trọng số chưa pruned [160].
+
+• Penalty-based pruning thường giảm mất mát độ chính xác so với magnitude-based pruning [255]. Tuy nhiên, các nỗ lực gần đây đang thu hẹp khoảng cách [72].
+
+5.2. Quantization
+
+Phần 4 thảo luận các kỹ thuật quantization. Nó mô tả các mạng neural lượng tử hóa nhị phân và mạng độ chính xác giảm, cùng với các phương pháp huấn luyện của chúng. Chúng tôi đã mô tả các kỹ thuật xác thực tập dữ liệu bit thấp và kết quả. Chúng tôi cũng liệt kê độ chính xác của các framework quantization phổ biến và mô tả các triển khai phần cứng trong Phần 4.3.
+
+Quantization thường dẫn đến mất độ chính xác do thông tin bị mất trong quá trình quantization. Điều này đặc biệt rõ ràng trên các mạng compact. Hầu hết các phương pháp quantization bit thấp ban đầu chỉ so sánh hiệu suất trên các tập dữ liệu nhỏ (ví dụ: MNIST và CIFAR-10) [58,94,156,200,235,269]. Tuy nhiên, các quan sát cho thấy một số mạng lượng tử hóa có thể vượt trội hơn mạng gốc (xem: Phần 4.4). Ngoài ra, dữ liệu phân phối không đồng nhất có thể dẫn đến suy giảm thêm trong hiệu suất quantization [275]. Đôi khi điều này có thể được cải thiện bằng chuẩn hóa trong fine-tuning [172] hoặc bằng quantization phi tuyến (ví dụ: biểu diễn log) [175].
+
+Các kỹ thuật quantization tiên tiến đã cải thiện độ chính xác. Asymmetric quantization [120] duy trì dải động cao hơn bằng cách sử dụng điểm không ngoài tham số thang thông thường. Các chi phí được giới thiệu bởi điểm không được giảm thiểu bằng cách pipelining đơn vị xử lý. Quantization dựa trên hiệu chuẩn [173] loại bỏ các điểm không và thay thế chúng bằng các thang chính xác thu được từ tập dữ liệu hiệu chuẩn. Huấn luyện nhận biết quantization được chỉ ra để cải thiện thêm độ chính xác quantization.
+
+8-bit quantization được áp dụng rộng rãi trong thực tế như một sự đánh đổi tốt giữa độ chính xác và nén. Nó có thể dễ dàng được triển khai trên các bộ xử lý hiện tại và phần cứng tùy chỉnh. Mất độ chính xác tối thiểu được trải nghiệm đặc biệt khi huấn luyện nhận biết quantization được bật. Các mạng nhị phân cũng đã đạt được độ chính xác hợp lý với các thiết kế phần cứng chuyên dụng.
+
+Mặc dù BN có lợi thế giúp huấn luyện và pruning, một vấn đề với BN là nó có thể yêu cầu dải động lớn qua một kernel tầng đơn hoặc giữa các kênh khác nhau. Điều này có thể làm cho quantization theo tầng khó khăn hơn. Do đó, quantization theo kênh được khuyến nghị [131].
+
+Để đạt được độ chính xác tốt hơn sau quantization, chúng tôi khuyến nghị:
+
+• Sử dụng quantization bất đối xứng. Nó bảo tồn tính linh hoạt trên phạm vi quantization mặc dù nó có chi phí tính toán [120].
+
+• Lượng tử hóa trọng số thay vì activation. Activation nhạy cảm hơn với độ chính xác số [75].
+
+• Không lượng tử hóa bias. Chúng không yêu cầu lưu trữ đáng kể. Bias độ chính xác cao trong tất cả các tầng [114], và các tầng đầu/cuối [200,272], duy trì độ chính xác mạng cao hơn.
+
+• Lượng tử hóa kernel theo kênh thay vì theo tầng để cải thiện đáng kể độ chính xác [131].
+
+• Fine-tune mô hình lượng tử hóa. Nó giảm khoảng cách độ chính xác giữa mô hình lượng tử hóa và mô hình giá trị thực [244].
+
+• Ban đầu huấn luyện sử dụng mô hình floating point 32-bit. Mô hình lượng tử hóa bit thấp có thể khó huấn luyện từ đầu - đặc biệt là các mô hình compact trên các tập dữ liệu quy mô lớn [272].
+
+• Độ nhạy của quantization được sắp xếp như gradient, activation, và sau đó trọng số [272].
+
+• Quantization ngẫu nhiên của gradient là cần thiết khi huấn luyện các mô hình lượng tử hóa [89, 272].
+
+6. Hướng nghiên cứu tương lai
+
+Mặc dù các thuật toán pruning và quantization giúp giảm chi phí tính toán và gánh nặng băng thông, vẫn còn các lĩnh vực cần cải thiện. Trong phần này, chúng tôi làm nổi bật công việc tương lai để cải thiện thêm quantization và pruning.
+
+Nén tự động. Quantization độ rộng bit thấp có thể gây mất độ chính xác đáng kể, đặc biệt khi độ rộng bit lượng tử hóa rất hẹp và tập dữ liệu lớn [272,155]. Quantization tự động là một kỹ thuật để tự động tìm kiếm mã hóa quantization để đánh giá mất độ chính xác so với tỷ lệ nén. Tương tự, pruning tự động là một kỹ thuật để tự động tìm kiếm các phương pháp pruning khác nhau để đánh giá tỷ lệ sparsity so với độ chính xác. Tương tự như điều chỉnh siêu tham số [257], điều này có thể được thực hiện mà không cần can thiệp của con người sử dụng bất kỳ số lượng kỹ thuật tìm kiếm nào (ví dụ: tìm kiếm ngẫu nhiên, tìm kiếm di truyền, v.v.).
+
+Nén trên các loại mạng neural khác. Nghiên cứu nén hiện tại chủ yếu tập trung vào CNN. Cụ thể hơn, nghiên cứu chủ yếu hướng đến các tác vụ phân loại CNN. Công việc tương lai cũng nên xem xét các loại ứng dụng khác như phát hiện đối tượng, nhận dạng giọng nói, dịch ngôn ngữ, v.v. Nén mạng so với độ chính xác cho các ứng dụng khác nhau là một lĩnh vực nghiên cứu thú vị.
+
+Thích ứng phần cứng. Các triển khai phần cứng có thể hạn chế hiệu quả của các thuật toán pruning. Ví dụ, element-wise pruning chỉ giảm nhẹ tính toán hoặc băng thông khi sử dụng im2col-gemm trên GPU [264]. Tương tự, shape-wise pruning thường không thể được triển khai trên các bộ tăng tốc CNN chuyên dụng. Thiết kế đồng hành phần cứng-phần mềm của các kỹ thuật nén cho các bộ tăng tốc phần cứng nên được xem xét để đạt được hiệu quả hệ thống tốt nhất.
+
+Phương pháp toàn cục. Các tối ưu hóa mạng thường được áp dụng riêng biệt mà không có thông tin từ một tối ưu hóa thông báo cho bất kỳ tối ưu hóa nào khác. Gần đây, các phương pháp xem xét hiệu quả tối ưu hóa ở nhiều tầng đã được đề xuất. [150] thảo luận về pruning kết hợp với phân tích tensor dẫn đến nén tổng thể tốt hơn. Các kỹ thuật tương tự có thể được xem xét sử dụng các loại và mức độ nén và phân tích khác nhau.
+
+7. Kết luận
+
+Mạng neural sâu đã được áp dụng trong nhiều ứng dụng thể hiện khả năng phi thường trong lĩnh vực thị giác máy tính. Tuy nhiên, các kiến trúc mạng phức tạp thách thức triển khai thời gian thực hiệu quả và yêu cầu tài nguyên tính toán và chi phí năng lượng đáng kể. Những thách thức này có thể được khắc phục thông qua các tối ưu hóa như nén mạng. Nén mạng thường có thể được thực hiện với ít mất độ chính xác. Trong một số trường hợp, độ chính xác thậm chí có thể được cải thiện.
+
+Pruning có thể được phân loại thành static (Phần 3.1) nếu nó được thực hiện offline hoặc dynamic (Phần 3.2) nếu nó được thực hiện tại thời gian chạy. Tiêu chí áp dụng để loại bỏ các tính toán dư thừa thường chỉ là độ lớn đơn giản của trọng số với các giá trị gần không được pruned. Các phương pháp phức tạp hơn bao gồm kiểm tra lp-norm. Các kỹ thuật như LASSO và Ridge được xây dựng xung quanh l1 và l2 norm. Pruning có thể được thực hiện element-wise, channel-wise, shape-wise, filter-wise, layer-wise và thậm chí network-wise. Mỗi cách có sự đánh đổi trong nén, độ chính xác và tăng tốc.
+
+Quantization giảm tính toán bằng cách giảm độ chính xác của kiểu dữ liệu. Hầu hết các mạng được huấn luyện sử dụng floating point 32-bit. Trọng số, bias và activation sau đó có thể được lượng tử hóa thường thành số nguyên 8-bit. Quantization độ rộng bit thấp hơn đã được thực hiện với bit đơn được gọi là mạng neural nhị phân. Rất khó để (tái) huấn luyện mạng neural độ rộng bit rất thấp. Bit đơn không khả vi do đó cấm lan truyền ngược. Độ rộng bit thấp hơn gây khó khăn cho việc tính gradient. Lợi thế của quantization là hiệu suất được cải thiện đáng kể (thường 2-3x) và giảm đáng kể yêu cầu lưu trữ. Ngoài việc mô tả cách thực hiện quantization, chúng tôi cũng bao gồm tổng quan về các thư viện và framework phổ biến hỗ trợ quantization. Chúng tôi tiếp tục cung cấp so sánh độ chính xác cho một số mạng sử dụng các framework khác nhau Bảng 2.
+
+Trong bài báo này, chúng tôi đã tóm tắt các kỹ thuật pruning và quantization. Pruning loại bỏ các tính toán dư thừa có đóng góp hạn chế cho kết quả. Quantization giảm tính toán bằng cách giảm độ chính xác của kiểu dữ liệu. Cả hai có thể được sử dụng độc lập hoặc kết hợp để giảm yêu cầu lưu trữ và tăng tốc suy luận.
+
+8. Kết quả hiệu suất Quantization
+
+Bảng 4: Hiệu suất mạng Quantization trên ILSVRC2012 cho các độ rộng bit khác nhau của trọng số W và activation A (hay còn gọi là feature)
+
+[Bảng chi tiết các kết quả thử nghiệm được bảo lưu trong bản gốc]
+
+Tài liệu tham khảo (References)
+
+[Danh sách đầy đủ các tài liệu tham khảo được bảo lưu trong bản tiếng Anh gốc]

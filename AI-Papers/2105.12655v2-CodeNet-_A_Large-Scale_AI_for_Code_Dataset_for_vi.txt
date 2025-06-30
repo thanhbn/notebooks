@@ -1,0 +1,1135 @@
+# 2105.12655v2.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2105.12655v2.pdf
+# Kích thước file: 546453 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+CodeNet: Dataset AI Cho Code Quy Mô Lớn Để
+Học Đa Dạng Các Tác Vụ Lập Trình
+Ruchir Puri1, David S. Kung1, Geert Janssen1, Wei Zhang1,
+Giacomo Domeniconi1,Vladimir Zolotov1,Julian Dolby1,Jie Chen2,1,
+Mihir Choudhury1,Lindsey Decker1,Veronika Thost2,1,Luca Buratti1,
+Saurabh Pujar1,Shyam Ramji1,Ulrich Finkler1,Susan Malaika3,Frederick Reiss1
+1IBM Research
+2MIT-IBM Watson AI Lab
+3IBM Worldwide Ecosystems
+
+Tóm tắt
+Trong vài thập kỷ qua, phần mềm đã được dệt vào cấu trúc của mọi
+khía cạnh trong xã hội chúng ta. Khi phát triển phần mềm gia tăng và cơ sở hạ tầng
+code của các ứng dụng doanh nghiệp lão hóa, việc tăng năng suất phát triển
+phần mềm và hiện đại hóa các ứng dụng legacy giờ đây trở nên quan trọng hơn bao giờ hết.
+Những tiến bộ trong deep learning và các thuật toán machine learning đã tạo ra những
+đột phá trong computer vision, nhận dạng giọng nói, xử lý ngôn ngữ tự nhiên và nhiều lĩnh vực khác,
+thúc đẩy các nhà nghiên cứu tận dụng các kỹ thuật AI để cải thiện hiệu quả phát triển phần mềm.
+Do đó, lĩnh vực nghiên cứu mới nổi "AI for Code" đã thu hút sự quan tâm mới
+và đạt được động lực phát triển. Trong bài báo này, chúng tôi trình bày dataset quy mô lớn CodeNet,
+bao gồm hơn 14 triệu mẫu code và khoảng 500 triệu dòng code
+trong 55 ngôn ngữ lập trình khác nhau, nhằm mục đích dạy AI lập trình.
+Ngoài quy mô lớn, CodeNet có bộ annotation chất lượng cao phong phú
+để benchmark và giúp đẩy nhanh nghiên cứu trong các kỹ thuật AI cho nhiều tác vụ
+lập trình quan trọng, bao gồm code similarity và classification, code translation
+giữa nhiều ngôn ngữ lập trình khác nhau, và các kỹ thuật cải thiện hiệu suất code (runtime
+và memory). Ngoài ra, CodeNet cung cấp các bộ test input và output mẫu
+cho 98.5% mẫu code, có thể được sử dụng như oracle để xác định tính đúng đắn
+của code và có thể hướng dẫn reinforcement learning cho việc cải thiện chất lượng code.
+Như một tính năng khả dụng, chúng tôi cung cấp một số công cụ tiền xử lý trong CodeNet
+để chuyển đổi source code thành các representation có thể được sử dụng trực tiếp
+làm input cho các mô hình machine learning. Kết quả của các thí nghiệm code classification
+và code similarity sử dụng dataset CodeNet được cung cấp làm tham khảo.
+Chúng tôi hy vọng rằng quy mô, tính đa dạng và các annotation phong phú, chất lượng cao của
+CodeNet sẽ mang lại cơ hội nghiên cứu chưa từng có tại giao điểm của AI
+và Software Engineering.
+
+1 Giới thiệu
+Có một xu hướng ngày càng tăng trong việc tận dụng AI để xây dựng các công cụ hỗ trợ software engineering
+và phát triển [1,2]. AI có thể thao tác và tạo ra computer code, nhưng liệu nó có thể làm điều đó với
+chất lượng cao? Nhiều nhà nghiên cứu bị thu hút bởi khả năng này, được khuyến khích bởi những thành công của AI trong
+các lĩnh vực khác và bị quyến rũ bởi tầm nhìn về máy tính lập trình cho máy tính. Một số mô hình
+deep-learning gần đây [3,4] cho code đã nhận được nhiều sự chú ý: được huấn luyện trên lượng dữ liệu
+khổng lồ và sử dụng các kiến trúc mới với hàng tỷ tham số, đôi khi chúng tạo ra code
+đáng ngạc nhiên về tính hợp lý.
+
+Preprint. Under review.arXiv:2105.12655v2  [cs.SE]  29 Aug 2021
+
+--- TRANG 2 ---
+Với thành công của các công cụ không dùng AI cho code, tại sao chúng ta nên xem xét AI để bổ sung hoặc có thể
+thay thế chúng? Thứ nhất, AI có thể giúp tinh chỉnh và điều chỉnh lại các heuristic được sử dụng bởi các công cụ coding truyền thống.
+Thứ hai, dựa trên dữ liệu huấn luyện từ kinh nghiệm trong quá khứ, AI có thể giúp ưu tiên khi có nhiều hơn
+một câu trả lời đúng [5]. Thứ ba, một công cụ dựa trên AI có thể xử lý code không hoàn chỉnh hoặc không hợp lệ một cách
+mạnh mẽ hơn, do đó mở rộng phạm vi của nó. Cuối cùng, AI có thể kết hợp các tín hiệu thường bị bỏ qua bởi các công cụ truyền thống
+cho code, chẳng hạn như ngôn ngữ tự nhiên trong identifier hoặc comment.
+
+Trong môi trường doanh nghiệp, các developer thường phải đối mặt với code được viết bởi các team lớn trong nhiều năm
+và nhiều khu vực địa lý. Các developer phải thao tác code đó để hiện đại hóa nó, sửa bug, cải thiện
+hiệu suất của nó, phát triển nó khi yêu cầu thay đổi, làm cho nó an toàn hơn, và/hoặc tuân thủ các quy định.
+Những tác vụ này rất thách thức, và việc cung cấp hỗ trợ công cụ cho các developer để
+năng suất hơn trong việc thực hiện chúng là rất quan trọng. Đã được biết rằng những tiến bộ mới nhất trong các thuật toán deep learning
+dựa vào các dataset tốt nhất, chẳng hạn như ImageNet, để tạo ra các mô hình ngày càng phức tạp và
+mạnh mẽ. Trong bài báo này, chúng tôi trình bày "CodeNet", một dataset đầu tiên về quy mô, tính đa dạng,
+và chất lượng, để đẩy nhanh những tiến bộ thuật toán trong AI for Code.
+
+Để thúc đẩy việc áp dụng rộng rãi CodeNet, chúng tôi sẽ tổ chức các cuộc thi liên quan đến các use case dựa
+trên dataset. Cuộc thi đầu tiên [6] sẽ tập trung vào tính đa dạng, bao gồm và thúc đẩy sự quan tâm trong số
+các data scientist đầy tham vọng. Chúng tôi đang hợp tác với tổ chức Global Women in Data Science (có
+mặt tại hơn 50 quốc gia) được thành lập bởi Stanford University [7] và nhắm đến các team có ít nhất
+năm mười phần trăm phụ nữ. Chúng tôi đang lên kế hoạch cho các cuộc thi tiếp theo nhắm đến các AI practitioner có kinh nghiệm.
+
+Phần còn lại của bài báo được tổ chức như sau. Phần 2 giới thiệu dataset CodeNet. Các dataset
+liên quan được thảo luận trong Phần 3, và sự khác biệt của CodeNet so với các dataset liên quan này
+được trình bày chi tiết trong Phần 4. Phần 5 mô tả cách CodeNet được sắp xếp và Phần 6
+liệt kê các tính năng khả dụng của CodeNet với một số công cụ tiền xử lý để chuyển đổi source
+code thành các representation có thể được sử dụng trực tiếp làm input cho các mô hình machine learning. Phần 7
+thảo luận về cuộc thi CodeNet sắp tới và Phần 8 mô tả các thí nghiệm baseline quan trọng
+với dataset CodeNet. Phần 9 trình bày các ứng dụng khác của dataset CodeNet và Phần 10
+kết luận bài báo.
+
+2 Dataset CodeNet
+Dataset CodeNet bao gồm một bộ sưu tập lớn các mẫu code với metadata mở rộng. Nó
+cũng chứa các công cụ được tài liệu hóa để chuyển đổi các mẫu code thành các intermediate representation và
+truy cập dataset và thực hiện các lựa chọn phù hợp. Mục tiêu của chúng tôi là cung cấp cho cộng đồng một dataset
+lớn, chất lượng cao được sắp xếp có thể được sử dụng để thúc đẩy các kỹ thuật AI cho source code.
+
+CodeNet được bắt nguồn từ dữ liệu có sẵn trên hai trang web online judge: AIZU [8] và AtCoder [9].
+Các trang web online judge đặt ra các bài toán lập trình dưới dạng các khóa học và cuộc thi. Dataset
+bao gồm các submission cho những bài toán này, được đánh giá bởi một quy trình review tự động về
+tính đúng đắn. Mô tả bài toán, kết quả submission, và metadata liên quan có sẵn thông qua
+các REST API khác nhau.
+
+Quy mô và Thống kê. CodeNet chứa tổng cộng 13,916,868 submission, được chia thành 4053
+bài toán. Trong số các submission, 53.6% (7,460,588) được chấp nhận (có thể compile và pass các
+test quy định), 29.5% được đánh dấu với wrong answer, và phần còn lại bị từ chối do
+không đáp ứng yêu cầu về run time hoặc memory. Theo hiểu biết của chúng tôi, đây là dataset lớn nhất cho đến nay
+trong các loại tương tự. Các submission được viết bằng 55 ngôn ngữ khác nhau; 95% trong số chúng được code bằng C++,
+Python, Java, C, Ruby, và C#. C++ là ngôn ngữ phổ biến nhất, với 8,008,527 submission (57%
+tổng số), trong đó 4,353,049 được chấp nhận. Với sự phong phú của các mẫu code, người dùng có thể trích xuất
+các benchmark dataset lớn được tùy chỉnh cho downstream use của họ. Xem Hình 1 để biết tóm tắt.
+
+Tính đa dạng. Các bài toán trong CodeNet chủ yếu mang tính giáo dục và từ các bài tập cơ bản
+đến các bài toán phức tạp yêu cầu thuật toán tiến tiến. Các người gửi từ người mới bắt đầu
+đến các coder có kinh nghiệm. Một số submission đúng trong khi những submission khác chứa các loại lỗi khác nhau,
+được gắn nhãn tương ứng. Các submission được viết bằng nhiều ngôn ngữ khác nhau.
+
+Mẫu Code. Mỗi mẫu code là một file duy nhất và bao gồm input các test case và in ra
+kết quả tính toán. Tên file sử dụng các extension tiêu chuẩn biểu thị ngôn ngữ lập trình,
+ví dụ, .py cho Python. Phần lớn các mẫu code chỉ chứa một function, mặc dù các submission
+cho các bài toán phức tạp hơn có thể có nhiều function.
+
+2
+
+--- TRANG 3 ---
+(a) Ngôn ngữ
+ (b) Trạng thái
+Hình 1: Phần trăm submission theo ngôn ngữ (trái) và theo trạng thái (phải).
+
+Metadata. Metadata cho phép truy vấn dữ liệu và lựa chọn trong bộ sưu tập lớn các bài toán,
+ngôn ngữ, và source file. Metadata được tổ chức theo cấu trúc phân cấp hai tầng. Tầng đầu tiên là
+tầng dataset, mô tả tất cả các bài toán. Tầng thứ hai là tầng bài toán, chi tiết tất cả các
+submission cho một bài toán đơn lẻ. Metadata và dữ liệu được tách biệt trong cấu trúc dataset.
+
+Ở tầng dataset, một file CSV duy nhất liệt kê tất cả các bài toán và nguồn gốc của chúng, cùng với CPU time
+và memory limit được đặt cho chúng. Ngoài ra, mỗi bài toán có một file HTML với mô tả chi tiết
+về bài toán, các yêu cầu và ràng buộc, và các ví dụ IO.
+
+Ở tầng bài toán, mỗi bài toán có một file CSV. Metadata cho mỗi submission được tóm tắt
+trong Bảng 2 dưới đây, liệt kê các trường có trong mỗi file CSV cũng như các mô tả
+tương ứng.
+
+2.1 Cách đọc dataset CodeNet
+Dữ liệu và metadata được tổ chức trong cấu trúc thư mục nghiêm ngặt. Thư mục cấp cao nhất Project_CodeNet
+chứa một số thư mục con: data, metadata, problem_descriptions, và
+derived. Các mẫu code hoặc submission nằm dưới thư mục data. Thư mục data
+được tổ chức như (problem_id)/(language)/(submission), vì vậy đường dẫn file data/p00023/C++/
+s006384060.cpp biểu thị một submission cho bài toán p00023 bằng C++ với id s006384060. Mô tả chi tiết
+về các bài toán có thể được tìm thấy trong problem_descriptions/(problem_id).html. Metadata
+cho dataset được chứa trong thư mục metadata. metadata/problem_list.csv
+chứa metadata cho tất cả các bài toán trong dataset, được tóm tắt trong Bảng 1. metadata/
+(problem_id).csv chứa metadata cho tất cả các submission cho bài toán problem_id, được
+mô tả trong Bảng 2. Mỗi submission đi kèm với cpu time, memory usage và status với các giá trị có thể
+được mô tả trong Bảng 3. Thư mục derived chứa thông tin được suy ra từ dataset,
+chẳng hạn như thông tin near-duplicate cho các submission cho các ngôn ngữ cụ thể, các chuỗi token cho các mẫu
+code, và thông tin về các bài toán giống hệt nhau.
+
+Bảng 1: Metadata ở cấp dataset
+tên cột        kiểu dữ liệu    đơn vị           mô tả
+id             string         none            id duy nhất được ẩn danh của bài toán
+name           string         none            tên ngắn của bài toán
+dataset        string         none            dataset gốc, AIZU hoặc AtCoder
+time_limit     int            millisecond     thời gian tối đa cho phép cho một submission
+memory_limit   int            KB              memory tối đa cho phép cho một submission
+rating         int            none            rating, tức độ khó của bài toán
+tags           string         none            danh sách tag được phân cách bởi "|"; không sử dụng
+complexity     string         none            mức độ khó của bài toán; không sử dụng
+
+3
+
+--- TRANG 4 ---
+Bảng 2: Metadata ở cấp bài toán
+tên cột                kiểu dữ liệu    đơn vị        mô tả
+submission_id          string         none          id duy nhất được ẩn danh của submission
+problem_id             string         none          id được ẩn danh của bài toán
+user_id                string         none          user id được ẩn danh của submission
+date                   int            seconds       ngày và giờ submission trong định dạng Unix
+                                                   timestamp (giây kể từ epoch)
+language               string         none          ngôn ngữ được mapped của submission
+                                                   (ví dụ: C++14 ->C++)
+original_language      string         none          specification ngôn ngữ gốc
+filename_ext           string         none          extension của filename biểu thị
+                                                   ngôn ngữ lập trình được sử dụng
+status                 string         none          trạng thái chấp nhận, hoặc loại lỗi
+cpu_time               int            millisecond   thời gian thực thi
+memory                 int            KB            memory được sử dụng
+code_size              int            bytes         kích thước source code submission tính bằng bytes
+accuracy               string         none          số test được pass; *Chỉ cho AIZU
+
+Bảng 3: Tất cả các giá trị status có thể
+status                         viết tắt    mã số
+Compile Error                  CE          0
+Wrong Answer                   WA          1
+Time Limit Exceeded           TLE         2
+Memory Limit Exceeded         MLE         3
+Accepted                      AC          4
+Judge Not Available           JNA         5
+Output Limit Exceeded         OLE         6
+Runtime Error                 RE          7
+WA: Presentation Error        PE          8
+Waiting for Judging           WJ
+Waiting for Re-judging        WR
+Internal Error                IE
+Judge System Error
+
+Bảng 4 tóm tắt metadata có sẵn cho mỗi submission code cho một bài toán. Hình 2 cho thấy
+phân phối của các bài toán dựa trên số submission nhận được.
+
+Bảng 4: Metadata submission.
+cột              đơn vị/ví dụ        mô tả
+submission_id    s[0-9]{9}          id được ẩn danh của submission
+problem_id       p[0-9]{5}          id được ẩn danh của bài toán
+user_id          u[0-9]{9}          user id được ẩn danh
+date             seconds            ngày và giờ submission
+language         C++                ngôn ngữ lập trình được hợp nhất
+original_language C++14             ngôn ngữ gốc
+filename_ext     .cpp               extension filename
+status           Accepted           trạng thái chấp nhận, hoặc loại lỗi
+cpu_time         millisecond        thời gian thực thi
+memory           kilobytes          memory được sử dụng
+code_size        bytes              kích thước source file
+accuracy         4/4                test được pass (chỉ AIZU)
+
+Hạn chế. Tất cả các mẫu code trong CodeNet có thể không được comment rộng rãi, và những comment này
+có thể ở nhiều ngôn ngữ khác nhau. Do đó, các kỹ thuật AI dựa vào việc học từ số lượng lớn
+comment trong code có thể gặp thách thức. Các mẫu code là solutions cho các bài toán lập trình cấp trung học và
+4
+
+--- TRANG 5 ---
+Hình 2: Số bài toán cung cấp ít nhất X submission. Các thanh hiển thị cả số lượng
+accepted submission (xanh dương) và rejected submission (cam).
+
+đại học năm đầu. Dataset này không phù hợp cho người dùng tìm kiếm code
+với enterprise API và advanced design pattern.
+
+3 Các Dataset Liên quan
+Tồn tại nhiều dataset đa dạng cho source code, với nhiều dataset nhắm đến một hoặc một số ít
+tác vụ. Những tác vụ đó bao gồm clone detection, vulnerability detection [10,11], cloze test [12], code
+completion [13,14], code repair [15], code-to-code translation, natural language code search [16],
+text-to-code generation [17], và code summarization [16]. Một thảo luận chi tiết về một số tác vụ này
+và các dataset tương ứng có sẵn trong CodeXGLUE [18], là một bộ sưu tập các
+dataset hiện có. Mặt khác, CodeNet là một dataset mới được sắp xếp từ đầu, nhằm hỗ trợ một
+tập hợp rộng các use case. Các dataset phổ biến cùng loại là POJ-104 [19] (cũng được kết hợp như
+một phần của CodeXGLUE) và GCJ [20] (được suy ra từ Google Code Jam). Chúng tôi so sánh CodeNet
+với những dataset này dưới đây.
+
+3.1 POJ-104
+POJ-104 được thu thập từ một hệ thống online judge giáo dục. Các mẫu code là submission
+cho 104 bài toán lập trình. Với 500 submission cho mỗi bài toán, có tổng cộng 52,000 mẫu
+code trong dataset. Dataset này đã được nhiều tác giả sử dụng cho code classification [19] và
+code similarity [21].
+
+POJ-104 gặp phải một số hạn chế.
+1. Các mẫu code được viết bằng C và C++, nhưng hai ngôn ngữ không được phân biệt. Mặc dù chúng
+có liên quan chặt chẽ, việc trộn lẫn chúng dẫn đến parsing error và giảm số lượng mẫu code hữu ích [21].
+2. Metadata hữu ích như kết quả của hệ thống judging (chấp nhận, loại lỗi, v.v.) bị thiếu.
+Do đó, đối với một số ứng dụng mà tính compile được hoặc tính đúng đắn của code là quan trọng, cần thêm
+nỗ lực tiền xử lý và các mẫu code hữu ích bị giảm [21]. Dataset không chứa
+mô tả bài toán, mặc dù một số bài toán ví dụ được mô tả trong [22], và
+thông tin về cách thực thi các mẫu code bị thiếu.
+3. Một số bài toán giống hệt nhau (ví dụ, bài toán 26 và 62), và một số submission là near duplicate
+của nhau, mặc dù tỷ lệ phần trăm của những trường hợp như vậy thấp so với các dataset khác.
+
+3.2 GCJ
+GCJ [20] được thu thập từ các submission cho các cuộc thi Google Code Jam từ 2008 đến
+2020. Tương tự như CodeNet, các submission bao gồm nhiều ngôn ngữ lập trình khác nhau, với
+C++, Java, Python, và C là những ngôn ngữ chủ đạo. Subset C++ đã được trích xuất thành một
+benchmark giống POJ-104 và được sử dụng trong một số publication. Benchmark dataset này, GCJ-297 [23],
+có 297 bài toán và khoảng 280K submission. Số lượng submission không cân bằng
+giữa các bài toán.
+
+5
+
+--- TRANG 6 ---
+GCJ có lợi thế hơn POJ-104 về kích thước và tính đa dạng ngôn ngữ, nhưng chúng tôi tin rằng một
+dataset thậm chí còn lớn hơn như CodeNet có thể phục vụ cộng đồng tốt hơn. GCJ không chứa metadata cũng như
+thông tin về các bài toán giống hệt nhau và near duplicate.
+
+4 Sự Khác biệt của CodeNet
+Bảng 5: So sánh các dataset liên quan
+                                        CodeNet      GCJ        POJ
+Tổng số bài toán                       4053         332        104
+Số ngôn ngữ lập trình                  55           20         2
+Tổng số mẫu code                       13,916,828   2,430,000  52,000
+Kích thước dữ liệu subset C++/C        8,008,527    280,000    52,000
+(mẫu code)
+Phần trăm bài toán có test data        51%          0%         0%
+Tác vụ: Memory Consumption Prediction  Có           Không      Không
+Tác vụ: Runtime Performance Comparison Có           Không      Không
+Tác vụ: Error Prediction               Có           Không      Không
+Tác vụ: Near duplicate prediction      Có           Không      Không
+
+Một dataset code chất lượng cao có những thuộc tính mong muốn nhất định. Chúng tôi xây dựng CodeNet theo
+những yêu cầu này. Dưới đây, chúng tôi thảo luận về cách CodeNet khác biệt với các
+dataset hiện có theo những hướng này. Bảng 5 là so sánh với các dataset liên quan.
+
+Quy mô lớn. Một dataset hữu ích nên chứa số lượng lớn và đa dạng các mẫu dữ liệu để tiếp xúc với
+bối cảnh phân phối dữ liệu thực tế và phức tạp mà người ta gặp trong thực tế. CodeNet là
+dataset lớn nhất trong lớp của nó - nó có khoảng 10 lần nhiều mẫu code hơn GCJ và benchmark C++
+của nó lớn hơn khoảng 10 lần so với POJ-104.
+
+Annotation phong phú. Đối với lớp dataset đang xét, điều quan trọng là bao gồm thông tin ngoài
+việc mẫu code giải quyết bài toán nào để cho phép một loạt ứng dụng và use case. Rất hữu ích
+khi biết liệu mẫu code có giải quyết bài toán một cách chính xác hay không, và nếu không, thì loại lỗi là gì (ví dụ,
+compilation error, runtime error, và out-of-memory error). Vì source code được cho là
+giải quyết một bài toán lập trình, sẽ có lợi nếu biết mô tả bài toán và có một input
+mẫu để thực thi và một output mẫu để validation. Tất cả thông tin bổ sung như vậy là một phần của CodeNet
+nhưng không có trong GCJ và POJ-104.
+
+Mẫu sạch. Để machine learning hiệu quả, các mẫu dữ liệu được mong đợi là độc lập
+và phân phối giống hệt nhau (iid); nếu không, metric hiệu suất thu được có thể bị
+thổi phồng đáng kể [24]. Sự tồn tại của các mẫu code duplicate và/hoặc near duplicate khiến giả định iid
+trở nên đáng ngờ. Do đó, việc xác định các near duplicate là rất quan trọng. Sự hiện diện của các bài toán giống hệt nhau trong
+dataset đặt ra một vấn đề thậm chí còn lớn hơn. Trong CodeNet, chúng tôi đã phân tích các mẫu code về sự duplicate
+(gần) và sử dụng clustering để tìm các bài toán giống hệt nhau. Thông tin này được cung cấp như một phần của
+việc phát hành dataset nhưng không có trong GCJ và POJ-104.
+
+5 Xây dựng CodeNet
+5.1 Thu thập Mẫu Code
+Dataset CodeNet chứa các bài toán, submission, và metadata, được scrape từ các hệ thống online judging AIZU và
+AtCoder. Đối với AIZU, chúng tôi sử dụng các REST API được cung cấp để download tất cả
+metadata. Đối với AtCoder, do thiếu REST API, chúng tôi scrape các bài toán, submission,
+và metadata trực tiếp từ các trang web. Chúng tôi chỉ xem xét các submission public và không rỗng
+không chứa lỗi hoặc sự không nhất quán trong metadata. Chúng tôi kết hợp thông tin từ hai nguồn
+một cách thủ công và áp dụng định dạng thống nhất để tạo ra một dataset duy nhất.
+
+6
+
+--- TRANG 7 ---
+5.2 Làm sạch
+Vì dữ liệu được thu thập từ các nguồn khác nhau, chúng tôi áp dụng character encoding nhất quán (UTF-8)
+trên tất cả các file dữ liệu thô. Ngoài ra, chúng tôi loại bỏ byte-order mark và sử dụng Unix-style line-feed làm
+line ending.
+
+Như đã chỉ ra trong phần 4, chúng tôi xác định near-duplicate. Chúng tôi theo Allamanis [24] và sử dụng Jaccard
+similarity [25] như một metric để tính điểm cho các cặp code. Mỗi mẫu code được tokenize và lưu trữ như một
+bag-of-tokens multiset. Trong trường hợp của chúng tôi, chúng tôi giữ tất cả token trừ comment và preprocessor directive.
+Chúng tôi tính toán set và multiset Jaccard indices và tương ứng sử dụng 0.9 và 0.8 như ngưỡng near-duplicate.
+
+Ngoài các mẫu code tương tự, các bài toán giống hệt nhau cũng có khả năng vì chúng đã được thu thập trong
+nhiều thập kỷ. Chúng tôi xem qua các file mô tả bài toán (định dạng HTML) và áp dụng fdupes để
+trích xuất các cặp bài toán giống hệt nhau. Ngoài ra, sử dụng thông tin near-duplicate được tính toán cho các mẫu
+code, chúng tôi coi một cặp bài toán là duplicate tiềm năng khi số lượng cặp code near-duplicate
+vượt quá một ngưỡng. Clustering các bài toán duplicate được minh họa bằng các đồ thị trong
+Hình 3, nơi mỗi node biểu thị một bài toán và một edge giữa hai node được gắn nhãn bởi số
+lượng cặp code near-duplicate. Mỗi đồ thị được kết nối sau đó là một cluster các bài toán duplicate tiềm năng và chúng tôi kiểm tra thủ công
+các mô tả bài toán để xác minh tính đúng đắn của việc phát hiện duplicate này.
+
+p13 41
+p535
+p424
+31 64p16 20
+p564
+19p23 7
+p621
+6p26
+1522 p58 44
+p853
+28
+
+Hình 3: Một ví dụ về đồ thị bài toán near-duplicate.
+
+5.3 Benchmark Dataset
+CodeNet có một tập hợp phong phú các mẫu code, và người dùng có thể lắp ráp một benchmark tùy chỉnh theo
+nhu cầu của mình. Theo POJ-104, chúng tôi trích xuất các benchmark dataset từ CodeNet bằng C++, Python,
+và Java. Các đặc điểm benchmark được hiển thị trong Bảng 6. Đối với các benchmark C++, số lượng
+bài toán và solution của chúng được chọn để làm cho benchmark thách thức. Các benchmark được
+lọc theo các cách sau. Mỗi mẫu code là "duy nhất" theo nghĩa là nó không phải là near-duplicate
+của mẫu code khác. Điều tương tự cũng đúng với mỗi bài toán. Các mẫu có tỷ lệ lớn dead code
+bị loại trừ. Mỗi mẫu code đã pass thành công qua tokenizer, SPT generator,
+và graph generator, tất cả được mô tả trong phần tiếp theo. Bước này là để đảm bảo rằng quá trình xử lý thích hợp
+có thể được thực hiện để chuyển đổi mẫu code thành input cho mô hình machine learning.
+
+6 Code Representation và Công cụ
+Machine learning với source code yêu cầu các abstraction thích hợp của code. Các abstraction được
+thực hiện như các representation ở định dạng cụ thể. Như một tính năng khả dụng, chúng tôi cung cấp một số công cụ tiền
+xử lý để chuyển đổi source code thành các representation có thể được sử dụng trực tiếp làm input cho
+các mô hình machine learning. Chúng được mô tả như sau.
+
+Tokenizer. Chúng tôi cung cấp các implementation C nhanh của tokenizer cho C, C++, Java, Python, và JavaScript.
+Ngoài ra, parse-tree generator được mô tả tiếp theo cũng có thể tạo ra token stream cho C, C++, Java,
+và Python và có thể dễ dàng được mở rộng cho nhiều ngôn ngữ hơn.
+
+Simplified Parse Tree (SPT) Simplified parse tree được suy ra từ parse tree được tạo bằng
+ANTLR4 [26]. Chúng tôi traverse ANTLR4 parse tree và loại bỏ các internal node chỉ có một
+child. Bằng cách đó, chúng tôi duy trì cấu trúc cơ bản của parse tree trong khi cắt tỉa các
+parser production rule không cần thiết. Cuối cùng, chúng tôi áp dụng quy ước đặt tên của Aroma [27]: leaf node được đặt tên bởi
+
+7
+
+--- TRANG 8 ---
+các literal string của chúng và internal node được đặt tên bằng cách nối tên của children (chỉ
+reserved word được giữ trong khi những từ khác được thay thế bằng dấu hash #). Chúng tôi tạo ra feature cho mỗi
+node: (1) loại node (token hoặc parsing rule); (2) loại token (ví dụ, một identifier), khi áp dụng; (3)
+loại parsing rule (ví dụ, một expression), khi áp dụng; và (4) liệu nó có phải là reserved word hay không. Chúng tôi
+áp dụng extensible JSON graph schema để edge có thể được bổ sung với type khi cần.
+Hiện tại, chúng tôi hỗ trợ tạo SPT cho bốn ngôn ngữ: C, C++, Java, và Python. Bảng 6
+tóm tắt thống kê SPT cho bốn benchmark.
+
+Bảng 6: Thống kê benchmark.
+                    C++1000    C++1400    Python800   Java250
+#bài toán          1,000      1,400      800         250
+#mẫu               500,000    420,000    240,000     75,000
+#SPT-node          188,449,294 198,258,050 55,744,550  25,449,640
+#SPT-edge          187,949,294 197,838,050 55,504,550  25,374,640
+
+Code graph. Chúng tôi bổ sung tool chain với code graph generator sử dụng WALA [28], một
+framework tổng quát cho program analysis. Backbone của code graph là system dependence graph, là
+một inter-procedural graph của các program instruction (ví dụ call, read) biểu thị control flow và
+data flow information như edge. Chúng tôi cũng tạo ra inter-procedural control flow graph, là
+control flow graph của tất cả method trong chương trình, được ghép lại để kết nối call site với
+target method. Code graph tool của chúng tôi hiện chỉ hỗ trợ Java và Python, nhưng chúng tôi dự định hỗ trợ
+nhiều ngôn ngữ hơn như Javascript.
+
+7 CodeNet Challenge
+Việc ra mắt CodeNet được cộng đồng AI đón nhận tốt và được truyền thông đưa tin, với coverage
+từ Forbes [29], VentureBeat [30], ZDNet [31] và những người khác. Trong khoảng thời gian ngắn 3 tháng, github của chúng tôi
+nhận được 1000 star và đã được fork hơn 119 lần. Tầm nhìn của chúng tôi là sử dụng CodeNet như một
+ô dù để sắp xếp các dataset AI for code để áp dụng rộng rãi và thúc đẩy đổi mới trong AI for
+code. Để tận dụng momentum của CodeNet, chúng tôi sẽ tổ chức các thách thức CodeNet để tạo ra
+sự hứng thú trong cộng đồng AI. Cuộc thi đầu tiên [6] chủ yếu mang tính giáo dục và nhắm đến các
+data scientist đầy tham vọng. Ngoài ra, chúng tôi đang hợp tác với tổ chức Global Women in Data Science
+(có mặt tại hơn 50 quốc gia) được thành lập bởi Stanford University [7] để nhấn mạnh tính đa dạng và
+bao gồm (các team phải có ít nhất năm mười phần trăm phụ nữ). Chúng tôi sẽ tổ chức workshop để giới thiệu
+chủ đề, code similarity, và cung cấp tài liệu giáo dục. Cuộc thi này sẽ được khởi động vào cuối
+tháng 9 và người chiến thắng sẽ được công bố vào đầu tháng 12, vào khoảng thời gian NeurIPS2021.
+Kết thúc cuộc thi đầu tiên sẽ được theo sau bởi một cuộc thi nhắm đến các AI practitioner có kinh nghiệm.
+Các chủ đề cuộc thi tiềm năng sẽ xoay quanh các use case thực tế và hấp dẫn như
+code language translation, code repair, code performance improvement, và code memory reduction.
+
+8 Thí nghiệm với Dataset CodeNet
+Trong phần này, chúng tôi báo cáo kết quả của tác vụ code classification, tác vụ similarity, tác vụ generalization,
+và tác vụ token inference, sử dụng bốn benchmark dataset (xem Bảng 6) được trích xuất từ
+CodeNet. Đối với bài báo này, những thí nghiệm này không nhằm đạt được kết quả tốt nhất sử dụng
+state of the art. Ý định của chúng tôi là cung cấp một tập hợp kết quả baseline làm tham khảo. Các thí nghiệm
+thường được thực hiện trên máy Xeon sử dụng GPU P100 hoặc V100. Code và script cho những thí nghiệm này
+có trong thư mục model-experiments của CodeNet repository [32].
+
+8.1 Code Classification
+Trong tác vụ classification, mỗi bài toán tương ứng với một class: một mẫu code thuộc về một class nếu nó
+là submission cho bài toán tương ứng. Đối với mỗi thí nghiệm, 20% mẫu code được
+sử dụng để test, trong khi phần còn lại được chia 4:1 cho training và validation tương ứng. Chúng tôi thí nghiệm
+với một tập hợp đa dạng các phương pháp machine learning: bag of token, sequence of token, mô hình BERT, và
+graph neural network (GNN).
+
+8
+
+--- TRANG 9 ---
+1. MLP với bag of token. Một mẫu code được biểu diễn bằng vector của tần suất tương đối của
+sự xuất hiện token. Chỉ operator và keyword token được sử dụng. Mô hình là một multilayer
+perceptron (MLP) 3 tầng.
+
+2. CNN với token sequence. Chúng tôi sử dụng cùng tập hợp token như trên nhưng giữ thứ tự của chúng để tạo thành
+một sequence. Tất cả sequence có cùng độ dài dưới zero padding. Mô hình classification là một
+convolutional neural network (CNN) với initial token embedding layer.
+
+3. C-BERT với token sequence. Coi mẫu code như một đoạn natural language text, chúng tôi
+xây dựng mô hình C-BERT [33] thông qua pretraining trên 10K top starred Github project được viết bằng C.
+Chúng tôi sử dụng Clang C tokenizer và Sentencepiece để tokenize mỗi mẫu code. Mô hình pretrained
+được fine-tune trên mỗi benchmark.
+
+4. GNN với SPT. Dựa trên parse tree representation, chúng tôi sử dụng graph convolutional network
+(GCN) [34] và graph isomorphism network (GIN) [35] cũng như các variant của chúng như mô hình prediction.
+Variant thêm virtual node vào graph để tăng cường graph message passing [36].
+
+5. GNN với Code Graph. Chúng tôi cũng áp dụng GCN trên code graph representation của code.
+
+Bảng 7: Độ chính xác classification (tính bằng %).
+                        Java250     Python800   C++1000    C++1400
+MLP w/ bag of tokens    71.00±0.29  67.80±0.15  68.26±0.21 64.50±0.13
+CNN w/ token sequence   89.52±0.59  87.46±0.25  93.96±0.18 93.71±0.18
+C-BERT                  97.40±0.19  97.09±0.18  93.79±0.01 91.83±0.06
+GNN (GCN)              92.70±0.25  93.82±0.16  95.76±0.12 95.26±0.13
+GNN (GCN-V)            93.02±0.81  94.30±0.15  96.09±0.17 95.73±0.07
+GNN (GIN)              93.26±0.23  94.17±0.19  96.34±0.15 95.95±0.13
+GNN (GIN-V)            92.77±0.66  94.54±0.12  96.64±0.10 96.36±0.10
+Code Graph+GCN         94.1±0.001  87.8±0.007  N/A        N/A
+
+Bảng 7 tóm tắt độ chính xác classification cho tất cả mô hình trên tất cả benchmark. Mặc dù
+tính đơn giản của bag of token, nó đạt được độ chính xác trên 60%. Duy trì thứ tự token,
+CNN với token sequence mang lại cải thiện đáng kể, đạt khoảng 90% trên tất cả
+benchmark.
+
+Các mô hình neural phức tạp hơn đôi khi cải thiện thêm hiệu suất prediction, như chứng kiến bởi
+C-BERT, đạt khoảng 97% cho cả Java và Python. Thú vị là
+mặc dù C-BERT được pre-train với chương trình C, hiệu suất của nó trên hai benchmark C++ kém
+ấn tượng hơn. Chúng tôi suy đoán rằng hiệu suất thấp hơn như vậy liên quan đến practice lập trình. Đối với
+C++, việc có construction chương trình giống hệt nhau, như declaration của constant (ví dụ, pi
+và epsilon) và data structure, xuất hiện trên các submission C++ cho các bài toán khác nhau là phổ biến, nhưng practice như vậy
+hiếm trong Java và Python.
+
+Nhìn chung, các mô hình GNN thể hiện hiệu suất cạnh tranh. Chúng luôn là top performer,
+nếu không phải là tốt nhất. Code graph representation cải thiện nhẹ so với SPT representation trên Java,
+nhưng kém hiệu quả hơn trên Python.
+
+Chi tiết thêm về mỗi mô hình, cùng với môi trường thí nghiệm, được đưa ra dưới đây.
+
+8.1.1 Chi tiết Thí nghiệm về Code Classification
+MLP với Bag of Token
+Một trong những representation đơn giản nhất của mẫu code là bag of token. Ở đây, mẫu code được
+biểu diễn bằng vector của tần suất tương đối của sự xuất hiện token trong source code. Vector được
+tính toán bằng các bước sau:
+
+1. Chuyển đổi source code đã cho thành sequence of token bằng tokenizer (tức lexical analyzer).
+2. Từ sequence này, loại bỏ các token được coi là không hữu ích cho code classification.
+3. Đếm số lượng của mỗi loại token trong sequence đã giảm và tạo thành vector of count.
+4. Normalize vector theo L2 norm.
+
+Chúng tôi không sử dụng tất cả token có sẵn trong grammar của ngôn ngữ lập trình. Chỉ một số operator
+và keyword được sử dụng. Tất cả identifier, comment và literal bị bỏ qua. Chúng tôi cũng bỏ qua một số
+
+9
+
+--- TRANG 10 ---
+operator và nhiều keyword mà theo ý kiến của chúng tôi không cung cấp thông tin đáng kể về thuật toán
+mà source code implement.
+
+Vector biểu diễn bag of token có cùng độ dài cho mọi mẫu code, điều này làm cho
+việc xử lý với neural network trở nên thuận tiện. Vector thường ngắn, làm cho
+việc training neural network nhanh chóng. Tuy nhiên, trong representation bag-of-token, thông tin về
+số lần xuất hiện và vị trí của mỗi token bị mất. Do đó, độ chính xác của classifier sử dụng
+representation bag-of-token khá hạn chế.
+
+Bảng 8 cung cấp kết quả code classification của tất cả bốn benchmark. Các cột đưa ra tên
+benchmark, test accuracy, số training epoch, run time của mỗi epoch, và số
+loại token được xem xét. Tất cả network được implement bằng Keras API của TensorFlow machine
+learning tool. Training được thực hiện trên một GPU V100 duy nhất, sử dụng Adam optimizer với learning rate
+1e-3, và batch 32 mẫu. Trong mỗi thí nghiệm, 20% mẫu được sử dụng để test, trong khi
+phần còn lại được chia 4:1 cho training và validation tương ứng.
+
+Bảng 8: Code classification bằng MLP với bag of token.
+Benchmark     Accuracy    Number    Run time    Number
+dataset       %           epochs    sec/epoch   tokens
+Java250       71.00±0.29  30        2           81
+Python800     67.80±0.15  22        7           71
+C++1000       68.26±0.21  20        14          56
+C++1400       64.50±0.13  17        12          56
+
+Hình 4 hiển thị neural network được sử dụng để giải quyết bài toán classification cho benchmark C++1400.
+Các neural network được sử dụng cho classification của các benchmark khác tương tự như network này.
+Như chúng ta thấy trong Bảng 8, hiệu suất của chúng khá tương tự.
+
+Hình 4: Kiến trúc MLP cho code classification.
+
+Từ Bảng 8, chúng ta thấy rằng training khá nhanh, lý do là network đơn giản. Mặc dù
+đơn giản, neural network này hoạt động rất tốt. Test accuracy 64.50±0.13% cho
+benchmark dataset C++1400 tốt hơn đáng kể so với potential accuracy 0.071% của random
+guess. Điều này chỉ ra rằng tần suất tương đối của source code token cung cấp thông tin đủ
+để classify code.
+
+CNN với Token Sequence
+Representation sequence-of-token giữ lại nhiều thông tin của mẫu code hơn representation bag-of-
+
+10
+
+--- TRANG 11 ---
+token. Đối với các thí nghiệm của chúng tôi về code classification, chúng tôi sử dụng cùng tập hợp token được
+sử dụng trong approach bag-of-token ở trên. Tương tự, chúng tôi bỏ qua tất cả comment và identifier.
+
+Bảng 9: Code classification bằng CNN với token sequence.
+Benchmark     Accuracy      Number    Run time    Number
+dataset       %             epochs    sec/epoch   tokens
+Java250       89.52±0.59    810       10          81
+Python800     87.46±0.25    504       26          71
+C++1000       93.96±0.18    235       59          56
+C++1400       93.71±0.18    334       60          56
+
+Bảng 9 hiển thị kết quả code classification trên tất cả bốn benchmark bằng cách sử dụng representation sequence-of-token.
+Các cột đưa ra tên benchmark, test accuracy, số training epoch, run time của mỗi epoch,
+và số loại token được xem xét. Tất cả network được implement bằng Keras API của TensorFlow machine learning tool.
+Training được thực hiện trên bốn GPU V100, sử dụng Adam optimizer trong data parallel mode với learning rate 1e-3,
+và batch 512 mẫu. Trong mỗi thí nghiệm, 20% mẫu được sử dụng để test, trong khi phần còn lại được chia
+4:1 cho training và validation tương ứng.
+
+Chúng tôi đã thí nghiệm với nhiều loại neural network. Hình 5 hiển thị neural network
+chúng tôi chọn cho benchmark C++1400. Đó là multi-layer convolutional neural network. Nó sử dụng
+categorical encoding của source code token. Để batching, các sequence of token được pad với
+zero.
+
+Sử dụng network này, chúng tôi có test accuracy 93.71±0.18% cho benchmark dataset C++1400, tốt hơn
+đáng kể so với accuracy được hiển thị bởi approach bag-of-token. Các neural network
+được sử dụng cho classification của các benchmark khác tương tự như network được hiển thị trong Hình 5.
+Như chúng ta thấy trong Bảng 9, hiệu suất của chúng tương tự.
+
+C-BERT với Token Sequence
+Representation sequence-of-token có thể được sử dụng với các neural network khác có capacity tăng dần.
+Chúng tôi xây dựng mô hình C-BERT (một transformer model được giới thiệu trong [33]) bằng cách pre-training trên 10,000 top
+starred GitHub open source project được viết bằng C, nơi chúng tôi sử dụng Clang C tokenizer và Sentencepiece
+để tokenize dữ liệu pre-training. Mô hình C-BERT sau đó được fine tune trên mỗi benchmark classification.
+Ngoài ra, chúng tôi thí nghiệm với dataset POJ-104, chứa các ví dụ code bằng
+C và C++.
+
+C-BERT đạt được kết quả hấp dẫn trong binary classification và vulnerability detection với C source
+code [10,37]. Tuy nhiên, nó chưa được sử dụng trong multiclass classification task hoặc với các ngôn ngữ khác
+như C++, Java, và Python. Vì chúng tôi sử dụng sub-word tokenization và các ngôn ngữ lập trình khác nhau
+chia sẻ token chung, chúng tôi có thể áp dụng mô hình C-BERT trực tiếp trên các benchmark.
+
+Sau pretraining, chúng tôi fine tune mô hình trong năm epoch trên mỗi benchmark, với batch size 32 và
+learning rate 2e-5. Fine-tuning được thực hiện trên hai GPU V100 và mất từ 30 phút đến bốn giờ,
+tùy thuộc vào kích thước của dataset. Kích thước sub-word vocabulary là 5,000. Context lớn hơn
+512 token bị cắt ngắn.
+
+Bảng 10 tóm tắt accuracy mà C-BERT đạt được trên bốn benchmark CodeNet cũng như
+dataset POJ-104. C-BERT đạt được accuracy cao và hoạt động tốt nhất trên Java và Python.
+
+Bảng 10: Kết quả C-BERT (accuracy, tính bằng %) cho code classification.
+POJ-104    C++1000    C++1400    Java250     Python800
+98.41±0.01 93.79±0.01 91.83±0.06 97.40±0.19  97.09±0.18
+
+Hiệu suất tương đối thấp trên các benchmark C++ có thể liên quan đến đặc thù của
+dataset và một số practice lập trình nhất định. Kiểm tra thủ công cho thấy việc thiếu tên biến chi tiết
+trong C++ làm tổn hại hiệu suất của mô hình, trong các bài toán xuất hiện tương tự và có solution
+tương tự. Loại bỏ một trong những bài toán tương tự cải thiện hiệu suất mô hình trên bài toán
+khác. Hơn nữa, một practice lập trình có thể gây nhầm lẫn cho các mô hình là
+một số user C++ nhất định copy các constant chung (ví dụ, pi và epsilon) và data structure (ví dụ, enum) vào
+tất cả solution họ submit. Trong nhiều trường hợp, những nội dung duplicate này thậm chí không được sử dụng.
+Chúng tôi không quan sát thấy practice như vậy trong Python và Java.
+
+11
+
+--- TRANG 12 ---
+SoftMax while ( < { ) } + = * ;
+Convolution 15x512 with ReLU
+Convolution 5x320 with ReLU
+Convolution 1x256
+Dense layer 256x512 with ReLU
+Dense layer 512x1024 with ReLU Global Max Pooling
+Dropout layer
+Dense layer 1024x1000
+
+Hình 5: Kiến trúc CNN cho code classification.
+
+GNN với SPT
+Chúng tôi thí nghiệm với bốn loại GNN với SPT-based graph representation của source code:
+Graph Convolutional Network (GCN) [34], Graph Isomorphism Network (GIN) [35], và một
+variant có virtual-node cho mỗi loại (ký hiệu bằng -V). Variant thêm virtual node vào graph
+để tăng cường graph message passing [36]. Chúng tôi sử dụng Adam optimizer với learning rate 1e-3 cho
+training. Tất cả mô hình GNN có năm layer. Chúng tôi đã thí nghiệm với nhiều hơn 5 layer (tức 8
+và 10), tuy nhiên GNN sâu hơn không cải thiện hiệu suất, vì GNN sâu hơn có thể gặp phải
+vấn đề over-smoothing (tức node feature trở nên ít phân biệt hơn sau nhiều vòng
+message passing) [38].
+
+Chúng tôi thực hiện random split 6/2/2 cho mỗi trong 4 benchmark: tức 60% training data, 20% testing
+data, và 20% validation data. Chúng tôi chạy năm fold cho mỗi benchmark với early stop "patience"
+đặt 20 (tức dừng chỉ khi validation loss không giảm trong 20 epoch gần đây). Training mô hình của chúng tôi
+thường converge trong vòng 200 epoch trong một lần chạy 1-fold. Chúng tôi sửa đổi OGB [39] code-base với
+PyTorch Geometric [40] back-end trên PyTorch 1.6.0 [41] để chạy thí nghiệm. Các thí nghiệm
+được thực hiện trên một GPU NVIDIA V100. Đối với các benchmark lớn như C++1000 và C++1400, mất
+khoảng 1 tuần để hoàn thành một lần chạy 5-fold. Chúng tôi tóm tắt model accuracy, training time trên 5-fold,
+và training epoch trên 5-fold trong Bảng 11. Như chúng ta có thể thấy, việc thêm virtual node cải thiện hiệu suất GNN
+(cả GCN và GIN). Nhìn chung, GIN và các variant của nó hoạt động tốt hơn GCN và các
+
+12
+
+--- TRANG 13 ---
+variant của nó, có thể do thực tế là GIN về mặt lý thuyết tổng quát hóa Weisfeiler-Lehman Isomorphism
+Test và đạt được sức mạnh biểu đạt tối đa trong số các GNN [42].
+
+Để biết chi tiết mô hình, thiết lập hyper-parameter, data split, v.v., vui lòng tham khảo https://github.
+com/IBM/Project_CodeNet/tree/main/model-experiments/gnn-based-experiments .
+
+Bảng 11: Kết quả GNN (SPT) cho code classification. Mỗi tác vụ train trên 5-fold với early stopping
+patience parameter đặt là 20. Chúng tôi ghi lại test accuracy (với standard deviation), tổng training time
+trên 5 fold, và tổng training epoch trên 5 fold.
+
+                Java250      Python800    C++1000      C++1400
+GCN            92.70±0.25   93.82±0.16   95.76±0.12   95.26±0.13
+               10.55 hrs    14.50 hrs    47.96 hrs    67.34 hrs
+               411 epochs   219 epochs   228 epochs   310 epochs
+GCN-V          93.02±0.81   94.30±0.15   96.09±0.17   95.73±0.07
+               12.50 hrs    23.02 hrs    61.55 hrs    71.85 hrs
+               419 epochs   325 epochs   287 epochs   358 epochs
+GIN            93.26±0.23   94.17±0.19   96.34±0.15   95.95±0.13
+               19.80 hrs    41.67 hrs    116.67 hrs   133.50 hrs
+               513 epochs   496 epochs   441 epochs   502 epochs
+GIN-V          92.77±0.66   94.54±0.12   96.64±0.10   96.36±0.10
+               26.25 hrs    51.67 hrs    142.25 hrs   208.47 hrs
+               656 epochs   570 epochs   496 epochs   678 epochs
+
+8.2 Code Similarity
+Trong tác vụ similarity, hai đoạn mẫu code được coi là tương tự nếu chúng giải quyết cùng một bài toán
+(type-4 similarity trong [43]). Lưu ý rằng textual similarity không đảm bảo similarity về chức năng.
+Ví dụ, các chương trình chỉ khác nhau bởi một token có thể hoạt động rất khác nhau; do đó, chúng
+không được coi là tương tự. Đối với các thí nghiệm dựa trên token, chúng tôi coi bài toán như binary classification.
+Chúng tôi sử dụng cùng training, validation và testing split như trong classification. Các cặp code được randomly
+sample trong mỗi subset. Số lượng cặp tương tự bằng số lượng cặp không tương tự. Đối với SPT
+representation, chúng tôi thí nghiệm với một số kỹ thuật phổ biến, bao gồm AROMA [27], MISIM [21],
+và GMN [44]. Phần sau chứa chi tiết thêm về các mô hình và phương pháp.
+
+1. MLP với bag of token. Mô hình này giống như mô hình cho code classification, ngoại trừ
+input là một concatenation của hai bag-of-token vector từ mỗi chương trình.
+
+2. Siamese network với token sequence. Token sequence giống như trong code
+classification. Mô hình là Siamese network với hai CNN có weight chung.
+
+3. SPT với handcrafted feature extraction: Phương pháp AROMA [27] sử dụng normalized SPT
+node name và handcrafted rule để trích xuất feature vector cho mỗi SPT. Sau đó, similarity được
+tính toán như dot product của các extracted feature vector.
+
+4. GNN với SPT: Với cùng SPT, mặt khác, MISIM [21] sử dụng graph neural network
+để trích xuất high-level feature, và sử dụng cosine similarity của các extracted feature để tính toán
+similarity. Ngoài ra, chúng tôi áp dụng graph matching network (GMN) [44], sử dụng cross-graph
+attention mechanism để học pair-wise structural similarity của graph, trên các cặp SPT để predict
+similarity. Implementation được điều chỉnh từ [45].
+
+Bảng 12: Similarity accuracy (tính bằng %).
+                            Java250     Python800   C++1000     C++1400
+MLP w/ bag of tokens        81.80±0.06  86.61±0.08  85.82±0.05  86.54±0.07
+Siamese w/ token sequence   89.70±0.18  94.67±0.12  96.19±0.08  96.56±0.07
+
+Bảng 12 tóm tắt classification accuracy cho hai mô hình đầu tiên. Hiệu suất của bag
+of token khiêm tốn, xem xét rằng bài toán là binary classification với class hoàn toàn cân bằng.
+Mặt khác, mô hình Siamese vượt trội hơn đáng kể so với bag of token, như mong đợi.
+
+Bảng 13 tóm tắt MAP@R [46] score cho hai approach dựa trên SPT với solution cho 50%
+bài toán được sử dụng cho training, 25% cho validation, và 25% cho test. Mô hình MISIM GNN được train trong
+
+13
+
+--- TRANG 14 ---
+Bảng 13: Similarity MAP@R score.
+                        Java250      Python800    C++1000      C++1400
+Rule-based w/ SPT       0.19         0.19         0.17         0.15
+(AROMA)
+GNN w/ SPT (MISIM)     0.64±0.007   0.65±0.003   0.78±0.005   0.77±0.002
+
+1000 epoch. AROMA dẫn đến score tương đối thấp vì feature extraction dựa trên rule và
+không có mô hình nào được học, trong khi MISIM sử dụng neural network để trích xuất feature thông qua supervised
+training.
+
+Bảng 14: Similarity MAP@R score trên Java250.
+                                        (p4, s5)     (p3, s300)   (p10, s300)
+GNN w/ SPT (MISIM, structure only)     0.472±0.023  0.194±0.010  0.096±0.009
+GNN w/ SPT (GMN, structure only)       0.679±0.056  0.432±0.035  0.256±0.015
+GNN w/ SPT (GMN + MISIM node attributes) 0.985±0.015  0.794±0.036  0.780±0.026
+
+Khám phá thêm về benchmark Java250, Bảng 14 tóm tắt MAP@R score với nhiều loại
+test set: (p4, s5), (p3, s300), và (p10, s300), biểu thị 4, 3, và 10 bài toán với 5, 300 và
+300 solution tương ứng. Trên tất cả test set, GMN vượt trội hơn MISIM nếu cả hai được train
+chỉ với SPT structure; khi kết hợp với MISIM node attributes, GMN cải thiện thêm
+score một cách đáng kể.
+
+0.25 0.35 0.45 0.55 0.65 0.75
+0 100 200 300 400 500
+Number of training epochs Mean Average Precision @ R score POJ-104 (Test for GCJ -297) GCJ-297 (Validation) C++1000 (Validation)
+POJ-104 (Test for C++1000 ) 10%
+12%
+
+Hình 6: Test score trên POJ-104 cao hơn 12% khi mô hình được train trên C++1000 so với
+mô hình được train trên GCJ-297, mặc dù validation score cho mô hình GCJ-297 cao hơn 10% so với
+validation score cho mô hình C++1000.
+
+Chi tiết thêm về mỗi mô hình, cùng với môi trường thí nghiệm, được đưa ra dưới đây.
+
+8.2.1 Chi tiết Thí nghiệm về Code Similarity
+MLP với Bag of Token
+Đối với các thí nghiệm về code similarity analysis, chúng tôi sử dụng cùng bag of token như cho code classification.
+Input cho neural network được xây dựng bằng cách concatenate hai bag of token, một cho mỗi
+source code file.
+
+Bảng 15 cung cấp kết quả code similarity analysis trên tất cả bốn benchmark. Các cột đưa ra
+tên benchmark, test accuracy, số training epoch, số mẫu trong mỗi
+epoch, run time của mỗi epoch, số loại token được xem xét, và số test
+mẫu. Tất cả network được implement bằng Keras API của TensorFlow machine learning tool.
+Training được thực hiện trên một GPU V100 duy nhất, sử dụng Adam optimizer với learning rate 1e-3, và
+batch 256 mẫu.
+
+14
+
+--- TRANG 15 ---
+Bảng 15: Similarity analysis bằng MLP với bag of token.
+Benchmark    Accuracy      Number   Size of     Run time   Number   N test
+dataset      %             epochs   epoch       sec/epoch  tokens   samples
+Java250      81.80±0.06    20       4,096,000   21         81       512,000
+Python800    86.61±0.08    94       4,096,000   24         71       512,000
+C++1000      85.82±0.05    64       4,096,000   21         56       512,000
+C++1400      86.54±0.07    64       4,096,000   22         56       512,000
+
+Hình 7 hiển thị neural network được sử dụng cho code similarity analysis trên benchmark C++1400.
+Các neural network được sử dụng cho code similarity analysis trên các benchmark khác tương tự như network này.
+Như chúng ta thấy trong Bảng 15, accuracy của chúng tương tự.
+
+Source code file 1 Source code file 2
+Dense layer 112x64 with ReLU
+Dense layer 64x32 with ReLU
+Dense layer 32x4 with ReLU
+Sigmoid Dense layer 4x1 Bag of tokens of Bag of tokens of 
+
+Hình 7: Kiến trúc MLP cho similarity analysis.
+
+Như chúng ta thấy trong Bảng 15, model accuracy khá khiêm tốn (<87%) cho tất cả benchmark dataset, không
+cao lắm cho binary classification problem của dataset hoàn toàn cân bằng. Rõ ràng, bag of
+token quá nguyên thủy và bỏ lỡ nhiều chi tiết quan trọng cần thiết để identify similarity.
+
+Siamese Network với Token Sequence
+Đối với các thí nghiệm về code similarity, chúng tôi sử dụng cùng sequence of token như cho code classification.
+Neural network có hai input, một cho mỗi source code file. Sau khi thí nghiệm với nhiều
+kiến trúc neural network khác nhau, chúng tôi chọn siamese network vì hiệu suất tốt của nó.
+
+Bảng 16 cung cấp kết quả code similarity analysis trên tất cả bốn benchmark. Các cột đưa ra
+tên benchmark, test accuracy, số training epoch, số mẫu trong mỗi
+epoch, run time của mỗi epoch, số loại token được xem xét, và số test
+mẫu. Tất cả network được implement bằng Keras API của TensorFlow machine learning tool.
+Training được thực hiện trên bốn GPU V100, sử dụng Adam optimizer trong data parallel mode với learning
+rate 1e-3, và batch 512 mẫu.
+
+Neural network cho benchmark C++1400 được mô tả trong Hình 8. Các phần siamese của
+network có cùng cấu trúc và chia sẻ tất cả weight của chúng. Nếu input giống hệt nhau, output cũng vậy.
+Do đó, theo cấu trúc, network đảm bảo phát hiện similarity của các mẫu source
+code giống hệt nhau. Output của các phần siamese được so sánh bằng cách tính toán absolute difference.
+
+15
+
+--- TRANG 16 ---
+Bảng 16: Similarity analysis bằng Siamese network với token sequence.
+Benchmark    Accuracy      Number   Size of   Run time   Number   N test
+dataset      %             epochs   epoch     sec/epoch  tokens   samples
+Java250      89.70±0.18    29       51,200    114        75       512,000
+Python800    94.67±0.12    110      64,000    89         71       512,000
+C++1000      96.19±0.08    123      64,000    89         56       512,000
+C++1400      96.56±0.07    144      64,000    96         56       512,000
+
+Network hiển thị test accuracy 96.56±0.07% cho benchmark dataset C++1400. Chúng tôi coi đây là
+kết quả tốt, đặc biệt xem xét rằng token sequence bỏ qua tất cả identifier, comment, và
+nhiều keyword. Các neural network được sử dụng cho code similarity analysis của các benchmark khác
+tương tự như network được hiển thị trong Hình 8. Như chúng ta thấy trong Bảng 16, accuracy của chúng khá tương tự.
+
+SPT-based experiment
+Theo MISIM [21], các dataset train, validation, và test cho các thí nghiệm dựa trên SPT draw
+từ các bài toán hoàn toàn khác nhau. Trong các thí nghiệm của chúng tôi, chúng tôi sử dụng 50% bài toán cho training, 25% cho
+validation, và 25% cho test. Train, validation, và test split được sử dụng cho các thí nghiệm có thể được
+tìm thấy tại [47]. Similarity score trong Bảng 13 và Bảng 14 báo cáo mean và standard deviation của
+các giá trị MAP@R [46] được đánh giá với các mô hình được train bằng năm random seed. Các mô hình được train
+trên Xeon(R) CPU E5-2680 v4, 2.4GHz, 256 GiB memory sử dụng NVIDIA V100 GPU. Các SPT
+được sử dụng trong những thí nghiệm này có node được annotate với attribute được suy ra bằng cách kết hợp SPT feature
+(tham khảo Phần 6), theo context-aware semantic structure (CASS) được đề xuất trong [21].
+
+Các thí nghiệm AROMA được thực hiện bằng implementation của MISIM được đưa ra trong phần chi tiết thêm
+dưới đây [23] và input (SPT) được sử dụng cho những thí nghiệm này có thể được tìm thấy tại [47]. Do
+yêu cầu memory cao để tính toán MAP@R trên test set của các benchmark CodeNet, chúng tôi phải
+giảm feature set của AROMA. Chúng tôi ước tính rằng kết quả AROMA có thể cải thiện 10–25% khi
+tất cả feature được sử dụng. AROMA dựa trên rule và không có training nào được thực hiện, do đó chúng tôi không báo cáo mean
+và standard deviation trong Bảng 13. Đối với mỗi trong bốn dataset – Java250, Python800, C++1000,
+C++1400 – mô hình GNN của MISIM được train trong tổng cộng 1000 epoch với learning rate 0.001
+với Adam optimizer. Mỗi epoch bao gồm 1000 iteration, và trong mỗi iteration, 16 bài toán
+và 5 solution mỗi bài toán được randomly sample, và tất cả cặp solution được sử dụng cho training như trong
+[21]. Kết quả MISIM cho bốn ngôn ngữ có thể được reproduce bằng cách download MISIM code và
+script [23] và sử dụng các file CASS được cung cấp [47] như input.
+
+Đối với các thí nghiệm GMN (hàng 2 và hàng 3 trong Bảng 14), chúng tôi điều chỉnh implementation trong [45] của
+mô hình GMN [44] sử dụng SPT [47] như graph. Chúng tôi theo khuyến nghị trong [44] cho
+cấu hình mô hình, vì chúng tạo ra kết quả tốt nhất và ổn định trong các thí nghiệm của chúng tôi. Cụ thể,
+chúng tôi sử dụng 5 layer propagation với weight sharing across layer, dot-product similarity cho
+cross-graph attention mechanism, và GRU layer để update node embedding từ propagation
+scheme. Đối với GMN training, với tập hợp lớn các cặp SPT, chúng tôi áp dụng approach tương tự như [21] của
+randomly sampling 16 bài toán với 5 solution mỗi bài. Chúng tôi sử dụng triplet loss với approximate hamming
+similarity [44] cho mỗi mẫu, được tạo thành sử dụng cặp tương tự kết hợp với SPT không tương tự.
+Sau mỗi 100 iteration với batch size 64, một tập hợp khác gồm 16 bài toán và 5 solution được
+sample randomly cho tổng cộng 150,000 iteration (1500 sampled set). Kết quả GMN có thể cải thiện
+thêm với nhiều training iteration hơn. Chúng tôi sử dụng Adam optimizer với learning rate 1e-4 cho training.
+
+Hai hàng đầu tiên của Bảng 14 so sánh các mô hình similarity được train chỉ trên SPT graph structure.
+Hàng đầu tiên trong bảng điều chỉnh mô hình MISIM GNN bằng cách mask node label để cho phép
+mô hình học structural feature only. Hàng thứ hai sử dụng mô hình GMN [44] với cross-graph
+attention-based matching cho structural similarity sử dụng node vector dimension 32 và graph
+representation dimension 128.
+
+Đối với thí nghiệm GMN+MISIM node attributes, hàng 3 trong Bảng 14, chúng tôi cho phép mô hình GMN
+học feature dựa trên cả node attribute và SPT structure. Tương ứng, chúng tôi thay thế node
+encoder trong GMN, một MLP, bằng embedding layer, để tạo ra node feature vector. Chúng tôi
+khám phá các node feature vector dimension khác nhau, như 64, 100, 128, và thấy 100 tạo ra
+kết quả tốt cho số lượng training iteration nhất định. Tất cả thiết lập parameter khác vẫn giống
+như các thí nghiệm GMN chỉ có structure từ hàng 2 của Bảng 14. Kết quả GMN có thể được reproduce
+bằng cách sử dụng file Java250 CASS có sẵn tại [47].
+
+16
+
+--- TRANG 17 ---
+while ( { ) ==
+Global Max Pooling Global Max Pooling
+Dropout layer
+Dense layer 128x128 with ReLU
+Dense layer 128x128 with ReLU
+Dense layer 128x1
+Sigmoid |x−y| while ( < { )
+Convolution 5x160 with ReLU
+Convolution 1x128 Convolution 15x256 with ReLU
+
+Hình 8: Kiến trúc Siamese cho similarity analysis.
+
+MAP@R score [46] tốn kém về mặt tính toán cho các mô hình GMN vì embedding phải được
+tính toán cho tất cả cặp SPT trong test set, và do đó Bảng 14 báo cáo kết quả trên các
+test set được sample nhỏ hơn.
+
+Chi tiết Thí nghiệm MLM
+Ở đây chúng tôi hiển thị cách một masked language model (MLM) có thể được train với CodeNet. Chúng tôi theo sát
+approach của Ankur Singh, được tài liệu hóa trong blog [48]. Mục tiêu của mô hình là suy ra
+token đúng cho một vị trí được mask-out tùy ý trong source text. Chúng tôi giả định rằng trong mỗi text,
+chính xác một token được randomly mask. Token gốc tại vị trí đó sau đó là golden label.
+
+Từ mỗi trong 1000 bài toán C++1000, chúng tôi randomly chọn 100 mẫu cho training và 100
+khác cho testing. Mỗi source file C++ được tokenize thành vocabulary gồm 442 token riêng biệt được
+phân loại trong Bảng 17. Ví dụ, while là keyword và strlen là function literal.
+
+Code snippet này:
+
+17
+
+--- TRANG 18 ---
+Bảng 17: Các loại token được sử dụng cho MLM.
+Type             Count    Description
+the keyword      95       tất cả C++20 reserved word
+the function     280      tên function trong common header file
+the identifier   42       standard identifier, như stderr, v.v.
+the punctuator   16       tập hợp nhỏ các punctuation symbol
+# or ##          2        các C pre-processor symbol
+0, 1             2        trường hợp đặc biệt cho những constant thường gặp này
+the token class  5        identifier, number, operator, character, string
+
+for (i = 0; i < strlen(s); i++) {}
+
+sẽ được tokenize thành:
+for ( id = 0 ; id < strlen ( id ) ; id operator ) { }
+
+Các source file được tokenize được đọc vào pandas dataframe và được xử lý bởi Keras Text Vectorization layer,
+để trích xuất vocabulary và encode tất cả token line thành vocabulary indices, bao gồm
+special "[mask]" token. Mỗi mẫu có độ dài token cố định là 256. Số token trung bình
+mỗi mẫu trên training set là 474. Các mẫu ngắn được pad với 0 và những mẫu quá lớn
+chỉ đơn giản bị cắt ngắn.
+
+Mô hình được train với 100,000 mẫu trong batch 32 trên năm epoch, với learning rate
+0.001 sử dụng Adam optimizer. Chúng tôi đánh giá mô hình được train trên test set gồm 100,000 mẫu.
+Mỗi mẫu được tiền xử lý theo cách tương tự như training sample và một token (không bao giờ là padding)
+được thay thế tùy ý bằng symbol "[mask]". Sau đó, một prediction được tạo ra và top 1 và top
+5 kết quả được so sánh với giá trị mong đợi. Accuracy đạt được là top-1: 0.9104 (stddev:
+0.002) và top-5: 0.9935 (stddev: 0.0005).
+
+8.3 Generalization Across Dataset
+Các mô hình được train trên các benchmark dataset CodeNet có thể hưởng lợi rất nhiều từ chất lượng cao của chúng. Để
+chứng minh điều này, chúng tôi so sánh C++1000 với một trong những dataset lớn nhất có sẵn công khai cùng loại,
+GCJ-297 [23]. Để so sánh này, chúng tôi train cùng mô hình MISIM trên C++1000 và
+GCJ-297 và test hai mô hình được train trên dataset thứ ba, độc lập - POJ-104. Kết quả của
+so sánh này được vẽ trong Hình 6.
+
+Trục x của plot này là số training epoch được sử dụng và trục y là MAP@R score.
+Mô hình MISIM cho cả hai dataset được train trong 500 epoch và MAP@R score cho validation
+và test được tính toán sau mỗi mười epoch. Có tổng cộng bốn đường cong - một validation và một test
+curve cho GCJ-297 và một validation và một test curve cho C++1000.
+
+Các training curve hiển thị rằng validation score cao hơn 10% có thể đạt được với GCJ-297 so với
+C++1000. Tuy nhiên, khi test trên POJ-104, mô hình được train trên GCJ-297 đạt được score thấp hơn 12%
+so với mô hình được train trên C++1000. Chúng tôi tin rằng C++1000 có generalization tốt hơn
+GCJ-297 chủ yếu vì hai lý do: i) data bias cao trong GCJ-297 vì top 20 bài toán với
+số lượng submission nhiều nhất chiếm 50% tất cả submission và ii) việc làm sạch và de-duplication
+của submission trong dataset CodeNet (như mô tả trong Phần 5.2).
+
+8.4 Masked Language Modelling cho Token Inference
+Một tác vụ như code completion dựa vào khả năng predict token tại một vị trí nhất định trong
+sequence. Để thực hiện điều này, chúng ta có thể xây dựng masked language model (MLM) sử dụng kỹ thuật
+randomly mask out token trong input sequence và nhằm predict chúng một cách chính xác trong
+test set chưa thấy. Chúng tôi train mô hình attention giống BERT phổ biến trên benchmark C++1000 CodeNet
+sau tokenization thành vocabulary gồm hơn 400 token và đạt được top-1 prediction accuracy 0.9104
+(stddev: 0.002) và top-5 accuracy 0.9935 (stddev: 0.0005).
+
+18
+
+--- TRANG 19 ---
+9 Các Ứng dụng Khác của CodeNet
+Metadata phong phú và tính đa dạng ngôn ngữ mở ra CodeNet cho vô số use case. Mối quan hệ problem-
+submission trong CodeNet tương ứng với type-4 similarity [43] và có thể được sử dụng cho code
+search và clone detection. Các mẫu code trong CodeNet được gắn nhãn với acceptance status
+của chúng để chúng ta có thể dễ dàng trích xuất các cặp buggy và fixed code cho code repair [49,50]. Một số lượng lớn
+mẫu code đi kèm với input để chúng ta có thể thực thi code để trích xuất CPU run time và
+memory footprint, có thể được sử dụng cho regression study và prediction.
+
+CodeNet cũng có thể được sử dụng cho program translation, với sự phong phú của các chương trình được viết bằng vô số
+ngôn ngữ. Translation giữa hai ngôn ngữ lập trình được sinh ra từ nhu cầu thực tế để port
+legacy codebase sang ngôn ngữ hiện đại nhằm tăng accessibility và giảm maintenance cost.
+Với sự giúp đỡ của neural network, các mô hình machine translation được phát triển cho natural language [51]
+được điều chỉnh cho ngôn ngữ lập trình, tạo ra thành công then chốt [4]. Một thách thức đáng kể của
+neural machine translation là việc training mô hình phụ thuộc vào parallel corpora lớn mà việc
+curation rất tốn kém [52], đặc biệt cho low-resource language (ví dụ, legacy code). Gần đây, các approach
+monolingual [53,4] được phát triển để giảm thiểu sự phụ thuộc vào parallel data, mở đường để xây dựng
+mô hình cho các ngôn ngữ có ít translation. So với các data set phổ biến hiện tại (ví dụ, [4,54]),
+CodeNet bao gồm tập hợp ngôn ngữ phong phú hơn nhiều với training instance dồi dào.
+
+10 Kết luận
+Artificial intelligence đã đạt được những tiến bộ to lớn trong việc hiểu ngôn ngữ con người. Các computer scientist
+đã bị thu hút bởi khả năng và bị quyến rũ bởi tầm nhìn về máy tính (AI) lập trình
+máy tính. Trong bài báo này, chúng tôi đã trình bày "CodeNet", một dataset quy mô rất lớn, đa dạng và
+chất lượng cao đầu tiên để đẩy nhanh những tiến bộ thuật toán trong AI for Code. Dataset này không
+chỉ độc đáo về quy mô, mà còn về tính đa dạng của các coding task mà nó có thể giúp benchmark: từ code
+similarity và classification cho những tiến bộ trong code recommendation algorithm, và code translation
+giữa nhiều ngôn ngữ lập trình khác nhau, đến những tiến bộ trong code performance improvement
+technique. Chúng tôi hy vọng rằng quy mô, tính đa dạng và các annotation phong phú, chất lượng cao của CodeNet sẽ mang lại
+cơ hội nghiên cứu chưa từng có tại giao điểm của AI và Software Engineering.
+
+11 Lời cảm ơn
+Chúng tôi muốn cảm ơn AIZU và AtCoder đã làm cho các code submission có sẵn công khai.
+Chúng tôi muốn cảm ơn team IBM Data Asset eXchange đã cung cấp platform để host
+dataset CodeNet. Chúng tôi muốn cảm ơn team Women in Data Science tại Stanford University
+và team IBM Call for Code về sự hợp tác trong việc tổ chức CodeNet challenge.
+
+12 Thư mục tham khảo
+[1] Miltiadis Allamanis, Earl T Barr, Premkumar Devanbu, và Charles Sutton. A survey of
+machine learning for big code and naturalness. ACM Computing Surveys (CSUR), 51(4):1–37,
+2018.
+
+[2] Yanming Yang, Xin Xia, David Lo, và John Grundy. A survey on deep learning for software
+engineering. arXiv preprint arXiv:2011.14597, 2020.
+
+[3] Mark Chen, Jerry Tworek, Heewoo Jun, Qiming Yuan, Henrique Ponde de Oliveira Pinto,
+Jared Kaplan, Harri Edwards, Yuri Burda, Nicholas Joseph, Greg Brockman, Alex Ray, Raul
+Puri, Gretchen Krueger, Michael Petrov, Heidy Khlaaf, Girish Sastry, Pamela Mishkin, Brooke
+Chan, Scott Gray, Nick Ryder, Mikhail Pavlov, Alethea Power, Lukasz Kaiser, Mohammad
+Bavarian, Clemens Winter, Philippe Tillet, Felipe Petroski Such, Dave Cummings, Matthias
+Plappert, Fotios Chantzis, Elizabeth Barnes, Ariel Herbert-Voss, William Hebgen Guss, Alex
+Nichol, Alex Paino, Nikolas Tezak, Jie Tang, Igor Babuschkin, Suchir Balaji, Shantanu Jain,
+William Saunders, Christopher Hesse, Andrew N. Carr, Jan Leike, Josh Achiam, Vedant Misra,
+Evan Morikawa, Alec Radford, Matthew Knight, Miles Brundage, Mira Murati, Katie Mayer,
+Peter Welinder, Bob McGrew, Dario Amodei, Sam McCandlish, Ilya Sutskever, và Wojciech
+Zaremba. Evaluating large language models trained on code, 2021.
+
+19
+
+--- TRANG 20 ---
+[4] Marie-Anne Lachaux, Baptiste Roziere, Lowik Chanussot, và Guillaume Lample. Unsupervised translation of programming languages. In NeurIPS, 2020.
+
+[5] Zheng Wang và Michael O'Boyle. Machine learning in compiler optimization. Proceedings of the IEEE, 106(11):1879–1901, 2018.
+
+[6] http://ibm.biz/cfcsc-codenet.
+
+[7] Women in data science. https://widsconference.org/.
+
+[8] Yutaka Watanobe. Aizu online judge. https://onlinejudge.u-aizu.ac.jp.
+
+[9] Atcoder. https://atcoder.jp/.
+
+[10] Yunhui Zheng, Saurabh Pujar, Burn Lewis, Luca Buratti, Edward Epstein, Bo Yang, Jim Laredo, Alessandro Morari, và Zhong Su. D2a: A dataset built for ai-based vulnerability detection methods using differential analysis. In Proceedings of the ACM/IEEE 43rd International Conference on Software Engineering: Software Engineering in Practice, ICSE-SEIP '21, New York, NY, USA, 2021. Association for Computing Machinery.
+
+[11] Yaqin Zhou, Shangqing Liu, Jingkai Siow, Xiaoning Du, và Yang Liu. Devign: Effective vulnerability identification by learning comprehensive program semantics via graph neural networks. In Advances in Neural Information Processing Systems, pages 10197–10207. NeurIPS Foundation, 2019.
+
+[12] Zhangyin Feng, Daya Guo, Duyu Tang, Nan Duan, Xiaocheng Feng, Ming Gonga, Linjun Shou, Bing Qin, Ting Liu, và Daxin Jiang. Codebert: A pre-trained model for programming and natural languages. arXiv preprint arXiv:2002.08155v4, 2020.
+
+[13] Miltiadis Allamanis và Charles Sutton. Mining source code repositories at massive scale using language modeling. In 10th Working Conference on Mining Software Repositories (MSR), page 207–216. IEEE, 2013.
+
+[14] Veselin Raychev, Pavol Bielik, và Martin Vechev. Probabilistic model for code with decision trees. ACM SIGPLAN Notices, 2016.
+
+[15] Michele Tufano, Cody Watson, Gabriele Bavota, Massimiliano Di Penta, Martin White, và Denys Poshyvanyk. An empirical study on learning bug-fixing patches in the wild via neural machine translation. In ACM Transactions on Software Engineering and Methodology (TOSEM), pages 1–29, 2019.
+
+[16] Hamel Husain, Ho-Hsiang Wu, Tiferet Gazit, Miltiadis Allamanis, và Marc Brockschmidt. Codesearchnet challenge: Evaluating the state of semantic code search. arXiv preprint arXiv:1909.09436v3, 2019.
+
+[17] Srinivasan Iyer, Ioannis Konstas, Alvin Cheung, và Luke Zettlemoyer. Mapping language to code in programmatic context. arXiv preprint arXiv:1808.09588, 2018.
+
+[18] Shuai Lu, Daya Guo, Shuo Ren, Junjie Huang, Alexey Svyatkovskiy, Ambrosio Blanco, Colin Clement, Dawn Drain, Daxin Jiang, Duyu Tang, Ge Li, Lidong Zhou, Linjun Shou, Long Zhou, Michele Tufano, Ming Gong, Ming Zhou, Nan Duan, Neel Sundaresan, Shao Kun Deng, Shengyu Fu, và Shujie Liu. Codexglue: A machine learning benchmark dataset for code understanding and generation, 2021.
+
+[19] Tal Ben-Nun, Alice Shoshana Jakobovits, và Torsten Hoefler. Neural code comprehension: A learnable representation of code semantics. In S. Bengio, H. Wallach, H. Larochelle, K. Grauman, N. Cesa-Bianchi, và R. Garnett, editors, Advances in Neural Information Processing Systems 31, pages 3588–3600. Curran Associates, Inc., 2018.
+
+[20] Farhan Ullah, Hamad Naeem, Sohail Jabbar, Shehzad Khalid, Muhammad Ahsan Latif, Fadi Al-turjman, và Leonardo Mostarda. Cyber security threats detection in internet of things using deep learning approach. IEEE Access, 7:124379–124389, 2019.
+
+[21] Fangke Ye, Shengtian Zhou, Anand Venkat, Ryan Marcus, Nesime Tatbul, Jesmin Jahan Tithi, Niranjan Hasabnis, Paul Petersen, Mattson. Timothy, Tim Kraska, Pradeep Dubey, Vivek Sarkar, và Justin Gottschlich. Misim: A novel code similarity system, 2021.
+
+[22] https://sites.google.com/site/treebasedcnn/home/problemdescription.
+
+[23] gcj-dataset. https://openreview.net/attachment?id=AZ4vmLoJft&name=supplementary_material.
+
+20
+
+--- TRANG 21 ---
+[24] Miltiadis Allamanis. The adverse effects of code duplication in machine learning models of code. In Proceedings of the 2019 ACM SIGPLAN International Symposium on New Ideas, New Paradigms, and Reflections on Programming and Software, Onward! 2019, page 143–153, New York, NY, USA, 2019. Association for Computing Machinery.
+
+[25] Wikipedia. Jaccard index — Wikipedia, the free encyclopedia. https://en.wikipedia.org/wiki/Jaccard_index, 2020.
+
+[26] Terence Parr. The Definitive ANTLR 4 Reference. Pragmatic Bookshelf, 2nd edition, 2013.
+
+[27] Sifei Luan, Di Yang, Celeste Barnaby, Koushik Sen, và Satish Chandra. Aroma: code recommendation via structural code search. Proceedings of the ACM on Programming Languages, 3(OOPSLA):1–28, Oct 2019.
+
+[28] IBM T.J. Watson Research Center. Wala. https://github.com/wala/WALA, 2021.
+
+[29] Forbes on codenet. https://www.forbes.com/sites/moorinsights/2021/06/04/ibm-codenet-artificial-intelligence-that-can-program-computers-and-solve-a-100-billion-legacy-code-problem/?sh=343813636cdc.
+
+[30] Venturebeat on codenet. https://venturebeat.com/2021/05/10/ibms-codenet-dataset-aims-to-train-ai-to-tackle-programming-challenges/.
+
+[31] Zdnet on codenet. https://www.zdnet.com/article/ibm-launches-autosql-watson-orchestrate-codenet-enterprise-ai-tools-at-think/.
+
+[32] Project codenet repository. https://github.com/IBM/Project_CodeNet.
+
+[33] Luca Buratti, Saurabh Pujar, Mihaela Bornea, Scott McCarley, Yunhui Zheng, Gaetano Rossiello, Alessandro Morari, Jim Laredo, Veronika Thost, Yufan Zhuang, và Giacomo Domeniconi. Exploring software naturalness through neural language models, 2020.
+
+[34] Thomas N. Kipf và Max Welling. Semi-supervised classification with graph convolutional networks. In ICLR, 2017.
+
+[35] Keyulu Xu, Weihua Hu, Jure Leskovec, và Stefanie Jegelka. How powerful are graph neural networks? In ICLR, 2019.
+
+[36] Veronika Thost và Jie Chen. Directed acyclic graph neural networks. In ICLR, 2021.
+
+[37] Shuai Lu, Daya Guo, Shuo Ren, Junjie Huang, Alexey Svyatkovskiy, Ambrosio Blanco, Colin B. Clement, Dawn Drain, Daxin Jiang, Duyu Tang, Ge Li, Lidong Zhou, Linjun Shou, Long Zhou, Michele Tufano, Ming Gong, Ming Zhou, Nan Duan, Neel Sundaresan, Shao Kun Deng, Shengyu Fu, và Shujie Liu. Codexglue: A machine learning benchmark dataset for code understanding and generation. CoRR, abs/2102.04664, 2021.
+
+[38] Qimai Li, Zhichao Han, và Xiao-Ming Wu. Deeper insights into graph convolutional networks for semi-supervised learning, 2018.
+
+[39] Weihua Hu, Matthias Fey, Marinka Zitnik, Yuxiao Dong, Hongyu Ren, Bowen Liu, Michele Catasta, và Jure Leskovec. Open graph benchmark: Datasets for machine learning on graphs. arXiv preprint arXiv:2005.00687, 2020.
+
+[40] Matthias Fey và Jan E. Lenssen. Fast graph representation learning with PyTorch Geometric. In ICLR Workshop on Representation Learning on Graphs and Manifolds, 2019.
+
+[41] Adam Paszke, Sam Gross, Francisco Massa, Adam Lerer, James Bradbury, Gregory Chanan, Trevor Killeen, Zeming Lin, Natalia Gimelshein, Luca Antiga, Alban Desmaison, Andreas Kopf, Edward Yang, Zachary DeVito, Martin Raison, Alykhan Tejani, Sasank Chilamkurthy, Benoit Steiner, Lu Fang, Junjie Bai, và Soumith Chintala. Pytorch: An imperative style, high-performance deep learning library. In H. Wallach, H. Larochelle, A. Beygelzimer, F. d'Alché-Buc, E. Fox, và R. Garnett, editors, Advances in Neural Information Processing Systems 32, pages 8024–8035. Curran Associates, Inc., 2019.
+
+[42] Keyulu Xu, Weihua Hu, Jure Leskovec, và Stefanie Jegelka. How powerful are graph neural networks?, 2019.
+
+[43] Hitesh Sajnani. Large-Scale Code Clone Detection. PhD thesis, University of California, Irvine, 2016.
+
+[44] Yujia Li, Chenjie Gu, Thomas Dullien, Oriol Vinyals, và Pushmeet Kohli. Graph matching network for learning the similarity of graph structured objects. In International Conference on Machine Learning (ICML), 2019.
+
+21
+
+--- TRANG 22 ---
+[45] Graph-matching-networks. https://github.com/Lin-Yijie/Graph-Matching-Networks.
+
+[46] Kevin Musgrave, Serge J. Belongie, và Ser-Nam Lim. A metric learning reality check. CoRR, abs/2003.08505, 2020.
+
+[47] Codenet dataset. https://developer.ibm.com/exchanges/data/all/project-codenet.
+
+[48] Ankur Singh. "end-to-end masked language modeling with bert". https://keras.io/examples/nlp/masked_language_modeling.
+
+[49] Zimin Chen, Steve Kommrusch, Michele Tufano, Louis-Noël Pouchet, Denys Poshyvanyk, và Martin Monperrus. Sequencer: Sequence-to-sequence learning for end-to-end program repair. IEEE Transaction on Software Engineering, 2019.
+
+[50] Michihiro Yasunaga và Percy Liang. Break-it-fix-it: Unsupervised learning for program repair. In International Conference on Machine Learning (ICML), 2021.
+
+[51] Yonghui Wu, Mike Schuster, Zhifeng Chen, Quoc V. Le, Mohammad Norouzi, Wolfgang Macherey, Maxim Krikun, Yuan Cao, Qin Gao, Klaus Macherey, Jeff Klingner, Apurva Shah, Melvin Johnson, Xiaobing Liu, Łukasz Kaiser, Stephan Gouws, Yoshikiyo Kato, Taku Kudo, Hideto Kazawa, Keith Stevens, George Kurian, Nishant Patil, Wei Wang, Cliff Young, Jason Smith, Jason Riesa, Alex Rudnick, Oriol Vinyals, Greg Corrado, Macduff Hughes, và Jeffrey Dean. Google's neural machine translation system: Bridging the gap between human and machine translation. Preprint arXiv:1609.08144, 2016.
+
+[52] Xinyun Chen, Chang Liu, và Dawn Song. Tree-to-tree neural networks for program translation. In NeurIPS, 2018.
+
+[53] Guillaume Lample, Alexis Conneau, Ludovic Denoyer, và Marc'Aurelio Ranzato. Unsupervised machine translation using monolingual corpora only. In ICLR, 2018.
+
+[54] Shuai Lu, Daya Guo, Shuo Ren, Junjie Huang, Alexey Svyatkovskiy, Ambrosio Blanco, Colin Clement, Dawn Drain, Daxin Jiang, Duyu Tang, Ge Li, Lidong Zhou, Linjun Shou, Long Zhou, Michele Tufano, Ming Gong, Ming Zhou, Nan Duan, Neel Sundaresan, Shao Kun Deng, Shengyu Fu, và Shujie Liu. CodeXGLUE: A machine learning benchmark dataset for code understanding and generation. Preprint arXiv:2102.04664, 2021.
+
+22

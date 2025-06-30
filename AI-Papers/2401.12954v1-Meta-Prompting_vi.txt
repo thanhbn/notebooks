@@ -1,0 +1,816 @@
+# 2401.12954v1.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2401.12954v1.pdf
+# Kích thước file: 793470 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+Meta-Prompting:
+Nâng cao Mô hình Ngôn ngữ với Scaffolding Bất khả tri Nhiệm vụ
+
+Mirac Suzgun
+Stanford University∗
+msuzgun@stanford.edu Adam Tauman Kalai
+OpenAI∗
+adam@kal.ai
+
+Tóm tắt
+Chúng tôi giới thiệu meta-prompting, một kỹ thuật scaffolding hiệu quả được thiết kế để nâng cao
+chức năng của các mô hình ngôn ngữ (LMs). Phương pháp này biến đổi một LM đơn lẻ thành một
+conductor đa khía cạnh, thành thạo trong việc quản lý và tích hợp nhiều truy vấn LM độc lập.
+Bằng cách sử dụng các hướng dẫn cao cấp, meta-prompting hướng dẫn LM phân tách các nhiệm vụ
+phức tạp thành các nhiệm vụ con nhỏ hơn, dễ quản lý hơn. Các nhiệm vụ con này sau đó được xử lý
+bởi các instance "chuyên gia" riêng biệt của cùng một LM, mỗi instance hoạt động dưới các hướng dẫn
+cụ thể, được điều chỉnh riêng. Trung tâm của quá trình này là chính LM, trong vai trò conductor,
+đảm bảo giao tiếp liền mạch và tích hợp hiệu quả các đầu ra từ những mô hình chuyên gia này.
+Nó cũng sử dụng khả năng tư duy phản biện tự nhiên và các quy trình xác minh mạnh mẽ để tinh
+chỉnh và xác thực kết quả cuối cùng. Phương pháp prompting cộng tác này trao quyền cho một LM
+đơn lẻ đồng thời đóng vai trò như một orchestrator toàn diện và một nhóm các chuyên gia đa dạng,
+nâng cao đáng kể hiệu suất của nó trên một loạt rộng các nhiệm vụ.
+Bản chất zero-shot, bất khả tri nhiệm vụ của meta-prompting làm đơn giản hóa đáng kể tương tác người dùng
+bằng cách loại bỏ nhu cầu về các hướng dẫn chi tiết, cụ thể theo nhiệm vụ. Hơn nữa, nghiên cứu của chúng tôi
+chứng minh việc tích hợp liền mạch các công cụ bên ngoài, như Python interpreter, vào
+framework meta-prompting, qua đó mở rộng khả năng ứng dụng và tiện ích của nó. Thông qua
+thí nghiệm nghiêm ngặt với GPT-4, chúng tôi thiết lập sự ưu việt của meta-prompting
+so với các phương pháp scaffolding thông thường: Khi tính trung bình trên tất cả các nhiệm vụ, bao gồm
+Game of 24, Checkmate-in-One, và Python Programming Puzzles, meta-prompting—
+tăng cường với chức năng Python interpreter—vượt trội hơn standard prompting 
+17.1%, expert (dynamic) prompting 17.3%, và multipersona prompting 15.2%.¹
+
+[Biểu đồ hiệu suất cho Game of 24, Checkmate-in-One, và Sonnet Writing]
+
+Hình 1: Nâng cao GPT-4 với meta-prompting. Trong nghiên cứu này, chúng tôi giới thiệu và kiểm tra hiệu quả của meta-prompting, 
+đối chiếu với một loạt kỹ thuật zero-shot prompting, bao gồm standard zero-shot (Std), zero-shot chain-of-thought 
+(0-CoT; Kojima et al.(2022)), generic và dynamic expert (Ex-St và Ex-Dy; Xu et al.(2023)), và multipersona 
+(MP; Wang et al.(2023)). Nghiên cứu của chúng tôi chứng minh rằng meta-prompting, đặc biệt khi kết hợp với 
+Python interpreter, cải thiện đáng kể độ chính xác tổng thể và tính mạnh mẽ trong GPT-4 trên nhiều nhiệm vụ đa dạng.
+
+∗Công việc được thực hiện khi ở Microsoft Research New England.
+¹Dữ liệu, prompts, và đầu ra mô hình đều có sẵn tại https://github.com/suzgunmirac/meta-prompting.
+
+1arXiv:2401.12954v1 [cs.CL] 23 Jan 2024
+
+--- TRANG 2 ---
+1 Giới thiệu
+
+Thế hệ mô hình ngôn ngữ (LMs) mới nhất—đáng chú ý là GPT-4 (OpenAI, 2023), PaLM (Anil et al., 2023),
+và LLaMa (Touvron et al., 2023)—đã mở rộng ranh giới của xử lý và sinh ngôn ngữ tự nhiên.
+Những mô hình quy mô lớn này có thể giải quyết một phổ rộng các nhiệm vụ, từ viết sonnets Shakespearean
+về nhím đến tóm tắt báo cáo y tế phức tạp và giải các bài toán lập trình cấp độ thi đấu.
+Bất chấp tính linh hoạt của chúng, những mô hình này không phải là vô lỗi; đôi khi chúng sinh ra
+những phản hồi không chính xác, gây hiểu lầm, hoặc mâu thuẫn. Khi chi phí vận hành của những mô hình này trở nên
+phải chăng hơn, việc tự hỏi liệu có thể sử dụng các hệ thống scaffolding và tận dụng nhiều
+truy vấn LM không chỉ để tinh chỉnh mà còn để nâng cao độ chính xác và tính mạnh mẽ của những đầu ra mô hình này trở nên tự nhiên.
+
+Trong công trình này, chúng tôi giới thiệu một kỹ thuật mới để nâng cao chức năng và hiệu suất của LMs, gọi là
+meta-prompting. Nó bao gồm việc xây dựng một "meta" prompt cấp cao hướng dẫn một LM: (i) phân tách
+các nhiệm vụ hoặc vấn đề phức tạp thành những phần nhỏ hơn, dễ quản lý; (ii) giao những phần này cho các mô hình
+"chuyên gia" chuyên biệt với hướng dẫn ngôn ngữ tự nhiên thích hợp và chi tiết; (iii) giám sát giao tiếp giữa
+những mô hình chuyên gia này; và (iv) áp dụng kỹ năng tư duy phản biện, lý luận, và xác minh của chính nó trong suốt
+quá trình. Khi được trình bày một truy vấn, LM, được prompt hiệu quả dưới meta-prompting, phục vụ
+như một conductor. Nó tạo ra một lịch sử thông điệp—một tường thuật, nếu bạn muốn—bao gồm các phản hồi từ
+nhiều mô hình chuyên gia khác nhau. LM ban đầu chịu trách nhiệm sinh ra phần conductor của lịch sử này,
+bao gồm việc lựa chọn chuyên gia và xây dựng hướng dẫn cụ thể cho họ. Tuy nhiên,
+cùng một LM cũng nhân đôi mình như những chuyên gia độc lập này, sinh ra đầu ra dựa trên chuyên môn và
+thông tin được chọn bởi conductor cho mỗi truy vấn cụ thể.
+
+Phương pháp này cho phép một LM đồng nhất duy nhất duy trì một dòng lý luận mạch lạc trong khi cũng khai thác
+vào nhiều vai trò chuyên gia khác nhau. Việc sử dụng các ngữ cảnh được chọn động cho việc prompting những chuyên gia này đưa
+các góc nhìn mới vào quá trình, trong khi mô hình conductor duy trì tầm nhìn tổng quan của toàn bộ lịch sử
+và phối hợp. Do đó, phương pháp này cho phép một LM black-box đơn lẻ hoạt động hiệu quả như cả một
+conductor trung tâm và một nhóm chuyên gia đa dạng để tạo ra những phản hồi chính xác, đáng tin cậy và mạch lạc hơn.
+
+Kỹ thuật meta-prompting đề xuất của chúng tôi kết hợp và mở rộng nhiều ý tưởng prompting được giới thiệu
+bởi các nghiên cứu gần đây—bao gồm, quy hoạch và ra quyết định cấp cao (Yao et al., 2023b; Sun et al., 2023; Hao
+et al., 2023a), gán persona động (Xu et al., 2023; Wang et al., 2023), tranh luận đa tác nhân (Du et al.,
+2023; Zhuge et al., 2023), tự debug và tự phản chiếu (Schick et al., 2023b; Liu et al., 2023a; Gou et al., 2023;
+Madaan et al., 2023; Shinn et al., 2023). Một khía cạnh chính của meta-prompting là bản chất bất khả tri nhiệm vụ của nó. Không giống
+các phương pháp scaffolding truyền thống yêu cầu hướng dẫn cụ thể hoặc ví dụ được điều chỉnh cho từng nhiệm vụ, meta-
+prompting sử dụng cùng một bộ hướng dẫn cấp cao trên các nhiệm vụ và đầu vào khác nhau. Tính phổ quát này
+đặc biệt có lợi cho người dùng có thể thấy cồng kềnh khi cung cấp ví dụ chi tiết hoặc hướng dẫn cụ thể
+cho mỗi nhiệm vụ riêng biệt. Ví dụ, trong việc phản hồi một yêu cầu một lần như "Viết một sonnet Shakespearean
+về selfies," người dùng sẽ không cần phải cung cấp ví dụ về những bài thơ tân cổ điển chất lượng cao. 
+Phương pháp meta-prompting nâng cao tiện ích của các mô hình ngôn ngữ bằng cách cung cấp một framework rộng, linh hoạt
+mà không ảnh hưởng đến tính cụ thể hay liên quan. Thêm vào đó, để chứng minh tính linh hoạt và khả năng tích hợp
+của meta-prompting, chúng tôi đã nâng cao hệ thống với chức năng gọi Python
+interpreter. Điều này cho phép một ứng dụng động và toàn diện hơn nữa của kỹ thuật, tiếp tục
+mở rộng tiềm năng của nó để giải quyết một loạt rộng các nhiệm vụ và truy vấn một cách hiệu quả.
+
+Chúng tôi cung cấp một hình ảnh trực quan của một session meta-prompting trong Hình 2. Nó mô tả cách Meta
+Model—thuật ngữ kỹ thuật của chúng tôi cho LM điều khiển trung tâm (hay conductor)—xen kẽ đầu ra của chính nó
+với đầu vào và đầu ra từ nhiều mô hình chuyên gia chuyên biệt hoặc thực thi code. Cấu hình như vậy
+làm cho meta-prompting trở thành một công cụ gần như phổ quát. Nó cho phép hợp nhất các tương tác LM và
+tính toán khác nhau thành một tường thuật đơn lẻ, mạch lạc. Điều khiến meta-prompting khác biệt là nó để lại quyết định
+về việc sử dụng prompts nào và thực thi code snippets nào theo quyết định của chính LM.
+
+Trong các thí nghiệm toàn diện của chúng tôi, chủ yếu sử dụng GPT-4 như LM nền tảng, chúng tôi so sánh
+hiệu quả của meta-prompting với các phương pháp scaffolding bất khả tri nhiệm vụ khác. Các phát hiện của chúng tôi tiết lộ rằng
+meta-prompting không chỉ nâng cao hiệu suất tổng thể mà thường dẫn đến kết quả state-of-the-art trên một
+loạt đa dạng các nhiệm vụ. Tính linh hoạt của nó đáng chú ý: Mô hình conductor có khả năng gọi
+
+2
+
+--- TRANG 3 ---
+[Hình 2 mô tả một ví dụ lịch sử meta-prompting với các prompts được rút gọn cho mục đích minh họa]
+
+Dựa trên thông tin đã cho, những bước tiếp theo hoặc kết luận logic nhất là gì? Hãy đảm bảo rằng giải pháp chính xác, trả lời trực tiếp câu hỏi gốc, và tuân thủ tất cả các ràng buộc đã cho. Ngoài ra, hãy tự xem xét giải pháp cuối cùng hoặc nhờ chuyên gia khác xác minh nó.
+
+Expert Chess Analyst: """Bạn là một nhà phân tích cờ vua với chuyên môn trong việc xem xét và xác minh các nước cờ, chiến lược và chiến thuật. Hãy xác minh nước đi sau được cung cấp bởi Expert Chess Player như nước đi tiếp theo sẽ dẫn đến checkmate: 1. d4 d5 2. g3 c6 3. Bg2 Nf6 4. Nf3 e6 5. O-O Be7 6 [...] 31. Qxg6 Re8 32. Rxe8+ Qf8 33. Rxf8#. Xác nhận nếu nước này chính xác và dẫn đến checkmate."""
+
+Câu hỏi: Cho một chuỗi nước cờ được viết bằng Standard Algebraic Notation (SAN), xác định nước đi tiếp theo sẽ dẫn đến checkmate.
+1. d4 d5 2. g3 c6 3. Bg2 Nf6 4. Nf3 e6 5. O-O Be7 6. Re1 O-O 7. Nbd2 Nbd7 [...] 31. Qxg6 Re8 32. Rxe8+ Qf8 33.
+
+Hãy đầu tiên đưa ra danh sách các chuyên gia bạn có thể muốn tham khảo cho vấn đề này và sau đó ngay lập tức bắt đầu giải quyết nó.
+
+Expert Chess Player: """Bạn là một chuyên gia cờ vua với kiến thức sâu sắc về trò chơi, bao gồm chiến lược, chiến thuật và Standard Algebraic Notation (SAN). Phân tích chuỗi nước cờ đã cho và xác định nước đi tiếp theo sẽ dẫn đến checkmate. Đây là chuỗi nước đi: 1. d4 d5 2. g3 c6 3. Bg2 Nf6 4. Nf3 e6 5. O-O Be7 6. Re1 O-O 7. Nbd2 Nbd7 [...] 31. Qxg6 Re8 32. Rxe8+ Qf8 33."""
+
+Có, chuỗi nước đi được cung cấp chính xác và dẫn đến checkmate. Nước cuối cùng, 33. Rxf8#, đặt vua đen vào vị trí checkmate, không có nước hợp lệ nào để thoát khỏi chiếu.
+
+Vì Expert Chess Analyst đã xác nhận độ chính xác của nước đi được cung cấp bởi Expert Chess Player, chúng ta có thể đưa ra câu trả lời cuối cùng.
+>> ĐÁP ÁN CUỐI CÙNG: """33. Rxf8#"""
+
+[Meta Model Output, Expert Chess Analyst Output, Expert Chess Player Output với các hướng dẫn được tiêm vào]
+
+Bạn là Meta-Expert, một chuyên gia cực kỳ thông minh với khả năng độc đáo hợp tác với nhiều chuyên gia (như Expert Problem Solver, Expert Mathematician, Expert Essayist, v.v.) để giải quyết bất kỳ nhiệm vụ nào và giải quyết bất kỳ vấn đề phức tạp nào. Một số chuyên gia giỏi tạo ra giải pháp, trong khi những người khác xuất sắc trong việc xác minh câu trả lời và cung cấp phản hồi có giá trị...
+
+Hình 2: Một ví dụ lịch sử meta-prompting, trong đó các prompts đã được rút gọn cho mục đích minh họa. Lịch sử được khởi tạo bởi một câu hỏi được cung cấp bởi người dùng. Sau đó các mục lặp lại qua: (a) hướng dẫn được tiêm cho Meta Model, (b) đầu ra của Meta Model (khi được prompt với toàn bộ lịch sử cho đến thời điểm đó), và (c) đầu ra của chuyên gia (với tầm nhìn mới—chỉ được prompt trên hướng dẫn được sinh bởi Meta Model).
+
+các mô hình chuyên gia (về cơ bản là chính nó, mặc dù với hướng dẫn mới) để thực hiện nhiều chức năng khác nhau. Những
+chức năng này có thể bao gồm phê bình các đầu ra trước đó, chọn personas cụ thể cho một số nhiệm vụ nhất định, tinh chỉnh
+nội dung được sinh ra, và đảm bảo rằng các đầu ra cuối cùng đáp ứng tiêu chí mong muốn cả về nội dung và hình thức.
+Phương pháp này cho thấy sự cải thiện rõ rệt so với một số phương pháp hiện có, như được chứng minh trong Hình 1.
+
+Đóng góp cốt lõi của công trình này là việc giới thiệu một hệ thống scaffolding bất khả tri nhiệm vụ tận dụng một
+LM đơn lẻ. LM này không chỉ duy trì luồng của nhiệm vụ mà còn chọn động và hướng dẫn
+các mô hình chuyên gia thích hợp cho mỗi nhiệm vụ cụ thể. Hiệu quả của hệ thống này được thể hiện trên nhiều
+benchmarks khác nhau, bao gồm Game of 24 (Yao et al., 2023a), Checkmate-in-One từ bộ BIG-Bench (BIG-
+Bench authors, 2023), và nhiệm vụ mới của chúng tôi "Shakespearean Sonnet Writing." Nhìn chung, kết quả thực nghiệm của chúng tôi
+nhấn mạnh tính linh hoạt và mạnh mẽ của meta-prompting trong việc nâng cao hiệu suất LM.
+
+2 Meta Prompting
+
+Trực giác và Tổng quan Trừu tượng. Modus operandi của meta-prompting là sử dụng một model² để phối hợp
+và thực hiện nhiều truy vấn độc lập và sau đó tổng hợp các phản hồi của chúng để tạo ra một phản hồi
+cuối cùng. Cơ chế này, về nguyên tắc, ủng hộ một phương pháp ensemble, rút ra từ sức mạnh và
+tính đa dạng của các mô hình chuyên biệt độc lập để cộng tác giải quyết và xử lý các nhiệm vụ hoặc
+vấn đề đa khía cạnh. Chúng tôi đưa ra giả thuyết rằng trong khi một mô hình đa năng đơn lẻ có thể đưa ra những hiểu biết
+có giá trị và hữu ích cho các truy vấn tổng quát, việc kết hợp các góc nhìn và kết luận của nhiều mô hình cụ thể theo domain (mà
+chúng tôi cũng gọi là các chuyên gia) có tiềm năng mang lại những giải pháp toàn diện, mạnh mẽ và chính xác hơn.
+
+²Việc sử dụng thuật ngữ model của chúng tôi đề cập đến việc áp dụng một LM với các prompt templates nhất định để đóng một "vai trò" cụ thể. Chúng tôi thường chỉ sử dụng một LM đơn lẻ (ví dụ, GPT-4) để triển khai tất cả các models trong một lần thực thi.
+
+3
+
+--- TRANG 4 ---
+Trung tâm của chiến lược meta-prompting của chúng tôi là cấu hình phân cấp nông của nó, trong đó một model đơn lẻ—được gọi là
+"Meta Model"—nổi lên như thực thể chính quyền chủ yếu. Cấu trúc prompting này gợi nhớ đến
+một dàn nhạc, trong đó vai trò conductor được phản ánh bởi Meta Model và mỗi nhạc công tương ứng
+với một mô hình cụ thể theo domain riêng biệt. Giống như một conductor hòa âm nhiều yếu tố âm nhạc để tạo nên một
+giai điệu đẹp, Meta Model kết hợp các giải pháp và hiểu biết từ một loạt mô hình để cung cấp một
+câu trả lời chính xác và toàn diện cho một vấn đề hoặc nhiệm vụ phức tạp.
+
+Về mặt khái niệm, một chuyên gia cụ thể theo domain trong framework của chúng tôi có thể có nhiều hình thức đa dạng, như một LM được finetune
+được điều chỉnh để thực hiện một nhiệm vụ cụ thể, một API chuyên biệt được trang bị để xử lý các truy vấn liên quan đến domain cụ thể,
+hoặc thậm chí các công cụ tính toán như máy tính hoặc Python interpreter có thể thực hiện tính toán số học
+hoặc viết và thực thi code. Những chuyên gia này, bất chấp các chức năng khác nhau của họ, được chỉ đạo và thống nhất dưới
+sự giám sát của Meta Model.
+
+Dưới thiết lập của chúng tôi, các chuyên gia chỉ có thể được gọi bởi Meta Model. Họ không thể tương tác hoặc giao tiếp
+trực tiếp với nhau, mặc dù Meta Model có thể chọn chia sẻ một số văn bản từ hoặc kết hợp các hiểu biết của
+nhiều chuyên gia khác nhau khi tương tác với một chuyên gia mới. Hạn chế này được đặt ra để đơn giản hóa giao tiếp
+giữa các chuyên gia và đặt Meta Model vào trung tâm của hoạt động.
+
+Ký hiệu và Thuật ngữ. Trước khi chúng tôi đi sâu vào các bước cụ thể liên quan đến meta-prompting, chúng tôi thiết lập
+một số ký hiệu và thuật ngữ. Chúng tôi để S biểu thị tập hợp các chuỗi hữu hạn, với ∅ đại diện cho chuỗi rỗng.
+Chúng tôi sử dụng x∈S để đề cập đến một truy vấn thời gian test, có thể là một nhiệm vụ hoặc vấn đề được mô tả bằng ngôn ngữ tự nhiên. Một
+yếu tố quan trọng của meta-prompting là mô hình ngôn ngữ cố định, được ký hiệu là LM, hoạt động từ S đến S.
+Mô hình này, như GPT-4, nhận một văn bản đầu vào (một lịch sử prompt có thể bao gồm danh sách các thông điệp trước đó,
+được ký hiệu bởi H) và tạo ra một đầu ra tương ứng (tức là, phản hồi). Chúng tôi cũng giới thiệu các hàm template cụ thể:
+tinit, tmid, và texp, mỗi hàm ánh xạ từ S đến S; mỗi hàm nhận một đầu vào chuỗi và định dạng nó theo một
+template được định nghĩa trước. Cụ thể, tinit và tmid được sử dụng để định dạng văn bản cho lịch sử được cung cấp cho Meta Model,
+trong khi texp bọc đầu ra của Meta Model trong một prompt phù hợp cho một mô hình chuyên gia. Hơn nữa, chúng tôi
+có hai string extractors, eexp và eret, mỗi cái ánh xạ từ S đến S. Những extractors này được thiết kế để truy xuất
+một substring được bao bọc trong các delimiters cụ thể, trả về đoạn khớp đầu tiên trong trường hợp có
+nhiều đoạn. Ký hiệu ⊕ được sử dụng để đại diện cho phép nối chuỗi. Cuối cùng, chúng tôi giới thiệu
+một chuỗi cụ thể được gọi là error ∈S, được thiết kế để biểu thị một thông điệp lỗi trong quá trình.
+
+Quy trình Thuật toán. Thuật toán 1 cung cấp pseudocode của phương pháp meta-prompting đề xuất của chúng tôi. Chúng tôi
+cung cấp thêm một tổng quan khái niệm về quy trình dưới đây:
+
+Thuật toán 1 Meta Prompting
+Đầu vào: LM:S→S; x,error∈S; T∈N; tinit, tmid, texp, eexp, eret:S→S
+1: H1←tinit(x)
+2: for t∈[1, . . . , T] do
+3: yt←LM(Ht)
+4: if eexp(yt)≠∅ then ▷ Meta Model cung cấp hướng dẫn chuyên gia
+5: prompt ←texp(eexp(yt))
+6: zt←LM(prompt)
+7: Ht+1← Ht⊕tmid(zt)
+8: else if eret(yt)≠∅ then ▷ Meta Model trả về một câu trả lời cuối cùng
+9: return eret(yt)
+10: else ▷ Lỗi định dạng Meta Model
+11: Ht+1← Ht⊕error
+12: end if
+13: end for
+
+1. Biến đổi Đầu vào: Sử dụng hàm biến đổi tinit, truy vấn thô được đặt trong một
+template phù hợp theo sau bởi hướng dẫn ban đầu cho Meta Model.
+2. Vòng lặp Lặp lại:
+
+4
+
+--- TRANG 5 ---
+(a) Prompting Meta Model: Danh sách thông điệp hiện tại, cụ thể là Ht, hướng dẫn hành động tiếp theo của Meta Model—
+hoặc trực tiếp giải quyết truy vấn hoặc tham khảo một chuyên gia cụ thể theo domain.
+
+(b) Tham gia các Mô hình Chuyên gia Cụ thể theo Domain: Nếu Meta Model không trả về kết quả, nó có thể
+triệu hồi bất kỳ chuyên gia nào và đưa ra hướng dẫn cho họ, được trích xuất từ đầu ra của nó bằng eexp. Quá
+trình này được cô lập: Mỗi chuyên gia chỉ thấy những gì Meta Model chọn chia sẻ với
+họ, và phản hồi tương ứng. Ví dụ, nếu một vấn đề liên quan đến toán học và lịch sử,
+Meta Model có thể tham khảo một chuyên gia toán học cho phép tính và một chuyên gia lịch sử cho
+bối cảnh lịch sử. Đầu ra của chuyên gia được trích xuất và hướng dẫn bổ sung được thêm vào,
+tất cả sử dụng template tmid.
+
+(c) Trả về Phản hồi Cuối cùng: Nếu phản hồi của Meta Model chứa một câu trả lời cuối cùng (được làm nổi bật
+bởi các markers đặc biệt riêng biệt), giải pháp được trích xuất bằng eret và trả về.
+
+(d) Xử lý Lỗi: Trong các trường hợp mà phản hồi mô hình yt không chứa câu trả lời cuối cùng cũng không có lời gọi
+đến một mô hình chuyên gia, một thông điệp lỗi được thêm vào danh sách thông điệp Ht. Điều này đảm bảo rằng quy
+trình của chúng tôi mạnh mẽ và có thể xử lý các đầu ra không mong đợi.
+
+Đặc tả Meta và Expert Model. Trong thiết lập của chúng tôi, chúng tôi sử dụng cùng một LM, như GPT-4, để hoạt động trong
+cả vai trò Meta và Expert. Vai trò của họ được phân biệt bởi các hướng dẫn mô hình tương ứng trong
+prompts của họ, với Meta Model tuân thủ một bộ hướng dẫn được cung cấp trong Hình 3, và các mô hình chuyên gia
+tuân theo các hướng dẫn riêng biệt được xác định động bởi Meta Model tại thời gian inference.
+
+3 Thiết lập Thí nghiệm
+
+3.1 Baselines
+
+Chúng tôi so sánh meta-prompting với các phiên bản bất khả tri nhiệm vụ, zero-shot của các phương pháp prompting sau:
+
+• Standard prompting: Đây đại diện cho baseline cơ bản nhất của chúng tôi trong đó một LM được yêu cầu trực tiếp tạo ra
+một phản hồi mà không có bất kỳ exemplars đầu vào-đầu ra hướng dẫn cụ thể nào hoặc bất kỳ hướng dẫn hướng dẫn bổ sung nào,
+ngoài mô tả nhiệm vụ đã được bao gồm trong truy vấn đầu vào.
+
+• Zero-shot CoT prompting (Kojima et al., 2022): Lấy cảm hứng từ phương pháp chain-of-thought
+của Wei et al. (2022b), phương pháp zero-shot prompting này đơn giản thêm "Let's think step by
+step" vào truy vấn đầu vào, khuyến khích mô hình có một nhận thức suy tư và lặp đi lặp lại hơn
+trước khi giải quyết vấn đề hoặc nhiệm vụ hiện tại.
+
+• Expert prompting (Xu et al., 2023): Phương pháp prompting này hoạt động thông qua một quy trình hai bước:
+Đầu tiên nó tạo ra một danh tính chuyên gia được điều chỉnh để phù hợp với bối cảnh cụ thể của truy vấn đầu vào. Sau đó nó
+tích hợp hồ sơ chuyên gia được sinh này vào đầu vào để tạo ra một
+phản hồi có thông tin và có thẩm quyền. Trong các thí nghiệm của chúng tôi, chúng tôi xem xét hai phiên bản của expert prompting,
+cụ thể là (a) static (tức là, generic) và (b) dynamic (tức là, adaptive); phiên bản trước sử dụng một mô tả chuyên gia cố định và generic,
+trong khi phiên bản sau thiết kế một cách thích ứng một danh tính chuyên gia mới cho mỗi truy vấn đầu vào.
+
+• Multi-persona prompting (Du et al., 2023): Cũng được biết đến như solo-performance prompting (SPP), phương
+pháp này hướng dẫn một LM thực hiện những điều sau: (i) Đề xuất một ensemble nhỏ "personas" để
+giải quyết nhiệm vụ hoặc vấn đề cụ thể hiện tại; (ii) để những personas này tham gia vào một cuộc đối thoại tập thể,
+cộng tác tạo ra các giải pháp tiềm năng trong khi mở rộng phản hồi cho nhau và tinh chỉnh
+câu trả lời của họ; và (iii) tổng hợp tất cả thông tin có sẵn và đưa ra một phản hồi cuối cùng.
+
+3.2 Datasets và Nhiệm vụ
+
+Để đánh giá hiệu quả của phương pháp meta-prompting đề xuất của chúng tôi so với các baselines zero-shot prompting khác,
+chúng tôi xem xét một loạt rộng các nhiệm vụ và datasets yêu cầu các mức độ khác nhau của lý luận toán học và thuật toán,
+
+5
+
+--- TRANG 6 ---
+kiến thức cụ thể theo domain, và sáng tạo văn học. Bao gồm:
+
+• (a) Game of 24 từ (Yao et al., 2023a) trong đó mục tiêu là tạo thành một biểu thức số học có
+giá trị là 24 bằng cách sử dụng mỗi số trong bốn số đã cho chính xác một lần,
+
+• Ba nhiệm vụ BIG-Bench Hard (BBH; Suzgun et al. (2023b))—cụ thể là, (b) Geometric Shapes, (c) Multi-
+Step Arithmetic Two, và (d) Word Sorting—cũng như một nhiệm vụ lý luận được lấy trực tiếp từ
+bộ BIG-Bench (BIG-Bench authors, 2023), đó là, (e) Checkmate-in-One;
+
+• (f) Python Programming Puzzles (P3; Schuster et al. (2021)), một bộ sưu tập các bài toán lập trình
+thách thức được viết bằng Python—với các mức độ khó khác nhau;
+
+• (g) Multilingual Grade School Math (MGSM; Shi et al. (2023)), một phiên bản đa ngôn ngữ của dataset GSM8K
+(Cobbe et al., 2021) với bản dịch của một tập con ví dụ sang mười ngôn ngữ đa dạng về mặt loại hình học,
+bao gồm Bengali, Japanese, và Swahili;
+
+• (h) Shakespearean Sonnet Writing, một nhiệm vụ mới mà chúng tôi tạo ra trong đó mục tiêu là viết một sonnet với
+sơ đồ vần nghiêm ngặt "ABAB CDCD EFEF GG," chứa ba từ được cung cấp một cách nguyên văn.³
+
+3.3 Giao thức Trích xuất và Đánh giá Câu trả lời
+
+Như được hiển thị trong Hình 3, hướng dẫn hệ thống trong phương pháp meta-prompting đề xuất của chúng tôi khuyến khích Meta
+Model trình bày câu trả lời cuối cùng của nó trong một định dạng cụ thể. Định dạng này, được thiết kế cho việc trích xuất nhất quán và rõ ràng,
+yêu cầu rằng câu trả lời cuối cùng được bọc trong dấu ngoặc kép ba và đứng trước một marker riêng biệt
+(cụ thể là, "» FINAL ANSWER: ").
+
+Sau khi câu trả lời cuối cùng được trích xuất từ mô hình và được xử lý hậu kỳ thích hợp, chúng tôi cũng cần đánh giá tính
+chính xác của nó.⁴ Vì chúng tôi xem xét một loạt rộng các nhiệm vụ, không có một metric đơn lẻ nào cho phép chúng tôi đo
+độ chính xác trên tất cả. Tùy thuộc vào bản chất và công thức của nhiệm vụ, chúng tôi đo độ chính xác bằng một trong
+ba metrics sau:
+
+• Exact Match (EM): Dưới metric nghiêm ngặt này, tính chính xác của một câu trả lời được xác định bởi sự liên kết chính xác
+của nó với (các) nhãn ground-truth. Một câu trả lời được coi là đúng chỉ khi nó giống hệt với một
+tham chiếu được cung cấp.
+
+• Soft Match (SM): Metric này cung cấp một phương pháp nhẹ nhàng hơn so với EM. Để một câu trả lời được coi
+là đúng, chỉ cần đủ để một nhãn ground-truth có mặt trong đầu ra của mô hình, bất kể
+bất kỳ nội dung văn bản bổ sung nào.
+
+• Functionally Correct (FC): Metric này xác định liệu câu trả lời có chính xác về mặt chức năng hay không, có nghĩa là
+nó tuân thủ các ràng buộc cụ thể theo nhiệm vụ.
+
+Chúng tôi sử dụng EM cho Geometric Shapes, Multi-Step Arithmetic Two, và Checkmate-in-One; SM cho MGSM và
+Word Sorting; và FC cho Game of 24, Python Programming Puzzles, và Shakespearean Sonnet Writing.
+
+3.4 Models và Inference
+
+Trong các thí nghiệm chính của chúng tôi, chúng tôi tập trung vào GPT-4 (gpt-4-32k), có thể truy cập thông qua Microsoft's
+Azure OpenAI Service. Ngoài ra, trong các thí nghiệm bổ sung của chúng tôi, chúng tôi bao gồm GPT-3.5 (gpt-35-turbo).
+Cả GPT-3.5 và GPT-4 đều là các mô hình được fine-tuned để tuân theo hướng dẫn, mặc dù GPT-4 đã chứng minh
+khả năng lý luận và sinh nội dung tốt hơn đáng kể so với GPT-3.5.⁵
+
+³Mặc dù tất cả các nhiệm vụ và datasets khác đã được giới thiệu trước đó bởi các nghiên cứu khác, chúng tôi trình bày nhiệm vụ này lần đầu tiên.
+⁴Chúng tôi đã phát triển các pipelines phù hợp cho việc trích xuất và xử lý câu trả lời được điều chỉnh cho từng nhiệm vụ. Chi tiết triển khai cụ thể có thể được tìm thấy trong codebase của chúng tôi.
+⁵Trong các thí nghiệm sơ bộ của chúng tôi, chúng tôi cũng đã thử nghiệm các mô hình OpenAI khác như text-davinci-003 và code-davinci-002, nhưng chúng tôi phát hiện rằng phương pháp meta-prompting của chúng tôi mang lại kết quả đáng kể khi áp dụng cho GPT-3.5 và GPT-4.
+
+6
+
+--- TRANG 7 ---
+Trong tất cả các thí nghiệm của chúng tôi, chúng tôi nhất quán áp dụng cùng các tham số và hướng dẫn hệ thống cho Meta
+Model. Chúng tôi đặt giá trị temperature ở 0, giá trị top-p ở 0.95, và số lượng token tối đa ở 1024.⁶
+
+Bạn là Meta-Expert, một chuyên gia cực kỳ thông minh với khả năng độc đáo hợp tác với nhiều chuyên gia (như Expert 
+Problem Solver, Expert Mathematician, Expert Essayist, v.v.) để giải quyết bất kỳ nhiệm vụ nào và giải quyết bất kỳ vấn đề phức tạp nào. Một số 
+chuyên gia giỏi tạo ra giải pháp, trong khi những người khác xuất sắc trong việc xác minh câu trả lời và cung cấp phản hồi có giá trị.
+
+Lưu ý rằng bạn cũng có quyền truy cập đặc biệt vào Expert Python, có khả năng độc đáo tạo ra và thực thi code Python 
+dựa trên hướng dẫn ngôn ngữ tự nhiên. Expert Python có khả năng cao trong việc tạo code để thực hiện các phép tính phức tạp khi 
+được đưa ra các chỉ dẫn rõ ràng và chính xác. Do đó bạn có thể muốn sử dụng nó đặc biệt cho các nhiệm vụ tính toán.
+
+Với tư cách Meta-Expert, vai trò của bạn là giám sát giao tiếp giữa các chuyên gia, sử dụng hiệu quả kỹ năng của họ để trả lời một 
+câu hỏi đã cho trong khi áp dụng khả năng tư duy phản biện và xác minh của chính bạn.
+
+Để giao tiếp với một chuyên gia, hãy gõ tên của họ (ví dụ, "Expert Linguist" hoặc "Expert Puzzle Solver"), theo sau bởi dấu hai chấm ":", và 
+sau đó cung cấp một hướng dẫn chi tiết được bao bọc trong dấu ngoặc kép ba. Ví dụ:
+
+Expert Mathematician:
+"""
+Bạn là một chuyên gia toán học, chuyên về các lĩnh vực hình học và đại số.
+Tính khoảng cách Euclidean giữa các điểm (-2, 5) và (3, 7).
+"""
+
+Đảm bảo rằng hướng dẫn của bạn rõ ràng và không mơ hồ, và bao gồm tất cả thông tin cần thiết trong dấu ngoặc kép ba. Bạn 
+cũng có thể gán personas cho các chuyên gia (ví dụ, "Bạn là một nhà vật lý chuyên về...").
+
+Tương tác với chỉ một chuyên gia tại một thời điểm, và chia nhỏ các vấn đề phức tạp thành các nhiệm vụ nhỏ hơn, có thể giải quyết được nếu cần. Mỗi tương tác 
+được coi như một sự kiện độc lập, vì vậy hãy bao gồm tất cả chi tiết liên quan trong mỗi lần gọi.
+
+Nếu bạn hoặc một chuyên gia tìm thấy lỗi trong giải pháp của chuyên gia khác, hãy yêu cầu một chuyên gia mới xem xét chi tiết, so sánh cả hai 
+giải pháp, và đưa ra phản hồi. Bạn có thể yêu cầu một chuyên gia làm lại tính toán hoặc công việc của họ, sử dụng đầu vào từ các chuyên gia khác.
+
+Hãy nhớ rằng tất cả các chuyên gia, ngoại trừ bạn, không có trí nhớ! Do đó, luôn cung cấp thông tin đầy đủ trong 
+hướng dẫn của bạn khi liên hệ với họ. Vì các chuyên gia đôi khi có thể mắc lỗi, hãy tìm kiếm nhiều ý kiến hoặc xác minh độc lập 
+giải pháp nếu không chắc chắn. Trước khi cung cấp câu trả lời cuối cùng, luôn tham khảo một chuyên gia để xác nhận. Lý tưởng nhất, hãy có được hoặc 
+xác minh giải pháp cuối cùng với hai chuyên gia độc lập. Tuy nhiên, hãy cố gắng trình bày câu trả lời cuối cùng của bạn trong vòng 15 vòng hoặc ít hơn.
+
+Tránh lặp lại chính xác cùng một câu hỏi cho các chuyên gia. Kiểm tra phản hồi của họ cẩn thận và tìm kiếm làm rõ nếu 
+cần, nhớ rằng họ không nhớ các tương tác trong quá khứ.
+
+Trình bày câu trả lời cuối cùng như sau:
+>> FINAL ANSWER:
+"""
+[câu trả lời cuối cùng]
+"""
+
+Đối với các câu hỏi trắc nghiệm, chỉ chọn một tùy chọn. Mỗi câu hỏi có một câu trả lời duy nhất, vì vậy hãy phân tích thông tin được cung cấp 
+cẩn thận để xác định phản hồi chính xác và thích hợp nhất. Hãy chỉ trình bày một giải pháp nếu bạn 
+gặp nhiều tùy chọn.
+
+Hình 3: Các hướng dẫn được đưa cho Meta Model sử dụng tham số "system message" trong GPT-4 API.
+
+⁶Giá trị temperature, thường dao động giữa 0 và 1, kiểm soát mức độ ngẫu nhiên hoặc sáng tạo mà mô hình thể hiện.
+Lý tưởng nhất, temperature 0 sẽ dẫn đến mô hình tạo ra cùng một đầu ra khi được trình bày cùng một đầu vào. Tuy nhiên,
+cả GPT-3.5 và GPT-4 đều cho thấy xu hướng tạo ra các phản hồi khác nhau ngay cả ở cài đặt này. Điều này có nghĩa là việc tái tạo
+kết quả chính xác của chúng tôi có thể khó khăn dưới điều kiện thí nghiệm giống hệt. Để giải quyết vấn đề này, chúng tôi đang phát hành tất cả đầu vào mô hình,
+tương tác, và đầu ra trong repository GitHub của chúng tôi.
+
+7
+
+--- TRANG 8 ---
+[Bảng kết quả so sánh các baselines với meta-prompting trên các nhiệm vụ]
+
+Bảng 1: So sánh các baselines với meta-prompting trên các nhiệm vụ. Không có Python interpreter, meta-prompting
+vượt trội đáng kể so với các phương pháp khác trên các nhiệm vụ Checkmate-in-One và Sonnet Writing và ngang bằng trên hầu hết
+các nhiệm vụ khác ngoại trừ Geometric Shapes. Meta-prompting có thể tận dụng Python interpreter một cách bất khả tri nhiệm vụ để
+cải thiện hiệu suất đáng kể trên nhiều nhiệm vụ.
+
+4 Kết quả Chính và Thảo luận
+
+Kết quả của các thí nghiệm của chúng tôi, được tóm tắt trong Bảng 1, chứng minh hiệu quả vượt trội của phương pháp meta-
+prompting của chúng tôi so với các phương pháp zero-shot prompting tiêu chuẩn. Khi chúng tôi nhìn vào hiệu suất
+tổng thể trên tất cả các nhiệm vụ, có một sự gia tăng đáng chú ý về độ chính xác với meta-prompting, đặc biệt khi nó
+được tăng cường với Python interpreter. Cụ thể, meta-prompting vượt trội hơn standard prompting
+17.1%, expert (dynamic) prompting 17.3%, và multipersona prompting 15.2%. Dưới đây, chúng tôi đi sâu vào
+bốn hiểu biết chính nổi lên từ phân tích thực nghiệm của chúng tôi.
+
+4.1 Hiệu suất Tổng thể
+
+Phương pháp meta-prompting, đặc biệt khi được tăng cường với Python interpreter, nhất quán vượt trội
+so với zero-shot prompting thông thường trên nhiều nhiệm vụ khác nhau. Phương pháp này chứng minh đặc biệt hiệu quả
+trong việc giải quyết các nhiệm vụ phụ thuộc nhiều vào các chiến lược giải quyết vấn đề heuristic hoặc lặp đi lặp lại trial-and-error.
+Trong thử thách Game of 24, chúng ta thấy một cải thiện độ chính xác hơn 60% so với phương pháp standard
+prompting cơ bản (được tô sáng màu hồng), khoảng 15% tăng trong Python Programming Puzzles, và gần 18% tăng độ chính xác cho Sonnet Writing. Những nhiệm vụ này yêu cầu các chiến lược tìm kiếm phức tạp, lặp đi lặp lại, và heuristic,
+nơi mà conventional single-shot prompting không đủ. Ngược lại, meta-prompting tận dụng trí tuệ tập thể của nhiều expert personas để lặp đi lặp lại điều hướng hướng tới một giải pháp, do đó thúc đẩy một
+hệ sinh thái giải quyết vấn đề động và hiệu quả hơn.
+
+Mở rộng khả năng của nó, meta-prompting có vẻ hiệu quả trong các nhiệm vụ viết sáng tạo cũng như vậy.
+Trong nhiệm vụ Shakespearean Sonnet Writing, ví dụ, đòi hỏi độ chính xác ngôn ngữ học và sự tuân thủ sáng tạo
+với các cấu trúc thơ cụ thể, meta-prompting nâng cao hiệu suất một cách đáng chú ý. Trong khi các phương pháp standard
+prompting cho tỷ lệ chính xác 62%, meta-prompting đạt được 79.6% và 77.6% độ chính xác, với và
+không có Python interpreter, tương ứng.
+
+Trong MGSM và Geometric Shapes, lợi ích của meta-prompting so với các phương pháp prompting khác có vẻ
+tối thiểu dựa trên ấn tượng đầu tiên. Tuy nhiên, meta-prompting cung cấp 4-6% tăng trong Bengali và
+Telugu, hai ngôn ngữ ít được đại diện với hiệu suất baseline thấp nhất. Trong Geometric Shapes,⁷ chúng tôi
+đã mong đợi rằng GPT-4 sẽ xác định hình dạng của các đối tượng bằng cách tạo ra và thực thi code thích hợp
+dưới meta-prompting, nhưng điều này đã không xảy ra. Meta-prompting chỉ mang lại một tăng khiêm tốn 2.4% trong
+nhiệm vụ hình học này. Tuy nhiên, chúng tôi thừa nhận rằng baseline zero-shot-CoT đã thực hiện tốt hơn một cách đáng ngạc nhiên
+so với tất cả các phương pháp khác, vượt trội meta-prompting với khoảng cách độ chính xác 10%.
+
+Trong khi những tăng đáng kể nhất được quan sát thấy bằng cách sử dụng Python interpreter, chúng tôi lưu ý rằng đối với nhiệm vụ Checkmate-in-
+One, meta-prompting đạt được tăng 20.8% ngay cả khi không có nó. Nhìn chung, kết quả của chúng tôi làm nổi bật tính linh hoạt
+của meta-prompting và nhấn mạnh tiềm năng của nó cho ứng dụng rộng rãi vượt ra ngoài các vấn đề nghiêm ngặt tính toán.
+
+⁷Nhiệm vụ này bao gồm đặt tên một hình dạng từ đường dẫn SVG của nó. Lưu ý rằng các LMs chúng tôi sử dụng không cung cấp khả năng thị giác tại thời điểm đó.
+
+8
+
+--- TRANG 9 ---
+4.2 Phân tách Zero-Shot, Phát hiện Lỗi, và Tổng hợp
+
+Thành công của framework meta-prompting của chúng tôi nằm một phần trong việc sử dụng chiến lược kiến thức chuyên biệt, tự-
+hợp tác, và các vòng lặp xác minh ngầm. Phương pháp này, cũng như multipersona prompting, khuyến khích
+các tương tác multi-turn trong đó các personas khác nhau hợp tác để giải quyết một vấn đề.
+
+Để minh họa cách framework có thể có lợi, hãy xem xét giải quyết các vấn đề số học đa ngôn ngữ từ
+dataset MGSM. GPT-4, dưới phương pháp meta-prompting, thường tuân theo một phương pháp ba giai đoạn: ban đầu
+dịch vấn đề từ ngôn ngữ nguồn (ví dụ, Bengali) sang tiếng Anh, sau đó áp dụng chuyên môn tính toán
+(như gọi Expert Mathematician) để tìm một giải pháp, và cuối cùng, tiến hành một xác minh độc lập hoặc
+được xác nhận. Phương pháp không giám sát này phù hợp với phương pháp multilingual CoT prompting
+được sử dụng bởi Shi et al. (2023) cho MGSM, trong đó prompt hướng dẫn LM trước tiên dịch vấn đề và
+sau đó giải quyết nó. Meta-prompting thực hiện việc dịch như vậy mà không được hướng dẫn một cách rõ ràng để làm như vậy.
+
+Phương pháp có cấu trúc của chúng tôi thể hiện nguyên tắc wisdom of the crowd (Suzgun et al., 2023a), mà
+đưa ra giả thuyết rằng ý kiến tập thể của một tập hợp đa dạng các nhà tư duy phản biện thường vượt qua hiểu biết của các
+chuyên gia cá nhân. Bằng cách khai thác một ensemble các mô hình chuyên gia chuyên biệt dưới sự hướng dẫn của Meta Model,
+mỗi cái đóng góp từ các góc độ chuyên môn khác nhau, chúng tôi đạt được giải quyết vấn đề chính xác và đáng tin cậy hơn.
+
+4.3 Fresh Eyes
+
+Khái niệm fresh eyes giúp giảm thiểu vấn đề nổi tiếng của LMs doubling-down trên lỗi lầm của họ
+và thể hiện sự tự tin thái quá (xem, ví dụ, Zhang et al., 2023b). Fresh eyes là một yếu tố phân biệt quan trọng giữa
+meta-prompting và multipersona prompting, và do đó việc so sánh kết quả thí nghiệm chứng minh
+lợi thế. Trong meta-prompting, các góc nhìn mới được giới thiệu bằng cách tham gia các chuyên gia—hoặc personas—để
+đánh giá lại vấn đề. Phương pháp này cung cấp cơ hội cho hiểu biết mới và khả năng phát hiện
+các giải pháp không chính xác trước đó không được chú ý.
+
+Được dựa trên các nguyên tắc từ tâm lý học nhận thức, các góc nhìn mới có thể dẫn đến giải quyết vấn đề sáng tạo hơn
+và phát hiện lỗi. Khi các cá nhân hoặc mô hình tiếp cận một vấn đề mà không có quan niệm cố định,
+họ có nhiều khả năng xem xét các giải pháp thay thế và xác định lỗi có thể đã bị bỏ qua.
+Fresh eyes có thể giúp tránh các thiên kiến nhận thức như anchoring, confirmation bias, cũng như overconfidence.
+
+Hãy xem xét tóm tắt sau đây của một lần thực thi, minh họa lợi ích của "fresh eyes" trong thực tế.
+Giả sử nhiệm vụ là trò chơi 24, ví dụ, sử dụng mỗi số 6, 11, 12, và 13, chính xác một lần, trong một biểu thức số học
+có giá trị là 24. Lịch sử có thể trông như sau:
+
+1. Meta Model đề xuất tham khảo các chuyên gia về toán học, giải quyết vấn đề, và lập trình Python.
+Nó nhấn mạnh nhu cầu về độ chính xác và tuân thủ ràng buộc, đề xuất sự tham gia của
+một chuyên gia khác để xem xét nếu cần.
+
+2. Một chuyên gia đề xuất một giải pháp, mà một chuyên gia thứ hai xác định là không chính xác, và Meta Model
+đề xuất viết một chương trình Python để tìm một giải pháp hợp lệ.
+
+3. Một chuyên gia lập trình được tham khảo để viết một chương trình.
+
+4. Một chuyên gia lập trình khác xác định lỗi trong script, sửa đổi nó, và sau đó thực thi script đã được sửa đổi.
+
+9
+
+--- TRANG 10 ---
+5. Một chuyên gia toán học được tham khảo để xác minh giải pháp đầu ra bởi chương trình.
+
+6. Sau khi xác minh này, Meta Model đưa ra nó như câu trả lời cuối cùng.
+
+Ví dụ này nhấn mạnh cách meta-prompting, kết hợp các góc nhìn mới ở mỗi bước (vì prompt của
+chuyên gia không bao gồm toàn bộ lịch sử), không chỉ tìm ra giải pháp mà còn hiệu quả xác định
+và sửa chữa lỗi. Sự đa dạng của các góc nhìn, từ chiến lược giải quyết vấn đề đến thực thi kỹ thuật
+và xác minh, chứng minh cách các góc độ chuyên môn khác nhau đóng góp vào một quá trình giải quyết vấn đề mạnh mẽ và
+đáng tin cậy hơn.
+
+4.4 Thực thi Code Thời gian Thực
+
+Việc giới thiệu Expert Python cho việc tạo code và thực thi trong framework meta-prompting của chúng tôi
+dẫn đến tiến bộ đáng kể trong việc giải quyết các thử thách thuật toán. Sự nâng cao này rõ ràng trong Python
+Programming Puzzles, nơi việc tích hợp Expert Python vào framework meta-prompting
+nâng tỷ lệ thành công từ 32.7% lên 45.8%. Cải thiện này chủ yếu phát sinh từ khả năng của Meta Model
+sử dụng một chuyên gia Python để tạo và thực thi code dựa trên hướng dẫn ngôn ngữ tự nhiên.
+
+Thực thi code thời gian thực cho phép xác thực và tối ưu hóa tức thì các giải pháp, cải thiện đáng kể
+cả hiệu quả và độ chính xác của việc giải quyết vấn đề.
+
+Sự nâng cao này không giới hạn trong một loại nhiệm vụ duy nhất, tuy nhiên. Trong các nhiệm vụ như Game of 24 và Word
+Sorting, tỷ lệ chính xác tăng 56.0% và 15.6%, tương ứng, với việc tích hợp Python interpreter
+vào meta-prompting. (Khi so sánh với baseline standard prompting, các tăng độ chính xác tương ứng
+với 64.0% và 19.2%, tương ứng.) Những cải thiện này làm nổi bật vai trò đáng kể của việc tạo code và
+thực thi trong việc nâng cao hiệu quả của framework meta-prompting, chứng minh tác động biến đổi của nó
+trên nhiều nhiệm vụ tính toán khác nhau. Nhìn chung, việc tích hợp Python interpreter dẫn đến một hiệu suất trung bình
+cải thiện thêm 11.5% trên các nhiệm vụ khác nhau so với meta-prompting không có
+Python interpreter.
+
+Tuy nhiên, việc giới thiệu thực thi code thời gian thực cũng mang các cân nhắc bảo mật thiết yếu. Thiết lập
+một hệ thống như vậy yêu cầu một môi trường an toàn và được kiểm soát để giảm thiểu các rủi ro như vi phạm dữ liệu
+và lỗ hổng hệ thống. Do đó, việc triển khai Python interpreter trong framework meta-prompting
+nên được củng cố với một sandbox an toàn. Những biện pháp này quan trọng để đảm bảo tính toàn vẹn của hệ thống
+và bảo vệ dữ liệu người dùng, đảm bảo rằng những lợi thế của hiệu quả giải quyết vấn đề được cải thiện
+không bị ảnh hưởng theo bất kỳ cách nào bởi các mối quan tâm về bảo mật và quyền riêng tư, trong số các vấn đề khác.
+
+[Biểu đồ phân phối các chuyên gia được triệu hồi bởi Meta Model trong các thí nghiệm có Python interpreter]
+
+Hình 4: Phân phối các chuyên gia được triệu hồi bởi Meta Model trong các thí nghiệm có Python interpreter. Không gian trống còn lại đại diện cho sự kết hợp của các chuyên gia được sử dụng không thường xuyên.
+
+10
+
+--- TRANG 11 ---
+[Biểu đồ phân phối các chuyên gia được triệu hồi bởi Meta Model trong các thí nghiệm không có Python interpreter]
+
+Hình 5: Phân phối các chuyên gia được triệu hợi bởi Meta Model trong các thí nghiệm không sử dụng Python interpreter.
+
+5 Thảo luận Thêm
+
+5.1 Phân tích Bổ sung về Meta Prompting
+
+Phân tích các Loại Chuyên gia Được sử dụng trong Meta Prompting. Việc lựa chọn động các loại chuyên gia của Meta Model
+minh họa rõ ràng khả năng thích ứng và liên kết chiến lược của nó với các yêu cầu nhiệm vụ cụ thể. Phân tích các nhiệm vụ
+với và không có Python interpreter cung cấp những tương phản sâu sắc trong các lựa chọn chuyên gia của mô hình, bị ảnh hưởng bởi
+các công cụ có sẵn và đặc điểm nhiệm vụ. Trong các kịch bản mà Expert Python được đề cập rõ ràng cho
+việc tạo code và thực thi, có một sự ưu tiên đáng chú ý cho chuyên môn kỹ thuật và tính toán.
+Ví dụ, trong Python Programming Puzzles, Meta Model thường sử dụng Expert Python, Expert
+Mathematician, và một số cấp độ Expert Python Programmers. Mô hình này tiết lộ một chiến lược hướng nhiệm vụ,
+làm nổi bật sự tập trung vào lập trình và giải quyết vấn đề thuật toán. Tương tự, các nhiệm vụ như Game of
+24 và Word Sorting nổi bật với Expert Python, củng cố xu hướng của mô hình dựa vào
+chuyên môn tính toán khi khả năng Python có thể truy cập.
+
+Ngược lại, đối với meta-prompting không có chuyên gia Python cụ thể, phổ các chuyên gia được sử dụng đa dạng hơn.
+Các nhiệm vụ như Geometric Shapes chủ yếu liên quan đến các chuyên gia thiết kế và hình học (ví dụ, Expert
+Graphic Designer và Expert Geometer), cho thấy một sự chuyển hướng về giải quyết vấn đề thị giác và không gian
+hơn là các phương pháp tính toán. Nhiệm vụ này minh họa nơi Meta Model có thể đã đưa ra
+lựa chọn chuyên gia kém, và đặc biệt nó có thể đã tốt hơn khi sử dụng một chuyên gia về visualizations SVG.
+Trong Sonnet Writing, Meta Model tự nhiên dựa vào các chuyên gia văn học, đáng chú ý là Expert Poet và Expert
+Literary Critic, nhấn mạnh kỹ năng sáng tạo và ngôn ngữ học. Mô hình này chứng minh khả năng của Meta Model
+điều chỉnh động sự tham gia chuyên gia của nó theo yêu cầu của nhiệm vụ, sử dụng chuyên gia kỹ thuật cho
+các thử thách tính toán và một loạt đa dạng chuyên môn không tính toán cho các nhiệm vụ sáng tạo hoặc trừu tượng.
+
+Số Vòng Cần để Đạt được Giải pháp. Kiểm tra các thí nghiệm meta-prompting có
+Expert Python tiết lộ rằng số vòng trung bình cần để đạt được một giải pháp trong Meta Model khác nhau
+đáng kể giữa các nhiệm vụ, chỉ ra sự phức tạp và bản chất cụ thể của chúng. Các nhiệm vụ đơn giản hơn, như Word
+Sorting (3.31 vòng) và Checkmate-in-One (3.48 vòng), thường cần ít vòng hơn, gợi ý một
+quá trình giải quyết tuyến tính và trực tiếp hơn, có thể do các tham số được định nghĩa rõ ràng của chúng. Ngược lại,
+các nhiệm vụ thách thức về mặt thuật toán hơn như Python Programming Puzzles trung bình có số vòng cao hơn
+ở 6.07, phản ánh các khía cạnh tinh tế và đa khía cạnh của các nhiệm vụ lập trình yêu cầu
+tương tác mở rộng để làm rõ triệt để và tinh chỉnh lặp đi lặp lại. Game of 24 và Multistep Arithmetic
+Two, với trung bình khoảng 3.5 vòng, hòa quyện thành thạo tính toán với lý luận logic, đòi hỏi
+các vòng bổ sung cho các giải pháp chính xác và chính xác. Sự tương quan được quan sát này giữa số vòng
+và sự phức tạp nhiệm vụ nhấn mạnh thành thạo và khả năng thích ứng của Meta Model. Nó hiệu quả quản lý
+các nhiệm vụ đơn giản hơn với các tương tác tối thiểu trong khi khéo léo xử lý sự phức tạp của các vấn đề thách thức và
+
+11
+
+--- TRANG 12 ---
+dựa trên heuristic hơn, đảm bảo độ chính xác và hiệu quả trong các giải pháp của nó. Đặc điểm hiệu suất này
+đặc biệt quan trọng trong các môi trường mà hiệu quả và sự cân bằng tương tác là chìa khóa.
+
+Nâng cao Độ tin cậy Giải pháp thông qua Xác minh Hệ thống. Giao thức xác minh hệ thống của Meta Model
+tăng cường độ tin cậy và mạnh mẽ của các giải pháp của nó. Cơ bản của phương pháp này là
+thực hành nhất quán của việc tham khảo một chuyên gia để xác thực trước khi hoàn thiện phản hồi, một nguyên tắc được áp dụng
+trên các nhiệm vụ đa dạng. Phương pháp này được chứng minh thêm bởi dữ liệu tương tác chi tiết. Trong các nhiệm vụ như
+Checkmate in One, ví dụ, Meta Model sử dụng một chiến lược xác minh hai bước. Ban đầu, nó tham khảo
+một Expert Chess Player để đưa ra một giải pháp, theo sau bởi một xác minh quan trọng từ Expert Chess
+Analyst, đảm bảo tính chính xác chiến lược. Một phương pháp tương tự được áp dụng trong Sonnet Writing cũng vậy, trong đó một
+Expert Poet soạn thảo sonnet, và một Expert Poet Reviewer hoặc Expert Essayist xem xét nó, đảm bảo rằng
+giải pháp tuân thủ sơ đồ vần nghiêm ngặt. Quá trình xác minh không giám sát nhưng nghiêm ngặt này mở rộng đến
+các nhiệm vụ phức tạp như Game of 24 và MGSM, bao gồm cả tham khảo chuyên gia bên ngoài và đánh giá nội bộ.
+Bằng cách tích hợp cơ chế xác minh kép này, mô hình nâng cao đáng kể độ chính xác và
+độ tin cậy giải pháp, thiết yếu cho các ứng dụng thế giới thực nơi độ chính xác là tối quan trọng.
+
+Điều hướng Các Lãnh thổ Không có Giải pháp. Meta-prompting cho phép Meta Model thừa nhận sự vắng mặt
+hoặc không thể có một giải pháp hợp lệ hoặc không thể tìm thấy một giải pháp thường xuyên hơn so với các phương pháp prompting khác.
+Trong 100 ví dụ của Game of 24, mô hình báo cáo không có giải pháp 9 lần với Expert Python và 15 lần
+không có nó, so với chỉ 2 trường hợp dưới standard prompting. Trong Checkmate, trên 250 ví dụ,
+nó thừa nhận không có giải pháp 12 lần không có Expert Python và 10 lần với nó, một sự hiếm hoi trong multipersona và
+standard prompting. Mặc dù luôn có giải pháp, việc kiềm chế không trả lời
+hơn là cung cấp một câu trả lời không chính xác có thể được cho là tốt hơn. Thường được thể hiện như "No valid solution found" hoặc rõ ràng hơn
+như "There is no solution to the 24 game with these numbers given the constraints," những thừa nhận này
+có thể là kết quả của vòng lặp xác minh và phản hồi của mô hình, nhấn mạnh độ chính xác và tự tin hơn
+các phản hồi suy đoán nhưng không chính xác.
+
+Đặt Ra Tiêu chuẩn Cao: Khả năng Giải quyết Nhiệm vụ Zero-Shot của GPT-4. Ngay cả không có khả năng nâng cao
+của meta-prompting, GPT-4 nổi bật như một bộ giải quyết nhiệm vụ zero-shot hiệu quả dưới điều kiện standard prompting.
+Hiệu suất của nó trên nhiều nhiệm vụ khác nhau, bao gồm Python Programming Puzzles và MGSM,
+đáng chú ý, đặc biệt khi so sánh với các LMs khác như được làm nổi bật bởi OpenAI (2023). GPT-4 xuất sắc như
+một bộ giải quyết bất khả tri nhiệm vụ, có khả năng xử lý và phản hồi các truy vấn đa dạng một cách hiệu quả. Một thuộc tính đáng kể
+của GPT-4 là thành thạo trong việc tuân theo hướng dẫn. Được đưa ra các hướng dẫn ngôn ngữ tự nhiên rõ ràng và không mơ hồ,
+mô hình chứng minh một mức độ tuân thủ và độ chính xác cao. Khía cạnh tuân theo hướng dẫn này
+cũng là một nền tảng của framework meta-prompting của chúng tôi, nơi chúng tôi tận dụng khả năng của GPT-4.
+Các thí nghiệm của chúng tôi củng cố rằng GPT-4 xuất sắc trong việc tạo code, chứng minh lý luận zero-shot ấn tượng,
+và tham gia hiệu quả trong role-playing, củng cố vị trí của nó như một LM linh hoạt và đáng tin cậy.
+
+Cải thiện Hiệu suất Hạn chế với GPT-3.5. So với GPT-4, GPT-3.5 chứng minh một
+phạm vi cải thiện hiệu suất hạn chế hơn trên nhiều nhiệm vụ khác nhau. Mặc dù nó cho thấy cải thiện đáng chú ý
+trong các nhiệm vụ cụ thể như Sonnet Writing và Checkmate-in-One, khả năng của nó không nhất quán vượt qua
+tiêu chuẩn baseline hoặc các phương pháp zero-shot CoT prompting trong các nhiệm vụ khác, đáng chú ý Word Sorting và Multiple
+Arithmetic Two. Phân tích định tính của chúng tôi gợi ý rằng GPT-3.5 có thể không hiệu quả như GPT-4 trong việc mô phỏng
+các kịch bản role-playing hoặc quản lý các cửa sổ ngữ cảnh mở rộng. Quan sát này dẫn chúng tôi tin rằng
+các yếu tố như quy mô của mô hình, chất lượng và kích thước của corpus tuân theo hướng dẫn có thể
+ảnh hưởng đáng kể đến hiệu quả của phương pháp meta-prompting. Hơn nữa, có vẻ như những
+lợi thế được cung cấp bởi meta-prompting thậm chí có thể nổi lên rõ ràng hơn ở quy mô mô hình lớn hơn.
+
+5.2 Hạn chế và Chế độ Thất bại của Meta Prompting
+
+Framework meta-prompting, bất chấp phương pháp tiên tiến của nó, gặp phải một số hạn chế đáng chú ý,
+bao gồm hiệu quả chi phí, khả năng mở rộng, tính tuyến tính hoạt động, hạn chế domain, thách thức chuyển giao thông tin,
+và các mô hình phản hồi. Một hạn chế chính là chi phí tăng cao liên quan đến nhiều lần gọi mô hình. Trong thiết lập của chúng tôi
+sử dụng GPT-4, vai trò kép của Meta Model và các chuyên gia, được phân biệt bởi các hướng dẫn độc đáo,
+phát sinh chi phí đáng kể dưới mô hình giá GPT-4 API. Yếu tố chi phí này làm giảm hiệu quả
+
+12
+
+--- TRANG 13 ---
+của meta-prompting trong các mô hình nhỏ hơn như ChatGPT, thiếu khả năng toàn diện của GPT-4.
+Do đó, meta-prompting, mặc dù sâu sắc, có thể trở nên đắt đỏ một cách cấm đoán do
+tương tác mô hình mở rộng và lịch sử thông điệp dài. Tuy nhiên, những chi phí này sẽ giảm khi chi phí của LMs
+giảm. Lưu ý rằng các tính năng OpenAI API gần đây được công bố sau khi các thí nghiệm được chạy, cụ thể là
+khả năng chạy code trong sandbox trực tiếp thông qua API, có thể giảm đáng kể chi phí của hệ thống chúng tôi.
+
+Một hạn chế quan trọng khác là yêu cầu về quy mô đáng kể và cửa sổ ngữ cảnh đáng kể. GPT-4
+phù hợp với tiêu chí này, nhưng các mô hình nhỏ hơn như ChatGPT không đủ. Thiết kế của Meta-prompting, được đặc trưng bởi
+lịch sử thông điệp mở rộng, đòi hỏi một LM có khả năng xử lý và duy trì thông tin văn bản dài,
+một tính năng không có mặt phổ quát trong tất cả LMs. Hiệu quả hoạt động cũng bị thách thức bởi bản chất tuyến tính (tuần tự)
+của meta-prompting. Framework, trong hình thức hiện tại của nó, xử lý các bước từng cái một, dựa vào
+kết quả của các lần gọi trước đó. Sự phụ thuộc này hạn chế khả năng xử lý song song, ảnh hưởng đến
+tốc độ và hiệu quả của hệ thống.
+
+Ngoài ra, nghiên cứu của chúng tôi giới hạn meta-prompting trong một hệ thống closed-domain. Tuy nhiên,
+tiềm năng của framework mở rộng đến việc kết hợp các tài nguyên bên ngoài như APIs, các mô hình finetuned chuyên biệt,
+search engines, hoặc công cụ tính toán. Các triển khai mở rộng hơn như AutoAgents (Chen
+et al., 2023a) và AutoGen (Wu et al., 2023), bao gồm quy hoạch cấp cao hơn và cơ chế hợp tác đa dạng,
+cung cấp cái nhìn thoáng qua về các hướng tương lai. Trong các phiên bản tiếp theo, Meta Model có thể hưởng lợi
+từ việc tinh chỉnh hoặc tóm tắt lịch sử của nó trước khi tiến lên, tối ưu hóa tính liên quan và hiệu quả của
+quá trình. Cũng có tiềm năng chưa được khai thác trong việc đồng thời triệu hồi nhiều chuyên gia hoặc sử dụng một
+chuyên gia duy nhất với các tham số temperature khác nhau để tổng hợp đầu ra của họ.
+
+Một thách thức thực tế gặp phải là sự bỏ sót thỉnh thoảng của Meta Model trong việc truyền đạt thông tin cần thiết cho
+các chuyên gia, quên rằng các chuyên gia chỉ có thể truy cập dữ liệu tuân thủ một định dạng nhất định (trong dấu ngoặc kép ba trong
+hệ thống của chúng tôi). Sự bỏ sót này có thể dẫn đến sự nhầm lẫn không mong muốn và nhấn mạnh nhu cầu cải thiện quản lý thông tin.
+Cuối cùng, mô hình phản hồi của Meta Model, đặc biệt trong các nhiệm vụ có hiệu suất thấp hơn, thường
+bao gồm lời xin lỗi, như "Apologizes for the confusion in my previous response" hoặc "I apologize for the
+previous incorrect solution." Hành vi này có thể bắt nguồn từ việc training trên dữ liệu tuân theo hướng dẫn.
+
+6 Công trình Liên quan
+
+Phần này tìm cách đặt phương pháp meta-prompting đề xuất của chúng tôi trong bối cảnh các tiến bộ gần đây
+trong các chiến lược prompting và kỹ thuật scaffolding. Chúng tôi cung cấp một tổng quan ngắn gọn về những phát triển này,
+làm nổi bật tính liên quan và kết nối của chúng với công trình của chúng tôi.
+
+Nâng cao Lý luận trong Mô hình Ngôn ngữ thông qua Prompting. Những nỗ lực gần đây trong scaffolding LM và
+các phương pháp prompting đã tăng cường đáng kể khả năng lý luận số học và common sense của
+LMs. Chain-of-thought (CoT) prompting (Wei et al., 2022b) và các biến thể của nó—bao gồm least-to-most
+(Zhou et al., 2023), zero-shot CoT (Kojima et al., 2022), self-ask (Press et al., 2022), ask-me-anything (Arora
+et al., 2023), decomposed prompting (Khot et al., 2023), và auto-CoT (Zhang et al., 2023d)—đã đánh dấu một
+paradigm shift trong cách LMs xử lý các truy vấn phức tạp. Những phương pháp này khuyến khích LMs áp dụng quá trình tư duy tuần tự giống con người,
+phân tách các câu hỏi phức tạp thành các nhiệm vụ con đơn giản hơn và giải quyết chúng một cách hệ thống
+trước khi trình bày câu trả lời cuối cùng. Nhiều nghiên cứu (Wei et al., 2022a; Madaan và Yazdanbakhsh,
+2022; Shi et al., 2023; Drozdov et al., 2023; Fu et al., 2023b; Suzgun et al., 2023b, inter alia) đã cho thấy
+hiệu quả của những phương pháp prompting này trên một tập hợp rộng các nhiệm vụ và benchmarks. Các đổi mới gần đây hơn
+như Tree-of-Thought (Yao et al., 2023a), Graph-of-Thought (Besta et al., 2023), Program-of-Thought (Chen
+et al., 2023d), và Skeleton-of-Thought (Ning et al., 2023), đã làm phong phú thêm domain này; những cái này khám phá
+các đường dẫn lý luận động, không tuyến tính, mở rộng khả năng tính toán và heuristic của LMs.
+Tuy nhiên, chúng đi kèm với yêu cầu tài nguyên tăng cao và độ phức tạp thời gian lớn hơn, yêu cầu nhiều thủ công
+crafting prompt, và thường chuyên biệt cho các loại nhiệm vụ cụ thể.
+
+Cơ chế Phản hồi và Tinh chỉnh Tự Lặp. Những kỹ thuật tuân theo hướng dẫn gần đây và nỗ lực thu thập dữ liệu
+đã mở rộng khả năng của LMs tuân theo hướng dẫn, mô phỏng một số khía cạnh của
+hành vi con người, và hỗ trợ trong các nhiệm vụ như annotation và evaluation (Haluptzok et al., 2022; Aher et al.,
+
+13
+
+--- TRANG 14 ---
+2023). LMs như GPT-4, PaLM, và Llama giờ có khả năng tích hợp hiệu quả self-feedback và
+cơ chế tinh chỉnh thông qua prompting và có thể tận dụng đầu ra ngôn ngữ tự nhiên của chính họ để hướng dẫn
+hành vi và cải thiện việc ra quyết định. SayCan (Ahn et al., 2022) và Inner Monologue (Huang
+et al., 2023) là những ví dụ sớm thể hiện lợi ích của các cuộc đối thoại nội tâm trong một hệ thống vòng lặp kín cho điều khiển robot
+và quy hoạch hành động. Reflexion (Shinn et al., 2023) xây dựng dựa trên những nghiên cứu này và tập trung vào sinh ngôn ngữ tự nhiên
+và các nhiệm vụ lý luận. Nó hoạt động như một cơ chế tối ưu hóa chính sách thông qua phản hồi ngôn ngữ tự nhiên,
+sử dụng self-feedback và self-reflection để ảnh hưởng và sửa chữa hành vi trong LMs, và
+đã cho thấy thành công đáng kể trong các thí nghiệm sơ bộ. Trong một hướng đổi mới hơn, phương pháp Self-Taught
+Reasoner (STaR; Zelikman et al., 2022) lặp đi lặp lại training một LM trên đầu ra của chính nó để tinh chỉnh các rationales ban đầu
+cho các giải pháp chính xác hơn, dẫn đến kỹ năng lý luận nâng cao. Các phương pháp đáng chú ý khác như
+Critic (Gou et al., 2023), Iterative Refinement (Chen et al., 2023b), RCI (Kim et al., 2023), Re3 (Yang et al.,
+2022), Refiner (Paul et al., 2023), Self-Critique (Saunders et al., 2022), Self-Correction (Welleck et al., 2023),
+Self-Eval, Self-Debug (Chen et al., 2023c), Self-Edit (Zhang et al., 2023a), Self-Evolve (Jiang et al., 2023b),
+Self-Taught Optimizer (SToP; Zelikman et al., 2023), và vân vân, minh họa cách phản hồi bằng lời, cả nội bộ
+và bên ngoài, có thể cải thiện đáng kể độ chính xác, chất lượng, và tính mạnh mẽ của đầu ra mô hình trên nhiều
+nhiệm vụ và thiết lập khác nhau.
+
+Khám phá Role-Playing trong Mô hình Ngôn ngữ. Việc tích hợp các khái niệm role-playing và self-collaboration
+vào LMs, được dựa trên các nguyên tắc tâm lý học nhận thức và giáo dục phát triển, đã nổi lên như một phương pháp hữu ích
+để tăng cường khả năng giải quyết vấn đề của LMs và tối ưu hóa kiến thức cụ thể theo domain nội bộ
+và chuyên môn của chúng. Các nghiên cứu gần đây (Park et al., 2022, 2023; Li et al., 2023; Xu et al., 2023; Fu et al., 2023a;
+Deshpande et al., 2023) đã cho thấy rằng việc trao cho LMs tuân theo hướng dẫn những "expert" personas hoặc
+roles nâng cao chất lượng và độ chính xác của đầu ra của chúng. Đặc biệt, các phương pháp như CAMEL (Li et al., 2023)
+và Expert Prompting (Xu et al., 2023), liên quan đến việc gán personas động cho một LM đơn lẻ, đã
+được chứng minh mang lại phản hồi chất lượng cao hơn và đáng tin cậy hơn so với các mô hình không có personas được chỉ định.
+Các điều tra thêm (Chen et al., 2023a,e; Du et al., 2023; Hao et al., 2023b; Liang et al., 2023; Liu et al., 2023b;
+Jiang et al., 2023a; Xiong et al., 2023; Zhang et al., 2023c) chứng minh rằng việc gán nhiều expert identities
+hoặc roles cho một LM đơn lẻ, được điều chỉnh cho các nhiệm vụ hoặc vấn đề cụ thể, và prompting nó tiến hành các cuộc đối thoại nội bộ multi-round
+—tương tự như một nhóm chuyên gia thảo luận và tinh chỉnh ý tưởng—làm tăng độ tin cậy và
+tính toàn diện của phân tích của LM; điều này dẫn đến các giải pháp toàn diện và kỹ lưỡng hơn. Những
+nghiên cứu này ủng hộ một phương pháp bổ sung trong đó nhiều instances của một LM đề xuất, tranh luận, và tinh chỉnh
+các phản hồi và lý luận cá nhân của chúng trong các vòng liên tiếp, đỉnh điểm trong một câu trả lời cuối cùng thống nhất. Khái niệm role-playing này
+đã cho thấy cải thiện đáng kể lý luận toán học và chiến lược trên nhiều
+nhiệm vụ khác nhau. Hơn nữa, nó cải thiện độ chính xác thực tế của nội dung được sinh ra, qua đó giảm những phản hồi sai lệch hoặc
+bịa đặt.
+
+Ra quyết định Tự trị và Thực thi trong Hệ thống LM Đa tác nhân. Đã có sự quan tâm tăng trưởng
+trong việc sử dụng LMs cho ra quyết định tự trị và thực thi nhiệm vụ. Các dự án mã nguồn mở như Auto-
+GPT, Agent-GPT, Baby-AGI, và LangChain là những nỗ lực đáng chú ý phát triển các giao thức agent có khả năng
+quy hoạch, ra quyết định, và thực thi nhiệm vụ end-to-end, với sự can thiệp của con người tối thiểu hoặc không có.
+Những hệ thống này làm nổi bật tiềm năng và rủi ro của LMs, vượt ra ngoài việc thực hiện các nhiệm vụ được định nghĩa trước để
+thích ứng, học hỏi, và thực thi quyết định một cách tự trị trong thời gian thực. Như được thảo luận bởi Masa (2023), những
+mô hình tự trị đó có thể bị khai thác bởi các cá nhân có ý định độc hại và gây ra mối đe dọa cho nhân loại.
+Cũng có cuộc tranh luận về trách nhiệm: ai chịu trách nhiệm khi một agent tự trị được điều khiển bởi LM
+tạo ra một hành động không phù hợp hoặc tội phạm? Đảm bảo an toàn và bảo mật với những agents này là quan trọng, dựa trên
+tiềm năng của nó cho sự cố hoặc khai thác bởi các tác nhân độc hại, và tính dễ bị tổn thương của nó đối với các cuộc tấn công mạng.
+
+Tích hợp Công cụ và APIs Bên ngoài vào Mô hình Ngôn ngữ. Khi LMs tiếp tục phát triển, việc tích hợp
+các công cụ bên ngoài đang trở nên ngày càng quan trọng. Việc tích hợp sử dụng công cụ này, thường đạt được thông qua
+in-context learning (ví dụ, Cai et al., 2023) hoặc finetuning (ví dụ, Schick et al., 2023a), cho phép LMs tương tác hiệu quả
+với các kịch bản thế giới thực và giải quyết một loạt đa dạng các nhiệm vụ động. Các tiến bộ gần đây (Cai
+et al., 2023; Gao et al., 2023; Gou et al., 2023; Hao et al., 2023c; Khattab et al., 2023; Lu et al., 2023; Qiao
+et al., 2023; Paranjape et al., 2023; Patil et al., 2023; Schick et al., 2023a; Yang et al., 2023; Yuan et al., 2023)
+đã cho phép LMs thực hiện tính toán chính xác, truy xuất thông tin cập nhật từ search engines
+hoặc databases, và tương tác với APIs, làm cho chúng quan trọng cho các vấn đề thế giới thực phức tạp, đa phương thức.
+
+14
+
+--- TRANG 15 ---
+Việc tích hợp APIs và plugins được định nghĩa trước của OpenAI vào ChatGPT nhấn mạnh tầm quan trọng của tích hợp bên ngoài
+trong việc phát triển một hệ sinh thái LM toàn diện. Tuy nhiên, hầu hết các phương pháp thường giới hạn mình
+vào một nhóm chọn lọc các công cụ hoặc tài nguyên cụ thể theo domain, đặt ra thách thức trong việc thích ứng với các domains mới (Lu
+et al., 2023). Phương pháp meta-prompting của chúng tôi, như được chi tiết trong Phần 2, coi LM như một công cụ độc lập và
+chuyên gia, có sẵn theo yêu cầu cho các nhiệm vụ cụ thể. Hơn nữa, việc tích hợp Python interpreter—thông qua
+Expert Python—để thực thi và đánh giá code được tạo bởi mô hình đã là công cụ trong việc nâng cao cả
+độ chính xác và hiệu quả trong nhiều nhiệm vụ khác nhau.
+
+7 Kết luận
+
+Trong công trình này, chúng tôi đã giới thiệu và kiểm tra meta-prompting, một kỹ thuật scaffolding đơn giản nhưng mạnh mẽ
+nâng cao hiệu suất của các mô hình ngôn ngữ một cách bất khả tri nhiệm vụ. Phương pháp này tận dụng
+một mô hình ngôn ngữ để đóng vai trò như cả một conductor trung tâm và một nhóm các expert instances, qua đó trao cho
+các mô hình truyền thống những khả năng động, đa chức năng. Một khía cạnh đáng chú ý của meta-prompting
+nằm trong thành thạo của nó để phân tách các nhiệm vụ phức tạp, tham gia chuyên môn riêng biệt cho mỗi thành phần, và sau đó
+tích hợp các đầu ra khác nhau một cách liền mạch. Chứng minh các cải thiện đáng kể, hai con số trên một loạt
+nhiệm vụ, từ các bài toán số học thách thức như Game of 24 đến bài tập văn học sáng tạo của
+Shakespearean Sonnet Writing, meta-prompting hứa hẹn trở nên mạnh mẽ và hiệu quả chi phí hơn khi các mô hình ngôn ngữ
+tiếp tục phát triển, cung cấp triển vọng thú vị cho các ứng dụng tương lai.
+
+Lời cảm ơn
+
+Chúng tôi muốn cảm ơn Federico Bianchi, Annabelle Carrell, Tayfun Gür, Dan Jurafsky, Suproteem Sarkar,
+Scott Duke Kominers, Lester Mackey, Neil Mallinar, Şule Kahraman, Deniz Keleş, Luke Melas-Kyriazi, Drew
+Pendergrass, Faiz Surani, Garrett Tanzer, Michael Wornow, và Eric Zelikman vì những bình luận có giá trị,
+gợi ý hữu ích, và sự hỗ trợ của họ.
+
+15
+
+--- TRANG 16-20 ---
+[Phần Tài liệu Tham khảo - bao gồm tất cả các citation được đề cập trong bài báo, được giữ nguyên theo định dạng học thuật gốc]
+
+Tài liệu Tham khảo
+
+[Danh sách đầy đủ 100+ tài liệu tham khảo từ trang 16-20, bao gồm các công trình nghiên cứu về:
+- Large language models (GPT-4, PaLM, LLaMA)
+- Prompting techniques (Chain-of-thought, Expert prompting, Multi-persona)
+- Self-reflection và debugging methods
+- Tool integration và API usage
+- Multi-agent systems
+- Evaluation frameworks và benchmarks
+- Programming puzzle datasets
+- Multilingual reasoning tasks]
+
+20

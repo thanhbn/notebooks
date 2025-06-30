@@ -1,0 +1,594 @@
+# 2202.07946v1.pdf
+# Được chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2202.07946v1.pdf
+# Kích thước file: 737331 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+Chuyển Đổi Cây Thành Đồ Thị: Automatic Code Review Thông Qua Graph Convolutional Network Điều Khiển Bởi Simplified AST
+
+Bingting Wua, Bin Liangb,<và Xiaofang Zhanga,<
+aSchool of Computer Science and Technology, Soochow University, Suzhou, China
+bDepartment of Computer Science, Harbin Institute of Technology, Shenzhen, China
+
+THÔNG TIN BÀI BÁO
+Từ khóa:
+Automatic Code Review
+Deep Learning
+Abstract Syntax Tree
+Graph Neural Networks
+
+TÓM TẮT
+Automatic code review (ACR), có thể giảm bớt chi phí kiểm tra thủ công, là một nhiệm vụ không thể thiếu và thiết yếu trong kỹ thuật phần mềm. Để giải quyết ACR, các nghiên cứu hiện tại thường tuần tự hóa abstract syntax tree (AST). Tuy nhiên, việc hiểu toàn bộ AST bằng phương pháp mã hóa chuỗi là một nhiệm vụ khó khăn, chủ yếu do một số nút dư thừa trong AST cản trở việc truyền tải thông tin nút. Chưa kể rằng biểu diễn tuần tự hóa không đầy đủ để nắm bắt thông tin cấu trúc cây trong AST. Trong bài báo này, trước tiên chúng tôi trình bày một tập dữ liệu Apache Automatic Code Review (AACR) quy mô lớn mới cho nhiệm vụ ACR vì vẫn chưa có tập dữ liệu công khai nào cho nhiệm vụ này. Việc phát hành tập dữ liệu này sẽ thúc đẩy nghiên cứu trong lĩnh vực này. Dựa trên đó, chúng tôi đề xuất một Simplified AST based Graph Convolutional Network (SimAST-GCN) mới để giải quyết nhiệm vụ ACR. Cụ thể, để cải thiện hiệu quả lan truyền thông tin nút, trước tiên chúng tôi đơn giản hóa AST của mã bằng cách xóa các nút dư thừa không chứa thuộc tính kết nối, từ đó tạo ra một Simplified AST. Sau đó, chúng tôi xây dựng một đồ thị quan hệ cho mỗi đoạn mã dựa trên Simplified AST để thể hiện đúng các quan hệ giữa các đoạn mã của cấu trúc cây vào trong đồ thị. Tiếp theo, dựa trên ưu điểm của cấu trúc đồ thị, chúng tôi khám phá một kiến trúc graph convolutional networks tuân theo cơ chế attention để tận dụng những ý nghĩa quan trọng của các đoạn mã để tạo ra biểu diễn mã. Cuối cùng, chúng tôi sử dụng một phép toán trừ đơn giản nhưng hiệu quả trong biểu diễn giữa mã gốc và mã được sửa đổi, cho phép học tốt hơn sự khác biệt đã sửa đổi để quyết định kết quả của ACR. Kết quả thực nghiệm trên tập dữ liệu AACR minh họa rằng mô hình đề xuất của chúng tôi vượt trội hơn các phương pháp hiện đại nhất.
+
+1. Giới thiệu
+
+Code review là hành động có ý thức và có hệ thống triệu tập các lập trình viên để kiểm tra mã của nhau nhằm tìm lỗi, và đã được chứng minh nhiều lần là có thể tăng tốc và hợp lý hóa quá trình phát triển phần mềm. Do đó, nó cũng tiêu tốn nguồn nhân lực đáng kể [1], khiến việc mở rộng code review ở quy mô lớn trở nên không khả thi. Vì vậy, nhiều nhà nghiên cứu cam kết với automatic code review (ACR). Đối với ACR, trước tiên chúng ta cung cấp cho mô hình mã gốc và mã đã sửa đổi, sau đó mô hình cung cấp cho chúng ta gợi ý về việc liệu sửa đổi này có chấp nhận được hay không.
+
+Các phương pháp truyền thống bị hạn chế trong việc giải quyết thách thức chính của code review: hiểu mã [2]. Do đó, các nhà nghiên cứu chỉ có thể cải thiện hiệu quả từ các khía cạnh khác của code review, chẳng hạn như đề xuất người đánh giá phù hợp [3, 4, 5] và sử dụng các công cụ phân tích tĩnh [6, 7, 8]. Tuy nhiên, với sự phát triển của deep learning, chúng ta có thể hiểu mã bằng cách mô hình hóa mã nguồn, từ đó giải quyết hiệu quả các thách thức chính trong automatic code review.
+
+Nghiên cứu gần đây [9, 10] đã cho thấy rằng các phương pháp deep learning hoạt động tốt hơn trong việc nắm bắt thông tin cú pháp và ngữ nghĩa của mã nguồn, cho phép đưa ra các gợi ý code review phù hợp. Trong số đó, Shi [9] đề xuất một phương pháp gọi là Deep Automatic Code reviEw (DACE), sử dụng long short-term memory (LSTM) [11] và convolutional neural network (CNN) [12] để nắm bắt thông tin ngữ nghĩa và cú pháp tương ứng. Do đặc điểm của ACR, mô hình cần so sánh mã gốc và mã đã sửa đổi. Họ cũng thiết kế một pairwise recursive autoencoder để so sánh mã.
+
+Trong hầu hết các nỗ lực nghiên cứu trước đây, họ chia mã theo delimiter để đảm bảo thông tin cú pháp của mã có thể được bảo tồn. Tuy nhiên, các mô hình dựa trên delimiter như vậy vẫn bị hạn chế ở chỗ việc chia mã theo delimiter không đại diện hiệu quả cho thông tin cấu trúc của mã. Điều này là do sự khác biệt giữa ngôn ngữ lập trình và ngôn ngữ tự nhiên. Trong ngôn ngữ tự nhiên, thường là hiểu theo trình tự. Nhưng trong ngôn ngữ lập trình, nó cần được hiểu theo thứ tự logic của abstract syntax tree (AST). Ví dụ, lập trình viên có thể chia mã thành các dòng vì mã quá dài, nhưng điều này không có nghĩa là cú pháp của mã đã thay đổi.
+
+Trong lĩnh vực biểu diễn mã, hơn nữa, có một số phương pháp dựa trên AST. Các phương pháp này chủ yếu tuần tự hóa AST thành một chuỗi các nút. Trong xử lý tiếp theo, các mô hình mạng khác nhau có thể được áp dụng để cải thiện hiệu suất biểu diễn mã. Mặc dù các phương pháp này sử dụng một số thông tin cấu trúc trong AST, chúng không tận dụng đầy đủ thông tin cấu trúc ở mức mô hình.
+
+Do đó, chúng tôi khám phá một giải pháp mới để biểu diễn các đoạn mã: thu được biểu diễn đồ thị mã ngắn gọn và hiệu quả hơn
+
+Wu et al.: Preprint submitted to Elsevier Page 1 of 15arXiv:2202.07946v1  [cs.SE]  16 Feb 2022
+
+
+--- TRANG 2 ---
+Chuyển Đổi Cây Thành Đồ Thị: Automatic Code Review Thông Qua Simplified AST Driven Graph Convolutional Network
+
+[Hình ảnh quy trình code review truyền thống với các thành phần: Original file, Revised file, Developer, Reviewer, Submit, Accept/Reject, Code base]
+
+Hình 1: Quy trình code review truyền thống.
+
+bằng cách đơn giản hóa AST và sử dụng graph convolution để xử lý thông tin liên quan giữa các nút. Dựa trên ý tưởng này, chúng tôi đề xuất mô hình Simplified AST based Graph Convolutional Network (SimAST-GCN) để tận dụng các phụ thuộc ngữ nghĩa của các đoạn mã. Ở đây, thông tin ngữ nghĩa và cú pháp từ các hàng xóm của mỗi nút được tổng hợp để tạo ra embeddings đồ thị mã, nhằm trích xuất ngữ nghĩa để biểu diễn tốt các đoạn mã. Theo hiểu biết của chúng tôi, đây là nghiên cứu đầu tiên triển khai cấu trúc đồ thị để tận dụng thông tin kết nối nút trong AST cho nhiệm vụ code review.
+
+Hơn nữa, không có tập dữ liệu công khai nào cho nhiệm vụ code review. Do đó, để thúc đẩy và hỗ trợ nghiên cứu trong lĩnh vực ACR, chúng tôi trình bày tập dữ liệu Apache Automatic Code Review (AACR) mới. Những đóng góp chính của công trình của chúng tôi có thể được tóm tắt như sau:
+
+• Chúng tôi cung cấp tập dữ liệu Apache Automatic Code Review (AACR) quy mô lớn, vì không có tập dữ liệu công khai nào có sẵn cho ACR.
+
+• Một Simplified AST based Graph Convolutional Network được đề xuất để trích xuất thông tin cú pháp và ngữ nghĩa từ các đoạn mã nguồn.
+
+• Kết quả thực nghiệm trên tập dữ liệu AACR cho thấy mô hình đề xuất đạt được kết quả tốt hơn đáng kể so với các phương pháp baseline hiện đại nhất.
+
+Phần còn lại của bài báo này được tổ chức như sau. Phần 2 giới thiệu background. Phần 3 mô tả phương pháp của chúng tôi. Phần 4 cung cấp thiết kế thực nghiệm của chúng tôi. Phần 5 trình bày kết quả thực nghiệm và phân tích chúng. Phần 6 trình bày một số công trình liên quan. Cuối cùng, Phần 7 kết luận công trình của chúng tôi.
+
+2. Background
+
+2.1. Code Review
+
+Quy trình chung của code review truyền thống được thể hiện trong Hình 1. Khi một developer hoàn thành và gửi việc triển khai mã cho các yêu cầu cụ thể, hệ thống sẽ sắp xếp một reviewer phù hợp cần so sánh sự khác biệt giữa file gốc và file đã sửa đổi để xác minh xem mã có đáp ứng yêu cầu hay không. Nếu không có vấn đề, mã sẽ được thêm vào codebase; ngược lại, reviewer sẽ yêu cầu developer sửa đổi mã.
+
+[Đoạn mã ví dụ: public static int add(String[] args){    Scanner sc=new Scanner(System.in);    int a=sc.nextInt();    int b=sc.nextInt();    return a+b;}]
+
+Hình 2: Ví dụ về mã nguồn.
+
+Các phương pháp truyền thống sử dụng các công cụ phân tích tĩnh để hỗ trợ code review. Ví dụ, Checkstyle¹ bao gồm các vấn đề liên quan đến phong cách mã hóa, PMD² kiểm tra các vấn đề thiết kế lớp và các thực hành mã hóa đáng nghi ngờ, và FindBugs³ [13] phát hiện các lỗi tiềm ẩn trong mã. Tuy nhiên, các công cụ phân tích tĩnh truyền thống không thể hiểu mã. Chúng chỉ đánh giá xem có vấn đề gì với mã dựa trên các pattern được định nghĩa trước hay không.
+
+Để giải quyết nhiệm vụ ACR bằng phương pháp deep learning, mô hình trước tiên trích xuất càng nhiều đặc trưng càng tốt từ file gốc và file đã sửa đổi, và mã hóa các đặc trưng này thành biểu diễn vector. Sau đó, mô hình sử dụng các cấu trúc mạng khác nhau để tăng cường các đặc trưng này nhằm tối đa hóa đặc điểm của mã nguồn. Cuối cùng, cần thiết kế một mô hình hoặc phương pháp phù hợp để tính toán khoảng cách giữa file gốc và file đã sửa đổi, và tạo ra các đề xuất code review dựa trên sự khác biệt.
+
+2.2. Abstract Syntax Tree
+
+Abstract syntax tree (AST) là một cây được thiết kế để biểu diễn cấu trúc cú pháp trừu tượng của mã nguồn [14]. Ví dụ, Hình 2 cho thấy một ví dụ về mã nguồn, và Hình 3(a) cho thấy AST được trích xuất từ mã nguồn đó. AST đã được sử dụng rộng rãi bởi các ngôn ngữ lập trình và công cụ kỹ thuật phần mềm. Ví dụ, nó có nhiều ứng dụng trong biểu diễn mã nguồn [15, 16], dự đoán lỗi [17], và các lĩnh vực khác. Mỗi nút của AST tương ứng với một cấu trúc hoặc ký hiệu trong mã nguồn. Thứ nhất, không giống như mã nguồn thông thường, AST là trừu tượng và không chứa tất cả các chi tiết, chẳng hạn như dấu phân cách và dấu câu. Thứ hai, AST chứa thông tin cấu trúc và ngữ nghĩa phong phú hơn, rất phù hợp để biểu diễn mã nguồn.
+
+Ở đây, chúng tôi không sử dụng trực tiếp thông tin AST gốc. Vì sau khi chương trình được phân tích thành AST, kích thước nút của nó sẽ tăng đáng kể, điều này cản trở hiệu suất của graph network. Do đó, chúng tôi đơn giản hóa AST để cải thiện hiệu suất của toàn bộ mô hình.
+
+2.3. Tree-based Neural Network
+
+Gần đây, nhiều nhà nghiên cứu đã đề xuất Tree-Based Neural Networks (TBNNs) sử dụng AST trực tiếp làm đầu vào mô hình.
+
+¹https://checkstyle.sourceforge.io
+²https://pmd.github.io
+³http://findbugs.sourceforge.net
+
+Wu et al.: Preprint submitted to Elsevier Page 2 of 15
+
+
+--- TRANG 3 ---
+Chuyển Đổi Cây Thành Đồ Thị: Automatic Code Review Thông Qua Simplified AST Driven Graph Convolutional Network
+
+[Hai sơ đồ cây được hiển thị:
+(a) Abstract Syntax Tree - với các nút như MethodDeclaration, modifiers, static, public, name, parameters, body, return_type, v.v.
+(b) Simplified Abstract Syntax Tree - phiên bản đơn giản hóa với ít nút hơn]
+
+Hình 3: Ví dụ về tiền xử lý mã nguồn dựa trên AST. Các nút được khoanh bằng đường nét đứt sau đó được loại bỏ. AST được trích xuất từ mã nguồn hiển thị trong Hình 2.
+
+Với một cây cho trước, TBNNs thường sử dụng phương pháp đệ quy, tổng hợp thông tin từ các nút lá hướng lên theo từng lớp để thu được biểu diễn vector của mã nguồn. Mô hình tiêu biểu nhất của biểu diễn mã là AST-based Neural Network (ASTNN) [15].
+
+Trong ASTNN, họ phân tích đoạn mã thành AST và sử dụng thuật toán preorder traversal để chia AST thành một chuỗi statement trees (ST-trees, tức là một cây bao gồm nút statement làm gốc và nút AST tương ứng với statement). Sau đó, họ thiết kế một mô-đun Statement Encoder để mã hóa tất cả ST-trees thành các vector e₁, ..., eₜ. Đối với mỗi ST-tree t, cho n biểu thị một nút không phải lá, và C biểu thị số lượng nút con của nó. Với ma trận embedding được huấn luyện trước Wₑ ∈ ℝ|V|×d trong đó V là kích thước từ vựng và d là chiều embedding của các nút, vector của nút n có thể được thu được bằng:
+
+vₙ = Wₑxₙ (1)
+
+trong đó xₙ là biểu diễn one-hot của ký hiệu n và vₙ là embedding. Tiếp theo, biểu diễn của nút n được tính bằng phương trình sau:
+
+hₙ = σ(Wₙvₙ + Σᵢ∈[1,C] hᵢ + bₙ) (2)
+
+trong đó Wₙ ∈ ℝᵈˣᵏ là ma trận trọng số với chiều mã hóa k, hᵢ là trạng thái ẩn cho mỗi con i, bₙ là số hạng bias, σ là hàm kích hoạt và h là trạng thái ẩn được cập nhật. Biểu diễn cuối cùng của ST-tree được tính bằng:
+
+eₜ = [max(h₁ᵢ), ..., max(hₖᵢ)]; i = 1, ..., N (3)
+
+trong đó N là số lượng nút trong ST-tree. Sau đó, ASTNN sử dụng Bidirectional Gated Recurrent Unit (Bi-GRU) [18] để mô hình hóa đặc tính của các statements. Các trạng thái ẩn của Bi-GRU được lấy mẫu thành một vector duy nhất bằng pooling. Vector như vậy nắm bắt các đặc tính của mã nguồn [19], [20] và có thể phục vụ như một biểu diễn mã nguồn neural.
+
+2.4. Motivation
+
+Như được minh họa trong các phần trước, thông tin cấu trúc của mã, như AST, Control Flow Graph (CFG) [21], Data Flow Graph (DFG) [22], đã được sử dụng rộng rãi trong nhiều nhiệm vụ. Chúng tôi nghĩ rằng việc sử dụng thông tin cấu trúc trong nhiệm vụ ACR là có ý nghĩa.
+
+Đối với các phương pháp dựa trên token và delimiter, hiệu suất thấp hơn kỳ vọng trong nhiều nhiệm vụ. Cách tiếp cận của họ là chia mã thành tokens hoặc dòng theo khoảng trắng hoặc delimiter. Không có nghi ngờ gì rằng các thao tác tiền xử lý này từ bỏ thông tin cấu trúc. Tuy nhiên, trong biểu diễn mã, thông tin cấu trúc quan trọng hơn nhiều so với trong xử lý ngôn ngữ tự nhiên. Do đó, việc sử dụng thông tin AST trong nhiệm vụ ACR có phần muộn màng.
+
+Ngoài việc đưa thông tin cấu trúc AST vào ACR, chúng tôi cũng đã thực hiện một số tối ưu hóa và cải tiến. Trong nhiều phương pháp biểu diễn mã, chúng tôi nhận thấy rằng nhiều nhà nghiên cứu [15] tin rằng số lượng lớn các nút AST có tác động tiêu cực đến mô hình.
+
+Để giải quyết vấn đề này, chúng tôi đã kiểm tra thủ công tất cả các loại nút được tạo bởi AST, và cố gắng lọc các nút được tạo ra với các quy tắc đơn giản. Cố gắng giảm đáng kể số lượng nút được tạo tự động mà không ảnh hưởng đến cấu trúc tổng thể và thông tin ngữ nghĩa của AST, để có được thông tin cấu trúc nhẹ và hiệu quả.
+
+Tương tự, chúng tôi cũng thấy rằng trong lĩnh vực biểu diễn mã, vẫn còn một số thiếu sót trong việc sử dụng thông tin cấu trúc cây của AST. Các nhà nghiên cứu thường tuần tự hóa cấu trúc cây thành một chuỗi các nút, điều này làm hại biểu hiện thông tin tổng thể ở một mức độ nào đó. Do đó, trong bài báo này, chúng tôi cũng đề xuất sử dụng các phép toán graph convolution và cơ chế attention mới nhất để nắm bắt tốt hơn thông tin mã từ cấu trúc cây.
+
+Wu et al.: Preprint submitted to Elsevier Page 3 of 15
+
+
+--- TRANG 4 ---
+Chuyển Đổi Cây Thành Đồ Thị: Automatic Code Review Thông Qua Simplified AST Driven Graph Convolutional Network
+
+[Sơ đồ framework tổng quát của SimAST-GCN được hiển thị với 3 thành phần chính:
+1. Node Sequence and Relation Graph Generation
+2. SimAST-GCN (với Input Embedding module, GCN layers, Bi-GRU, Attention)
+3. Prediction (với Difference, Original, Revised, MLP, Output)]
+
+Hình 4: Framework tổng quát của SimAST-GCN. Các nút màu xanh và màu nâu trong AST tương ứng với các nút trong Hình 3. Các nút màu trắng là những phần không được vẽ.
+
+3. Phương Pháp Đề Xuất
+
+Chúng tôi giới thiệu phương pháp của mình (SimAST-GCN) trong phần này. Như được thể hiện trong Hình 4, kiến trúc của framework SimAST-GCN đề xuất chứa ba thành phần chính. Đầu tiên, mô-đun Node Sequence and Relation Graph Generation đơn giản hóa AST, như được minh họa trong Hình 3, và tạo ra ma trận kề tương ứng và chuỗi nút dựa trên Simplified AST. Thứ hai, SimAST-GCN đề xuất thu được word embeddings của chuỗi nút và sử dụng Bidirectional Gated Recurrent Unit (Bi-GRU) để mô hình hóa tính tự nhiên của các statements. Sau đó nó sử dụng Graph Convolutional Network (GCN) để kết hợp đồ thị quan hệ nút và trạng thái ẩn. Cuối cùng, retrieval-based attention được sử dụng để tạo ra biểu diễn mã. Thứ ba, một dự đoán được thực hiện bằng cách tính toán sự khác biệt trong các biểu diễn mã để dự đoán kết quả cuối cùng.
+
+3.1. Node Sequence and Relation Graph Generation
+
+3.1.1. Đơn giản hóa AST
+
+Đầu tiên, chúng tôi sử dụng các công cụ phân tích cú pháp hiện có để phân tích các đoạn mã nguồn thành các AST tương ứng. Đối với mỗi AST, chúng tôi xóa các nút dư thừa và tái cấu trúc kết nối nút của toàn bộ AST để đảm bảo tính toàn vẹn của cấu trúc cây.
+
+Cho một AST T và các nút thuộc tính AST S (các nút thuộc tính, các nút màu xanh trong Hình 3). Đầu tiên, chúng tôi lọc các nút thuộc tính và giữ lại các nút có thông tin ngữ nghĩa mạnh. Chúng tôi giả định rằng nếu các nút thuộc tính chứa Declaration hoặc Statement, thì các nút thuộc tính này chứa thông tin kết nối. Ví dụ, trong Hình 3(a), MethodDeclaration định nghĩa một phương thức, tất cả các nút dưới phương thức thuộc về nút này, trong khi nút modifiers cho thấy rằng nút static là một modifier, và giảm cường độ kết nối giữa nút static và MethodDeclaration. Do đó, chúng tôi loại bỏ các nút dư thừa này để giảm số lượng chuỗi nút và tăng cường độ kết nối giữa mỗi nút.
+
+Thuật toán 1 Quy trình đơn giản hóa AST
+Input: Gốc của AST, R; đoạn mã nguồn, C; nút thuộc tính, S.
+Output: Simplified AST.
+1: Cho FS = [].
+2: for each node ∈ S do
+3:     if Declaration ∈ node or Statement ∈ node then
+4:         FS ← FS + node
+5: function SIMPLIFYAST(R, C, FS)
+6:     Cho children = [].
+7:     for each node ∈ R[child] do
+8:         if node ∈ C or node ∈ FS then
+9:             children ← children + node
+10:        else
+11:            children ← children + node[child]
+12:            SimplifyAST(node, C, FS)
+13:    R[child] ← children
+14: SIMPLIFYAST(R, C, FS)
+15: return R
+
+Nếu chúng ta chỉ đơn giản loại bỏ các nút dư thừa trong cây AST, nó sẽ chia tách toàn bộ AST. Để duy trì tính toàn vẹn của toàn bộ cây, chúng ta cần kết nối lại AST bị chia tách. Ví dụ, trong Hình 3(a), các nút được khoanh bằng đường nét đứt được loại bỏ, và cuối cùng một Simplified AST được tạo ra, như được hiển thị trong Hình 3(b). Quy trình đơn giản hóa AST được mô tả trong Thuật toán 1. Nói chung, nếu nút trong AST gốc bị xóa, chúng ta kết nối nút con của nút bị xóa với nút cha của nó.
+
+3.1.2. Tạo Node Sequence và Relation Graph trên Simplified AST
+
+Sau khi thu được Simplified AST, chúng tôi sử dụng thuật toán depth-first traversal để tuần tự hóa Simplified AST thành Node Sequences. Ví dụ, nếu kích thước của AST là n, thì chúng ta tạo ra một chuỗi nút w = [w₁, w₂, ..., wₙ].
+
+Wu et al.: Preprint submitted to Elsevier Page 4 of 15
+
+
+--- TRANG 5 ---
+Chuyển Đổi Cây Thành Đồ Thị: Automatic Code Review Thông Qua Simplified AST Driven Graph Convolutional Network
+
+Được truyền cảm hứng từ phương pháp dựa trên GCN trước đây [23], chúng tôi tạo ra một đồ thị quan hệ nút cho mỗi đoạn mã trên simplified AST:
+
+Aᵢ,ⱼ = {1 nếu i = j hoặc wᵢ, wⱼ được kết nối trực tiếp
+        {0 ngược lại                                    (4)
+
+Sau đó, một ma trận kề A ∈ ℝⁿˣⁿ được tạo ra thông qua simplified AST của các đoạn mã nguồn.
+
+3.2. SimAST-GCN
+
+3.2.1. Embedding Model
+
+Trong mô hình SimAST-GCN đề xuất của chúng tôi, chúng tôi sử dụng thư viện gensim [24] để huấn luyện embeddings của các ký hiệu để có được biểu diễn phân tán của các từ trong AST. Do đó, chúng ta có thể có được bảng tra cứu embedding V ∈ ℝᵐˣ|ᵛ| theo chỉ mục từ, trong đó m là kích thước embedding (chiều của mỗi từ) và |V| là số lượng tất cả các từ sau khi khử trùng (kích thước từ vựng). Sau đó, với một chuỗi nút có n nút, chúng ta có thể có được ma trận embedding tương ứng x = [x₁, x₂, ..., xₙ], trong đó xᵢ ∈ ℝᵐ là word embedding.
+
+3.2.2. Graph Convolutional Network
+
+Trong mô hình SimAST-GCN của chúng tôi, mô-đun GCN nhận đồ thị quan hệ nút và các biểu diễn nút tương ứng làm đầu vào. Mỗi biểu diễn nút trong lớp GCN thứ l được cập nhật bằng cách tổng hợp thông tin từ các hàng xóm của chúng, công thức tính toán là:
+
+h^l = LeakyReLU(L̃h^{l-1}W^l + b^l)                    (5)
+
+trong đó h^{l-1} là biểu diễn ẩn được tạo ra từ lớp GCN trước đó. L̃ là một normalization đối xứng của ma trận kề quan hệ nút:
+
+L̃ = A(D + I)⁻¹                                        (6)
+
+trong đó D = Σⱼ₌₁ⁿ Aᵢ,ⱼ là bậc của Aᵢ. Các biểu diễn nút gốc cho các lớp GCN là các biểu diễn ẩn được tạo ra bởi các lớp Bi-GRU, sử dụng ma trận embedding x trước đó làm đầu vào lớp GCN thứ 1:
+
+H^c = [h₁^c, h₂^c, ..., hₙ^c] = Bi-GRU(x)              (7)
+
+Cuối cùng, chúng ta có thể nắm bắt thành công các biểu diễn h của các lớp GCN. Tiếp theo, chúng tôi sử dụng cơ chế retrieval-based attention [23] để nắm bắt các đặc trưng sentiment quan trọng từ các biểu diễn ngữ cảnh cho mã nguồn:
+
+αₜ = Σᵢ₌₁ⁿ h^c_t^T hᵢ                                  (8)
+
+αₜ = exp(αₜ)/Σᵢ₌₁ⁿ exp(αᵢ)                            (9)
+
+trong đó h^c_t^T là chuyển vị của trạng thái ẩn của nút thứ t, và hᵢ là biểu diễn ẩn đồ thị của nút thứ i. Do đó, biểu diễn cuối cùng của đoạn mã nguồn được xây dựng như sau:
+
+r = Σᵢ₌₁ⁿ αᵢh^c_i                                     (10)
+
+Bảng 1
+Thống kê của tập dữ liệu AACR.
+
+Repository         #methods  #rejected  reject rate
+accumulo           12,704    2,883      23%
+ambari             5,313     542        10%
+cloudstack         9,942     6,032      61%
+commons-lang       6,176     5634       91%
+flink              23,792    16,172     68%
+incubator-point    7,759     1,001      13%
+kafka              24,912    8,888      36%
+lucene-solr        6,785     2,886      43%
+shardingsphere     12,254    676        6%
+
+3.3. Prediction
+
+Nội dung trên là thao tác cho một đoạn mã. Quá trình ACR cần so sánh hai đoạn mã nguồn (file gốc s^O và file đã sửa đổi s^R) và đưa ra đánh giá—tức là liệu nó có vượt qua code review hay không. Do đó, sau khi chúng ta thu được các biểu diễn tương ứng r^O và r^R, chúng ta cần tính toán khoảng cách giữa chúng:
+
+r̂ = r^O - r^R                                         (11)
+
+y = softmax(Wr̂ + b)                                   (12)
+
+trong đó softmax(·) là hàm softmax.
+
+Mục tiêu để huấn luyện các classifiers là tối thiểu hóa weighted cross entropy loss giữa phân phối dự đoán và phân phối thực:
+
+L = -Σᵢ₌₁ˢ (w^O yᵢ log pᵢ + w^R (1-yᵢ) log(1-pᵢ)) + λ||θ||₂   (13)
+
+trong đó S biểu thị số lượng mẫu huấn luyện, w^O là trọng số của việc dự đoán sai một thay đổi bị từ chối, w^R là trọng số của việc dự đoán sai một thay đổi được chấp thuận. Hai số hạng này cung cấp cơ hội để xử lý phân phối nhãn không cân bằng. λ là trọng số của số hạng L2 regularization. θ biểu thị tất cả các tham số có thể huấn luyện.
+
+4. Thiết Kế Thực Nghiệm
+
+Phần này giới thiệu quá trình thực nghiệm, bao gồm lựa chọn repository và xây dựng dữ liệu, thiết lập baseline, metrics đánh giá và thiết lập thực nghiệm.
+
+Wu et al.: Preprint submitted to Elsevier Page 5 of 15
+
+
+--- TRANG 6 ---
+Chuyển Đổi Cây Thành Đồ Thị: Automatic Code Review Thông Qua Simplified AST Driven Graph Convolutional Network
+
+4.1. Xây Dựng Dataset
+
+Chúng tôi đã chọn 9 dự án từ Github thuộc về Apache Foundation vì Apache Foundation là một nguồn code review được sử dụng rộng rãi. Sáu trong số chúng (commons-lang, flink, incubator-point, kafka, lucene-solr, shardingsphere) được chọn vì chúng có trên 2000 stars. Các dự án còn lại (accumulo, ambari, cloudstack) được chọn bởi [9]. Ngôn ngữ của tất cả các dự án là Java.
+
+Để xử lý dữ liệu, chúng tôi đã trích xuất tất cả các issues thuộc về các dự án này từ năm 2018 đến 2020. Trong số các issues này, nhiều issues không liên quan đến việc gửi mã, mà chỉ cung cấp phản hồi, vì vậy chúng tôi cần chọn theo loại issue. Sau khi phân tích thủ công hàng trăm loại issue, cuối cùng chúng tôi đã chọn các loại PullRequestEvent và PullRequestReviewCommentEvent. Vì chỉ hai loại issue này có mã đã sửa đổi, nó có thể được đánh giá xem mã đã vượt qua review bằng cách kiểm tra xem mã đã được thêm vào codebase hay chưa.
+
+Trong nhiều trường hợp thực tế, chúng ta có thể dễ dàng trích xuất mã gốc và mã đã sửa đổi từ issue, nhưng vì các mã này thường được chứa trong nhiều file, nên khó để chúng ta sử dụng chúng trực tiếp làm đầu vào của mạng. Do đó, chúng tôi giả định rằng tất cả các thay đổi đều độc lập và phân phối đồng nhất, vì vậy không có kết nối giữa các thay đổi này, và nếu một file chứa nhiều phương thức đã thay đổi, chúng ta có thể chia các phương thức này độc lập làm đầu vào.
+
+Hơn nữa, nếu chúng ta thêm một phương thức mới hoặc xóa toàn bộ một phương thức, một nửa dữ liệu đầu vào sẽ trống. Vì vậy chúng tôi loại bỏ những dữ liệu này vì chúng không thể được đưa vào mạng. Tức là, chúng tôi chỉ xem xét trường hợp mã đã được thay đổi. Ngoài ra, xem xét rằng dữ liệu được gửi có thể quá lớn, chúng tôi chia nhỏ mã được gửi mỗi lần xuống cấp độ phương thức cho các thực nghiệm tiếp theo.
+
+Sau khi xử lý dữ liệu, mỗi phần dữ liệu bao gồm ba phần: đoạn mã gốc, đoạn mã đã sửa đổi, và nhãn. Đoạn mã gốc và đoạn mã đã sửa đổi đều là các chương trình Java cấp độ phương thức. Nhãn sử dụng 0 và 1 để đại diện cho từ chối và chấp nhận. Thống kê cơ bản của AACR được tóm tắt trong Bảng 1.
+
+Trong bài báo này, tỷ lệ từ chối từ 6% đến 91% có nghĩa là có sự mất cân bằng lớp trong quá trình huấn luyện mô hình và nó sẽ dẫn đến hiệu suất kém, vì vậy chúng tôi đặt tham số 'class_weight' thành 'balance' trong mô hình của chúng tôi.
+
+4.2. Comparison Models
+
+Trong bài báo này, chúng tôi so sánh mô hình đề xuất của mình (SimAST-GCN) với ba mô hình khác trong nhiệm vụ ACR. Các mô hình này sử dụng các phương pháp khác nhau (bao gồm phương pháp dựa trên delimiter, phương pháp dựa trên token, phương pháp dựa trên tree) để thu được các đặc trưng mã. Các mô hình baseline như sau:
+
+• DACE [9] chia mã theo delimiter và thiết kế một pairwise recursive autoencoder để so sánh mã.
+
+• TBRNN tuần tự hóa AST thành tokens và sử dụng RNN để nắm bắt thông tin cú pháp và ngữ nghĩa.
+
+• ASTNN [15] chia các AST lớn thành một chuỗi các statement trees nhỏ và tính toán khoảng cách biểu diễn để so sánh mã.
+
+Ngoài ra, chúng tôi xem xét các biến thể của SimAST-GCN đề xuất của chúng tôi.
+
+• ASTGCN là mô hình đề xuất của chúng tôi không có mô-đun Simplified AST.
+
+• SimAST là mô hình đề xuất của chúng tôi không có mô-đun GCN.
+
+• SAGCN-C là mô hình đề xuất của chúng tôi, nhưng nó kết nối các biểu diễn để so sánh mã thay vì tính toán khoảng cách.
+
+Để đảm bảo tính công bằng của thực nghiệm và tính ổn định của kết quả, chúng tôi chạy tất cả các phương pháp trên tập dữ liệu AACR mới, và mỗi thực nghiệm được lặp lại 30 lần.
+
+4.3. Evaluation
+
+4.3.1. Metrics cho đánh giá ACR
+
+Vì automatic code review có thể được xây dựng như một bài toán phân loại nhị phân (chấp nhận hoặc từ chối) [9], chúng tôi chọn các metrics thường được sử dụng: Accuracy, F1-measure (F1), Area under the receiver operating characteristic curve (AUC) làm metrics đánh giá. Ngoài ra, xem xét phân phối dữ liệu không cân bằng trong tập dữ liệu AACR, chúng tôi cũng thêm một metric đánh giá khác là Matthews correlation coefficient (MCC) để đánh giá tốt hơn hiệu suất và hiệu quả của mô hình.
+
+Phạm vi giá trị của AUC là [0,1]. Khi giá trị AUC là 1, có nghĩa là giá trị dự đoán nhất quán với giá trị đúng. Khi giá trị AUC là 0.5, nó tương đương với việc chọn ngẫu nhiên. Khi giá trị AUC nhỏ hơn 0.5, có nghĩa là nó tệ hơn việc chọn ngẫu nhiên.
+
+Định nghĩa chi tiết của Accuracy như sau:
+
+Accuracy = (TP + TN)/(TP + TN + FP + FN)               (14)
+
+trong đó TP, FP, FN, và TN đại diện cho True Positives, False Positives, False Negatives, và True Negatives tương ứng. Accuracy là tỷ lệ số lượng mẫu được dự đoán đúng trên tổng số mẫu được dự đoán.
+
+Công thức tính của F1 như sau:
+
+Precision = TP/(TP + FP)                               (15)
+
+Recall = TP/(TP + FN)                                  (16)
+
+F1 = (2 × Precision × Recall)/(Precision + Recall)     (17)
+
+Điểm F1 là trung bình điều hòa của precision và recall. Phạm vi giá trị của F1 là [0,1], cho biết
+
+Wu et al.: Preprint submitted to Elsevier Page 6 of 15
+
+
+--- TRANG 7 ---
+Chuyển Đổi Cây Thành Đồ Thị: Automatic Code Review Thông Qua Simplified AST Driven Graph Convolutional Network
+
+kết quả nằm giữa giá trị precision (hoặc recall) bằng không và recall và precision hoàn hảo.
+
+Công thức tính của MCC là:
+
+MCC = (TP×TN - FP×FN)/√((TP+FP)(TP+FN)(TN+FP)(TN+FN))    (18)
+
+Phạm vi giá trị của MCC là [-1,1], cho biết dự đoán hoàn toàn sai và kết quả dự đoán nhất quán với tình huống thực tế, tương ứng.
+
+4.3.2. Phân tích ý nghĩa (Win/Tie/Loss indicator)
+
+Trong bài báo này, chúng tôi sử dụng Win/Tie/Loss indicator để so sánh thêm sự khác biệt hiệu suất giữa SimAST-GCN và các mô hình baseline, được sử dụng rộng rãi trong các lĩnh vực phần mềm [25], [26]. Chúng tôi lặp lại thực nghiệm 30 lần cho tất cả các mô hình. Sau đó chúng tôi áp dụng hai phương pháp phân tích dữ liệu (Wilcoxon signed-rank test và Cliff's delta test) để phân tích hiệu suất của SimAST-GCN và các phương pháp khác.
+
+Wilcoxon signed-rank test thường được sử dụng để so sánh từng cặp. Đây là một kiểm định giả thuyết thống kê không tham số được sử dụng để xác định xem hai quần thể mẫu khớp có cùng phân phối hay không. Khác với Student's t-test, Wilcoxon signed-rank test không giả định rằng dữ liệu được phân phối bình thường. Nó có khả năng phát hiện thống kê tốt hơn cho các tập dữ liệu khác nhau so với Student's t-test, và có nhiều khả năng đưa ra kết quả có ý nghĩa thống kê hơn. Giá trị p được sử dụng để xác định xem sự khác biệt giữa hai quần thể của mẫu khớp có ý nghĩa (p value < 0.05) hay không.
+
+Cliff's delta test [27] là một kiểm định kích thước hiệu ứng không tham số, là một phân tích bổ sung của Wilcoxon signed-rank test trong bài báo này. Nó đo lường sự khác biệt giữa hai quần thể mẫu so sánh dưới dạng giá trị số. Bảng 2 hiển thị các ánh xạ giữa các giá trị Cliff's delta (|δ|) và các mức hiệu quả của chúng.
+
+Cụ thể, đối với SimAST-GCN và một mô hình baseline M, Win/Tie/Loss indicator giữa chúng trong nhiệm vụ ACR được tính như sau:
+
+• Win: Kết quả của SimAST-GCN vượt trội hơn M, nếu p value nhỏ hơn 0.05, và mức hiệu quả của Cliff's delta không phải là Negligible.
+
+• Loss: Kết quả của M vượt trội hơn SimAST-GCN, nếu p value nhỏ hơn 0.05, và mức hiệu quả của Cliff's delta không phải là Negligible.
+
+• Tie: Các trường hợp khác.
+
+4.4. Thiết Lập Thực Nghiệm
+
+Trong các thực nghiệm của chúng tôi, chúng tôi sử dụng công cụ javalang⁴ để thu được ASTs cho mã Java, và chúng tôi sử dụng thuật toán Skip-gram được triển khai bởi thư viện gensim [24] để huấn luyện embeddings của các nút. Kích thước embedding được đặt là 300. Kích thước ẩn của Bi-GRU là 300. Số lượng lớp GCN là 3, đây là độ sâu tối ưu trong các nghiên cứu thí điểm. Các hệ số w^O và w^R liên quan đến tập dữ liệu, và hệ số λ của L2 regularization item được đặt là 10^-5. Adam được sử dụng làm optimizer với learning rate 10^-3 để huấn luyện mô hình, và mini-batch là 128. Chúng tôi khởi tạo ngẫu nhiên tất cả W và b với phân phối đều.
+
+Tất cả các thực nghiệm được tiến hành trên một máy chủ với 24 cores CPU 3.8GHz và GPU NVIDIA GeForce RTX 3090.
+
+5. Kết Quả Thực Nghiệm
+
+Phần này hiển thị hiệu suất của phương pháp SimAST-GCN đề xuất với các phương pháp baseline khác. Do đó, chúng tôi đưa ra các câu hỏi nghiên cứu sau:
+
+• RQ1: Mô hình SimAST-GCN đề xuất của chúng tôi có vượt trội hơn các mô hình khác cho automatic code review không?
+
+• RQ2: Các thiết lập tham số và mô-đun khác nhau ảnh hưởng như thế nào đến hiệu suất của phương pháp chúng tôi?
+
+• RQ3: Mô hình SimAST-GCN đề xuất của chúng tôi có vượt trội hơn các mô hình khác về hiệu quả thời gian không?
+
+5.1. Mô hình SimAST-GCN đề xuất của chúng tôi có vượt trội hơn các mô hình khác cho automatic code review không?
+
+Bảng 3-6 hiển thị kết quả so sánh của bốn metrics trên tập dữ liệu AACR. Đối với mỗi bảng, nó được chia thành ba cột. Cột đầu tiên là tên repository. Cột thứ hai là cột metric tương ứng, hiển thị các giá trị metric của phương pháp SimAST-GCN đề xuất và ba phương pháp baseline khác. Đối với mỗi repository, kết quả của phương pháp tốt nhất được hiển thị in đậm. Cột p(δ) hiển thị các p values của Wilcoxon signed-rank test và các giá trị Cliff's delta giữa Sim-AST và ba phương pháp baseline khác. Đối với p value của Wilcoxon signed-rank test, chúng tôi hiển thị giá trị gốc trong bảng nếu giá trị không nhỏ hơn 0.05. Ngược lại, chúng tôi sẽ hiển thị '<0.05' trong bảng. Đối với giá trị Cliff's delta, chúng tôi hiển thị mức hiệu quả (được hiển thị trong Bảng 2) trong bảng. Để phân biệt giá trị Cliff's delta dương và âm, chúng tôi sử dụng '+' và '-' trước mức hiệu quả để biểu thị thuộc tính. Hàng 'Average & Win/Tie/Loss' hiển thị giá trị trung bình của metric tương ứng và Win/Tie/Loss indicator.
+
+Kết quả trong tất cả các metrics cho thấy SimAST-GCN đề xuất luôn vượt trội hơn tất cả các mô hình so sánh. Điều này xác minh hiệu quả của phương pháp đề xuất của chúng tôi đối với ACR.
+
+Wu et al.: Preprint submitted to Elsevier Page 7 of 15
+
+
+--- TRANG 8 ---
+Chuyển Đổi Cây Thành Đồ Thị: Automatic Code Review Thông Qua Simplified AST Driven Graph Convolutional Network
+
+[Các bảng 3-6 hiển thị kết quả so sánh Accuracy, F1, AUC và MCC values của SimAST-GCN với các phương pháp baseline khác trên các repositories khác nhau, bao gồm accumulo, ambari, cloudstack, commons-lang, flink, incubator-pinot, kafka, lucene-solr, shardingsphere]
+
+Bảng 2
+Ánh xạ giữa các giá trị Cliff's delta (|δ|) và các mức hiệu quả của chúng
+
+Cliff's delta    Mức hiệu quả
+|δ| < 0.147      Negligible
+0.147 ≤ |δ| < 0.33    Small
+0.33 ≤ |δ| < 0.474    Medium
+0.474 ≤ |δ|      Large
+
+⁴https://github.com/c2nes/javalang
+
+Wu et al.: Preprint submitted to Elsevier Page 8 of 15
+
+
+--- TRANG 9 ---
+Chuyển Đổi Cây Thành Đồ Thị: Automatic Code Review Thông Qua Simplified AST Driven Graph Convolutional Network
+
+[Hình 5: Boxplot của bốn metrics của SimAST-GCN và ba phương pháp baseline khác, hiển thị phân phối Accuracy, F1, AUC và MCC cho các phương pháp SimAST-GCN, DACE, TBRNN, ASTNN]
+
+So với mô hình dựa trên delimiter (DACE), chúng tôi thấy rằng SimAST-GCN đạt được hiệu suất tốt nhất trong tất cả các điều khoản của F1, AUC, và MCC. Điều này là vì, so với DACE, SimAST-GCN không phải là phương pháp dựa trên delimiter. Chúng tôi áp dụng AST làm biểu diễn mã trừu tượng, điều này chứng minh hiệu quả của AST trong biểu diễn mã.
+
+So với các mô hình dựa trên AST (TBRNN và ASTNN), SimAST-GCN cũng đạt được hiệu suất tốt nhất theo tất cả các metrics. Mặc dù cả TBRNN và ASTNN đều sử dụng abstract syntax tree để xử lý mã nguồn, trong nhiệm vụ code review, chúng tôi thấy rằng hai phương pháp này không hoạt động tốt so với SimAST-GCN. Một mặt, chúng tôi đơn giản hóa AST và tăng cường các thuộc tính kết nối giữa các nút. Mặt khác, chúng tôi sử dụng graph neural network tiên tiến hơn để mô hình hóa simplified AST để nắm bắt thông tin cú pháp và ngữ nghĩa tốt hơn.
+
+Hơn nữa, chúng tôi sử dụng cơ chế retrieval-based attention để nắm bắt các đặc trưng sentiment quan trọng từ các biểu diễn ngữ cảnh cho mã nguồn. Cơ chế này cải thiện đáng kể hiệu suất của mô hình, cho phép mô hình tập trung vào những phần của mã có thể đã thay đổi, được sử dụng rộng rãi trong xử lý ngôn ngữ tự nhiên.
+
+Tóm lại, đây là nghiên cứu đầu tiên đơn giản hóa abstract syntax tree và triển khai cấu trúc đồ thị để tận dụng Simplified AST cho nhiệm vụ code review. Các thực nghiệm của chúng tôi cho thấy hiệu quả của việc sử dụng Simplified AST và áp dụng graph neural network.
+
+5.2. Các thiết lập tham số và mô-đun khác nhau ảnh hưởng như thế nào đến hiệu suất của phương pháp chúng tôi?
+
+5.2.1. Thiết lập tham số
+
+Là một thành phần chính của mô hình chúng tôi, chúng tôi đã điều tra tác động của số lượng lớp GCN đến hiệu suất của phương pháp SimAST-GCN đề xuất. Chúng tôi thay đổi số lượng lớp từ 1 đến 12, và chúng tôi báo cáo kết quả của bốn metrics trong Hình 6. Nhìn chung, GCN 3 lớp đạt được hiệu suất tốt nhất trên tập dữ liệu accumulo. Do đó, cuối cùng chúng tôi đặt số lượng lớp GCN là 3 trong các thực nghiệm của chúng tôi.
+
+So sánh, các lớp GCN ít hơn 3 trong SimAST-GCN hoạt động không thỏa đáng, điều này cho thấy rằng ít lớp GCN hơn trong SimAST-GCN không đủ để tạo ra các phụ thuộc cú pháp chính xác của mã nguồn.
+
+Ngoài ra, hiệu suất của SimAST-GCN giảm khi số lượng lớp GCN tăng, và có xu hướng giảm khi độ sâu của mô hình lớn hơn 7. Điều này có nghĩa là việc chỉ đơn giản tăng độ sâu của GCN sẽ làm giảm khả năng học của mô hình vì các tham số mô hình tăng mạnh.
+
+Wu et al.: Preprint submitted to Elsevier Page 9 of 15
+
+
+--- TRANG 10 ---
+Chuyển Đổi Cây Thành Đồ Thị: Automatic Code Review Thông Qua Simplified AST Driven Graph Convolutional Network
+
+[Hình 6: Tác động của số lượng lớp GCN. Bốn metrics dựa trên số lượng lớp GCN khác nhau được báo cáo, hiển thị đồ thị cho Accuracy, F1, AUC và MCC với trục x từ 2 đến 12 lớp GCN]
+
+[Bảng 7-10: Các bảng hiển thị kết quả Accuracy, F1, AUC và MCC values của SimAST-GCN và ba phương pháp variant khác (ASTGCN, SimAST, SAGCN-C) trên các repositories khác nhau]
+
+5.2.2. Ảnh hưởng của mô-đun
+
+Chúng tôi tiến hành nghiên cứu ablation để phân tích thêm tác động của các thành phần khác nhau của SimAST-GCN đề xuất. Kết quả của bốn metrics được hiển thị trong Bảng 7-10.
+
+Chúng ta có thể quan sát thấy rằng mô hình không có Simplified AST (ASTGCN) hoạt động kém nhất trên tập dữ liệu AACR. Điều này xác nhận rằng việc đơn giản hóa AST là cải tiến quan trọng nhất cho ACR.
+
+Ngoài ra, việc loại bỏ retrieval-based attention và GCN (SimAST) dẫn đến sự sụt giảm hiệu suất đáng kể. Điều này cho thấy rằng cơ chế attention và quan hệ nút cải thiện rất nhiều hiệu suất của ACR.
+
+Chúng tôi quan sát thêm rằng mô hình với thông tin kết nối (SAGCN-C) giảm mạnh, điều này cho thấy rằng tốt hơn là tính toán khoảng cách giữa các biểu diễn thay vì kết nối biểu diễn.
+
+Wu et al.: Preprint submitted to Elsevier Page 10 of 15
+
+
+--- TRANG 11 ---
+Chuyển Đổi Cây Thành Đồ Thị: Automatic Code Review Thông Qua Simplified AST Driven Graph Convolutional Network
+
+5.3. Mô hình SimAST-GCN đề xuất của chúng tôi có vượt trội hơn các mô hình khác về hiệu quả thời gian không?
+
+Trong các ứng dụng thực tế, thời gian huấn luyện của mô hình có những hạn chế tuyệt vời đối với việc áp dụng mô hình, vì vậy chúng tôi đo lường mức tiêu thụ thời gian huấn luyện của mô hình SimAST-GCN và ba mô hình baseline khác. Kết quả được hiển thị trong Hình 7.
+
+[Hình 7: Tiêu thụ thời gian cho SimAST-GCN và ba phương pháp baseline trong quá trình huấn luyện, hiển thị biểu đồ cột với SimAST-GCN có thời gian thấp nhất]
+
+Trong Hình 7, chúng ta có thể quan sát thấy rằng SimAST-GCN tiêu thụ ít thời gian nhất so với các mô hình baseline khác. Chúng tôi tin rằng có hai lý do cho hiệu quả huấn luyện mô hình xuất sắc của chúng tôi. Đầu tiên, mô hình của chúng tôi có khả năng song song hóa tốt. ASTNN yêu cầu thông tin nút lan truyền từ các nút lá đến nút gốc, và đây là một quá trình tuần tự. Nút gốc không thể được tính toán khi thông tin chưa được lan truyền, điều này dẫn đến mô hình tốn thời gian lâu. DACE và TBRNN sử dụng một lượng lớn mạng RNN trong mô hình của chúng, vì vậy chúng không rất tốt về mặt song song hóa. Mô hình SimAST-GCN mà chúng tôi đề xuất chỉ sử dụng một lượng nhỏ mạng RNN trong mô hình, và một lượng lớn mạng GCN song song, điều này cải thiện đáng kể tính song song của mạng, từ đó giảm đáng kể mức tiêu thụ thời gian huấn luyện mô hình và cải thiện hiệu quả huấn luyện của mô hình. Thứ hai, chúng tôi tiền xử lý dữ liệu cho tất cả các mô hình. Chúng tôi chuyển việc trích xuất AST, đơn giản hóa AST, và trích xuất đồ thị quan hệ nút vào quá trình tiền xử lý. Do đó, hiệu quả thực thi của mô hình được cải thiện.
+
+Kết luận, mô hình SimAST-GCN của chúng tôi vượt trội hơn các mô hình khác về hiệu quả thời gian.
+
+5.4. Thảo luận
+
+Trong phần này, chúng tôi sẽ thảo luận về hiệu quả của việc đơn giản hóa AST. Bảng 11 liệt kê kích thước cây trước và sau khi đơn giản hóa AST. Chúng ta có thể thấy rằng token trung bình của cây giảm từ 170 xuống 94. Chúng tôi cũng nhận thấy rằng tỷ lệ code tokens trong tất cả tokens cũng tăng đáng kể (từ 47% lên 85%), mức tăng tỷ lệ trung bình là khoảng 38 điểm phần trăm. Chúng tôi tin rằng khi AST không được đơn giản hóa, tỷ lệ các nút phụ được tạo ra quá cao, điều này sẽ khiến mô hình tập trung quá nhiều vào thông tin của các nút phụ, từ đó bỏ qua thông tin của chính các nút mã. Do đó, bằng cách đơn giản hóa AST, một mặt, chúng ta có thể tăng cường thông tin liên lạc giữa các nút, và mặt khác, chúng ta có thể tăng tỷ lệ code nodes, để hai loại thông tin nút có thể được cân bằng tốt hơn. Đây là lý do tại sao simplified AST giúp dự đoán kết quả code review.
+
+Lý do để đơn giản hóa AST có hai khía cạnh. Đầu tiên, sau khi loại bỏ các nút thuộc tính vô dụng, các nút thuộc tính còn lại đại diện cho mối quan hệ giữa các nút, không phải thuộc tính của một nút cụ thể. Ví dụ, nút "modifiers" trong Hình 3(a) có nghĩa là nút "static" là một nút modifier. Tuy nhiên, nút "Method Declaration" có thể thống nhất các nút con của nó và rút ngắn khoảng cách giữa các code nodes, từ đó tăng cường kết nối giữa các nút. Thứ hai, số lượng nút nhỏ hơn có thể giảm chi phí tính toán và overhead huấn luyện.
+
+6. Công Trình Liên Quan
+
+6.1. Biểu Diễn Mã Nguồn
+
+Trong lĩnh vực kỹ thuật phần mềm, nhiều nghiên cứu liên quan đến mã cần chuyển đổi mã thành dạng có thể hiểu được bằng máy. Do đó, làm thế nào để biểu diễn hiệu quả đoạn mã nguồn là một thách thức quan trọng trong lĩnh vực nghiên cứu kỹ thuật phần mềm.
+
+Các phương pháp dựa trên deep learning đã thu hút nhiều sự chú ý trong việc học biểu diễn của các đoạn mã nguồn. Raychev [28] sử dụng mô hình n-gram và RNN cho nhiệm vụ hoàn thành mã, và ý tưởng chính là đơn giản hóa bài toán hoàn thành mã thành bài toán xử lý ngôn ngữ tự nhiên, tức là dự đoán xác suất của một câu. Allamanis [29] đề xuất một mô hình ngôn ngữ neural probabilistic cho bài toán đặt tên phương thức. Họ nghĩ rằng trong các ngữ cảnh tương tự, tên có xu hướng có embeddings tương tự.
+
+Tuy nhiên, với sự sâu sắc của nghiên cứu, các nhà nghiên cứu thấy rằng thông tin cấu trúc trong mã rất quan trọng, vì vậy họ bắt đầu nghiên cứu cách trích xuất thông tin cấu trúc trong các đoạn mã nguồn. Mou [30] đề xuất một neural network mới (TBCNN), là một mô hình dựa trên cây được thiết kế để xử lý ngôn ngữ lập trình. Họ đề xuất một convolution kernel được sử dụng trên AST để nắm bắt thông tin cấu trúc thiết yếu. Lam [31] kết hợp lịch sử sửa lỗi của dự án và các đặc trưng được xây dựng từ rVSM và DNN để có độ chính xác tốt hơn trong nhiệm vụ định vị lỗi. Huo [32] đề xuất một convolutional neural network NP-CNN, được sử dụng để tận dụng cả thông tin cú pháp và ngữ nghĩa. Theo báo cáo lỗi, NP-CNN học các đặc trưng thống nhất từ ngôn ngữ tự nhiên và các đoạn mã nguồn để dự đoán tự động mã nguồn có lỗi tiềm ẩn. Wei [33] đề xuất một phương pháp gọi là CDLH cho phát hiện clone chức năng, là một framework học end-to-end. CDLH khai thác cả thông tin cú pháp và ngữ nghĩa để học hash codes cho tính toán nhanh giữa các đoạn mã khác nhau. Zhang [15] đề xuất một phương pháp ASTNN. Ý tưởng chính là có được khả năng trích xuất đặc trưng tốt hơn bằng cách chia AST thành các khối cấp độ câu.
+
+So với các phương pháp tuần tự hóa thông tin cấu trúc thành tokens để mô hình hóa này, với sự phát triển gần đây của graph neural networks, nhiều nhà nghiên cứu đã thử sử dụng trực tiếp thông tin cấu trúc gốc để mô hình hóa thay vì phá hủy thông tin cấu trúc gốc. Allamanis [34] biểu diễn các đoạn mã nguồn dưới dạng đồ thị và sử dụng các loại cạnh khác nhau để mô hình hóa thông tin quan hệ ngữ nghĩa và cú pháp giữa các nút khác nhau.
+
+Wu et al.: Preprint submitted to Elsevier Page 12 of 15
+
+
+--- TRANG 13 ---
+Chuyển Đổi Cây Thành Đồ Thị: Automatic Code Review Thông Qua Simplified AST Driven Graph Convolutional Network
+
+[Bảng 11: Thống kê kích thước cây cho phiên bản gốc và đơn giản hóa của AST, hiển thị các repository khác nhau với Max token, Average token, Simplified rate, Average code token, Code token rate, Percentage increase]
+
+Zugner [35] kết hợp thông tin ngữ cảnh và cấu trúc của mã nguồn và sử dụng nhiều ngôn ngữ lập trình làm tập dữ liệu để cải thiện kết quả trên từng ngôn ngữ riêng lẻ.
+
+Không giống như các phương pháp trước đây, phương pháp SimAST-GCN của chúng tôi không chỉ tăng cường thông tin cấu trúc, mà còn sử dụng graph convolution network để tích hợp sâu thông tin cấu trúc và thông tin ngữ nghĩa để biểu diễn tốt hơn đặc tính của các đoạn mã nguồn.
+
+6.2. Automatic Code Review
+
+Là một phần quan trọng của kỹ thuật phần mềm, code review đóng vai trò then chốt trong toàn bộ vòng đời phần mềm. Code review xác định kết quả review bằng cách triệu tập các developers khác để hiểu, phân tích và thảo luận về mã. Không có nghi ngờ gì rằng toàn bộ quá trình này đòi hỏi nhiều nguồn nhân lực. Do đó, nhiều nghiên cứu dành cho việc giảm mức tiêu thụ nguồn nhân lực trong quá trình code review.
+
+Thongtanunam [3] tiết lộ rằng 4%-30% reviews có vấn đề về việc chỉ định code reviewer. Do đó, một thuật toán đề xuất code reviewer, FilePathSimilarity (FPS), được đề xuất để khai thác thông tin vị trí file để giải quyết vấn đề. Zanjani [4] đề xuất một phương pháp gọi là cHRev, được sử dụng để đề xuất reviewer phù hợp nhất để tham gia vào một review cụ thể. Phương pháp đưa ra đề xuất dựa trên các đóng góp trong các reviews trước đó của họ. Xia [5] đề xuất một thuật toán đề xuất tận dụng các quan hệ ngầm giữa các reviews và các reviews lịch sử. Vì vậy, họ sử dụng một phương pháp hybrid, kết hợp các latent factor models và neighborhood methods để nắm bắt các quan hệ ngầm. Tất cả họ đều nghiên cứu cách đề xuất reviewers phù hợp để cải thiện hiệu quả của code review.
+
+Mặc dù có rất nhiều công trình liên quan đến đề xuất code reviewer, nó chỉ có thể cải thiện hiệu quả của code review, nhưng không thể giảm hiệu quả mức tiêu thụ công sức con người của code review [36]. Rigby [37] thấy rằng bất chấp sự khác biệt giữa các items, nhiều đặc tính của quá trình review độc lập hội tụ về các giá trị tương tự. Họ tin rằng điều này đại diện cho một nguyên tắc chung của thực hành code review. Do đó, chúng tôi tin rằng vì có các nguyên tắc chung của thực hành code review, thì chúng ta có thể sử dụng các kỹ thuật deep learning hiện có để học các nguyên tắc chung này. Giống như nghiên cứu về công nghệ deep learning trong các khía cạnh khác của kỹ thuật phần mềm. Shi [9] tin rằng automatic code review là một bài toán phân loại nhị phân. Mô hình của họ có thể học được sự khác biệt giữa file gốc và file đã sửa đổi để đưa ra gợi ý. Do đó, họ đề xuất một mô hình mới gọi là DACE, học các đặc trưng revision bằng cách khai thác pairwise autoencoding và context enrich module.
+
+Tuy nhiên, hiểu biết về automatic code review không phải là duy nhất, Tufan [38] đề xuất một phương pháp, học các thay đổi mã được reviewer đề xuất, để triển khai chúng trong mã gốc một cách tự động. Nói cách khác, họ đang cố gắng tạo ra một ánh xạ từ file mã gốc đến file mã đã sửa đổi, hoàn toàn khác với quan điểm mà Shi [9] giữ. Trong bài báo này, hiểu biết của chúng tôi về automatic code review giống như Shi [9], vì vậy chúng tôi tập trung nhiều hơn vào việc tối ưu hóa biểu diễn của mã và cải thiện độ chính xác của dự đoán.
+
+Wu et al.: Preprint submitted to Elsevier Page 13 of 15
+
+
+--- TRANG 14 ---
+Chuyển Đổi Cây Thành Đồ Thị: Automatic Code Review Thông Qua Simplified AST Driven Graph Convolutional Network
+
+7. Kết Luận
+
+Trong bài báo này, trước tiên chúng tôi trình bày AACR, một tập dữ liệu thách thức cho automatic code review. Sau đó, chúng tôi đề xuất một Simplified AST based Graph Convolutional Network (SimAST-GCN) để trích xuất thông tin cú pháp và ngữ nghĩa từ mã nguồn. SimAST-GCN trước tiên trích xuất AST từ mã nguồn và đơn giản hóa AST đã trích xuất. Sau đó, SimAST-GCN sử dụng Bi-GRU để làm phong phú thông tin ngữ nghĩa và GCN để làm phong phú thông tin cú pháp. Cuối cùng, SimAST-GCN kết hợp các biểu diễn từ file mã gốc và file mã đã sửa đổi để dự đoán kết quả. Kết quả thực nghiệm trên tập dữ liệu AACR cho thấy mô hình SimAST-GCN đề xuất của chúng tôi vượt trội hơn các phương pháp hiện đại nhất, bao gồm các mô hình dựa trên Token và các mô hình dựa trên GCN. Mã và dữ liệu thực nghiệm của chúng tôi có sẵn công khai tại https://github.com/SimAST-GCN/SimAST-GCN.
+
+Lời Cảm Ơn
+
+Công trình này được hỗ trợ một phần bởi National Natural Science Foundation of China (61772263, 61872177, 61972289, 61832009), Collaborative Innovation Center of Novel Software Technology and Industrialization, và Priority Academic Program Development of Jiangsu Higher Education Institutions.
+
+Tài Liệu Tham Khảo
+
+[1] C. Sadowski, E. Söderberg, L. Church, M. Sipko, A. Bacchelli, Modern code review: a case study at google, in: Proceedings of the 40th International Conference on Software Engineering: Software Engineering in Practice, 2018, pp. 181–190.
+
+[2] A. Bacchelli, C. Bird, Expectations, outcomes, and challenges of modern code review, in: 2013 35th International Conference on Software Engineering (ICSE), IEEE, 2013, pp. 712–721.
+
+[3] P. Thongtanunam, C. Tantithamthavorn, R. G. Kula, N. Yoshida, H. Iida, K.-i. Matsumoto, Who should review my code? a file location-based code-reviewer recommendation approach for modern code review, in: 2015 IEEE 22nd International Conference on Software Analysis, Evolution, and Reengineering (SANER), IEEE, 2015, pp. 141–150.
+
+[4] M. B. Zanjani, H. Kagdi, C. Bird, Automatically recommending peer reviewers in modern code review, IEEE Transactions on Software Engineering 42 (2015) 530–543.
+
+[5] Z. Xia, H. Sun, J. Jiang, X. Wang, X. Liu, A hybrid approach to code reviewer recommendation with collaborative filtering, in: 2017 6th International Workshop on Software Mining (SoftwareMining), IEEE, 2017, pp. 24–31.
+
+[6] V. Balachandran, Reducing human effort and improving quality in peer code reviews using automatic static analysis and reviewer recommendation, in: 2013 35th International Conference on Software Engineering (ICSE), IEEE, 2013, pp. 931–940.
+
+[7] G. Díaz, J. R. Bermejo, Static analysis of source code security: Assessment of tools against samate tests, Information and software technology 55 (2013) 1462–1476.
+
+[8] G. McGraw, Automated code review tools for security, Computer 41 (2008) 108–111.
+
+[9] S.-T. Shi, M. Li, D. Lo, F. Thung, X. Huo, Automatic code review by learning the revision of source code, in: Proceedings of the AAAI Conference on Artificial Intelligence, volume 33(01), 2019, pp. 4910–4917.
+
+[10] J. K. Siow, C. Gao, L. Fan, S. Chen, Y. Liu, Core: Automating review recommendation for code changes, in: 2020 IEEE 27th International Conference on Software Analysis, Evolution and Reengineering (SANER), IEEE, 2020, pp. 284–295.
+
+[11] K. Greff, R. K. Srivastava, J. Koutník, B. R. Steunebrink, J. Schmidhuber, Lstm: A search space odyssey, IEEE transactions on neural networks and learning systems 28 (2016) 2222–2232.
+
+[12] P. Sun, R. Zhang, Y. Jiang, T. Kong, C. Xu, W. Zhan, M. Tomizuka, L. Li, Z. Yuan, C. Wang, P. Luo, Sparse r-cnn: End-to-end object detection with learnable proposals, in: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2021, pp. 14454–14463.
+
+[13] D. Hovemeyer, W. Pugh, Finding bugs is easy, Acm sigplan notices 39 (2004) 92–106.
+
+[14] I. D. Baxter, A. Yahin, L. Moura, M. Sant'Anna, L. Bier, Clone detection using abstract syntax trees, in: Proceedings. International Conference on Software Maintenance (Cat. No. 98CB36272), IEEE, 1998, pp. 368–377.
+
+[15] J. Zhang, X. Wang, H. Zhang, H. Sun, K. Wang, X. Liu, A novel neural source code representation based on abstract syntax tree (2019) 783–794.
+
+[16] L. Mou, G. Li, Z. Jin, L. Zhang, T. Wang, Tbcnn: A tree-based convolutional neural network for programming language processing, arXiv preprint arXiv:1409.5718 (2014).
+
+[17] T. Shippey, D. Bowes, T. Hall, Automatically identifying code features for software defect prediction: Using ast n-grams, Information and Software Technology 106 (2019) 142–160.
+
+[18] D. Tang, B. Qin, T. Liu, Document modeling with gated recurrent neural network for sentiment classification, in: Proceedings of the 2015 conference on empirical methods in natural language processing, 2015, pp. 1422–1432.
+
+[19] A. Hindle, E. T. Barr, M. Gabel, Z. Su, P. Devanbu, On the naturalness of software, Communications of the ACM 59 (2016) 122–131.
+
+[20] B. Ray, V. Hellendoorn, S. Godhane, Z. Tu, A. Bacchelli, P. Devanbu, On the "naturalness" of buggy code, in: 2016 IEEE/ACM 38th International Conference on Software Engineering (ICSE), IEEE, 2016, pp. 428–439.
+
+[21] C. Fang, Z. Liu, Y. Shi, J. Huang, Q. Shi, Functional code clone detection with syntax and semantics fusion learning, in: Proceedings of the 29th ACM SIGSOFT International Symposium on Software Testing and Analysis, 2020, pp. 516–527.
+
+[22] D. Guo, S. Ren, S. Lu, Z. Feng, D. Tang, S. Liu, L. Zhou, N. Duan, A. Svyatkovskiy, S. Fu, et al., Graphcodebert: Pre-training code representations with data flow, arXiv preprint arXiv:2009.08366 (2020).
+
+[23] C. Zhang, Q. Li, D. Song, Aspect-based sentiment classification with aspect-specific graph convolutional networks, arXiv preprint arXiv:1909.03477 (2019).
+
+[24] R. Řehůřek, P. Sojka, Software Framework for Topic Modelling with Large Corpora, in: Proceedings of the LREC 2010 Workshop on New Challenges for NLP Frameworks, ELRA, Valletta, Malta, 2010, pp. 45–50. http://is.muni.cz/publication/884893/en.
+
+[25] G. Fan, X. Diao, H. Yu, K. Yang, L. Chen, Deep semantic feature learning with embedded static metrics for software defect prediction, in: 2019 26th Asia-Pacific Software Engineering Conference (APSEC), 2019, pp. 244–251. doi: 10.1109/APSEC48747.2019.00041.
+
+[26] Y. Liu, Y. Li, J. Guo, Y. Zhou, B. Xu, Connecting software metrics across versions to predict defects, in: 2018 IEEE 25th International Conference on Software Analysis, Evolution and Reengineering (SANER), 2018, pp. 232–243. doi: 10.1109/SANER.2018.8330212.
+
+[27] G. Macbeth, E. Razumiejczyk, R. D. Ledesma, Cliff's delta calculator: A non-parametric effect size program for two groups of observations, Universitas Psychologica 10 (2011) 545–555.
+
+[28] V. Raychev, M. Vechev, E. Yahav, Code completion with statistical language models, in: Proceedings of the 35th ACM SIGPLAN Conference on Programming Language Design and Implementation, 2014, pp. 419–428.
+
+Wu et al.: Preprint submitted to Elsevier Page 14 of 15
+
+
+--- TRANG 15 ---
+Chuyển Đổi Cây Thành Đồ Thị: Automatic Code Review Thông Qua Simplified AST Driven Graph Convolutional Network
+
+[29] M. Allamanis, E. T. Barr, C. Bird, C. Sutton, Suggesting accurate method and class names, in: Proceedings of the 2015 10th Joint Meeting on Foundations of Software Engineering, 2015, pp. 38–49.
+
+[30] L. Mou, G. Li, L. Zhang, T. Wang, Z. Jin, Convolutional neural networks over tree structures for programming language processing, in: Thirtieth AAAI Conference on Artificial Intelligence, 2016.
+
+[31] A. N. Lam, A. T. Nguyen, H. A. Nguyen, T. N. Nguyen, Combining deep learning with information retrieval to localize buggy files for bug reports (n), in: 2015 30th IEEE/ACM International Conference on Automated Software Engineering (ASE), IEEE, 2015, pp. 476–481.
+
+[32] X. Huo, M. Li, Z.-H. Zhou, et al., Learning unified features from natural and programming languages for locating buggy source code., in: IJCAI, volume 16, 2016, pp. 1606–1612.
+
+[33] H. Wei, M. Li, Supervised deep features for software functional clone detection by exploiting lexical and syntactical information in source code., in: IJCAI, 2017, pp. 3034–3040.
+
+[34] M. Allamanis, M. Brockschmidt, M. Khademi, Learning to represent programs with graphs, arXiv preprint arXiv:1711.00740 (2017).
+
+[35] D. Zügner, T. Kirschstein, M. Catasta, J. Leskovec, S. Günnemann, Language-agnostic representation learning of source code from structure and context, arXiv preprint arXiv:2103.11318 (2021).
+
+[36] D. Singh, V. R. Sekar, K. T. Stolee, B. Johnson, Evaluating how static analysis tools can reduce code review effort, in: 2017 IEEE Symposium on Visual Languages and Human-Centric Computing (VL/HCC), IEEE, 2017, pp. 101–105.
+
+[37] P. C. Rigby, C. Bird, Convergent contemporary software peer review practices, in: Proceedings of the 2013 9th Joint Meeting on Foundations of Software Engineering, 2013, pp. 202–212.
+
+[38] R. Tufan, L. Pascarella, M. Tufanoy, D. Poshyvanykz, G. Bavota, Towards automating code review activities, in: 2021 IEEE/ACM 43rd International Conference on Software Engineering (ICSE), IEEE, 2021, pp. 163–174.
+
+Wu et al.: Preprint submitted to Elsevier Page 15 of 15

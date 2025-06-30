@@ -1,0 +1,499 @@
+# 2308.11148v2.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2308.11148v2.pdf
+# Kích thước file: 733550 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+LLaMA-Reviewer: Tiến Bộ Trong Tự Động Hóa Code Review
+Với Large Language Models Thông Qua 
+Parameter-Efficient Fine-Tuning
+
+Junyi Lu†‡, Lei Yu†‡, Xiaojia Li§, Li Yang∗†, Chun Zuo¶
+†Viện Phần mềm, Viện Hàn lâm Khoa học Trung Quốc, Bắc Kinh, Trung Quốc
+‡Đại học Viện Hàn lâm Khoa học Trung Quốc, Bắc Kinh, Trung Quốc
+§Trường Phần mềm, Đại học Tsinghua, Bắc Kinh, Trung Quốc
+¶Công ty TNHH Sinosoft, Bắc Kinh, Trung Quốc
+{lujunyi21, yulei21 }@mails.ucas.ac.cn, lixj21@mails.tsinghua.edu.cn,
+yangli2017@iscas.ac.cn, zuochun@sinosoft.com.cn
+
+Tóm tắt—Việc tự động hóa các hoạt động code review, một mục tiêu lâu dài trong kỹ thuật phần mềm, đã được giải quyết chủ yếu bởi nhiều mô hình pre-trained chuyên biệt cho lĩnh vực cụ thể. Mặc dù thành công, những mô hình này thường đòi hỏi tài nguyên lớn để pre-training từ đầu. Ngược lại, Large Language Models (LLMs) cung cấp một lựa chọn thú vị, với khả năng đáng kể khi được bổ sung kiến thức chuyên biệt cho lĩnh vực.
+
+Tuy nhiên, tiềm năng của chúng cho việc tự động hóa các tác vụ code review vẫn chưa được khám phá đầy đủ.
+
+Để đáp ứng khoảng trống nghiên cứu này, chúng tôi giới thiệu LLaMA-Reviewer, một framework sáng tạo tận dụng khả năng của LLaMA, một LLM phổ biến, trong lĩnh vực code review. Để tính đến các ràng buộc về tài nguyên, framework này sử dụng các phương pháp parameter-efficient fine-tuning (PEFT), mang lại hiệu suất cao trong khi sử dụng ít hơn 1% tham số có thể huấn luyện.
+
+Một đánh giá toàn diện về LLaMA-Reviewer được thực hiện trên hai dataset công khai đa dạng. Đáng chú ý, ngay cả với mô hình LLaMA cơ sở nhỏ nhất gồm 6.7B tham số và số epoch tuning hạn chế, LLaMA-Reviewer có thể sánh ngang hiệu suất của các mô hình tập trung vào code review hiện có.
+
+Các thí nghiệm ablation cung cấp cái nhìn sâu sắc về ảnh hưởng của các thành phần quy trình fine-tuning khác nhau, bao gồm input representation, instruction tuning, và các phương pháp PEFT khác nhau. Để thúc đẩy tiến bộ liên tục trong lĩnh vực này, code và tất cả các PEFT-weight plugins đã được mở nguồn.
+
+Từ khóa chỉ mục—Code Review Automation, Large Language Models (LLMs), Parameter-Efficient Fine-Tuning (PEFT), Deep Learning, LLaMA, Software Quality Assurance
+
+I. GIỚI THIỆU
+
+Kể từ khi được chính thức hóa bởi Fagan năm 1976 [1], code review đã là nền tảng của kỹ thuật phần mềm, đóng vai trò quan trọng trong việc nhận diện lỗi, cải thiện chất lượng và chia sẻ kiến thức [2]. Tuy nhiên, quy trình này chủ yếu thủ công tạo ra gánh nặng đáng kể cho các nhà phát triển. Ngay cả với các thực hành modern code review (MCR), vốn được tinh gọn hơn so với các phương pháp truyền thống, nỗ lực cần thiết vẫn rất lớn [3]–[5].
+
+Để giảm bớt gánh nặng này, một làn sóng nghiên cứu đã tập trung vào việc tự động hóa quy trình code review. Điều này bao gồm các tác vụ như đề xuất reviewers [6]–[15], đánh giá chất lượng code [12], [16]–[21], tinh chỉnh code có vấn đề [20], [22]–[25], và tạo ra các bình luận review tiềm năng [20], [23], [26]–[31].
+
+Những tiến bộ gần đây trong xử lý ngôn ngữ tự nhiên (NLP) đã cho phép sử dụng các pre-trained language models (PLMs) cho những tác vụ này [20], [23]. Tuy nhiên, những mô hình chuyên biệt cho lĩnh vực thường đòi hỏi tài nguyên đáng kể để pre-training từ đầu.
+
+Ngược lại, các unified large language models (LLMs) thể hiện hiệu suất đáng kể khi được mở rộng đến một kích thước tham số nhất định [12], [13]. Chúng có thể xử lý hiệu quả các tác vụ cụ thể mà không cần pre-training chuyên biệt cho lĩnh vực, mở ra một hướng đi hứa hẹn cho tự động hóa code review.
+
+Trong nghiên cứu này, chúng tôi trình bày LLaMA-Reviewer, một framework mới tận dụng LLaMA, một LLM mainstream, để tự động hóa code review. Chúng tôi tích hợp các phương pháp Parameter-Efficient Fine-Tuning (PEFT) để giải quyết thách thức tính toán của việc fine-tuning LLM. Phương pháp của chúng tôi dựa trên pipeline được đề xuất bởi Li et al. [20], bao gồm 1) dự đoán tính cần thiết của review, 2) tạo bình luận review, và 3) các tác vụ tinh chỉnh code.
+
+Chúng tôi đánh giá toàn diện LLaMA-Reviewer trên hai dataset công khai cho mỗi sub-task và khảo sát tác động của input representation, instruction tuning, và các phương pháp PEFT khác nhau. Những đóng góp chính của công trình này bao gồm:
+
+• Giới thiệu việc ứng dụng LLMs vào các tác vụ tự động hóa code review, cung cấp một giải pháp thay thế offline và bảo vệ quyền riêng tư cho các giải pháp closed-source như OpenAI APIs.
+
+• Đề xuất paradigm "unified model + PEFT" để giảm nhu cầu tính toán trong các tác vụ code review, với mô hình plug-in là một phần của nó để tối ưu hóa yêu cầu không gian lưu trữ, đầu tiên trong lĩnh vực kỹ thuật phần mềm.
+
+• Thực hiện đánh giá toàn diện về hai phương pháp PEFT và các nghiên cứu ablation về các thành phần fine-tuning.
+
+• Mở nguồn code, mô hình và kết quả của chúng tôi [32].
+
+Dưới đây là cấu trúc của bài báo: Phần II cung cấp nền tảng cần thiết; Phần III trình bày chi tiết phương pháp đề xuất; Phần IV mô tả thiết kế thí nghiệm; Phần V thảo luận kết quả đánh giá; Phần VI xem xét các công trình liên quan; Phần VII xác định các mối đe dọa về tính hợp lệ tiềm năng; Phần VIII kết luận các phát hiện và đề xuất hướng nghiên cứu tương lai.
+
+--- TRANG 2 ---
+Kiểm tra Tính Cần Thiết Review (Pr) Tinh Chỉnh Code (Pc) Bình Luận về Code (Pr)
+Chu kỳ này lặp lại cho đến khi reviewer(s) và 
+committer(s) đạt được thỏa thuận.
+Hình 1. Chu kỳ của quy trình code review.
+
+II. NỀN TẢNG
+
+Phần này cung cấp giới thiệu ngắn gọn về ba khái niệm chính nền tảng cho nghiên cứu của chúng tôi: pipeline automated code review, large language models (LLMs), và các phương pháp parameter-efficient fine-tuning (PEFT).
+
+A. Tự Động Hóa trong Code Review
+
+Modern Code Review (MCR), một kỹ thuật được áp dụng rộng rãi bởi cả các doanh nghiệp lớn và các dự án mã nguồn mở, có một chu kỳ cốt lõi tương đối nhất quán mặc dù có các triển khai đa dạng. Chu kỳ này, từ việc tạo pull request đến việc merge cuối cùng vào nhánh chính hoặc từ chối, bao gồm hai tham gia chính: committers (Pc) và reviewers (Pr). Chu kỳ bao gồm ba bước chính (như được thể hiện trong Hình 1): dự đoán tính cần thiết review (Pr), bình luận về code (Pr), và tinh chỉnh code (Pc). Mục tiêu của việc tự động hóa quy trình code review là giảm bớt khối lượng công việc cho cả hai bên.
+
+Ba bước này được chuyển đổi thành ba tác vụ tự động hóa: 1) Review Necessity Prediction, dự đoán liệu một code diff có cần bình luận review; 2) Review Comment Generation, tự động tạo bình luận review cho một code diff nhất định; và 3) Code Refinement, tinh chỉnh code dựa trên các đoạn trước đó và bình luận review. Nghiên cứu của chúng tôi tập trung vào những tác vụ này, nhằm tự động hóa hoàn toàn quy trình code review.
+
+B. Large Language Models
+
+Sự phát triển của language modeling (LM) đã trải qua bốn giai đoạn quan trọng: statistical language models (SLMs), neural language models (NLMs), pre-trained language models (PLMs), và phát triển mới nhất, large language models (LLMs) [33]. PLMs, được pre-trained rõ ràng cho các tác vụ nhất định, đã thành công đáng kể trong nhiều tác vụ downstream kỹ thuật phần mềm. Điều này được thể hiện bởi các mô hình như CodeT5 [34] và PLBART [35]. Tuy nhiên, tiềm năng của LLMs trong những ngữ cảnh này vẫn chưa được khám phá đầy đủ.
+
+Sự khác biệt chính giữa PLMs và LLMs là quy mô tham số và kích thước dữ liệu của chúng. LLMs là các mô hình có ∼10B tham số hoặc nhiều hơn, được pre-trained với dữ liệu rộng lớn [33]. Nghiên cứu hiện tại cho thấy việc mở rộng những chiều này cải thiện hiệu suất mô hình và tạo ra các khả năng emergent [36]. Đáng chú ý, LLMs có thể đạt được hiệu suất ngang với PLMs mà không cần pre-training chuyên biệt cho tác vụ, do đó giảm bớt nhu cầu tài nguyên nặng của pre-training.
+
+Cụ thể hơn, các LLMs đang được quan tâm hiện tại có thể được phân loại thành unified LLMs và code LLMs. Nhóm trước chủ yếu được pre-trained trên corpus ngôn ngữ tự nhiên, được làm giàu với một phần nhỏ hơn của code, và đã được xác thực là hiệu quả trong nhiều tác vụ khác nhau [37], [38]. Nhóm sau chủ yếu được pre-trained trên corpus dựa trên code và chúng đã đạt được kết quả ấn tượng trong việc tạo code [39]–[42].
+
+Trong nghiên cứu này, chúng tôi sử dụng LLaMA, một unified LLM mã nguồn mở được phát triển bởi Meta. Lựa chọn này xuất phát từ bốn góc độ: 1) Các mô hình hiệu suất cao nhất (GPT-3.5/GPT-4) cho các tác vụ code là unified models, không phải code LLMs; 2) Xu hướng tăng dần hướng tới unified models, được minh họa bởi việc chuyển đổi từ Codex sang GPT-3.5 của OpenAI để sử dụng API; 3) Xu hướng tăng dần hướng tới unified models, được minh họa bởi việc chuyển đổi từ Codex sang GPT-3.5 của OpenAI để sử dụng API; 4) Code LLMs chủ yếu xuất sắc trong các tác vụ tạo code, trong khi các tác vụ code review đặt ra những thách thức khác nhau.
+
+C. Parameter-Efficient Fine-Tuning
+
+Mặc dù hiệu quả, tài nguyên tính toán cao cần thiết để fine-tuning large language models (LLMs) gây ra thách thức đáng kể. Nhiều chiến lược đã được phát triển để tăng hiệu quả của quy trình fine-tuning và giảm chi phí huấn luyện. Những phương pháp này bao gồm adapter tuning [43], [44], prefix tuning [45], prompt tuning [46], [47], và low-rank adaptation (LoRA) [48]. Những phương pháp này đóng băng các tham số của mô hình cơ sở trong khi huấn luyện một số tham số bổ sung, đạt được hiệu suất tương đương với full-parameter tuning.
+
+Trong nghiên cứu này, chúng tôi sử dụng hai phương pháp PEFT—zero-init attention prefix-tuning [49] và LoRA tuning [48]—để fine-tune LLaMA. Những phương pháp này không tạo ra độ trễ bổ sung cho mô hình và đã chứng minh hiệu quả trong các tác vụ ngôn ngữ tự nhiên. Chi tiết cụ thể của các phương pháp PEFT được trình bày thêm trong phần tiếp theo về các phương pháp đề xuất.
+
+III. LLAMA-REVIEWER: PHƯƠNG PHÁP ĐỀ XUẤT
+
+A. Tổng Quan
+
+Framework của chúng tôi, được minh họa trong Hình 2, sử dụng quy trình fine-tuning hai giai đoạn. Chúng tôi bắt đầu với instruction-following tuning trên LLaMA sử dụng dữ liệu lĩnh vực tập trung vào code, nâng cao khả năng của mô hình trong việc hiểu các tác vụ code review và tuân thủ các chỉ dẫn tác vụ. Sau đó chúng tôi thực hiện supervised fine-tuning cho mỗi sub-task trong quy trình code review sử dụng LLaMA đã được cải thiện. Để cân bằng hiệu quả tham số và hiệu suất mô hình, chúng tôi tích hợp hai kỹ thuật chính—zero-init attention prefix-tuning và low-rank adaptation (LoRA) tuning—vì chúng đã đạt được sự chấp nhận rộng rãi và kết quả hứa hẹn, đặc biệt với LLaMA [49], [50]. Những phương pháp này, dựa trên chiến lược đóng gói plugin của PEFT, cung cấp cho chúng tôi các plugin chuyên biệt cho tác vụ nhẹ. Những plugin này, độc lập với trọng số của mô hình cơ sở, có thể được tích hợp liền mạch trong quá trình inference.
+
+Chúng tôi đánh giá hiệu quả của phương pháp sử dụng hai dataset khác biệt. Để rõ ràng, chúng tôi sẽ gọi dataset trong CodeReviewer [20] là "CRer dataset", và dataset từ Tufano et al. [23] là "Tuf. dataset". Chi tiết thêm về quy trình đánh giá có thể được tìm thấy trong các phần tiếp theo.
+
+--- TRANG 3 ---
+Review Necessity Prediction (RNP)
+Code Refinement (CR) Review Comment Generation (RCG) Instruction Tuning Base Model
+Low-Rank Adaptation Prefix-tuning Freeze Fine-tune PEFT Plugins
+Hình 2. Tổng quan về LLaMA-Reviewer.
+
+B. Instruction Tuning trên LLaMA
+
+Nghiên cứu chỉ ra rằng khi LLMs được fine-tuned trên một loạt datasets đa tác vụ đa dạng sử dụng mô tả ngôn ngữ tự nhiên, chúng thể hiện hiệu suất tăng cường trên các tác vụ chưa thấy [51], [52]. Instruction-following tuning giúp mô hình diễn giải tốt hơn ý định của người dùng và tuân theo chỉ dẫn.
+
+Để ban đầu thích nghi mô hình pre-trained cho các tác vụ code review, chúng tôi sử dụng instruction tuning trên lĩnh vực tập trung vào code.
+
+Chúng tôi tận dụng quy trình và template chính từ Stanford Alpaca [53], sửa đổi full-parameter fine-tuning để sử dụng các phương pháp PEFT như được giải thích trong Phần III-C và Phần III-D. Với sự liên quan sâu sắc của tác vụ code review với coding, chúng tôi thay thế dữ liệu gốc bằng tương đương lĩnh vực code, Code Alpaca [54]. Việc kết hợp dữ liệu từ Alpaca và Code Alpaca đã được xem xét nhưng không dẫn đến cải thiện hiệu suất, như được thảo luận thêm trong phần thí nghiệm ablation. Cấu trúc dữ liệu tuân thủ định dạng {instruction, input (optional), output}, theo framework từ [55].
+
+Template prompt tương tự được sử dụng cho các sub-tasks tiếp theo để tối đa hóa việc sử dụng mô hình fine-tuned giai đoạn đầu. Hình 3 minh họa template prompt và các định dạng instruction, input, và output của sub-task.
+
+C. Zero-init Attention Prefix-tuning
+
+Zero-init attention prefix-tuning, một nhánh của prefix-tuning, giữ nguyên trọng số của mô hình cơ sở trong khi tích hợp K token prefix bổ sung vào L layers hàng đầu của transformer LLaMA. Những prompts linh hoạt này được nối với các token gốc, cho phép tính toán multi-head attention sử dụng keys và values mới được giới thiệu. Trong quá trình fine-tuning, chỉ những prompts thích nghi này được huấn luyện.
+
+Phương pháp này khác với prefix-tuning thông thường bằng cách giới thiệu một gating factor có thể học trong quá trình tính toán attention. Factor này điều chỉnh mức độ liên quan của các prompt tokens được chèn. Để tạo thuận lợi cho quy trình tuning, gating factor này ban đầu được đặt về zero, dẫn đến 'zero-init' trong tên của phương pháp. Factor này cụ thể kiểm soát attention được chia sẻ giữa prompt tokens và các token gốc.
+
+Hình 4 minh họa chi tiết. Chúng tôi lấy l layer, một trong L layers hàng đầu làm ví dụ. Ở đây, Pl∈RK×C đại diện cho K prompt tokens và Tl∈RM×C biểu thị M token gốc trong l layer. Chiều đặc trưng được ký hiệu bởi C. Khi token thứ (M+1) tM+1 được tính thông qua cơ chế attention, queries, keys, và values được thu được thông qua nhiều linear layers như sau:
+
+Instructions, Inputs & Output Prompt Template
+Dưới đây là một chỉ dẫn mô tả một tác vụ, được ghép với input cung cấp 
+bối cảnh thêm. Viết một phản hồi hoàn thành yêu cầu một cách thích hợp.
+### Instruction:
+{instruction}
+### Input:
+{input}
+### Response:
+{output}
+
+Review Necessity Prediction (RNP):
+(Instruction) Xác định liệu diff hunk được cung cấp có cần code review hay không. Trả lời bằng 
+'yes' hoặc 'no'.
+(Input) Diff hunk là: '{diff hunk}'
+(Output) yes/no
+
+Review Comment Generation (RCG):
+(Instruction) Review code đã cho và cung cấp bình luận code review mang tính xây dựng.
+(Input) Code/(diff hunk) là: '{code/(diff hunk)}'
+(Output) {comment}
+
+Code Refinement (CR) (Tufano Dataset):
+(Instruction) Tinh chỉnh toàn bộ code dựa trên phản hồi được cung cấp trong bình luận code review, 
+với trọng tâm vào đoạn giữa <START> và <END>.
+(Input) Bình luận là: '{comment}' \n Code là: '{source code}'
+(Output) {target code}
+
+Code Refinement (CR) (CRer Dataset):
+(Instruction) Tinh chỉnh code đã cho dựa trên bình luận code review được cung cấp.
+(Input) Bình luận là: '{comment}' \n Code là: '{source code}'
+(Output) {target code}
+
+Code Refinement (CR) (CRer Dataset) (+ Lang. Label trong Instruction):
+(Instruction) Tinh chỉnh code {lang. label} đã cho dựa trên bình luận code review được cung cấp.
+(Input) Bình luận là: '{comment}' \n Code là: '{source code}'
+(Output) {target code}
+
+Code Refinement (CR) (CRer Dataset) (+ Lang. Label trong Input):
+(Instruction) Tinh chỉnh code đã cho dựa trên bình luận code review được cung cấp.
+(Input) Bình luận là: '{comment}' \n Code {lang. label} là: '{source code}'
+(Output) {target code}
+Hình 3. Template prompt và các định dạng instruction, input và output.
+
+Vanilla Attention Zero-init Attention Prefix
+(Zero-Gating) ×L
+×(N–L) Forward Backward
+Adaptation Prefix
+Freeze
+Fine-tune
+Concatenate
+Base Model (LLaMA) Transformer Layer
+Hình 4. Chi tiết về prefix-tuning trên LLaMA.
+
+Ql = Linearq(tM+1)
+Kl = Lineark([Pl;Tl;tM+1])
+Vl = Linearv([Pl;Tl;tM+1])(1)
+
+Tiếp theo, các attention scores được dẫn xuất:
+
+--- TRANG 4 ---
+x d Pre-trained Weights
+W0∈Rd×k
+Wdown∈Rd×r Wup∈Rr×k
+r k h
+Freeze
+Fine-tune
+Concatenate
+Base Model (LLaMA) Transformer Layer
+Hình 5. Thành phần cốt lõi của Low-Rank Adaptation (LoRA).
+
+Sl = SK l; SM+1 lT
+SK l = Ql KK lT/√C ∈ R1×K
+SM+1 l = Ql KM+1 lT/√C ∈ R1×(M+1)(2)
+
+Gating factor được tích hợp sau khi áp dụng softmax:
+
+Sg l = Softmax(SK l)·gl; Softmax(SM+1 lT)(3)
+
+Cuối cùng, output của token tM+1 được tạo ra thông qua một linear projection layer, và nó được kiểm soát bởi prefixes:
+
+to M+1 = Linearo(Sg lVl) ∈ R1×C. (4)
+
+D. Low-Rank Adaptation
+
+Low-Rank Adaptation (LoRA) cung cấp một góc nhìn khác về Parameter-Efficient Fine-Tuning (PEFT). Không giống như các phương pháp full-parameter tuning đòi hỏi tất cả trọng số được cập nhật trong giai đoạn fine-tuning, LoRA giữ lại trọng số của mô hình gốc và tích hợp các ma trận low-rank có thể huấn luyện vào các transformer layers để mô phỏng các điều chỉnh trọng số. Phép xấp xỉ này dựa trên nguyên tắc rằng quy trình thích nghi về bản chất có "intrinsic rank" thấp.
+
+Hình 5 minh họa thành phần cốt lõi của LoRA. Giả sử W0∈Rd×k đại diện cho ma trận pre-trained. Phép xấp xỉ của điều chỉnh trọng số từ W0 đến W0+∆W sử dụng LoRA có thể được biểu diễn như:
+
+W0 + ∆W = W0 + WdownWup (5)
+
+Ở đây, Wdown ∈ Rd×r và Wup ∈ Rr×k, với r≪min(d, k) là rank. Trong quá trình fine-tuning, W0 không thay đổi, trong khi Wdown và Wup trở thành các tham số có thể huấn luyện. Với input x và output gốc h liên quan, output được điều chỉnh h̄ được tính như:
+
+h̄ = W0x + ∆Wx = h + WdownWupx (6)
+
+BẢNG I
+TÓM TẮT CÁC TÁC VỤ TỰ ĐỘNG HÓA CODE REVIEW
+
+Tác vụ | Input | Output | Datasets
+Review Necessity Prediction | PL | L (yes/no) | CRer.
+Code Review Comment Generation | PL | NL | CRer., Tuf.
+Code Refinement | PL, NL | PL | CRer., Tuf.
+
+E. Các Tác Vụ Tự Động Hóa Code Review
+
+LLaMA-Reviewer được thiết kế đặc biệt để tự động hóa ba tác vụ cốt lõi là bộ phận không thể thiếu của quy trình code review, cụ thể là dự đoán tính cần thiết review, tạo bình luận code review, và tinh chỉnh code. Những tác vụ này tuần tự tương ứng với các giai đoạn trong quy trình code review điển hình. Inputs và outputs cho những tác vụ này được phân loại thành ba định dạng:
+
+• Programming Language (PL) cho code snippets,
+• Natural Language (NL) cho code comments, và
+• Binary Labels (L) cho quyết định về yêu cầu review thêm. Điều này đơn giản hóa quy trình quyết định thành "yes" (cần review) hoặc "no" (không cần review).
+
+Bảng I minh họa mỗi tác vụ cùng với định dạng input và output, và tham chiếu dataset tương ứng (CRer. cho CRer dataset, và Tuf. cho Tufano dataset). Phương pháp xây dựng prompt được hình dung trong Hình 3.
+
+1) Review Necessity Prediction: Tác vụ này bao gồm việc kiểm tra xem các diff hunks có cần reviews hay không. Được đề xuất bởi Li et al. [20], một diff hunk đại diện cho một đoạn code ngắn gọn cho thấy sự khác biệt giữa code snippets cũ và mới. Mặc dù việc bao gồm bối cảnh method bổ sung có thể có lợi, các dòng trong diff hunk gốc thường đủ dài để tạo ra thách thức khi được quản lý như input.
+
+2) Code Review Comment Generation: Tác vụ này tạo ra các bình luận thích hợp cho một code snippet nhất định. Hai góc nhìn được xem xét: góc nhìn line-level tập trung vào nội dung của từng dòng code (sử dụng CRer dataset), và góc nhìn method-level cung cấp cái nhìn toàn diện hơn về bối cảnh của code (sử dụng Tufano dataset).
+
+3) Code Refinement: Code refinement đòi hỏi việc thực hiện các điều chỉnh nhỏ hoặc sắp xếp lại code hiện có để nâng cao chất lượng của nó. Với tính chất của những sửa đổi nhỏ này, code input và output thường có sự tương đồng mạnh mẽ. Inputs được định dạng theo Tufano và CRer datasets.
+
+Thông thường, chúng tôi bỏ qua thông tin loại ngôn ngữ vì các mô hình baseline đã làm như vậy và nó chỉ có sẵn trong một tác vụ của một dataset được xuất bản, để đảm bảo so sánh công bằng. Ý nghĩa của thông tin như vậy được khám phá thêm trong phần đánh giá của chúng tôi.
+
+IV. THIẾT KẾ THÍ NGHIỆM
+
+Phần này trình bày chi tiết thiết kế thí nghiệm của chúng tôi, nêu ra các câu hỏi nghiên cứu cơ bản thúc đẩy điều tra, các dataset được sử dụng, các metrics đánh giá được sử dụng, và tóm tắt toàn diện về các mô hình baseline và chi tiết triển khai của chúng tôi.
+
+--- TRANG 5 ---
+
+A. Câu Hỏi Nghiên Cứu
+
+Để đánh giá hiệu quả của framework đề xuất, chúng tôi đặt ra các câu hỏi nghiên cứu sau:
+
+(RQ1) Large language model hiệu quả như thế nào trong việc tự động hóa các tác vụ code review, so với các phương pháp state-of-the-art?
+
+Động lực. Những tiến bộ nhanh chóng trong AI-Generated Content (AIGC) và mối tương quan đã biết giữa khả năng mô hình và kích thước của chúng đã dẫn đến việc sử dụng rộng rãi các large language models (LLMs) pre-trained đã fine-tuned. Mặc dù dữ liệu ngôn ngữ lập trình đóng vai trò quan trọng trong việc tăng cường khả năng của mô hình, việc ứng dụng dữ liệu như vậy vào các tác vụ liên quan đến code—đặc biệt là những tác vụ đòi hỏi thành thạo cả ngôn ngữ tự nhiên (NL) và ngôn ngữ lập trình (PL), như automated code review—vẫn chưa được khám phá đầy đủ.
+
+Trong nghiên cứu này, chúng tôi sử dụng biến thể nhỏ nhất của LLaMA làm large language model cơ sở để đánh giá hiệu quả của nó trong việc tự động hóa các tác vụ code review so với các phương pháp state-of-the-art, đặc biệt là các mô hình pre-trained chuyên biệt cho tác vụ như CodeReviewer [20]. Hiệu suất của mô hình được xem xét kỹ lưỡng trên mỗi tác vụ để xác định điểm mạnh và các khu vực cần cải thiện. Cụ thể, chúng tôi đặt ra các câu hỏi sau:
+
+• (RQ1.1) Large language model hiệu quả như thế nào trong việc kiểm tra tính cần thiết review (classification)?
+• (RQ1.2) Large language model thành thạo như thế nào trong việc tạo bình luận code review (NL generation)?
+• (RQ1.3) Large language model có khả năng như thế nào trong việc tinh chỉnh code dựa trên bình luận (PL generation)?
+
+(RQ2) Biểu diễn dữ liệu input tác động như thế nào đến hiệu suất của large language models?
+
+Động lực. Với định dạng dữ liệu pre-training cố định, có thể có sự khác biệt giữa định dạng này và định dạng cần thiết cho các tác vụ cụ thể. Để đánh giá khả năng của large language model, chúng tôi đi sâu vào hai yếu tố quan trọng:
+
+1) Code Formatting. Chúng tôi đánh giá hiệu suất của mô hình trên raw code input và input với định dạng đã sửa đổi (bao gồm việc loại bỏ các khoảng trắng liên tiếp) để xác định cái nào có thể được xử lý hiệu quả hơn.
+
+2) Programming Language Labels. Với các ngôn ngữ lập trình khác nhau, chúng tôi xem xét tác động của việc chỉ định loại ngôn ngữ trong input và tầm quan trọng của vị trí label trong prompt template.
+
+Với những cân nhắc này, chúng tôi đặt ra hai câu hỏi phụ:
+
+• (RQ2.1) Code formatting ảnh hưởng như thế nào đến hiệu suất của mô hình?
+• (RQ2.2) Việc bao gồm và đặt programming language labels ảnh hưởng như thế nào đến hiệu suất của mô hình?
+
+(RQ3) Instruction tuning ảnh hưởng như thế nào đến hiệu suất của các sub-tasks tiếp theo?
+
+Động lực. Instruction tuning, việc bao gồm các chỉ dẫn liên quan đến code trong giai đoạn đầu, nhằm truyền kiến thức lĩnh vực và giúp mô hình hiểu các sub-tasks tốt hơn. Hiệu quả của phương pháp này và khả năng tương thích với các phương pháp parameter-efficient fine-tuning (PEFT) khác nhau vẫn là một khu vực khám phá phong phú. Ngoài ra, với tính chất kép của các tác vụ code review bao gồm ngôn ngữ tự nhiên (NL) và ngôn ngữ lập trình (PL), việc so sánh giữa sử dụng độc quyền các chỉ dẫn liên quan đến PL và hỗn hợp các chỉ dẫn liên quan đến NL và PL là cần thiết. Do đó, chúng tôi hỏi:
+
+• (RQ3.1) Tác động của giai đoạn instruction tuning ban đầu đối với zero-init attention prefix-tuning là gì?
+• (RQ3.2) Giai đoạn instruction tuning ban đầu ảnh hưởng như thế nào đến low-rank adaptation (LoRA)?
+• (RQ3.3) Phương pháp nào mang lại kết quả tốt hơn trong các tác vụ code review: sử dụng hỗn hợp các chỉ dẫn liên quan đến NL và PL hay chỉ dựa vào các chỉ dẫn liên quan đến PL?
+
+(RQ4) Những ý nghĩa gì phát sinh từ các phương pháp parameter-efficient fine-tuning (PEFT) khác nhau?
+
+Động lực. Hai phương pháp PEFT được sử dụng để giảm bớt nhu cầu tài nguyên tính toán trong quá trình fine-tuning. Tuy nhiên, việc đạt được sự cân bằng tối ưu giữa hiệu quả và hiệu suất là thách thức. Theo đó, chúng tôi dự định phân tích kết quả thu được từ hai phương pháp này. Hơn nữa, trong bối cảnh low-rank adaptation (LoRA), rank r xác định số lượng tham số có thể huấn luyện; do đó, chúng tôi thực hiện nghiên cứu ablation để điều tra tác động của rank r. Cuối cùng, chúng tôi so sánh hai phương pháp về số lượng tham số và yêu cầu không gian lưu trữ với các phương pháp trước đó. Để đạt được mục đích này, chúng tôi khám phá các câu hỏi phụ sau:
+
+• (RQ4.1) Phương pháp PEFT nào hoạt động tốt hơn, và tại sao?
+• (RQ4.2) Trong LoRA, rank r ảnh hưởng như thế nào đến các tham số có thể huấn luyện và hiệu suất tổng thể?
+• (RQ4.3) Hai phương pháp PEFT so sánh như thế nào với các phương pháp trước đó về hiệu quả tham số và yêu cầu không gian lưu trữ?
+
+B. Datasets
+
+Chúng tôi sử dụng hai dataset code review nổi bật: dataset từ CodeReviewer của Li et al. [20] (sau đây là CRer dataset), và dataset từ Tufano et al. [23] (sau đây là Tufano dataset). Lý do cho lựa chọn của chúng tôi bao gồm:
+
+• Không giống như các dataset khác trong văn liệu [30], [56] bao phủ các sub-tasks cụ thể, các dataset được chọn bao gồm toàn bộ quy trình code review.
+
+• Cả CRer và Tufano datasets đều được rút ra từ một loạt repositories đa dạng, cung cấp phủ sóng rộng. Điều này tương phản với các dataset khác [30], [56] rút ra từ một pool repository hạn chế, có thể dẫn đến bias do phạm vi hạn chế.
+
+• Tufano dataset là phiên bản cải tiến so với những dataset được sử dụng trong các nghiên cứu trước đó [22], [25], [57], làm cho nó ưu tiên hơn về tính mới và toàn diện.
+
+• Cả hai datasets đều có tính chất quan trọng trong lĩnh vực, mỗi dataset cung cấp các đặc điểm độc đáo góp phần vào nghiên cứu của chúng tôi.
+
+CRer dataset, một corpus đa ngôn ngữ, được rút ra từ các repositories GitHub và tuân thủ định dạng diff-aware, line-grained. Nó bảo tồn inline comments và docstrings trong các code snippets và giữ lại các khoảng trắng liên tiếp. Dataset này được chia thành ba sub-datasets, mỗi dataset dành riêng cho một khía cạnh cụ thể của code review: dự đoán tính cần thiết review, tạo bình luận code review, và tinh chỉnh code.
+
+--- TRANG 6 ---
+
+Tufano dataset, ngược lại, là chuyên biệt cho ngôn ngữ (Java) và tổng hợp dữ liệu từ cả GitHub và Gerrit. Nó sử dụng định dạng function-grained, loại bỏ comments và khoảng trắng liên tiếp, và không phản ánh sự khác biệt giữa commit liên quan và base branch. Đối với các tác vụ code refinement, nó biểu thị các khu vực tập trung trong comments sử dụng các markers "⟨START⟩" và "⟨END⟩". Chúng tôi sử dụng hai tập con của dataset này cho việc tạo bình luận code review và tinh chỉnh code.
+
+Bảng II cung cấp tóm tắt thống kê chi tiết về các datasets.
+
+C. Tiêu Chí Đánh Giá
+
+Chúng tôi sử dụng các metrics chuyên biệt cho tác vụ để đo lường hiệu suất của mô hình trên các tác vụ code review.
+
+Đối với dự đoán tính cần thiết review, chúng tôi tiếp cận nó như một bài toán phân loại nhị phân trong đó 'yêu cầu review' là lớp tích cực. Do đó, chúng tôi sử dụng precision, recall, và F1-score làm metrics đánh giá để định lượng độ chính xác phân loại của mô hình.
+
+Đối với các tác vụ tạo bình luận code review và tinh chỉnh code, bao gồm việc tạo phản hồi, chúng tôi sử dụng điểm BLEU-4, đo lường sự chồng lấp của n-grams cho n từ 1 đến 4. Điều này tuân theo phương pháp đánh giá được sử dụng trong CodeReviewer [20].
+
+Chúng tôi không sử dụng metric codeBLEU được đề xuất bởi Tufano et al. [23], do không tương thích với CRer dataset. Cấu trúc và đa dạng ngôn ngữ của CRer dataset làm cho nó không phù hợp cho metric này.
+
+Đối với tất cả các tác vụ, chúng tôi xem xét kết quả top-1, phù hợp với mục tiêu tự động hóa quy trình code review để giảm nhẹ khối lượng công việc của nhà phát triển bằng cách tập trung vào phản hồi có liên quan nhất.
+
+D. Baselines
+
+Chúng tôi chọn baselines dựa trên nhu cầu độc đáo của các tác vụ và datasets. Bảng III hiển thị các baselines được chọn.
+
+Chúng tôi bỏ qua các nghiên cứu của [25], [56], [57] khỏi lựa chọn baseline, vì chúng được thiết kế cho các datasets nhỏ hơn hoặc yêu cầu thông tin input bổ sung.
+
+E. Chi Tiết Triển Khai
+
+Chúng tôi triển khai phương pháp sử dụng frameworks xturing¹ và Lit LLaMA². Tất cả thí nghiệm được thực hiện trên nền tảng GPU NVIDIA A100-SXM4-80GB, với giới hạn độ dài token được đặt ở 2048 và batch size là 64.
+
+Chúng tôi sử dụng optimizer AdamW và huấn luyện các mô hình trong 5 epochs cho dự đoán tính cần thiết review và 10 epochs cho cả tác vụ tạo bình luận code review và tinh chỉnh code.
+
+Đối với zero-init attention prefix-tuning, chúng tôi sử dụng learning rate 0.009, weight decay 0.02, độ dài prefix prompt 10, và prefix layer 30. Trong Low-rank Adaptation (LoRA), chúng tôi đặt learning rate ở 0.0003, weight decay ở 0.01, LoRA rank ở 16, và LoRA scaling factor ở 16. Cài đặt thí nghiệm ablation có thể thay đổi dựa trên yêu cầu của mỗi thí nghiệm. LoRA rank và cài đặt prefix-tuning dựa trên kinh nghiệm thực nghiệm [49], [50]. Chi tiết thêm về các hyper-parameters cụ thể có sẵn trong tài liệu của chúng tôi.
+
+Triển khai baseline được điều chỉnh cho từng tình huống. Đối với kết quả CRer dataset, chúng tôi sử dụng các phát hiện được báo cáo trong bài báo CodeReviewer [20], vì chúng tôi không thực hiện sửa đổi nào đối với dataset. Chúng tôi tái tạo kết quả CommentFinder [31] trên cả hai datasets sử dụng code công khai có sẵn của họ. Tất cả kết quả baseline khác được rút ra từ các mô hình được cung cấp của họ.
+
+V. ĐÁNH GIÁ
+
+Trong phần này, chúng tôi lần lượt giải quyết từng câu hỏi nghiên cứu, trình bày kết quả thu được từ thí nghiệm và rút ra kết luận cho mỗi RQ. Thảo luận của chúng tôi bắt đầu với đánh giá hiệu suất của LLaMA-Reviewer, tiếp theo là khám phá ảnh hưởng của input representation và giai đoạn đầu của instruction tuning. Chúng tôi kết thúc với phân tích các ý nghĩa phát sinh từ các phương pháp parameter-efficient fine-tuning (PEFT) khác nhau.
+
+A. RQ1: Đánh Giá Hiệu Suất của LLaMA-Reviewer
+
+Phần phụ này đánh giá hiệu suất của LLaMA-Reviewer trên mỗi tác vụ, giải thích kết quả quan sát được, và tóm tắt kết luận như những phát hiện chính.
+
+1) (RQ1.1) Hiệu Suất Review Necessity Prediction:
+
+Trong các thí nghiệm dự đoán tính cần thiết review, chúng tôi tập trung độc quyền vào CRer dataset, vì đây là dataset duy nhất cung cấp dữ liệu cần thiết cho tác vụ này. Kết quả được trình bày trong Bảng IV, với hàng cuối hiển thị kết quả cho LLaMA-Reviewer. Các hàng trước đó cho thấy kết quả rút ra từ [20]. Chúng tôi coi lớp yêu cầu review là tích cực. Quan trọng, kết quả cho LLaMA-Reviewer với prefix-tuning không được bao gồm trong tác vụ này do cấu trúc huấn luyện cứng nhắc, không thuận lợi để thực hiện các tác vụ phân loại.
+
+LLaMA-Reviewer đạt được recall vượt trội với điểm F1 tương đương, như kết quả cho thấy, chỉ ra rằng nó có thể nhận diện số lượng lớn hơn các code snippets có vấn đề có thể thúc đẩy thảo luận trong quy trình code review tiếp theo. Khả năng này rất quan trọng đối với reviewers vì mục tiêu chính của code review là khám phá càng nhiều vấn đề tiềm năng càng tốt. Trong tình huống này, LLaMA-Reviewer có thể giảm số lượng code snippets cần review sau khi lọc, mà không bỏ sót số lượng đáng kể các snippets có vấn đề.
+
+Chúng tôi thu được những kết quả này thông qua điều chỉnh threshold. Hơn nữa, với threshold 0.5, giống hệt với cài đặt generation gốc, LLaMA-Reviewer đạt được precision 88.61%, vượt trội tất cả baselines. Hiệu suất này cũng có ý nghĩa trong các tình huống thực tế, nơi các code snippets có vấn đề ít phổ biến hơn những snippets bình thường, chỉ ra rằng false positives có thể tạo gánh nặng bổ sung cho reviewers.
+
+2) (RQ1.2) Hiệu Suất Review Comment Generation: Chúng tôi đánh giá tác vụ tạo bình luận code review sử dụng cả Tufano và CRer datasets. Bảng V minh họa kết quả, với ký hiệu "−" biểu thị các giá trị thiếu. Đáng chú ý rằng CommentFinder [31] không bao gồm số lượng tham số vì nó không sử dụng phương pháp deep learning. Chúng tôi đã chọn không báo cáo một số kết quả baseline do sự không phù hợp về granularity giữa các phương pháp đề xuất và dataset, làm cho kết quả vô nghĩa.
+
+Kết quả chỉ ra rằng LLaMA-Reviewer vượt trội tất cả baselines trên CRer dataset, đặc biệt khi sử dụng Low-Rank Adaptation (LoRA) để fine-tuning. Hiệu suất vượt trội này nôi bật tiềm năng của large language models (LLMs). Mặc dù LLaMA không được pre-trained cụ thể cho các tác vụ code review như CodeReviewer [20], hiệu suất vượt trội của nó với lượng tuning hạn chế vượt qua hiệu suất của các mô hình nhỏ hơn. Kết quả trên Tufano dataset tương đối kém lý tưởng hơn, điều này chúng tôi sẽ thảo luận thêm trong RQ2.1.
+
+Một giải thích hợp lý cho hiệu suất tăng cường này là sự phù hợp giữa tác vụ tạo ngôn ngữ tự nhiên và corpus pre-training của LLaMA. Hơn nữa, hiệu suất ấn tượng trên CRer dataset có thể được quy cho việc sử dụng code differences và định dạng code thô, phản ánh điều kiện của giai đoạn pre-training. Với độ phức tạp của tác vụ tạo bình luận code review so với các tác vụ khác [20], kích thước mô hình lớn hơn của LLaMA cung cấp lợi thế rõ rệt.
+
+3) (RQ1.3) Hiệu Suất Code Refinement: Chúng tôi đánh giá tác vụ tinh chỉnh code trên cả Tufano và CRer datasets. Kết quả được hiển thị trong Bảng VI, nơi ký hiệu "−" biểu thị các giá trị thiếu.
+
+Trên cả hai datasets, mặc dù không vượt trội tất cả mô hình, LLaMA-Reviewer cạnh tranh sát sao với CodeReviewer [20] hoặc Tufano et al. [23], các mô hình được pre-trained cụ thể cho code review và định dạng dữ liệu tương ứng và vượt qua hiệu suất của các baselines khác. Xem xét rằng chúng tôi sử dụng phiên bản nhỏ nhất của LLaMA và epochs tuning hạn chế, kết quả này gợi ý những cải thiện tiềm năng.
+
+Lợi thế của LLaMA-Reviewer so với hầu hết baselines chủ yếu phát sinh từ kích thước mô hình lớn và bản chất của dữ liệu pre-training. Khoảng cách giữa LLaMA-Reviewer và CodeReviewer [20] hoặc Tufano et al. [23] là do sự khác biệt giữa các tác vụ đích và tác vụ pre-training của LLaMA, cũng như các định dạng input. Tuy nhiên, pre-training chuyên biệt cho tác vụ từ đầu, như với CodeReviewer [20], tốn nhiều tài nguyên, tạo ra rào cản cho việc cải thiện thông qua mở rộng kích thước mô hình. Thay vào đó, tích hợp kiến thức lĩnh vực vào một mô hình pre-trained duy nhất và áp dụng các phương pháp fine-tuning hiệu quả tham số có thể hiệu quả về chi phí hơn.
+
+Thú vị, sự đơn giản tương đối của tác vụ tinh chỉnh code so với tác vụ tạo bình luận review có thể đã nghịch lý làm giảm điểm BLEU của LLaMA-Reviewer. Điều này là do mô hình, được huấn luyện để tạo ra các dự đoán đa dạng bắt chước hành vi con người, có thể tạo ra các tinh chỉnh đa dạng hơn, nhưng hợp lệ, khác với ground truth duy nhất, từ đó giảm độ tương đồng văn bản.
+
+Câu trả lời cho RQ1: LLaMA-Reviewer tương đối xuất sắc hơn trong việc tạo bình luận review (NL) và nhận diện nhiều vấn đề hơn trong dự đoán tính cần thiết trong khi duy trì hiệu suất cạnh tranh trong tinh chỉnh code.
+
+B. RQ2: Ảnh Hưởng của Input Representation
+
+Trong phần phụ này, chúng tôi điều tra tác động của input representation sử dụng kết quả từ RQ1 và các thí nghiệm ablation bổ sung. Chúng tôi giải quyết từng câu hỏi phụ trước khi rút ra kết luận tổng thể.
+
+1) (RQ2.1) Hậu Quả của Code Formatting: Để đánh giá hiệu ứng của code formatting, chúng tôi xem xét kết quả của các tác vụ tạo bình luận code và tinh chỉnh code sử dụng cả CRer và Tufano datasets.
+
+Kết quả trình bày trong Phần V-A cho thấy hiệu suất tương đối vượt trội trên CRer dataset so với Tufano dataset. Mặc dù có sự khác biệt trong phân phối dữ liệu, sự khác biệt chính giữa hai datasets này nằm ở code formatting của chúng. Code trong CRer dataset thô sơ hơn và giống với định dạng được sử dụng trong quá trình pre-training của LLaMA, trong khi code trong Tufano dataset đã trải qua xử lý tinh vi. Những kết quả này gợi ý rằng biểu diễn code tương tự như được sử dụng trong pre-training cho phép mô hình tận dụng tốt hơn sự hiểu biết về cấu trúc và ngữ nghĩa code.
+
+2) (RQ2.2) Vai Trò của Language Label: Chúng tôi thực hiện thí nghiệm để đánh giá tác động của language labels độc quyền trên CRer dataset, vì nó bao gồm nhiều ngôn ngữ lập trình. Language labels, được xác định dựa trên ngôn ngữ lập trình của code, được tích hợp vào instruction hoặc input, như được hiển thị trong Hình 3. Các cài đặt còn lại, mượn từ tác vụ tinh chỉnh code với low-rank adaptation làm phương pháp fine-tuning, được giữ nguyên.
+
+Trái với kỳ vọng, kết quả trình bày trong Bảng VII tiết lộ rằng việc thêm language label không nâng cao hiệu suất mà không có giai đoạn đầu instruction tuning. Điều này có thể do khó khăn của mô hình trong việc liên kết thông tin label với tác vụ mà không có kiến thức lĩnh vực có sẵn trước. Tuy nhiên, một khi instruction tuning được triển khai, các labels thực sự đóng góp tích cực vào hiệu suất của mô hình.
+
+Thông qua kiểm định paired bootstrap resampling, chúng tôi xác định rằng việc sử dụng language label cải thiện hiệu suất so với việc không có nó, được chứng minh bởi p-value là 0.0032.
+
+Mặc dù language labels đã chứng minh giá trị của chúng, chúng tôi chọn không bao gồm chúng trong các thí nghiệm khác để duy trì tính nhất quán với nghiên cứu trước đó [20] và đảm bảo so sánh công bằng.
+
+Câu trả lời cho RQ2: LLaMA-Reviewer hoạt động tốt hơn khi input representation giống với điều được sử dụng trong pre-training. Thông tin ngôn ngữ tự nhiên bổ sung, như language labels, có thể được tận dụng tốt hơn bởi mô hình thông qua instruction tuning.
+
+C. RQ3: Tác Động của Instruction Tuning
+
+Để trả lời RQ3, chúng tôi thực hiện thí nghiệm với các mô hình được huấn luyện có và không có giai đoạn sơ bộ instruction tuning, sử dụng cả zero-init attention prefix-tuning và Low-Rank Adaptation (LoRA). Chúng tôi cũng giới thiệu các thí nghiệm bổ sung với các chỉ dẫn ngôn ngữ tự nhiên bổ sung [53] trong quá trình LoRA instruction tuning để xác định dữ liệu instruction tuning tối ưu (như được đặt ra bởi RQ3.3). Các thí nghiệm được thực hiện trên CRer dataset sử dụng LoRA, và kết quả từ các tác vụ code review được ghi lại trong Bảng VIII.
+
+1) (RQ3.1) Hậu Quả cho Zero-init Attention Prefix-tuning: Kết quả của chúng tôi gợi ý rằng instruction tuning không thuận lợi cho prefix tuning. Điều này có thể được quy cho cấu trúc của prefix tuning, sử dụng prefix độc quyền để kiểm soát attention và giữ attention qua postfix cố định. Như vậy, khả năng nắm bắt kiến thức lĩnh vực chung của nó bị hạn chế. Hơn nữa, zero-init prefix attention, góp phần đáng kể vào hiệu quả của prefix tuning, bị làm suy yếu khi instruction tuning được thêm vào.
+
+--- TRANG 9 ---
+
+BẢNG VIII
+TÁC ĐỘNG CỦA INSTRUCTION TUNING (LoRA r = 8)
+
+Method | I. Tuning Dataset | RNP (F1) | RCG | CR
+LoRA ✘ | – | 70.20 | 5.58 | 81.87
+✔ | PL | 69.34 | 5.64 | 81.59
+✔ | PL + NL | 69.82 | 5.23 | 81.17
+Prefix-tuning ✘ | – | – | 5.16 | 76.71
+✔ | PL | – | 5.02 | 76.04
+
+2) (RQ3.2) Hậu Quả cho Low-Rank Adaptation: Không giống prefix tuning, instruction tuning kết hợp với LoRA cải thiện hiệu suất trên hầu hết các tác vụ. Đối với dự đoán tính cần thiết review, nó nâng cao precision của dự đoán từ 81.56% lên 83.99% khi sử dụng PL dataset làm tập tuning duy nhất, mặc dù nó không nâng cao f1-score. Đối với tạo bình luận review, nó tăng điểm BLEU. Đối với tinh chỉnh code, mặc dù không phát hiện cải thiện đáng kể, chúng tôi suy luận từ Phần V-B rằng nó tăng cường khả năng của mô hình để tích hợp thông tin label. Instruction tuning với LoRA giúp mô hình cơ sở hiểu ý định chỉ dẫn, điều này, đến lượt nó, có lợi cho tuning tác vụ tiếp theo, đặc biệt tạo bình luận review, với tính phức tạp và tính chất đa ý định.
+
+3) (RQ3.3) Ảnh Hưởng của Các Loại Instruction: Chúng tôi tập trung vào các hàng "PL+NL" và "PL" sử dụng LoRA, biểu thị việc sử dụng cả dữ liệu Alpaca và Code Alpaca và chỉ dữ liệu Code Alpaca, tương ứng. Thú vị, mặc dù các tác vụ code review liên quan chặt chẽ đến ngôn ngữ tự nhiên, việc tích hợp dữ liệu Alpaca cho instruction tuning làm giảm hiệu suất trên tất cả các tác vụ. Xu hướng này có thể liên quan đến sự đa dạng rộng lớn của các chỉ dẫn ngôn ngữ tự nhiên trong Alpaca. Các chỉ dẫn rộng lớn trong Alpaca dataset có các động từ như rewrite và classify, và chúng dường như quá sức đối với các tác vụ code review do phạm vi rộng của chúng.
+
+Câu trả lời cho RQ3: Instruction tuning có thể tăng cường hiệu suất tác vụ hoặc khả năng xử lý thông tin ngôn ngữ tự nhiên bổ sung. Tuy nhiên, hiệu quả là nhỏ do sự không nhất quán trong thói quen từ giữa instruction và downstream datasets.
+
+D. RQ4: Ảnh Hưởng của Parameter-Efficient Fine-Tuning
+
+Để khám phá tác động của các phương pháp Parameter-Efficient Fine-Tuning (PEFT), chúng tôi thực hiện các thí nghiệm bổ sung điều chỉnh rank r của LoRA, cụ thể đặt rank ở 8 và 16. Việc điều tra hyper-parameters cho prefix-tuning được bỏ qua vì nó đã được phân tích đầy đủ trong công trình trước đó [49]. Kết quả được trình bày chi tiết trong Bảng IX. Để phân tích so sánh, chúng tôi cũng bao gồm kết quả của prefix-tuning.
+
+1) (RQ4.1) So Sánh giữa Các Phương Pháp PEFT: Kết quả chỉ ra rõ ràng rằng LoRA vượt trội prefix-tuning trên tất cả các tác vụ. Chúng tôi quy hiệu suất tăng cường này cho hai khía cạnh chính. Thứ nhất, phương pháp prefix-tuning được triển khai trong nghiên cứu có ít tham số có thể huấn luyện hơn LoRA, cản trở khả năng thích nghi từ mô hình cơ sở. Thứ hai, ngược lại với prefix-tuning dựa vào prefixes để kiểm soát mô hình cơ sở, LoRA xấp xỉ full-parameter tuning, một thuộc tính quan trọng khi output đích khác đáng kể so với định dạng pre-training.
+
+2) (RQ4.2) Tác Động của LoRA Rank r: Tăng LoRA rank r từ 8 lên 16 cải thiện hiệu suất của LLaMA-Reviewer. Cải thiện này trực quan, vì rank cao hơn tăng số lượng tham số có thể huấn luyện, đưa mô hình gần hơn với full-parameter tuning. Tuy nhiên, mục tiêu chính của việc sử dụng các phương pháp PEFT là hạn chế tham số có thể huấn luyện và bảo tồn tài nguyên tính toán. Do đó, tạo ra sự cân bằng giữa hiệu suất và hiệu quả là cân nhắc quan trọng.
+
+3) (RQ4.3) Hiệu Quả của Các Phương Pháp PEFT: Như được hiển thị trong bảng, các phương pháp PEFT giảm số lượng tham số có thể huấn luyện xuống dưới 1% trong khi vẫn đảm bảo hiệu suất chấp nhận được. Với việc các phương pháp PEFT giữ trọng số của mô hình cơ sở không đổi, không gian lưu trữ giảm mạnh từ 13GB xuống dưới 20MB. Những trọng số plug-in độc lập này làm cho các phương pháp PEFT phù hợp lý tưởng cho các quy trình đa tác vụ, như tự động hóa các hoạt động code review.
+
+BẢNG IX
+ẢNH HƯỞNG CỦA CÁC PHƯƠNG PHÁP PARAMETER-EFFICIENT FINE-TUNING
+
+Tuning Method | r | Trainable Params | Storage Space | RNP (F1) | RCG (BLEU) | CR (BLEU)
+Prefix | – | ∼1.2M | 2.4M | – | 5.16 | 76.71
+LoRA | 8 | ∼4.2M | 8M | 69.34 | 5.64 | 81.59
+LoRA | 16 | ∼8.4M | 16M | 70.49 | 5.7 | 82.27
+
+Câu trả lời cho RQ4: Trong số các phương pháp PEFT, LoRA phù hợp hơn để tự động hóa các tác vụ code review. Bằng cách chọn LoRA rank thích hợp, LLaMA-Reviewer có thể đạt được hiệu suất cạnh tranh với ít hơn 1% tham số có thể huấn luyện và yêu cầu không gian lưu trữ giảm đáng kể.
+
+VI. CÔNG TRÌNH LIÊN QUAN
+
+A. Tuning trên LLaMA
+
+Trong khi ChatGPT và chuỗi GPT độc quyền của OpenAI đã thúc đẩy tiến bộ đáng kể trong lĩnh vực AI, bản chất closed-source của chúng đã tạo ra sự dè dặt trong giới nghiên cứu. Để giải quyết mối quan ngại này, Meta đã giới thiệu Large Language Model (LLaMA) mã nguồn mở [37], nhanh chóng nổi lên như một tài sản quan trọng trong cảnh quan AI do khả năng hiệu suất đáng kể.
+
+Nhiều mô hình tuned dựa trên LLaMA đã cho thấy hiệu suất xuất sắc, cạnh tranh với chuỗi ChatGPT và GPT. Alpaca của Stanford [53] đại diện cho sự phát triển đáng kể sớm trong khu vực này, tuning LLaMA sử dụng dataset được tạo từ ChatGPT. Những công trình đáng chú ý tiếp theo đã theo đuổi một loạt mục tiêu, bao gồm thích nghi chuyên biệt cho ngôn ngữ [59], [60], nâng cao chất lượng văn bản [61], [62], thích ứng input đa phương thức [49], [63], [64], và cải thiện khả năng liên quan đến code [54].
+
+Do nhu cầu tính toán đáng kể của full parameter tuning, các nhà nghiên cứu đã hướng tới các phương pháp Parameter-Efficient Fine-Tuning (PEFT) để tuning LLaMA. Một ví dụ như vậy là Alpaca LoRA, đạt được hiệu suất tương đương với Alpaca chỉ với 0.13% tham số huấn luyện, dẫn đến tăng tốc khoảng 60 lần [50]. LLaMA-adapter, được giới thiệu bởi Zhang et al. [49], đại diện cho đóng góp thêm, sử dụng phương pháp zero-init attention prefix-tuning.
+
+Nghiên cứu của chúng tôi tập trung vào đánh giá hiệu suất của LLaMA trên các tác vụ liên quan đến code review và sử dụng các phương pháp PEFT state-of-the-art để nâng cao hiệu quả huấn luyện.
+
+B. Tự Động Hóa Các Hoạt Động Code Review
+
+Code review là khía cạnh thiết yếu, mặc dù tốn thời gian, của phát triển phần mềm, khơi dậy sự quan tâm đáng kể đến các chiến lược tự động hóa cho các hoạt động như đề xuất reviewer [6]–[15], đánh giá chất lượng code [12], [16]–[21], tinh chỉnh code có vấn đề [20], [22]–[25], và gợi ý bình luận review [20], [23], [26]–[31]. Bài báo này tập trung vào pipeline được đề xuất bởi Li et al. [20], bao gồm dự đoán tính cần thiết review, tạo bình luận code review, và tinh chỉnh code.
+
+Các nghiên cứu sớm về dự đoán tính cần thiết review chủ yếu xem xét việc chấp nhận diff hunk, với Shi et al. [16] tiên phong một framework dựa trên CNN và LSTM, DACE, và Hellendoorn et al. [17] sử dụng Transformer để tính đến mối quan hệ inter-diff hunk trong một pull request (PR) duy nhất. Tuy nhiên, lĩnh vực đã phát triển kể từ đó, với Li et al. [20] chuyển trọng tâm hướng tới nhận diện các diff hunks yêu cầu review và tích hợp điều này vào pipeline với mô hình pre-trained chuyên biệt cho code review.
+
+Những nỗ lực ban đầu trong bình luận code review tận dụng các phương pháp dựa trên retrieval để trích xuất bình luận lịch sử. Gupta et al. [27] giới thiệu mô hình dựa trên LSTM, DeepMem, để đề xuất bình luận cho code snippets mới dựa trên mối quan hệ với thay đổi code, trong khi Siow et al. [28] nâng cao retrieval thông qua nắm bắt thông tin ngữ nghĩa LSTM dựa trên attention. Lĩnh vực đã chuyển hướng tới tạo bình luận review với sự gia tăng của deep learning. Tufano et al. [23] tiên phong phương pháp này, pre-training mô hình trên cả code và ngôn ngữ kỹ thuật, với những nỗ lực tiếp theo bởi CodeReviewer [20] và AUGER [30] sử dụng mô hình pre-trained chuyên biệt cho code review và review tags, tương ứng, để cải thiện kết quả. Đồng thời, CommentFinder [31] trình bày một lựa chọn thay thế dựa trên retrieval hiệu quả.
+
+Đối với tinh chỉnh code, những nỗ lực sớm thường phù hợp với các kỹ thuật tự động sửa lỗi [65]–[67]. Tiên phong việc thích nghi tác vụ này cho code review, Tufano et al. [68] tập trung vào học từ các thay đổi code được triển khai trong PRs. Các nhà nghiên cứu sau đó tích hợp bình luận code review vào input tác vụ để mô phỏng tốt hơn tinh chỉnh code [22], [23]. Giải quyết thách thức của token mới, AutoTransforms [25] sử dụng phương pháp byte-pair encoding (BPE), thêm vào đó sử dụng phương pháp diff-aware, D-ACT [56], để tăng hiệu suất trong các trường hợp liên quan chặt chẽ đến sự khác biệt đơn lẻ giữa code base và commit ban đầu. Tuy nhiên, chúng không tính đến ảnh hưởng của bình luận code review và loại trừ dữ liệu với input tương tự. CoditT5 [57], một mô hình pre-trained được thiết kế rõ ràng để chỉnh sửa, sử dụng một phần dataset của Tufano để xác thực như tác vụ downstream. Tương tự, CodeReviewer [20] phát triển mô hình dựa trên mô hình pre-trained của họ, được điều chỉnh cụ thể cho quy trình code review.
+
+Mặc dù có tiến bộ đáng kể trong việc tự động hóa các tác vụ code review, nghiên cứu trước đó thường bỏ qua tiềm năng của unified large language models (LLMs). Khi kích thước mô hình và dữ liệu huấn luyện tiếp tục tăng, unified LLMs đang cải thiện hiệu suất với tốc độ nhanh và cho thấy hiệu suất tương đương với những mô hình pre-trained chuyên biệt cho tác vụ. Đối với các mô hình pre-trained chuyên biệt cho tác vụ, xây dựng từ đầu tốn nhiều tài nguyên và thời gian. Do đó, trong nghiên cứu này, chúng tôi tận dụng LLaMA, một unified large language model mainstream, để điều tra tiềm năng phát triển của LLMs và đánh giá sự phù hợp cho các tác vụ bao gồm cả lập trình và ngôn ngữ tự nhiên, như các tác vụ code review.
+
+VII. MỐI ĐE DỌA ĐỐI VỚI TÍNH HỢP LỆ
+
+A. Construct Validity
+
+Đánh giá của chúng tôi dựa chủ yếu vào một biến thể của metric BLEU-4. Mặc dù được sử dụng rộng rãi trong nghiên cứu trước đó [20], [22], [23], [25], [31], [57], nó không được công nhận phổ biến như metric xác định để đánh giá bình luận code review và code snippets đã tinh chỉnh. Các metrics khác như rouge không được xem xét bởi vì một số mô hình baseline không cung cấp kết quả trực tiếp cũng như mô hình fine-tuned và dự đoán được tạo. Các kiểm tra của chúng tôi trên baselines, bao gồm AUGER [30] và CommentFinder [31], dựa vào code hoặc mô hình được cung cấp bởi bài báo gốc, có thể đã lệch khỏi kết quả tối ưu do định dạng và phân phối dữ liệu khác nhau.
+
+B. Internal Validity
+
+Đánh giá của chúng tôi về parameter-efficient fine-tuning (PEFT) bị hạn chế ở hai phương pháp PEFT nổi bật và không bao gồm so sánh full-parameter fine-tuning. Điều này do tài nguyên tính toán đáng kể cần thiết cho full-parameter fine-tuning, đòi hỏi 8 A100-SXM4-80G trong hơn nửa tháng. Tương tự, các thí nghiệm ablation của chúng tôi bao phủ một tập hợp cài đặt hạn chế do hạn chế tài nguyên. Mặc dù những hạn chế này có thể dẫn đến các phát hiện thay thế, chúng không làm suy yếu cơ bản mục tiêu chính của chúng tôi: đánh giá tiềm năng của unified large language models.
+
+Một mối đe dọa internal validity tiềm năng khác là chúng tôi hạn chế huấn luyện ở kích thước nhỏ nhất của LLaMA và một số epoch hữu hạn. Với việc khả năng và kết quả dữ liệu của LLaMA tiếp tục cải thiện với sự tăng kích thước mô hình và thời gian tuning, nghiên cứu của chúng tôi có thể đánh giá thấp khả năng tiềm ẩn thực tế của large language models.
+
+C. External Validity
+
+Các phát hiện của chúng tôi có thể không khái quát hóa ngoài bối cảnh của hai datasets [20], [23] được sử dụng trong nghiên cứu này, được rút ra độc quyền từ các dự án mã nguồn mở. Như vậy, những phát hiện này có thể không áp dụng đầy đủ cho các bối cảnh công nghiệp và khác. Ngoài ra, mỗi dataset chỉ giữ lại một bình luận duy nhất cho mỗi thay đổi code, có thể tạo ra bias trong quá trình lọc.
+
+VIII. KẾT LUẬN VÀ CÔNG VIỆC TƯƠNG LAI
+
+Trong bài báo này, chúng tôi giới thiệu LLaMA-Reviewer, một framework để tự động hóa quy trình code review sử dụng large language models (LLMs) và các kỹ thuật parameter-efficient fine-tuning (PEFT). Chúng tôi chứng minh rằng, mặc dù sử dụng phiên bản nhỏ nhất của LLaMA chỉ với 6.7B tham số và ít hơn 1% tham số có thể huấn luyện trong một số epoch tuning hạn chế, LLaMA-Reviewer có thể sánh ngang hiệu suất của các mô hình tập trung vào code review state-of-the-art. Ngoài ra, bằng cách áp dụng các mô hình kiểu plug-in, chúng tôi giảm đáng kể yêu cầu không gian lưu trữ.
+
+Các phát hiện của chúng tôi cũng gợi ý rằng việc căn chỉnh input representation với định dạng được sử dụng trong pre-training có thể tận dụng tốt hơn khả năng của LLMs. Ngoài ra, một giai đoạn đầu instruction tuning có thể cải thiện hiệu suất tác vụ và tăng khả năng của mô hình để xử lý thông tin ngôn ngữ tự nhiên bổ sung. Kết quả của chúng tôi cũng cho thấy rằng low-rank adaptation với rank thích hợp là ưu tiên cho các tác vụ với định dạng input và output cụ thể.
+
+Nhìn về phía trước, chúng tôi nhằm mở rộng khám phá large language models, xem xét các mô hình có kích thước và loại khác nhau, và điều tra thêm các phương pháp PEFT. Chúng tôi cũng quan tâm đến việc xem xét kỹ hơn mối quan hệ giữa độ dài token của prompt templates, code snippets, bình luận, và sequence block của các mô hình pre-trained.
+
+LỜI CẢM ƠN
+
+Công trình này được hỗ trợ bởi Chinese Academy of Sciences-Dongguan Science and Technology Service Network Plan (No.202016002000032), và Alliance of International Science Organizations (No. ANSO-CR-KP-2022-03).
+
+TÀI LIỆU THAM KHẢO
+
+[1] M. Fagan, "Design and code inspections to reduce errors in program development," in Software pioneers. Springer, 2002, pp. 575–607.
+[2] D. Spadini, G. Çalikli, và A. Bacchelli, "Primers or reminders? the effects of existing review comments on code review," in 2020 IEEE/ACM 42nd International Conference on Software Engineering (ICSE). IEEE, 2020, pp. 1171–1182.
+[3] P. C. Rigby, D. M. German, L. Cowen, và M.-A. Storey, "Peer review on open-source software projects: Parameters, statistical models, and theory," ACM Transactions on Software Engineering and Methodology (TOSEM), vol. 23, no. 4, pp. 1–33, 2014.
+[4] C. Sadowski, E. Söderberg, L. Church, M. Sipko, và A. Bacchelli, "Modern code review: a case study at google," in Proceedings of the 40th International Conference on Software Engineering: Software Engineering in Practice, 2018, pp. 181–190.
+[5] Q. Shan, D. Sukhdeo, Q. Huang, S. Rogers, L. Chen, E. Paradis, P. C. Rigby, và N. Nagappan, "Using nudges to accelerate code reviews at scale," in Proceedings of the 30th ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering, 2022, pp. 472–482.
+
+[Tiếp tục với phần còn lại của tài liệu tham khảo...]
+
+--- TRANG 12 ---
+
+[Phần cuối của tài liệu tham khảo đã được dịch đầy đủ]

@@ -1,0 +1,219 @@
+# 2309.03914v2.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2309.03914v2.pdf
+# Kích thước file: 843120 bytes
+
+===============================================
+NỘI DUNG FILE PDF (TIẾNG VIỆT)
+===============================================
+
+
+--- TRANG 1 ---
+DevGPT: Nghiên cứu các cuộc Hội thoại giữa Developer và ChatGPT
+Tao Xiao
+Viện Khoa học và Công nghệ Nara
+Nhật Bản
+tao.xiao.ts2@is.naist.jp
+
+Christoph Treude
+Đại học Melbourne
+Úc
+christoph.treude@unimelb.edu.au
+
+Hideaki Hata
+Đại học Shinshu
+Nhật Bản
+hata@shinshu-u.ac.jp
+
+Kenichi Matsumoto
+Viện Khoa học và Công nghệ Nara
+Nhật Bản
+matumoto@is.naist.jp
+
+TÓM TẮT
+Bài báo này giới thiệu DevGPT, một tập dữ liệu được tuyển chọn để khám phá cách các nhà phát triển phần mềm tương tác với ChatGPT, một mô hình ngôn ngữ lớn (LLM) nổi bật. Tập dữ liệu bao gồm 29,778 prompts và phản hồi từ ChatGPT, trong đó có 19,106 đoạn mã, và được liên kết với các tạo phẩm phát triển phần mềm tương ứng như mã nguồn, commits, issues, pull requests, thảo luận và các chủ đề Hacker News. Tập dữ liệu toàn diện này được suy ra từ các cuộc hội thoại ChatGPT được chia sẻ thu thập từ GitHub và Hacker News, cung cấp một nguồn tài nguyên phong phú để hiểu động lực tương tác giữa developer và ChatGPT, bản chất của các câu hỏi họ đặt ra, và tác động của những tương tác này đối với công việc của họ. DevGPT cho phép nghiên cứu các truy vấn của developer, hiệu quả của ChatGPT trong việc tạo mã và giải quyết vấn đề, cũng như những tác động rộng lớn hơn của lập trình có sự hỗ trợ của AI. Bằng cách cung cấp tập dữ liệu này, bài báo mở đường cho các hướng nghiên cứu mới trong kỹ thuật phần mềm, đặc biệt là trong việc hiểu và cải thiện việc sử dụng các LLM như ChatGPT bởi các developer.
+
+CÁC KHÁI NIỆM CCS
+• Hệ thống thông tin → Khai thác dữ liệu.
+
+TỪ KHÓA
+ChatGPT, LLM, AI Sinh tạo, tập dữ liệu
+
+Định dạng Tham chiếu ACM:
+Tao Xiao, Christoph Treude, Hideaki Hata, và Kenichi Matsumoto. 2024.
+DevGPT: Studying Developer-ChatGPT Conversations. Trong Hội nghị Quốc tế lần thứ 21 về Khai thác Kho lưu trữ Phần mềm (MSR '24), ngày 15-16 tháng 4, 2024, Lisbon, Bồ Đào Nha. ACM, New York, NY, USA, 4 trang. https://doi.org/10.1145/3643991.3648400
+
+1 TỔNG QUAN TỔNG THỂ
+Sự xuất hiện của các mô hình ngôn ngữ lớn (LLM) như ChatGPT đã làm thay đổi cảnh quan phát triển phần mềm. Nhiều nghiên cứu đang điều tra chất lượng của các phản hồi được tạo ra bởi ChatGPT, hiệu quả của các kỹ thuật prompting khác nhau, và hiệu suất so sánh của nó trong các cuộc thi lập trình, chỉ kể một số ví dụ. Tuy nhiên, chúng ta biết rất ít về cách ChatGPT thực sự được sử dụng bởi các nhà phát triển phần mềm. Những câu hỏi nào mà các developer đặt ra cho ChatGPT? Động lực của những tương tác này là gì? Bối cảnh mà những cuộc hội thoại này diễn ra là gì, và làm thế nào những cuộc hội thoại này phản hồi lại vào các tạo phẩm trong công việc của họ? Để khắc phục khoảng trống này, chúng tôi giới thiệu DevGPT, một tập dữ liệu được tuyển chọn bao gồm 29,778 prompts và phản hồi của ChatGPT bao gồm 19,106 đoạn mã, kết hợp với các tạo phẩm phát triển phần mềm tương ứng—từ mã nguồn, commits, issues, pull requests, đến thảo luận và các chủ đề Hacker News—để cho phép phân tích bối cảnh và tác động của những tương tác giữa developer và ChatGPT này.
+
+Để tạo DevGPT, chúng tôi đã tận dụng một tính năng được OpenAI giới thiệu vào cuối tháng 5 năm 2023, cho phép người dùng chia sẻ các tương tác của họ với ChatGPT thông qua các liên kết chuyên dụng.¹ Chúng tôi đã thu thập tất cả các liên kết như vậy được chia sẻ trên GitHub và Hacker News tại chín thời điểm cụ thể từ tháng 7 đến tháng 10. Nếu người dùng chọn xóa hoặc vô hiệu hóa các cuộc hội thoại được chia sẻ trong các khoảng thời gian can thiệp, chúng tôi đảm bảo tính nhất quán của dữ liệu bằng cách truy cập liên kết chia sẻ gốc trên tất cả các snapshot này.
+
+Bảng 1 cung cấp tổng quan về snapshot 20231012. Bao gồm 4,733 liên kết ChatGPT được chia sẻ có nguồn gốc từ 3,559 tham chiếu GitHub hoặc Hacker News, tập dữ liệu chứa tổng cộng 29,778 prompts/answers. Điều này bao gồm 19,106 đoạn mã, với Python (6,084), JavaScript (4,802), và Bash (4,332) là ba ngôn ngữ lập trình hàng đầu. 940 trong số các liên kết này được tham chiếu trên nhiều nguồn, dẫn đến số lượng duy nhất là 3,794 liên kết ChatGPT được chia sẻ cá nhân trong DevGPT.
+
+Hình 1 cho thấy một ví dụ về cuộc hội thoại ChatGPT từ tập dữ liệu, cùng với pull request mà nó liên quan đến và cách mã được cập nhật sau cuộc hội thoại ChatGPT.
+
+2 CẤU TRÚC NỘI BỘ
+Tập dữ liệu bao gồm một tập hợp các file JSON được thu thập từ sáu nguồn được nêu chi tiết trong Bảng 1. Đối với mỗi nguồn, chúng tôi cung cấp metadata riêng biệt trong file JSON để cho phép phân tích theo nguồn cụ thể. Ngoài metadata cụ thể theo nguồn, mỗi JSON đều chứa một thuộc tính nhất quán: một danh sách các liên kết ChatGPT được chia sẻ. Mỗi liên kết chia sẻ bao gồm URL đến cuộc hội thoại ChatGPT, các mã trạng thái phản hồi HTTP liên quan, ngày truy cập URL, và
+¹https://help.openai.com/en/articles/7925741-chatgpt-shared-links-faq
+
+arXiv:2309.03914v2 [cs.SE] 14 Feb 2024
+
+--- TRANG 2 ---
+MSR '24, April 15–16, 2024, Lisbon, Portugal Xiao et al.
+
+Bảng 1: Thống kê Tổng hợp của snapshot 20231012
+
+Nguồn | # Được đề cập trong | Liên kết ChatGPT được chia sẻ | Cuộc hội thoại ChatGPT
+# Liên kết được chia sẻ | # Liên kết có thể truy cập | # Cuộc hội thoại có mã | # Prompts | # Đoạn mã
+
+GitHub Code File | 1,843 | Code | 2,708 | 2,540 | 1,184 | 22,799 | 14,132
+GitHub Commit | 694 | Message | 694 | 692 | 674 | 1,922 | 1,828
+GitHub Issue | 507 | Comment | 404 | 382 | 215 | 1,212 | 821
+                 |     | Description | 228 | 212 | 141 | 1,103 | 841
+                 |     | Title | 4 | 4 | 4 | 50 | 77
+GitHub Pull Request | 267 | Description | 94 | 93 | 59 | 529 | 384
+                    |     | Review Thread | 109 | 102 | 66 | 201 | 166
+                    |     | Comment | 98 | 91 | 54 | 430 | 425
+Hacker News | 187 | Comment | 267 | 234 | 44 | 849 | 127
+            |     | Attached URL | 42 | 37 | 2 | 376 | 54
+            |     | Story | 15 | 12 | 4 | 48 | 63
+GitHub Discussion | 61 | Comment | 40 | 34 | 17 | 138 | 76
+                  |    | Description | 21 | 20 | 12 | 93 | 87
+                  |    | Reply | 9 | 7 | 5 | 28 | 25
+
+Hình 1: Ví dụ về một cuộc hội thoại ChatGPT trong bối cảnh của một GitHub pull request
+
+nội dung trong phản hồi HTML. Ngoài ra, mỗi cuộc hội thoại chứa một danh sách các prompts/answers, bao gồm cả bất kỳ đoạn mã nào. Chúng tôi cung cấp chi tiết bao gồm ngày của cuộc hội thoại, số lượng prompts/answers, thông tin token của chúng, và phiên bản mô hình tham gia trong cuộc trò chuyện. Các thuộc tính chi tiết nơi cuộc hội thoại được tham chiếu cũng được bao gồm—như URL tham chiếu, bản chất của việc đề cập (ví dụ: một bình luận), cá nhân đã đề cập nó, và bối cảnh mà nó được trích dẫn.
+
+Một phân tích toàn diện về cấu trúc dữ liệu có sẵn tại https://github.com/NAIST-SE/DevGPT. Ngoài ra, chúng tôi cung cấp một file CSV liệt kê tất cả các liên kết ChatGPT được chia sẻ thu thập từ GitHub và Hacker News.
+
+3 CÁCH TRUY CẬP
+Tập dữ liệu DevGPT có sẵn để tải về trên Zenodo, xem Phần 6. Nó được định dạng trong JSON, làm cho nó dễ dàng phân tích bằng bất kỳ thư viện JSON tiêu chuẩn nào. Ngoài ra, chúng tôi bao gồm phản hồi HTTP, có thể được phân tích bằng bất kỳ trình phân tích HTML nào. Tập dữ liệu cũng phân loại đoạn mã theo loại, cho phép các nhà nghiên cứu sử dụng các trình biên dịch tương ứng để thực thi. Không cần thông tin xác thực để truy cập tập dữ liệu.
+
+4 CÁC CÂU HỎI NGHIÊN CỨU TIỀM NĂNG
+Sau đây cung cấp một danh sách mẫu các câu hỏi nghiên cứu có thể được trả lời với tập dữ liệu DevGPT:
+
+--- TRANG 3 ---
+DevGPT: Studying Developer-ChatGPT Conversations MSR '24, April 15–16, 2024, Lisbon, Portugal
+
+(1) Các loại vấn đề nào (bugs, yêu cầu tính năng, câu hỏi lý thuyết, v.v.) mà các developer thường trình bày cho ChatGPT nhất?
+
+(2) Chúng ta có thể xác định các mẫu trong prompts mà developers sử dụng khi tương tác với ChatGPT không, và các mẫu này có tương quan với thành công trong việc giải quyết vấn đề không?
+
+(3) Cấu trúc điển hình của các cuộc hội thoại giữa developers và ChatGPT là gì? Trung bình cần bao nhiêu lượt để đạt được kết luận?
+
+(4) Trong các trường hợp mà developers đã kết hợp mã được cung cấp bởi ChatGPT vào dự án của họ, họ sửa đổi mã này đến mức độ nào trước khi sử dụng, và các loại sửa đổi phổ biến được thực hiện là gì?
+
+(5) Mã được tạo ra bởi ChatGPT cho một truy vấn nhất định so sánh như thế nào với mã có thể được tìm thấy cho cùng truy vấn trên internet (ví dụ: trên Stack Overflow)?
+
+(6) Các loại vấn đề chất lượng nào (ví dụ: như được xác định bởi linters) phổ biến trong mã được tạo ra bởi ChatGPT?
+
+(7) Chúng ta có thể dự đoán chính xác độ dài của một cuộc hội thoại với ChatGPT dựa trên prompt ban đầu và bối cảnh được cung cấp không?
+
+(8) Chúng ta có thể dự đoán một cách đáng tin cậy liệu vấn đề của một developer có được giải quyết dựa trên cuộc hội thoại ban đầu với ChatGPT không?
+
+(9) Nếu developers chạy lại prompts của họ với ChatGPT bây giờ và/hoặc với các cài đặt khác nhau, họ có nhận được kết quả giống nhau không?
+
+5 CÔNG TRÌNH LIÊN QUAN
+Để định vị tập dữ liệu DevGPT trong tài liệu hiện có, trong phần này, chúng tôi thảo luận về nghiên cứu hiện có về chia sẻ liên kết và các mô hình ngôn ngữ lớn (LLM) trong lĩnh vực kỹ thuật phần mềm.
+
+5.1 Chia sẻ Liên kết
+Chia sẻ liên kết, một phương pháp chia sẻ kiến thức phổ biến, được áp dụng rộng rãi trong các cộng đồng developer, bao gồm các trang web Q&A, GitHub, và đánh giá mã. Gómez et al. [10] phát hiện rằng một số lượng đáng kể các liên kết trên Stack Overflow được sử dụng để chia sẻ kiến thức về các đổi mới phát triển phần mềm, như thư viện và công cụ. Ye et al. [38] đã kiểm tra các khía cạnh cấu trúc và động lực của mạng lưới kiến thức trên Stack Overflow, lưu ý rằng developers sử dụng liên kết cho các mục đích khác nhau, chủ yếu là để tham chiếu thông tin để giải quyết vấn đề. Hata et al. [12] lưu ý rằng hơn 80% repositories có ít nhất một liên kết trong bình luận mã nguồn. Xiao et al. [35] mở rộng nghiên cứu này để bao gồm vai trò của liên kết trong commit messages, quan sát rằng các liên kết không thể truy cập và patch links là phổ biến nhất. Thực hành chia sẻ liên kết cũng được nghiên cứu trong bối cảnh đánh giá mã. Zampetti et al. [40] khám phá mức độ và mục đích của các tham chiếu tài nguyên trực tuyến bên ngoài trong pull requests, phát hiện rằng developers thường tham khảo các tài nguyên bên ngoài để có được kiến thức hoặc giải quyết các vấn đề cụ thể. Wang et al. [30] đã sử dụng phương pháp tiếp cận hỗn hợp để nhấn mạnh tầm quan trọng của các liên kết được chia sẻ trong các cuộc thảo luận đánh giá, làm nổi bật vai trò của chúng trong việc đáp ứng nhu cầu thông tin của các tác giả patch và nhóm đánh giá.
+
+5.2 LLMs cho SE
+Kể từ khi giới thiệu kiến trúc Transformer vào năm 2017 [29], LLMs đã trở nên ngày càng quan trọng trong Kỹ thuật Phần mềm (SE). Hou et al. [13] đã tiến hành một đánh giá có hệ thống về 229 bài báo nghiên cứu từ 2017 đến 2023, tiết lộ việc sử dụng rộng rãi LLMs trong việc giải quyết các vấn đề phát triển phần mềm. Các mô hình nổi bật trong lĩnh vực này bao gồm GPT-2/GPT-3/GPT-3.5 [7,17,19,20,23,31,39], GPT-4 [3,9,14,20], và series BERT [16,41], thể hiện hiệu quả trong việc tạo mã, hoàn thành, và tóm tắt.
+
+Hoàn thành mã, không thể thiếu đối với Môi trường Phát triển Tích hợp (IDE) và các trình soạn thảo mã, đã được nâng cao bởi các công cụ như Codex [5,6,18,25], series BERT [15], GitHub Copilot [6,18,26], CodeParrot [18,37], và series GPT [24,37]. Ngược lại, các công nghệ tóm tắt mã như Codex [1,2,8], CodeBERT [4,8,11], và T5 [21,22] tập trung vào việc tạo ra các mô tả ngôn ngữ tự nhiên từ mã nguồn để hỗ trợ bảo trì, tìm kiếm, và phân loại.
+
+Trong bảo trì phần mềm, gần một phần tư các nghiên cứu được đánh giá bởi Hou et al. [13] giải quyết việc sửa chữa chương trình, đánh giá mã, và gỡ lỗi. Trong sửa chữa chương trình, Codex [32,33] và ChatGPT [34] đã cho thấy hiệu suất mạnh mẽ. Đối với đánh giá mã, các LLM như BERT [27] và ChatGPT [28] hiệu quả trong việc phát hiện vấn đề và đề xuất tối ưu hóa. Ngoài ra, Copilot for PRs cung cấp năng lượng cho các pull requests cần ít thời gian đánh giá hơn và có khả năng cao hơn được merge [36].
+
+Mặc dù có những tiến bộ này, có ít nghiên cứu về cách các nhà phát triển phần mềm tương tác với LLMs. Tập dữ liệu DevGPT giải quyết khoảng trống này, cung cấp một nguồn tài nguyên có giá trị cho việc phân tích sâu về những tương tác này. Tập dữ liệu này có thể cho phép cộng đồng nghiên cứu hiểu và cải thiện cách các developer sử dụng LLMs trong công việc của họ, đánh dấu một bước tiến trong ứng dụng thực tế của AI trong phát triển phần mềm.
+
+6 LIÊN KẾT
+https://github.com/NAIST-SE/DevGPT và https://doi.org/10.5281/zenodo.10086809
+
+TÀI LIỆU THAM KHẢO
+[1] Toufique Ahmed, Kunal Suresh Pai, Premkumar Devanbu, and Earl T Barr. 2023. Improving Few-Shot Prompts with Relevant Static Analysis Products. arXiv preprint arXiv:2304.06815 (2023).
+
+[2] Shushan Arakelyan, Rocktim Jyoti Das, Yi Mao, and Xiang Ren. 2023. Exploring Distributional Shifts in Large Language Models for Code Analysis. arXiv preprint arXiv:2303.09128 (2023).
+
+[3] Patrick Bareiß, Beatriz Souza, Marcelo d'Amorim, and Michael Pradel. 2022. Code generation tools (almost) for free? a study of few-shot, pre-trained language models on code. arXiv preprint arXiv:2206.01335 (2022).
+
+[4] Fuxiang Chen, Fatemeh H Fard, David Lo, and Timofey Bryksin. 2022. On the transferability of pre-trained language models for low-resource programming languages. In Proceedings of the 30th IEEE/ACM International Conference on Program Comprehension. 401–412.
+
+[5] Mark Chen, Jerry Tworek, Heewoo Jun, Qiming Yuan, Henrique Ponde de Oliveira Pinto, Jared Kaplan, Harri Edwards, Yuri Burda, Nicholas Joseph, Greg Brockman, et al. 2021. Evaluating large language models trained on code. arXiv preprint arXiv:2107.03374 (2021).
+
+[6] Jean-Baptiste Döderlein, Mathieu Acher, Djamel Eddine Khelladi, and Benoit Combemale. 2022. Piloting Copilot and Codex: Hot Temperature, Cold Prompts, or Black Magic? arXiv preprint arXiv:2210.14699 (2022).
+
+[7] Yihong Dong, Xue Jiang, Zhi Jin, and Ge Li. 2023. Self-collaboration Code Generation via ChatGPT. arXiv preprint arXiv:2304.07590 (2023).
+
+[8] Shuzheng Gao, Xin-Cheng Wen, Cuiyun Gao, Wenxuan Wang, and Michael R Lyu. 2023. Constructing Effective In-Context Demonstration for Code Intelligence Tasks: An Empirical Study. arXiv preprint arXiv:2304.07575 (2023).
+
+--- TRANG 4 ---
+MSR '24, April 15–16, 2024, Lisbon, Portugal Xiao et al.
+
+[9] Henry Gilbert, Michael Sandborn, Douglas C Schmidt, Jesse Spencer-Smith, and Jules White. 2023. Semantic Compression With Large Language Models. arXiv preprint arXiv:2304.12512 (2023).
+
+[10] Carlos Gómez, Brendan Cleary, and Leif Singer. 2013. A study of innovation diffusion through link sharing on stack overflow. In 2013 10th Working Conference on Mining Software Repositories (MSR). IEEE, 81–84.
+
+[11] Jian Gu, Pasquale Salza, and Harald C Gall. 2022. Assemble foundation models for automatic code summarization. In 2022 IEEE International Conference on Software Analysis, Evolution and Reengineering (SANER). IEEE, 935–946.
+
+[12] Hideaki Hata, Christoph Treude, Raula Gaikovina Kula, and Takashi Ishio. 2019. 9.6 million links in source code comments: Purpose, evolution, and decay. In 2019 IEEE/ACM 41st International Conference on Software Engineering (ICSE). IEEE, 1211–1221.
+
+[13] Xinyi Hou, Yanjie Zhao, Yue Liu, Zhou Yang, Kailong Wang, Li Li, Xiapu Luo, David Lo, John Grundy, and Haoyu Wang. 2023. Large Language Models for Software Engineering: A Systematic Literature Review. arXiv preprint arXiv:2308.10620 (2023).
+
+[14] Shuyang Jiang, Yuhao Wang, and Yu Wang. 2023. SelfEvolve: A Code Evolution Framework via Large Language Models. arXiv preprint arXiv:2306.02907 (2023).
+
+[15] Junaed Younus Khan and Gias Uddin. 2022. Automatic detection and analysis of technical debts in peer-review documentation of r packages. In 2022 IEEE International Conference on Software Analysis, Evolution and Reengineering (SANER). IEEE, 765–776.
+
+[16] Yuhang Lai, Chengxi Li, Yiming Wang, Tianyi Zhang, Ruiqi Zhong, Luke Zettlemoyer, Wen-tau Yih, Daniel Fried, Sida Wang, and Tao Yu. 2023. DS-1000: A natural and reliable benchmark for data science code generation. In International Conference on Machine Learning. PMLR, 18319–18345.
+
+[17] Jia Li, Ge Li, Yongmin Li, and Zhi Jin. 2023. Enabling Programming Thinking in Large Language Models Toward Code Generation. arXiv preprint arXiv:2305.06599 (2023).
+
+[18] Zongjie Li, Chaozheng Wang, Zhibo Liu, Haoxuan Wang, Dong Chen, Shuai Wang, and Cuiyun Gao. 2023. Cctest: Testing and repairing code completion systems. In 2023 IEEE/ACM 45th International Conference on Software Engineering (ICSE). IEEE, 1238–1250.
+
+[19] Chao Liu, Xuanlin Bao, Hongyu Zhang, Neng Zhang, Haibo Hu, Xiaohong Zhang, and Meng Yan. 2023. Improving ChatGPT Prompt for Code Generation. arXiv preprint arXiv:2305.08360 (2023).
+
+[20] Jiawei Liu, Chunqiu Steven Xia, Yuyao Wang, and Lingming Zhang. 2023. Is your code generated by chatgpt really correct? rigorous evaluation of large language models for code generation. arXiv preprint arXiv:2305.01210 (2023).
+
+[21] Antonio Mastropaolo, Luca Pascarella, and Gabriele Bavota. 2022. Using deep learning to generate complete log statements. In Proceedings of the 44th International Conference on Software Engineering. 2279–2290.
+
+[22] Antonio Mastropaolo, Simone Scalabrino, Nathan Cooper, David Nader Palacio, Denys Poshyvanyk, Rocco Oliveto, and Gabriele Bavota. 2021. Studying the usage of text-to-text transfer transformer to support code-related tasks. In 2021 IEEE/ACM 43rd International Conference on Software Engineering (ICSE). IEEE, 336–347.
+
+[23] Nathalia Nascimento, Paulo Alencar, and Donald Cowan. 2023. Comparing Software Developers with ChatGPT: An Empirical Investigation. arXiv preprint arXiv:2305.11837 (2023).
+
+[24] Marcel Ochs, Krishna Narasimhan, and Mira Mezini. 2023. Evaluating and improving transformers pre-trained on ASTs for Code Completion. In 2023 IEEE International Conference on Software Analysis, Evolution and Reengineering (SANER). IEEE, 834–844.
+
+[25] Hammond Pearce, Benjamin Tan, Baleegh Ahmad, Ramesh Karri, and Brendan Dolan-Gavitt. 2023. Examining zero-shot vulnerability repair with large language models. In 2023 IEEE Symposium on Security and Privacy (SP). IEEE, 2339–2356.
+
+[26] Rohith Pudari and Neil A Ernst. 2023. From Copilot to Pilot: Towards AI Supported Software Development. arXiv preprint arXiv:2303.04142 (2023).
+
+[27] Oussama Ben Sghaier and Houari Sahraoui. 2023. A Multi-Step Learning Approach to Assist Code Review. In 2023 IEEE International Conference on Software Analysis, Evolution and Reengineering (SANER). IEEE, 450–460.
+
+[28] Giriprasad Sridhara, Sourav Mazumdar, et al. 2023. ChatGPT: A Study on its Utility for Ubiquitous Software Engineering Tasks. arXiv preprint arXiv:2305.16837 (2023).
+
+[29] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. 2017. Attention is all you need. Advances in neural information processing systems 30 (2017).
+
+[30] Dong Wang, Tao Xiao, Patanamon Thongtanunam, Raula Gaikovina Kula, and Kenichi Matsumoto. 2021. Understanding shared links and their intentions to meet information needs in modern code review: A case study of the OpenStack and Qt projects. Empirical Software Engineering 26 (2021), 1–32.
+
+[31] Jian Wang, Shangqing Liu, Xiaofei Xie, and Yi Li. 2023. Evaluating AIGC Detectors on Code Content. arXiv preprint arXiv:2304.05193 (2023).
+
+[32] Yi Wu, Nan Jiang, Hung Viet Pham, Thibaud Lutellier, Jordan Davis, Lin Tan, Petr Babkin, and Sameena Shah. 2023. How Effective Are Neural Networks for Fixing Security Vulnerabilities. arXiv preprint arXiv:2305.18607 (2023).
+
+[33] Chunqiu Steven Xia, Yuxiang Wei, and Lingming Zhang. 2023. Automated program repair in the era of large pre-trained language models. In Proceedings of the 45th International Conference on Software Engineering (ICSE 2023). Association for Computing Machinery.
+
+[34] Chunqiu Steven Xia and Lingming Zhang. 2023. Conversational automated program repair. arXiv preprint arXiv:2301.13246 (2023).
+
+[35] Tao Xiao, Sebastian Baltes, Hideaki Hata, Christoph Treude, Raula Gaikovina Kula, Takashi Ishio, and Kenichi Matsumoto. 2023. 18 million links in commit messages: purpose, evolution, and decay. Empirical Software Engineering 28, 4 (2023), 91.
+
+[36] Tao Xiao, Hideaki Hata, Christoph Treude, and Kenichi Matsumoto. 2024. Generative AI for Pull Request Descriptions: Adoption, Impact, and Developer Interventions. In Proceedings of the ACM on Software Engineering (PACMSE).
+
+[37] Frank F Xu, Uri Alon, Graham Neubig, and Vincent Josua Hellendoorn. 2022. A systematic evaluation of large language models of code. In Proceedings of the 6th ACM SIGPLAN International Symposium on Machine Programming. 1–10.
+
+[38] Deheng Ye, Zhenchang Xing, and Nachiket Kapre. 2017. The structure and dynamics of knowledge network in domain-specific q&a sites: a case study of stack overflow. Empirical Software Engineering 22, 1 (2017), 375–406.
+
+[39] Burak Yetiştiren, Işık Özsoy, Miray Ayerdem, and Eray Tüzün. 2023. Evaluating the Code Quality of AI-Assisted Code Generation Tools: An Empirical Study on GitHub Copilot, Amazon CodeWhisperer, and ChatGPT. arXiv preprint arXiv:2304.10778 (2023).
+
+[40] Fiorella Zampetti, Luca Ponzanelli, Gabriele Bavota, Andrea Mocci, Massimiliano Di Penta, and Michele Lanza. 2017. How developers document pull requests with external references. In 2017 IEEE/ACM 25th International Conference on Program Comprehension (ICPC). IEEE, 23–33.
+
+[41] Zhengran Zeng, Hanzhuo Tan, Haotian Zhang, Jing Li, Yuqun Zhang, and Lingming Zhang. 2022. An extensive study on pre-trained models for program understanding and generation. In Proceedings of the 31st ACM SIGSOFT international symposium on software testing and analysis. 39–51.

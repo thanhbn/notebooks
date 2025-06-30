@@ -1,0 +1,336 @@
+# 2107.03374v2.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2107.03374v2.pdf
+# Kích thước file: 1885177 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+Đánh giá các Mô hình Ngôn ngữ Lớn được Huấn luyện trên Code
+
+Mark Chen* 1Jerry Tworek* 1Heewoo Jun* 1Qiming Yuan* 1Henrique Ponde de Oliveira Pinto* 1
+Jared Kaplan* 2Harri Edwards1Yuri Burda1Nicholas Joseph2Greg Brockman1Alex Ray1Raul Puri1
+Gretchen Krueger1Michael Petrov1Heidy Khlaaf3Girish Sastry1Pamela Mishkin1Brooke Chan1
+Scott Gray1Nick Ryder1Mikhail Pavlov1Alethea Power1Lukasz Kaiser1Mohammad Bavarian1
+Clemens Winter1Philippe Tillet1Felipe Petroski Such1Dave Cummings1Matthias Plappert1
+Fotios Chantzis1Elizabeth Barnes1Ariel Herbert-Voss1William Hebgen Guss1Alex Nichol1Alex Paino1
+Nikolas Tezak1Jie Tang1Igor Babuschkin1Suchir Balaji1Shantanu Jain1William Saunders1
+Christopher Hesse1Andrew N. Carr1Jan Leike1Josh Achiam1Vedant Misra1Evan Morikawa1
+Alec Radford1Matthew Knight1Miles Brundage1Mira Murati1Katie Mayer1Peter Welinder1
+Bob McGrew1Dario Amodei2Sam McCandlish2Ilya Sutskever1Wojciech Zaremba1
+
+Tóm tắt
+Chúng tôi giới thiệu Codex, một mô hình ngôn ngữ GPT được tinh chỉnh trên code công khai từ GitHub, và nghiên cứu khả năng viết code Python của nó. Một phiên bản sản xuất riêng biệt của Codex đang vận hành GitHub Copilot. Trên HumanEval, một bộ đánh giá mới mà chúng tôi phát hành để đo lường tính đúng đắn chức năng trong việc tổng hợp các chương trình từ docstring, mô hình của chúng tôi giải quyết được 28.8% các bài toán, trong khi GPT-3 giải quyết được 0% và GPT-J giải quyết được 11.4%. Hơn nữa, chúng tôi phát hiện rằng việc lấy mẫu lặp lại từ mô hình là một chiến lược hiệu quả đáng ngạc nhiên để tạo ra các giải pháp hoạt động cho các prompt khó. Sử dụng phương pháp này, chúng tôi giải quyết được 70.2% các bài toán với 100 mẫu cho mỗi bài toán. Việc điều tra cẩn thận mô hình của chúng tôi tiết lộ những hạn chế của nó, bao gồm khó khăn với các docstring mô tả chuỗi thao tác dài và việc gắn kết các thao tác với biến. Cuối cùng, chúng tôi thảo luận về các tác động rộng hơn tiềm năng của việc triển khai các công nghệ tạo code mạnh mẽ, bao gồm an toàn, bảo mật và kinh tế.
+
+*Đóng góp bằng nhau
+1OpenAI, San Francisco, California, USA.
+2Anthropic AI, San Francisco, California, USA. Công việc được thực hiện khi còn ở OpenAI.
+3Zipline, South San Francisco, California, USA. Công việc được thực hiện khi còn ở OpenAI.
+
+Liên hệ với: Mark Chen <mark@openai.com>, Jerry Tworek <jt@openai.com>, Heewoo Jun <heewoo@openai.com>, Qiming Yuan <qiming@openai.com>.
+
+1. Giới thiệu
+Các mô hình dự đoán chuỗi có thể mở rộng (Graves, 2014; Vaswani et al., 2017; Child et al., 2019) đã trở thành phương pháp tổng quát cho việc tạo sinh và học biểu diễn trong nhiều lĩnh vực, bao gồm xử lý ngôn ngữ tự nhiên (Mikolov et al., 2013; Sutskever et al., 2014; Dai & Le, 2015; Peters et al., 2018; Radford et al., 2018; Devlin et al., 2018), thị giác máy tính (Van Oord et al., 2016; Menick & Kalchbrenner, 2018; Chen et al., 2020; Bao et al., 2021), xử lý âm thanh và giọng nói (Oord et al., 2016; 2018; Dhariwal et al., 2020; Baevski et al., 2020), sinh học (Alley et al., 2019; Rives et al., 2021), và thậm chí qua nhiều phương thức (Das et al., 2017; Lu et al., 2019; Ramesh et al., 2021; Zellers et al., 2021). Gần đây hơn, các mô hình ngôn ngữ cũng đã thúc đẩy tiến bộ hướng tới thách thức lâu đời của tổng hợp chương trình (Simon, 1963; Manna & Waldinger, 1971), được thúc đẩy bởi sự hiện diện của code trong các bộ dữ liệu lớn (Husain et al., 2019; Gao et al., 2020) và khả năng lập trình kết quả của các mô hình ngôn ngữ được huấn luyện trên các bộ dữ liệu này (Wang & Komatsuzaki, 2021). Các mục tiêu mô hình ngôn ngữ phổ biến như mô hình ngôn ngữ có mặt nạ (Devlin et al., 2018) và dự đoán khoảng (Raffel et al., 2020) cũng đã được điều chỉnh để huấn luyện các đối tác lập trình của chúng CodeBERT (Feng et al., 2020) và PyMT5 (Clement et al., 2020).
+
+Tương tự, cuộc điều tra ban đầu của chúng tôi về GPT-3 (Brown et al., 2020) tiết lộ rằng nó có thể tạo ra các chương trình đơn giản từ docstring Python. Mặc dù còn thô sơ, khả năng này rất thú vị vì GPT-3 không được huấn luyện một cách rõ ràng để tạo code. Với thành công đáng kể của các mô hình ngôn ngữ lớn trong các phương thức khác và sự dồi dào code công khai có sẵn, chúng tôi đưa ra giả thuyết rằng một mô hình GPT chuyên biệt, được gọi là Codex, có thể xuất sắc trong nhiều tác vụ coding khác nhau. Bài báo này mô tả một số mô hình Codex ban đầu, những mô hình con cháu của chúng đang vận hành GitHub Copilot và các mô hình Codex trong OpenAI API.
+
+arXiv:2107.03374v2 [cs.LG] 14 Jul 2021
+
+--- TRANG 2 ---
+Đánh giá các Mô hình Ngôn ngữ Lớn được Huấn luyện trên Code
+
+Hình 1. Tỷ lệ thành công của các mô hình của chúng tôi trên bộ dữ liệu HumanEval theo kích thước mô hình. Khi một mẫu duy nhất được tạo cho mỗi bài toán, GPT-12B không giải quyết được bài toán nào, nhưng Codex (được tinh chỉnh trên code) giải quyết được 28.8% các bài toán, và Codex-S (được tinh chỉnh thêm trên các hàm độc lập được triển khai đúng) giải quyết được 37.7% các bài toán. Từ đây, có thể đạt được những cải thiện thêm bằng cách tạo 100 mẫu cho mỗi bài toán và chọn mẫu có xác suất log trung bình cao nhất (44.5% được giải quyết) hoặc bằng cách chọn mẫu vượt qua unit test (77.5% được giải quyết). Tất cả các mẫu được tạo với temperature 0.8.
+
+Trong công trình này, chúng tôi tập trung vào tác vụ tạo các hàm Python độc lập từ docstring, và đánh giá tính đúng đắn của các mẫu code một cách tự động thông qua unit test. Điều này trái ngược với việc tạo ngôn ngữ tự nhiên, nơi các mẫu thường được đánh giá bằng heuristic hoặc bởi các đánh giá viên con người. Để đánh giá chính xác mô hình của chúng tôi, chúng tôi tạo ra một bộ dữ liệu gồm 164 bài toán lập trình gốc với unit test. Những bài toán này đánh giá khả năng hiểu ngôn ngữ, thuật toán và toán học đơn giản, với một số có thể so sánh với các câu hỏi phỏng vấn phần mềm đơn giản. Chúng tôi phát hành dữ liệu này cùng với một framework đánh giá tại https://www.github.com/openai/human-eval.
+
+Để giải quyết một bài toán trong bộ test của chúng tôi, chúng tôi tạo nhiều mẫu từ các mô hình và kiểm tra xem có mẫu nào vượt qua unit test không. Chỉ với một mẫu duy nhất, Codex 12B parameter giải quyết được 28.8% các bài toán này, và Codex 300M parameter giải quyết được 13.2% các bài toán này. Ngược lại, GPT-J 6B parameter (Wang & Komatsuzaki, 2021) đạt được 11.4% trên cùng bộ dữ liệu, trong khi tất cả các mô hình GPT đạt được gần 0%. Để cải thiện hiệu suất của mô hình trong tác vụ tổng hợp hàm từ docstring, chúng tôi tinh chỉnh Codex trên các hàm độc lập được triển khai đúng. Mô hình kết quả, Codex-S, giải quyết được 37.7% các bài toán với một mẫu duy nhất. Hình 2 trình bày các bài toán có độ khó khác nhau trong bộ dữ liệu của chúng tôi, cùng với các giải pháp đúng được tạo bởi mô hình.
+
+Các tác vụ lập trình thực tế thường liên quan đến việc lặp lại các cách tiếp cận và sửa lỗi, điều này được xấp xỉ bằng cách tạo nhiều mẫu từ các mô hình của chúng tôi và chọn một mẫu vượt qua tất cả unit test. Trong vòng 100 mẫu, Codex-S có thể tạo ra ít nhất một hàm đúng cho 77.5% các bài toán. Kết quả này gợi ý rằng các mẫu code chính xác có thể được chọn thông qua xếp hạng heuristic thay vì đánh giá đầy đủ mỗi mẫu, việc sau có thể không khả thi hoặc thực tế trong triển khai. Thực tế, chúng tôi thấy rằng mẫu có xác suất log trung bình cao nhất vượt qua unit test cho 44.5% các bài toán.
+
+Chúng tôi kết thúc bằng việc thảo luận các hạn chế và tác động rộng hơn tiềm năng của các mô hình Codex này và của các mô hình tạo code ngày càng mạnh mẽ hơn một cách tổng quát.
+
+2. Framework Đánh giá
+Trong phần này, chúng tôi thảo luận chi tiết về framework đánh giá của chúng tôi. Chúng tôi bắt đầu bằng việc định nghĩa metric pass@k, và giải thích các ưu điểm của nó so với các metric dựa trên khớp chuẩn. Tiếp theo, chúng tôi mô tả bộ dữ liệu các bài toán viết tay, được gọi là "HumanEval," mà chúng tôi đã tạo ra để đánh giá các mô hình của chúng tôi. Cuối cùng, chúng tôi thảo luận về môi trường sandbox mà chúng tôi đã sử dụng để thực thi code được tạo bởi mô hình một cách an toàn.
+
+2.1. Tính Đúng đắn Chức năng
+Các mô hình tạo sinh cho code chủ yếu được đánh giá bằng cách khớp các mẫu với một giải pháp tham chiếu, nơi việc khớp có thể chính xác hoặc mờ (như trong điểm BLEU). Tuy nhiên, công trình gần đây đã phát hiện ra những thiếu sót trong các metric dựa trên khớp cho code. Ví dụ, Ren et al. (2020) thấy rằng BLEU có vấn đề trong việc nắm bắt các đặc trưng ngữ nghĩa cụ thể của code, và đề xuất một số sửa đổi ngữ nghĩa cho điểm số.
+
+Căn bản hơn, các metric dựa trên khớp không thể tính đến không gian lớn và phức tạp của các chương trình có chức năng tương đương với một giải pháp tham chiếu. Kết quả là, các công trình gần đây trong dịch code không giám sát (Lachaux et al., 2020) và dịch pseudocode-to-code (Kulal et al., 2019) đã chuyển sang tính đúng đắn chức năng thay thế, nơi một mẫu được coi là đúng nếu nó vượt qua một tập hợp unit test. Chúng tôi lập luận rằng metric này nên được áp dụng cho việc tạo code có điều kiện docstring cũng vậy.
+
+Có lẽ lý do thuyết phục nhất để đánh giá tính đúng đắn chức năng là nó được sử dụng bởi các nhà phát triển con người để đánh giá code. Một framework được biết đến là phát triển hướng test quy định rằng các yêu cầu phần mềm được chuyển đổi thành test case trước khi bất kỳ triển khai nào bắt đầu, và thành công được định nghĩa bởi một chương trình vượt qua các test này. Mặc dù ít tổ chức sử dụng phát triển hướng test đầy đủ, việc tích hợp code mới thường phụ thuộc vào việc tạo và vượt qua unit test.
+
+Kulal et al. (2019) đánh giá tính đúng đắn chức năng sử dụng metric pass@k, nơi k mẫu code được tạo cho mỗi bài toán, một bài toán được coi là đã giải quyết nếu bất kỳ mẫu nào vượt qua unit test, và tỷ lệ tổng số bài toán được giải quyết được báo cáo. Tuy nhiên, việc tính toán pass@k theo cách này có thể có phương sai cao. Thay vào đó, để đánh giá pass@k, chúng tôi tạo n≥k mẫu cho mỗi tác vụ (trong bài báo này, chúng tôi sử dụng n=200 và k≤100), đếm số mẫu đúng cn vượt qua unit test, và tính toán estimator không thiên lệch:
+
+pass@k := E[Problems][1 - (n-c choose k)/(n choose k)]     (1)
+
+Việc tính toán estimator này một cách trực tiếp dẫn đến số rất lớn và bất ổn định số học. Trong Hình 3, chúng tôi bao gồm một triển khai numpy ổn định số học mà đơn giản hóa biểu thức và đánh giá sản phẩm từng hạng tử một. Người ta có thể bị cám dỗ để ước tính pass@k với 1-(1-p̂)^k nơi p̂ là ước tính thực nghiệm của pass@1, nhưng chúng tôi chỉ ra rằng nó có thiên lệch trong Phụ lục A.
+
+def pass_at_k(n, c, k):
+    """
+    :param n: tổng số mẫu
+    :param c: số mẫu đúng
+    :param k: k trong pass@k
+    """
+    if n - c < k: return 1.0
+    return 1.0 - np.prod(1.0 - k / np.arange(n - c + 1, n + 1))
+
+Hình 3. Một script ổn định số học để tính toán ước tính không thiên lệch của pass@k.
+
+Sau này, chúng tôi cung cấp bằng chứng rằng điểm BLEU có thể không phải là chỉ báo đáng tin cậy của tính đúng đắn chức năng bằng cách chỉ ra rằng các chương trình không tương đương chức năng được tạo bởi mô hình của chúng tôi (được đảm bảo không đồng ý với giải pháp tham chiếu trên một số đầu vào) thường có điểm BLEU cao hơn so với các chương trình tương đương chức năng.
+
+--- TRANG 3 ---
+Đánh giá các Mô hình Ngôn ngữ Lớn được Huấn luyện trên Code
+
+Hình 2. Ba ví dụ bài toán từ bộ dữ liệu HumanEval, nơi xác suất một mẫu đơn từ Codex-12B vượt qua unit test lần lượt là 0.9, 0.17 và 0.005. Prompt được cung cấp cho mô hình được hiển thị với nền trắng, và một completion thành công được tạo bởi mô hình được hiển thị trong nền vàng. Mặc dù không đảm bảo tính mới của bài toán, tất cả các bài toán đều được viết tay và không được sao chép một cách lập trình từ các nguồn hiện có. Các bài toán và mẫu ngẫu nhiên có thể được tìm thấy trong Phụ lục B.
+
+2.2. HumanEval: Bộ Đánh giá Viết tay
+Chúng tôi đánh giá tính đúng đắn chức năng trên một tập hợp 164 bài toán lập trình viết tay, mà chúng tôi gọi là bộ dữ liệu HumanEval. Mỗi bài toán bao gồm một chữ ký hàm, docstring, thân hàm và một số unit test, với trung bình 7.7 test cho mỗi bài toán. Điều quan trọng là các tác vụ này phải được viết tay, vì các mô hình của chúng tôi được huấn luyện trên một phần lớn GitHub, nơi đã chứa các giải pháp cho các bài toán từ nhiều nguồn khác nhau. Ví dụ, có hơn mười repository công khai chứa các giải pháp cho các bài toán Codeforces, tạo thành một phần của bộ dữ liệu APPS được đề xuất gần đây (Hendrycks et al., 2021).
+
+Các tác vụ lập trình trong bộ dữ liệu HumanEval đánh giá khả năng hiểu ngôn ngữ, lý luận, thuật toán và toán học đơn giản. Chúng tôi phát hành bộ dữ liệu HumanEval để những người khác có thể đánh giá tính đúng đắn chức năng và đo lường khả năng giải quyết vấn đề của các mô hình của họ. Bộ dữ liệu có thể được tìm thấy tại https://www.github.com/openai/human-eval.
+
+2.3. Sandbox để Thực thi Chương trình được Tạo
+Vì các chương trình công khai có sẵn có ý định không rõ và các chương trình được tạo thường không chính xác, việc thực thi các chương trình này đặt ra rủi ro bảo mật. Thực tế, GitHub được biết là chứa các chương trình độc hại có thể thay đổi hoặc sửa đổi môi trường của chúng (Rokon et al., 2020).
+
+Do đó, chúng tôi đã phát triển một môi trường sandbox để chạy an toàn các chương trình không đáng tin cậy đối với unit test. Mục tiêu của chúng tôi là ngăn chặn các chương trình này sửa đổi, có được sự bền vững trên, truy cập tài nguyên nhạy cảm trên, hoặc lấy cắp dữ liệu từ một host hoặc mạng. Vì cơ sở hạ tầng huấn luyện của OpenAI được xây dựng trên Kubernetes và các dịch vụ đám mây, chúng tôi đã thiết kế sandbox của chúng tôi để giải quyết các hạn chế của các môi trường này trong khi vẫn thành ngữ với các pattern sử dụng của chúng.
+
+Chúng tôi đã chọn gVisor container runtime (Lacasse, 2018) làm thành phần bảo vệ host chính. Vì các container runtime như Docker có thể chia sẻ tài nguyên host với các container, một container độc hại có thể làm tổn hại host. gVisor bảo vệ host bằng cách mô phỏng tài nguyên của nó để tạo ra một ranh giới bảo mật giữa host và các container của nó. Các host liền kề mạng và các dịch vụ được bảo vệ bởi các quy tắc tường lửa dựa trên eBPF ngăn chặn các kết nối đến và đi ngoại trừ những kết nối cần thiết cho việc kiểm soát thí nghiệm.
+
+3. Tinh chỉnh Code
+Chúng tôi tinh chỉnh các mô hình GPT chứa lên đến 12B parameter trên code để tạo ra Codex. Trái ngược với GPT, Codex hiển thị hiệu suất không tầm thường trên bộ dữ liệu HumanEval. Thực tế, Codex có thể giải quyết phần lớn các bài toán trong HumanEval nếu chúng tôi tạo và đánh giá 100 mẫu cho mỗi bài toán, và chọn một mẫu vượt qua unit test. Khi giới hạn trong ngân sách một đánh giá cho mỗi bài toán, việc tạo nhiều mẫu với Codex và chọn mẫu có xác suất log trung bình cao nhất mang lại những cải thiện đáng kể.
+
+3.1. Thu thập Dữ liệu
+Bộ dữ liệu huấn luyện của chúng tôi được thu thập vào tháng 5 năm 2020 từ 54 triệu repository phần mềm công khai được lưu trữ trên GitHub, chứa 179 GB các file Python duy nhất dưới 1 MB. Chúng tôi đã lọc bỏ các file có khả năng được tự động tạo, có độ dài dòng trung bình lớn hơn 100, có độ dài dòng tối đa lớn hơn 1000, hoặc chứa tỷ lệ nhỏ các ký tự chữ và số. Sau khi lọc, bộ dữ liệu cuối cùng của chúng tôi tổng cộng 159 GB.
+
+3.2. Phương pháp
+Vì Codex được đánh giá trên các prompt ngôn ngữ tự nhiên, chúng tôi đưa ra giả thuyết rằng sẽ có lợi khi tinh chỉnh từ gia đình mô hình GPT-3 (Brown et al., 2020), vốn đã chứa các biểu diễn ngôn ngữ tự nhiên mạnh mẽ. Đáng ngạc nhiên, chúng tôi không quan sát được cải thiện khi bắt đầu từ một mô hình ngôn ngữ đã được tiền huấn luyện, có thể vì bộ dữ liệu tinh chỉnh quá lớn. Tuy nhiên, các mô hình được tinh chỉnh từ GPT hội tụ nhanh hơn, vì vậy chúng tôi áp dụng chiến lược này cho tất cả các thí nghiệm tiếp theo.
+
+Chúng tôi huấn luyện Codex sử dụng cùng learning rate như mô hình GPT tương ứng, với warmup tuyến tính 175 bước và sự suy giảm learning rate cosine. Chúng tôi huấn luyện tổng cộng 100 tỷ token, sử dụng optimizer Adam với β₁ = 0.9, β₂ = 0.95, ε = 10⁻⁸, và hệ số weight decay là 0.1.
+
+Để tận dụng tối đa các biểu diễn văn bản từ GPT, chúng tôi dựa lexer code của chúng tôi trên tokenizer văn bản GPT-3. Vì phân phối từ trong code GitHub khác với văn bản tự nhiên, tokenizer này không rất hiệu quả cho việc biểu diễn code. Nguồn lãng phí lớn nhất phát sinh từ việc mã hóa khoảng trắng, vì vậy chúng tôi thêm một tập hợp token bổ sung để biểu diễn các chuỗi khoảng trắng có độ dài khác nhau. Điều này cho phép chúng tôi biểu diễn code sử dụng khoảng 30% ít token hơn.
+
+Để tính toán pass@k, chúng tôi lắp ráp mỗi bài toán HumanEval thành một prompt gồm một header, một chữ ký và một docstring, được minh họa trong Hình 2. Chúng tôi lấy mẫu token từ Codex cho đến khi chúng tôi gặp một trong các chuỗi dừng sau: '\n\nclass ', '\n\ndef ', '\n\n#', '\n\nif', hoặc '\n\nprint ', vì mô hình sẽ tiếp tục tạo thêm các hàm hoặc câu lệnh khác. Chúng tôi sử dụng nucleus sampling (Holtzman et al., 2020) với top p = 0.95 cho tất cả việc đánh giá sampling trong công trình này.
+
+3.3. Kết quả
+Trong Hình 4, chúng tôi vẽ đồ thị test loss trên một tập validation được giữ lại so với kích thước mô hình Codex. Chúng tôi thấy rằng giống như test loss của mô hình ngôn ngữ tuân theo một luật lũy thừa theo kích thước mô hình (Kaplan et al., 2020), test loss sau tinh chỉnh code tuân theo một luật lũy thừa tương tự với dạng hàm (N/(5.92×10⁷))^(-0.13) nơi N là số parameter không embedding trong mô hình.
+
+Khi đánh giá pass@k, điều quan trọng là tối ưu hóa temperature sampling cho giá trị cụ thể của k. Trong Hình 5, chúng tôi vẽ đồ thị pass@k so với số mẫu k và temperature sampling. Chúng tôi thấy rằng temperature cao hơn là tối ưu cho k lớn hơn, vì tập hợp mẫu kết quả có tính đa dạng cao hơn, và metric chỉ khen thưởng việc mô hình tạo ra bất kỳ giải pháp đúng nào.
+
+Đặc biệt, đối với mô hình 679M parameter, temperature tối ưu cho pass@1 là T = 0.2 và temperature tối ưu cho pass@100 là T = 0.8. Với những temperature này, chúng tôi thấy rằng pass@1 và pass@100 mở rộng một cách mượt mà theo hàm của kích thước mô hình (Hình 6).
+
+Pass@k cũng có thể được diễn giải như kết quả của việc đánh giá mẫu tốt nhất trong k mẫu, nơi mẫu tốt nhất được chọn bởi một oracle có kiến thức trước về unit test. Từ góc độ thực tế, chúng tôi cũng quan tâm đến setting nơi chúng tôi phải chọn một mẫu duy nhất từ k mẫu mà không có quyền truy cập vào oracle. Ví dụ, khi mô hình được sử dụng như một công cụ autocomplete nơi người dùng cung cấp một prompt, chúng tôi không có unit test, nhưng muốn trả về chỉ một completion duy nhất cho người dùng để đánh giá để không làm cho họ quá tải.
+
+Lấy cảm hứng từ công trình tương tự trong mô hình ngôn ngữ, chúng tôi thấy rằng việc chọn mẫu có xác suất log token trung bình cao nhất vượt trội so với việc đánh giá một mẫu ngẫu nhiên, trong khi việc chọn mẫu dựa trên tổng xác suất log có thể hoạt động hơi tệ hơn so với việc chọn ngẫu nhiên. Hình 7 thể hiện lợi ích của việc áp dụng những heuristic này cho các mẫu (ở temperature 0.8) từ Codex-12B.
+
+Hình 5. Trong panel trên, chúng tôi vẽ đồ thị pass@k so với số mẫu (k) cho các setting temperature khác nhau. Temperature cao hơn tốt hơn khi số mẫu lớn, có khả năng do tính đa dạng mẫu tăng. Trong panel dưới, chúng tôi vẽ đồ thị setting temperature tốt nhất cho mỗi k, thu được bằng cách lấy upper hull của panel trên.
+
+Hình 6. Sử dụng temperature tối ưu 0.2 và 0.8 cho pass@1 và pass@100, chúng tôi vẽ đồ thị hai metric này theo hàm của kích thước mô hình. Hiệu suất có vẻ mở rộng một cách mượt mà như một sigmoid trong log-parameter.
+
+--- TRANG 4 ---
+Đánh giá các Mô hình Ngôn ngữ Lớn được Huấn luyện trên Code
+
+Hình 7. Hiệu suất mô hình trong setting nơi chúng tôi có thể tạo nhiều mẫu, nhưng chỉ đánh giá một. Chúng tôi có thể làm tốt hơn so với việc chọn ngẫu nhiên một mẫu bằng cách chọn giải pháp có xác suất log trung bình cao nhất (đỏ) hoặc với điểm back-translation cao nhất (cam) được mô tả trong Phần 5. Đường xanh dương thể hiện hiệu suất tốt nhất lý thuyết thu được bằng cách sử dụng oracle có kiến thức trước về unit test.
+
+Cuối cùng, chúng tôi tính toán điểm BLEU cho tất cả các mẫu Codex-12B HumanEval (ở temperature 0.8) so với các giải pháp tham chiếu của chúng. Đối với mỗi bài toán, khi chúng tôi vẽ đồ thị phân phối điểm BLEU cho các giải pháp đúng và sai, chúng tôi nhận thấy sự chồng chéo đáng kể (Hình 8). Vì một giải pháp sai được đảm bảo không tương đương chức năng với giải pháp tham chiếu, chúng tôi kết luận rằng những cải thiện trong điểm BLEU có thể không chỉ ra tỷ lệ tính đúng đắn chức năng được cải thiện trong thực tế.
+
+3.4. Phân tích So sánh các Mô hình và Hệ thống Liên quan
+Hai công trình gần đây tương tự về tinh thần với Codex là GPT-Neo (Black et al., 2021) và GPT-J (Wang & Komatsuzaki, 2021), được huấn luyện trên The Pile (Gao et al., 2020), một bộ dữ liệu chứa văn bản từ nhiều nguồn cũng như 8% code GitHub. Cộng đồng nghiên cứu rộng hơn đã thấy rằng những mô hình này vượt trội so với các hệ thống GPT hiện có trong đánh giá lập trình định tính (Woolf, 2021).
+
+Chúng tôi xác nhận những phát hiện này sử dụng bộ dữ liệu HumanEval, chỉ ra rằng GPT-Neo đạt được 6.4% pass@1 và 21.3% pass@100, trong khi các mô hình GPT có kích thước so sánh được đạt gần 0% trên cả hai metric. Chúng tôi thấy một sự tiến bộ đáng chú ý trong khả năng, với GPT-Neo-2.7B gần tương đương với Codex-85M (~30× ít parameter hơn). Tương tự, GPT-J-6B đạt được 11.6% pass@1 và 27.7% pass@100, gần tương đương với Codex-300M (~20× ít parameter hơn). Tỷ lệ thành công được thu được bằng cách lấy kết quả tốt nhất từ việc đánh giá ở temperature 0.2, 0.4 và 0.8 cho GPT-Neo, và từ temperature 0.2 và 0.8 cho GPT-J. Kết quả chi tiết qua nhiều kích thước mô hình có thể được tìm thấy trong Bảng 1.
+
+Cuối cùng, chúng tôi đánh giá Codex so với mô hình miễn phí lớn nhất từ Tabnine, một hệ thống autocomplete code hàng đầu, đạt được 2.6% pass@1 (ở T = 0.4) và 7.6% pass@100 (ở T = 0.8). Điều này gần tương đương với Codex-12M, một trong những mô hình nhỏ nhất trong bộ của chúng tôi.
+
+3.5. Kết quả trên Bộ dữ liệu APPS
+Gần đây, Hendrycks et al. (2021) đã giới thiệu bộ dữ liệu APPS để đo lường năng lực thách thức coding của các mô hình ngôn ngữ. Bộ dữ liệu APPS bao gồm 5000 ví dụ huấn luyện và 5000 ví dụ test của các bài toán coding, mỗi bài có một tập hợp unit test và, đối với dữ liệu huấn luyện, một tập hợp các giải pháp đúng. Hầu hết các bài toán test APPS không được công thức hóa như các tác vụ tổng hợp hàm đơn, mà thay vào đó là tổng hợp chương trình đầy đủ, đọc đầu vào từ stdin và in đầu ra ra stdout, trái ngược với dữ liệu huấn luyện chính của Codex.
+
+Trong bài báo giới thiệu APPS, các tác giả đánh giá một số mô hình ngôn ngữ và báo cáo hai metric: tỷ lệ phần trăm các bài toán nơi mô hình tìm thấy một giải pháp đúng (được gọi là "strict accuracy") và tỷ lệ phần trăm unit test được vượt qua, ngay cả khi giải pháp sai. Số đo sau chỉ được báo cáo để giảm phương sai của các đo lường, vì kết quả trên metric đầu tiên quá thấp. Chúng tôi tránh metric này và chỉ tập trung vào "strict accuracy", và - như trong các phần trước - chúng tôi báo cáo số pass@k cho k khác nhau (Bảng 2). Có 2 yếu tố bổ sung, được biết đến từ các cuộc thi coding, mà chúng tôi tính đến:
+
+• Trong các cuộc thi coding và trong bộ dữ liệu APPS, các tác vụ được cung cấp với 3 ví dụ đầu vào/đầu ra được bao gồm trong mô tả tác vụ. Chúng tôi sử dụng điều này bằng cách lấy mẫu 1000 giải pháp từ mô hình và lọc ra chỉ những giải pháp vượt qua 3 unit test này (nếu những giải pháp như vậy tồn tại). Sau đó chúng tôi tính toán tỷ lệ thành công trong tập hợp đã lọc này, và gọi nó là filtered pass@k. Kết quả không có lọc được trình bày như raw pass@k.
+
+• Thường xảy ra cả trong các cuộc thi coding và trong kết quả từ Codex rằng một giải pháp đúng được tìm thấy, nhưng nó không đủ hiệu quả về thuật toán để được coi là vượt qua. Mặc dù điều này không được chấp nhận trong các cuộc thi, chúng tôi cũng báo cáo số lượng giải pháp mà Codex tạo ra không thất bại trên bất kỳ unit test nào, nhưng bị timeout trên một số test. Chúng tôi sử dụng timeout 3 giây trong đánh giá của chúng tôi.
+
+Để bù đắp cho việc Codex không được tinh chỉnh trên APPS, chúng tôi thêm một ví dụ đầu vào/đầu ra đơn từ mô tả tác vụ vào docstring như một gợi ý định dạng. Chúng tôi ký hiệu setting này là "1-shot" trong Bảng 2, và thấy rằng Codex-12B được đánh giá 1-shot đạt được hiệu suất so sánh với một mô hình GPT-Neo được tinh chỉnh trên APPS. Phù hợp với những phát hiện trước đó của chúng tôi, có lợi ích lớn từ việc tạo và đánh giá lên đến 1000 mẫu cho mỗi tác vụ, mặc dù đối với các bài toán khó hơn, các giải pháp thường không đủ hiệu quả để vượt qua giới hạn thời gian. Cuối cùng, việc đánh giá mẫu đầu tiên vượt qua 3 unit test công khai cho mỗi bài toán mang lại hiệu suất cao hơn so với raw pass@100 mẫu.
+
+Hình 8. Mật độ xác suất điểm BLEU cho các giải pháp đúng (xanh dương) và sai (xanh lá) từ Codex-12B cho 4 tác vụ ngẫu nhiên từ HumanEval. Lưu ý rằng các phân phối không thể tách biệt một cách sạch sẽ, gợi ý rằng việc tối ưu hóa cho điểm BLEU không tương đương với việc tối ưu hóa cho tính đúng đắn chức năng.
+
+--- TRANG 5 ---
+Đánh giá các Mô hình Ngôn ngữ Lớn được Huấn luyện trên Code
+
+Bảng 1. Đánh giá Codex, GPT-Neo và TabNine cho HumanEval. Chúng tôi thấy rằng GPT-J pass@1 nằm giữa hiệu suất Codex-85M và Codex-300M.
+
+[Bảng hiển thị kết quả PASS@k cho k=1, 10, 100 cho các mô hình khác nhau]
+
+4. Tinh chỉnh có Giám sát
+Ngoài các hàm độc lập, code Python được tìm thấy trên GitHub chứa các triển khai class, file cấu hình, script và thậm chí các file được sử dụng để lưu trữ dữ liệu. Code này có vẻ không liên quan đến việc tổng hợp hàm từ docstring, và chúng tôi đưa ra giả thuyết rằng sự không khớp phân phối làm giảm hiệu suất HumanEval.
+
+Để điều chỉnh Codex cho phân phối của tác vụ quan tâm, chúng tôi xây dựng một tập hợp bài toán huấn luyện từ các hàm độc lập được triển khai đúng, và sử dụng chúng cho tinh chỉnh có giám sát bổ sung. Chúng tôi mô tả hai cách tiếp cận để thu thập những ví dụ này: từ các trang web lập trình thi đấu và từ các repository với tích hợp liên tục. Chúng tôi gọi các mô hình được tinh chỉnh có giám sát là Codex-S, và chỉ ra rằng chúng tạo ra những cải thiện nhất quán qua kích thước mô hình.
+
+4.1. Bài toán từ Lập trình Thi đấu
+Các trang web thi đấu lập trình và chuẩn bị phỏng vấn sử dụng unit test ẩn để tự động đánh giá tính đúng đắn chức năng của các bài nộp. Những bài toán này tự chứa, đi kèm với các câu lệnh bài toán được viết tốt, và thường có độ bao phủ test xuất sắc. Thêm vào đó, những bài toán này kiểm tra lý luận thuật toán trên một phạm vi rộng các kỹ năng cốt lõi và độ khó.
+
+Chúng tôi đã thu thập các câu lệnh bài toán, chữ ký hàm và giải pháp từ một số trang web thi đấu lập trình và chuẩn bị phỏng vấn phổ biến. Sau đó chúng tôi lắp ráp chúng thành các tác vụ lập trình tương tự như HumanEval, sử dụng mô tả bài toán làm docstring. Vì các bộ test hoàn chỉnh thường bị ẩn, chúng tôi đã tạo unit test từ các ví dụ được tìm thấy trong các câu lệnh bài toán, hoặc trích xuất các test case bổ sung thông qua việc nộp các giải pháp sai. Tổng cộng, chúng tôi đã tuyển chọn 10,000 bài toán theo cách này.
+
+4.2. Bài toán từ Tích hợp Liên tục
+Tiếp theo, chúng tôi tuyển chọn các bài toán lập trình từ các dự án nguồn mở. Tận dụng sys.setprofile, chúng tôi có thể theo dõi và thu thập đầu vào và đầu ra cho tất cả các hàm được gọi trong quá trình integration test. Dữ liệu này sau đó có thể được sử dụng để tạo unit test cho các hàm.
+
+Các dự án sử dụng tích hợp liên tục (CI) là ứng cử viên lý tưởng cho việc theo dõi. Chúng tôi tuân theo các lệnh trong file cấu hình CI, chứa các lệnh build và test, để thiết lập môi trường ảo, cài đặt dependencies và chạy integration test.
+
+Chúng tôi đã xem xét các repo GitHub sử dụng travis và tox làm framework CI của họ, vì chúng là hai trong số những công cụ CI phổ biến nhất. Chúng tôi cũng sử dụng source code công khai từ các package pip được tìm thấy trong python package index (PyPI).
+
+Vì những dự án này chứa code không đáng tin cậy, điều quan trọng là chạy integration test trong môi trường sandbox được mô tả ở trên.
+
+Mặc dù có hàng triệu hàm tiềm năng để tuyển chọn bài toán, chúng tôi chỉ thu thập được khoảng 40,000 vì không phải tất cả hàm đều nhận đầu vào và trả về đầu ra. Ngay cả khi chúng làm vậy, hầu hết các đối tượng được capture tại runtime không thể được pickle và khôi phục bên ngoài sandbox trừ khi dự án được cài đặt.
+
+Vì phương pháp theo dõi của chúng tôi tạo ra đầu vào và đầu ra cho tất cả các hàm được gọi, ngay cả các lệnh gọi builtin và thư viện được import bởi dự án cũng được chuyển thành bài toán. Vì lý do này, các hàm từ theo dõi có xu hướng là những khối xây dựng của các tiện ích dòng lệnh. Để xuất sắc trong những tác vụ này, mô hình không cần biết các thuật toán và cấu trúc dữ liệu nâng cao. Thay vào đó, nó cần có thể tuân theo hướng dẫn để triển khai chức năng được chỉ định trong docstring. Do đó, việc theo dõi bổ sung cho tính chất puzzle của các bài toán thi đấu coding và mở rộng phân phối của các tác vụ.
+
+4.3. Lọc Bài toán
+Trong các phần trước, chúng tôi đã trình bày hai phương pháp mà chúng tôi sử dụng để tự động tạo các bài toán huấn luyện. Tuy nhiên, không rõ làm thế nào để kiểm soát chất lượng. Một số prompt không chỉ định đầy đủ hàm được triển khai, trong trường hợp đó một giải pháp hoàn toàn hợp lệ có thể bị phạt một cách sai lầm bởi unit test. Một số bài toán có trạng thái, và các lần thực thi tiếp theo có thể dẫn đến kết quả khác nhau.
+
+Để giải quyết những vấn đề này, chúng tôi sử dụng Codex-12B để tạo 100 mẫu cho mỗi bài toán được tuyển chọn. Nếu không có mẫu nào vượt qua unit test, chúng tôi coi tác vụ là mơ hồ hoặc quá khó, và lọc nó ra. Chúng tôi chạy lại việc xác minh này nhiều lần để loại bỏ các bài toán có trạng thái hoặc không xác định.
+
+4.4. Phương pháp
+Chúng tôi tinh chỉnh Codex trên những bài toán huấn luyện này để tạo ra một tập hợp các mô hình "được tinh chỉnh có giám sát", mà chúng tôi gọi là Codex-S. Để tạo ra các ví dụ từ bài toán huấn luyện, chúng tôi lắp ráp các bài toán vào định dạng được hiển thị trong Hình 2. Nếu có các prompt có độ dài khác nhau trong một batch, chúng tôi left-pad các prompt ngắn hơn đến độ dài của prompt dài nhất, để các token đầu tiên trong các giải pháp tham chiếu thẳng hàng trong context.
+
+Chúng tôi huấn luyện để tối thiểu hóa negative log-likelihood của giải pháp tham chiếu, và mask out loss cho bất kỳ token nào trong prompt. Chúng tôi huấn luyện sử dụng learning rate 1/10 lớn như được sử dụng cho việc tinh chỉnh Codex, nhưng tuân theo cùng lịch trình learning rate, và huấn luyện cho đến khi validation loss đạt ngưỡng (ít hơn 10B token).
+
+4.5. Kết quả
+Như với Codex, chúng tôi đầu tiên tính toán temperature tối ưu để đánh giá pass@k cho 1≤k≤100. Chúng tôi thấy rằng Codex-S thích temperature hơi cao hơn cho tất cả k>1, có thể phản ánh việc Codex-S capture một phân phối hẹp hơn so với Codex. Chúng tôi sử dụng T=0 để tính toán pass@1 và T=1 để tính toán pass@100.
+
+Tiếp theo, chúng tôi so sánh Codex-S với Codex trên pass@1 và pass@100. Codex-S vượt trội so với Codex tương ứng với biên độ trung bình 6.5 điểm phần trăm trên pass@1 và với biên độ trung bình lớn hơn 15.1 điểm phần trăm trên pass@100 qua kích thước mô hình.
+
+Chúng tôi cũng vẽ đồ thị hiệu suất của các heuristic lựa chọn mẫu khác nhau cho Codex-S-12B so với các heuristic tương tự cho Codex-12B. Khi xếp hạng giữa 1 và 100 mẫu theo xác suất log trung bình, lợi ích trung bình so với xếp hạng ngẫu nhiên là 11.6 điểm phần trăm, cao hơn hơn 2 điểm phần trăm so với lợi ích tương ứng cho Codex.
+
+Hình 9. Temperature sampling tối ưu theo hàm của số mẫu được tạo cho cả Codex và Codex-S. Codex-S thường yêu cầu temperature cao hơn cho bất kỳ giá trị cụ thể nào của k, có thể để bù đắp cho việc nó mô hình hóa một phân phối hẹp hơn.
+
+Hình 10. So sánh Codex-S với Codex trên các metric được đề xuất trong Phần 3. Codex-S hiệu quả parameter hơn một hoặc hai bậc độ lớn trên pass@1 và pass@100, và xếp hạng mẫu log-prob với Codex-S mang lại lợi ích tương tự so với sampling ngẫu nhiên mà Codex làm.
+
+5. Tạo Docstring
+Việc tạo code từ docstring là có thể với Codex vì code thường theo sau một docstring, nhưng không dễ để khiến Codex tạo docstring từ code. Tuy nhiên, chúng tôi có động lực để tạo ra một mô hình viết docstring vì lý do an toàn, vì một mô hình như vậy có thể được sử dụng để mô tả ý định đằng sau code được tạo. Sử dụng các bài toán huấn luyện được mô tả trong phần trước, chúng tôi có thể dễ dàng tạo ra một bộ dữ liệu huấn luyện cho việc tạo docstring có điều kiện code.
+
+Cụ thể, đối với mỗi bài toán huấn luyện, chúng tôi lắp ráp một ví dụ huấn luyện bằng cách concatenating chữ ký hàm, giải pháp tham chiếu, và sau đó docstring. Giống như chúng tôi huấn luyện Codex-S bằng cách tối thiểu hóa negative log-likelihood của giải pháp tham chiếu, chúng tôi huấn luyện các mô hình tạo docstring Codex-D bằng cách tối thiểu hóa negative log-likelihood của docstring.
+
+Khi chúng tôi đánh giá các mô hình tạo code của chúng tôi, chúng tôi đo pass@k trên bộ dữ liệu HumanEval, nơi tính đúng đắn được định nghĩa bởi việc vượt qua một tập hợp unit test. Tuy nhiên, không có cách tương tự để đánh giá các mẫu docstring một cách tự động. Do đó, chúng tôi chấm điểm các mẫu docstring bằng tay, coi một docstring là đúng nếu nó chỉ định một cách duy nhất và chính xác thân code. Do tính chất tốn thời gian của quá trình này, chúng tôi chỉ chấm điểm 10 mẫu cho mỗi bài toán, tổng cộng 1640 bài toán, từ Codex-D-12B ở temperature 0.8.
+
+Codex-D thường tạo ra unit test sai cùng với docstring, nhưng chúng tôi bỏ qua những cái này trong quá trình chấm điểm. Tuy nhiên, chúng tôi không coi docstring là đúng khi mô hình đơn giản sao chép thân code vào docstring. Các chế độ thất bại phổ biến nhất mà chúng tôi quan sát là khi mô hình docstring bỏ sót một chi tiết quan trọng (như "một câu trả lời phải chính xác đến hai chữ số thập phân") hoặc khi nó over-condition trên tên hàm và phát minh ra một bài toán không liên quan đến thân hàm.
+
+Như được hiển thị trong Bảng 3, tỷ lệ thành công cho Codex-D thấp hơn nhưng so sánh được với tỷ lệ thành công tương ứng cho Codex-S ở cùng temperature. Chúng tôi không có giả thuyết mạnh mẽ về hướng nào nên mang lại tỷ lệ thành công cao hơn. Mặc dù việc tạo docstring có thể dễ tha thứ hơn vì cú pháp ngôn ngữ tự nhiên ít nghiêm ngặt hơn cú pháp code, docstring trong bộ dữ liệu của chúng tôi có thể có chất lượng thấp hơn vì các nhà phát triển có xu hướng dành ít thời gian hơn để viết docstring. Thực tế, mô hình của chúng tôi tạo ra docstring như "Tôi vừa tìm thấy hàm này trực tuyến" và "Test này không được viết đúng và không phải giải pháp của tôi."
+
+Cuối cùng, với một mô hình docstring, chúng tôi có thêm một cách khác để chọn một mẫu đơn từ một tập hợp k mẫu. Thay vì chọn mẫu có xác suất log trung bình tốt nhất như được điều tra trong hai phần trước, chúng tôi có thể chọn mẫu tối đa hóa mục tiêu back-translation P(ground truth docstring | generated sample) nơi P được đánh giá sử dụng Codex-D. Thật không may, trong Hình 7, chúng tôi chỉ ra rằng việc xếp hạng mẫu thông qua back-translation kém hiệu quả hơn so với xếp hạng xác suất log trung bình, mặc dù nó vượt trội so với xếp hạng ngẫu nhiên. Heuristic này cũng có vẻ overfit nhanh chóng.
+
+Bảng 3. Tỷ lệ thành công cho mô hình tạo docstring Codex-D của chúng tôi, được đánh giá bằng chấm điểm tay 10 mẫu cho mỗi tác vụ do thiếu đánh giá tự động ground-truth. Chúng tôi thấy tỷ lệ thành công tương tự nhưng thấp hơn so với Codex-S.
+
+MODEL          PASS@1    PASS@10
+CODEX-S-12B    32.2%     59.5%
+CODEX-D-12B    20.3%     46.5%
+
+6. Hạn chế
+Mặc dù Codex có thể lấy mẫu các giải pháp đúng cho phần lớn các bài toán HumanEval, chúng tôi thấy rằng nó có một số hạn chế.
+
+Đầu tiên, Codex không hiệu quả mẫu để huấn luyện. Bộ dữ liệu huấn luyện của chúng tôi bao gồm một phần đáng kể code Python công khai có sẵn trên GitHub, tổng cộng hàng trăm triệu dòng code. Ngay cả các nhà phát triển dày dạn kinh nghiệm cũng không gặp phải lượng code gần như thế này trong suốt sự nghiệp của họ. Thực tế, một sinh viên mạnh mẽ hoàn thành khóa học khoa học máy tính giới thiệu được kỳ vọng có thể giải quyết một phần lớn hơn các bài toán so với Codex-12B.
+
+Tiếp theo, chúng tôi khám phá các prompt mà Codex có khả năng thất bại hoặc hiển thị hành vi phản trực quan. Mặc dù việc đánh giá tạo code được nghiên cứu kỹ (Xu et al., 2021; Helmuth & Spector, 2015; Pantridge et al., 2017), nhiều metric hiện có đo hiệu suất trong các instance bài toán được chỉ định chặt chẽ, hạn chế (ví dụ: thao tác chuỗi trong FlashFill (Gulwani, 2011)). Do đó, chúng tôi đã phát triển một tập hợp metric định tính để đo khả năng của các mô hình tạo code trong khi kiểm soát độ phức tạp và mức độ trừu tượng của các đặc tả (Phụ lục D). Áp dụng framework này, chúng tôi thấy rằng Codex có thể khuyến nghị code không đúng cú pháp hoặc không được định nghĩa, và có thể gọi các hàm, biến và thuộc tính không được định nghĩa hoặc nằm ngoài phạm vi của codebase. Hơn nữa, Codex gặp khó khăn trong việc phân tích cú pháp thông qua các đặc tả ngày càng dài và mức cao hơn hoặc mức hệ thống.
+
+Để minh họa cụ thể sự suy giảm hiệu suất của mô hình khi độ dài docstring tăng, chúng tôi tạo ra một bộ dữ liệu các bài toán tổng hợp được lắp ráp từ 13 khối xây dựng cơ bản, mỗi khối sửa đổi một chuỗi đầu vào theo cách xác định. Các khối xây dựng ví dụ là "chuyển đổi chuỗi thành chữ thường" hoặc "loại bỏ mỗi ký tự thứ ba khỏi chuỗi" (danh sách đầy đủ được mô tả trong Phụ lục C). Chúng tôi thấy rằng khi số khối xây dựng được nối trong docstring tăng, hiệu suất mô hình giảm theo cấp số nhân. Hành vi này không đặc trưng của một lập trình viên con người, người nên có thể triển khai đúng một chương trình cho một chuỗi có độ dài tùy ý nếu họ có thể làm như vậy cho một chuỗi có độ dài hai.
+
+Hình 11. Tỷ lệ thành công của các mẫu Codex-12B so với số thành phần được nối trong docstring được tạo tổng hợp. Với mỗi thành phần bổ sung, tỷ lệ thành công giảm khoảng một hệ số 2-3.
+
+Hơn nữa, giống như các mô hình tạo sinh có điều kiện văn bản trong các phương thức khác (Ramesh et al., 2021) có khó khăn với việc gắn kết thuộc tính với đối tượng, Codex có thể mắc lỗi trong việc gắn kết các thao tác với biến, đặc biệt khi số lượng thao tác và biến trong docstring lớn. Ví dụ, trong prompt sau, Codex-12B không giảm biến w và cũng thất bại trong việc trả về tích của tất cả các số.
+
+def do_work(x, y, z, w):
+    """ Thêm 3 vào y, sau đó trừ 4
+    từ cả x và w. Trả về
+    tích của bốn số. """
+    t = y + 3
+    u = x - 4
+    v = z * w
+    return v
+
+Hiểu biết này về khả năng tổng hợp mức hệ thống hạn chế của Codex giúp thông báo đánh giá của chúng tôi về các mối nguy hiểm tiềm năng của việc sử dụng nó trong khả năng tạo sinh, cũng như các tác động xã hội rộng hơn mà những hệ thống như vậy có thể có.
+
+7. Tác động Rộng hơn và Phân tích Nguy cơ
+Codex có tiềm năng hữu ích theo nhiều cách khác nhau. Ví dụ, nó có thể giúp onboard người dùng vào codebase mới, giảm chuyển đổi context cho các coder có kinh nghiệm, cho phép các người không lập trình viết đặc tả và để Codex soạn thảo triển khai, và hỗ trợ trong giáo dục và khám phá. Tuy nhiên, Codex cũng đặt ra những thách thức an toàn đáng kể, không phải lúc nào cũng tạo ra code phù hợp với ý định người dùng, và có tiềm năng bị lạm dụng.
+
+Để hiểu rõ hơn một số mối nguy hiểm của việc sử dụng Codex trong khả năng tạo sinh, chúng tôi đã tiến hành phân tích nguy cơ tập trung vào việc xác định các yếu tố rủi ro (Leveson, 2019) có tiềm năng gây tổn hại. Chúng tôi phác thảo một số phát hiện chính của chúng tôi qua một số lĩnh vực rủi ro dưới đây.
+
+Mặc dù một số phát hiện của chúng tôi về các tác động xã hội tiềm năng của các hệ thống tạo code được thông báo bởi công việc hướng tới triển khai có trách nhiệm của các mô hình Codex hướng sản xuất (mà xuất phát từ các mô hình Codex hướng nghiên cứu được mô tả trong bài báo này), phần này không nhằm mục đích cung cấp một tài khoản đầy đủ về các tính năng an toàn của bất kỳ sản phẩm cụ thể nào. Trừ khi được chỉ định khác, chúng tôi neo phân tích của chúng tôi trong các thuộc tính cụ thể của các mô hình được mô tả trong bài báo này. Chúng tôi chia sẻ phân tích này với niềm tin rằng một số trong đó tổng quát hóa cho lớp rộng hơn của các hệ thống tạo code, và để khuyến khích một chuẩn mực thực hiện phân tích tác động chi tiết như một phần của các dự án nghiên cứu machine learning lớn.
+
+Lưu ý rằng bằng cách tập trung chủ yếu vào rủi ro trong phần này, chúng tôi không có ý nghĩa ngụ ý rằng chúng tôi kỳ vọng tác động của lớp công nghệ này sẽ là net-negative; thay vào đó, rủi ro xứng đáng được chú ý đặc biệt ở đây vì chúng có thể tinh tế hoặc yêu cầu nỗ lực có chủ ý để giải quyết, trong khi chúng tôi kỳ vọng các lợi ích sẽ rõ ràng hơn và "tự động" từ góc độ của hầu hết người dùng và các bên liên quan bị ảnh hưởng.
+
+7.1. Sự phụ thuộc quá mức
+Một trong những rủi ro chính liên quan đến việc sử dụng các mô hình tạo code trong thực tế là sự phụ thuộc quá mức vào các đầu ra được tạo. Do những hạn chế được mô tả ở trên cũng như các vấn đề alignment được mô tả dưới đây, Codex có thể đề xuất các giải pháp có vẻ đúng một cách bề ngoài nhưng thực sự không thực hiện tác vụ mà người dùng dự định. Điều này có thể ảnh hưởng đặc biệt đến các lập trình viên mới, và có thể có ý nghĩa an toàn đáng kể tùy thuộc vào bối cảnh. Chúng tôi thảo luận một vấn đề liên quan trong Phụ lục G, cụ thể là các mô hình tạo code có thể đề xuất code không an toàn. Vì những lý do này, sự giám sát và cảnh giác của con người là cần thiết cho việc sử dụng an toàn các hệ thống tạo code như Codex.
+
+Chúng tôi lưu ý một số cách ngay lập tức để cải thiện an toàn trong phần con về giảm thiểu rủi ro dưới đây, mặc dù sự phụ thuộc quá mức đặc biệt là một vấn đề mà chúng tôi tin rằng xứng đáng được điều tra thêm trong ngành công nghiệp và học thuật. Mặc dù về mặt khái niệm rõ ràng để cung cấp tài liệu cho người dùng nhắc nhở họ về các hạn chế của mô hình, điều tra thực nghiệm là cần thiết để xác định cách đảm bảo một cách đáng tin cậy sự cảnh giác trong thực tế qua một phạm vi mức độ kinh nghiệm người dùng, thiết kế UI và tác vụ. Một thách thức mà các nhà nghiên cứu nên xem xét là khi khả năng cải thiện, có thể trở nên ngày càng khó khăn hơn để bảo vệ chống lại "bias tự động hóa."
+
+7.2. Misalignment
+Như với các mô hình ngôn ngữ lớn khác được huấn luyện trên mục tiêu dự đoán next-token, Codex sẽ tạo ra code càng giống càng tốt với phân phối huấn luyện của nó. Một hệ quả của điều này là những mô hình như vậy có thể làm những việc không hữu ích cho người dùng, mặc dù có khả năng hữu ích hơn (xem Hình 12). Ví dụ, nếu người dùng có một số lỗi tinh tế trong code của họ, Codex có thể "cố ý" đề xuất code có vẻ tốt một cách bề ngoài nhưng không chính xác.
+
+Đây là một thất bại alignment - mô hình không được aligned với ý định của người dùng. Một cách không chính thức, một hệ thống misaligned nếu có một số tác vụ X mà chúng ta muốn nó làm, và nó "có khả năng" làm X nhưng "chọn" không làm. Ngược lại, nếu một hệ thống thất bại trong việc làm X vì nó không có khả năng làm như vậy, thì hệ thống này không misaligned; nó chỉ đơn giản là không đủ năng lực. Xem Phụ lục E để biết thêm chi tiết, bao gồm định nghĩa chính xác hơn về alignment.
+
+Điều quan trọng là nghiên cứu misalignment vì đó là một vấn đề có khả năng trở nên tệ hơn, không tốt hơn, khi khả năng của các hệ thống của chúng ta tăng. Ví dụ, xu hướng scaling kích thước mô hình cho ví dụ trong Hình 12 chỉ ra rằng misalignment có khả năng tồn tại và thậm chí trở nên tệ hơn nếu dữ liệu, parameter và thời gian huấn luyện được mở rộng.
+
+Mặc dù chúng tôi kỳ vọng rằng hành vi misaligned như thế này không có khả năng gây tổn hại đáng kể trong các mô hình hiện tại, nó có khả năng trở nên nguy hiểm hơn và khó loại bỏ hơn khi khả năng mô hình tăng. Một mô hình có khả năng cao nhưng đủ misaligned được huấn luyện trên sự chấp thuận của người dùng có thể tạo ra code bị che giấu có vẻ tốt đối với người dùng ngay cả khi kiểm tra cẩn thận, nhưng thực tế làm điều gì đó không mong muốn hoặc thậm chí có hại.
+
+Hình 12. Khi prompt bao gồm các lỗi tinh tế, Codex có xu hướng tạo ra code tệ hơn so với khả năng của nó. Điều này tồn tại khi prompt cũng bao gồm hướng dẫn viết code đúng. Khoảng cách này tăng với kích thước mô hình.
+
+7.3. Bias và đại diện
+Phản ánh những gì đã được tìm thấy trong trường hợp các mô hình ngôn ngữ khác được huấn luyện trên dữ liệu Internet (Bender et al., 2021; Blodgett et al., 2020; Abid et al., 2021; Brown et al., 2020), chúng tôi thấy rằng Codex có thể được prompt theo những cách tạo ra đầu ra phân biệt chủng tộc, xúc phạm và có hại khác như comment code, xứng đáng các can thiệp như những cái được thảo luận trong phần con về giảm thiểu rủi ro dưới đây. Chúng tôi cũng thấy rằng các mô hình tạo code đặt ra các vấn đề bias và đại diện thêm ngoài ngôn ngữ tự nhiên có vấn đề: Codex có thể tạo ra code với cấu trúc phản ánh các khuôn mẫu về giới tính, chủng tộc, cảm xúc, tầng lớp, cấu trúc tên và các đặc điểm khác. Đặc biệt trong bối cảnh của những người dùng có thể phụ thuộc quá mức vào Codex hoặc sử dụng nó mà không suy nghĩ trước về thiết kế dự án, vấn đề này có thể có ý nghĩa an toàn đáng kể, đưa ra động lực thêm để ngăn chặn sự phụ thuộc quá mức. Chúng tôi thảo luận các vấn đề bias và đại diện thêm trong Phụ lục F. Lọc hoặc điều chế các đầu ra được tạo, tài liệu và các can thiệp khác có thể giúp giảm thiểu những rủi ro này.
+
+7.4. Tác động kinh tế và thị trường lao động
+Tạo code và các khả năng liên quan có một số tác động kinh tế và thị trường lao động có thể. Mặc dù Codex ở mức khả năng hiện tại có thể phần nào giảm chi phí sản xuất phần mềm bằng cách tăng năng suất lập trình viên, quy mô của hiệu ứng này có thể bị hạn chế bởi việc các kỹ sư không dành toàn bộ ngày của họ để viết code (O*NET, 2021). Các tác vụ quan trọng khác bao gồm trao đổi với đồng nghiệp, viết đặc tả thiết kế và nâng cấp các stack phần mềm hiện có. Chúng tôi cũng thấy rằng Codex import package với tỷ lệ khác nhau, có thể có lợi cho một số tác giả package hơn những người khác, đặc biệt nếu các lập trình viên và kỹ sư phụ thuộc vào đề xuất của Codex. Trong một chân trời thời gian dài hơn, các hiệu ứng của lớp công nghệ này trên thị trường lao động liên quan đến phần mềm và trên nền kinh tế nói chung có thể đáng kể hơn khi khả năng cải thiện.
+
+Cần nhiều nghiên cứu hơn cả về hiệu ứng của khả năng tạo code và về các phản ứng phù hợp. Chúng tôi thảo luận các ý nghĩa kinh tế và thị trường lao động chi tiết hơn trong Phụ lục H.
+
+7.5. Ý nghĩa an ninh
+Codex có thể có các hiệu ứng khác nhau trên bối cảnh an ninh. Vì Codex có thể tạo ra code dễ bị tấn công hoặc misaligned, các operator có trình độ nên xem xét các thế hệ của nó trước khi thực thi hoặc tin tưởng chúng, không có các biện pháp phòng ngừa phù hợp. Các mô hình tạo code trong tương lai có thể được huấn luyện để tạo ra code an toàn hơn so với nhà phát triển trung bình, mặc dù điều đó còn rất xa.
+
+Codex cũng có thể bị lạm dụng để hỗ trợ tội phạm mạng. Mặc dù điều này đáng lo ngại, dựa trên thử nghiệm của chúng tôi, chúng tôi tin rằng ở mức khả năng hiện tại của chúng, các mô hình Codex không làm giảm đáng kể rào cản gia nhập cho phát triển malware. Chúng tôi kỳ vọng rằng các mô hình tạo code mạnh mẽ hơn sẽ dẫn đến những tiến bộ trong tương lai, và do đó nghiên cứu thêm về giảm thiểu và nghiên cứu liên tục về khả năng mô hình là cần thiết.
+
+Tính chất không xác định của các hệ thống như Codex có thể cho phép malware tiên tiến hơn. Tính không xác định này giúp tạo ra phần mềm đa dạng hoàn thành cùng các tác vụ dễ dàng hơn. Mặc dù tính đa dạng phần mềm đôi khi có thể hỗ trợ người bảo vệ, nó đặt ra những thách thức duy nhất cho việc phát hiện malware truyền thống và các hệ thống antivirus dựa trên fingerprinting và signature-matching so với binary đã được lấy mẫu trước đó. Ví dụ, một mô hình tạo code có khả năng hơn có thể tiến bộ các kỹ thuật tạo polymorphic malware một cách hợp lý. Chúng tôi tin rằng bảo mật ứng dụng và các chiến lược triển khai mô hình bao gồm rate-limiting truy cập và giám sát lạm dụng có thể quản lý mối đe dọa này trong thời gian ngắn; tuy nhiên, hiệu quả của những giảm thiểu này có thể mở rộng dưới tuyến tính khi các mô hình có khả năng hơn được phát triển.
+
+Tương tự như các mô hình ngôn ngữ lớn, các mô hình Codex có thể học các pattern hiện diện trong dữ liệu huấn luyện của chúng (Carlini et al., 2021). Dữ liệu nhạy cảm hiện diện trong source code có thể được dự đoán bởi mô hình. Vì Codex được huấn luyện trên các repository công khai, chúng tôi coi bất kỳ dữ liệu nhạy cảm nào hiện diện trong dữ liệu huấn luyện đã bị xâm phạm. Tương tự, dữ liệu công khai thường nên được đối xử như không đáng tin cậy, vì công trình trước đây (Goldblum et al., 2021; Schuster et al., 2020) đã thấy rằng kẻ tấn công có thể corrupt dữ liệu huấn luyện để kích hoạt hành vi mô hình cụ thể tại runtime. Chúng tôi thảo luận thêm về ý nghĩa an ninh trong Phụ lục G.
+
+7.6. Tác động môi trường
+Codex, như các mô hình tạo sinh lớn khác, có dấu chân năng lượng từ cả huấn luyện và suy luận (Schwartz et al., 2019; Bender et al., 2021; Patterson et al., 2021). Việc huấn luyện ban đầu của GPT-3-12B tiêu thụ hàng trăm petaflop/s-ngày tính toán, trong khi việc tinh chỉnh nó để tạo ra Codex-12B tiêu thụ một lượng tính toán tương tự. Việc huấn luyện này được thực hiện trên một nền tảng (Azure) mua credit carbon và nguồn lượng năng lượng tái tạo đáng kể, giảm dấu chân carbon của nó. Tiêu thụ tính toán cũng có chi phí trong chuỗi cung ứng rộng hơn có thể khá tập trung vào một số khu vực nhất định. Nhìn toàn cầu và dài hạn hơn, nhu cầu tính toán của việc tạo code có thể tăng lên lớn hơn nhiều so với huấn luyện Codex nếu suy luận đáng kể được sử dụng để giải quyết các vấn đề thách thức.
+
+7.7. Ý nghĩa pháp lý
+Có một số cân nhắc pháp lý liên quan đến code được tạo. Để bắt đầu, việc huấn luyện các hệ thống AI trên dữ liệu Internet, như các repository GitHub công khai, trước đây đã được xác định là một instance của "fair use" (O'Keefe et al., 2019).
+
+Nghiên cứu sơ bộ của chúng tôi cũng thấy rằng các mô hình Codex hiếm khi tạo ra code giống hệt với nội dung của dữ liệu huấn luyện. Những lần xuất hiện như vậy là <0.1% trong một nghiên cứu kiểm tra tần suất của các thế hệ code có vẻ khớp với các đoạn code trong dữ liệu huấn luyện (Ziegler, 2021). Trong những instance hiếm hoi này, code được tạo bao gồm các biểu thức hoặc quy ước phổ biến trong ngôn ngữ lập trình xuất hiện lặp đi lặp lại trong dữ liệu huấn luyện. Chúng tôi thấy rằng, trong phạm vi code được tạo có vẻ giống hệt với dữ liệu huấn luyện, đó là do trọng số dự đoán trong mô hình thay vì giữ lại và sao chép code cụ thể. Code được tạo cũng đáp ứng và tùy chỉnh theo đầu vào của người dùng, và người dùng giữ lại quyền kiểm soát hoàn toàn việc chỉnh sửa và chấp nhận code được tạo. Điều này có thể làm cho việc tạo code tương tự như auto-suggest hoặc auto-completion tính năng tồn tại như tính năng của các công cụ tác giả khác (ví dụ: editor tài liệu), theo nghĩa là tác phẩm hoàn thành vẫn được coi là của tác giả.
+
+Cam kết của chúng tôi với AI có trách nhiệm và an toàn bao gồm chú ý liên tục đến các ý nghĩa sở hữu trí tuệ rộng hơn của các hệ thống tạo code. Chúng tôi dự định tiếp tục tham gia với các nhà hoạch định chính sách và chuyên gia về những vấn đề này để người dùng của những hệ thống như vậy cuối cùng có thể triển khai chúng với sự tự tin.
+
+7.8. Giảm thiểu Rủi ro
+Kết thúc, với những điều trên, các mô hình như Codex nên được phát triển, sử dụng và khả năng của chúng được khám phá một cách cẩn thận với con mắt hướng tới tối đa hóa tác động xã hội tích cực và tối thiểu hóa tổn hại có chủ ý hoặc không chủ ý mà việc sử dụng chúng có thể gây ra. Một cách tiếp cận theo bối cảnh là quan trọng đối với phân tích và giảm thiểu nguy cơ hiệu quả, mặc dù một số danh mục giảm thiểu rộng quan trọng để xem xét trong bất kỳ triển khai nào của các mô hình tạo code.
+
+Tài liệu cẩn thận và thiết kế giao diện người dùng, yêu cầu xem xét code, và/hoặc kiểm soát nội dung (ví dụ: lọc đầu ra) có thể giúp giảm tổn hại liên quan đến sự phụ thuộc quá mức cũng như nội dung xúc phạm hoặc tạo code không an toàn. Trong bối cảnh của một mô hình được cung cấp như một dịch vụ (ví dụ: qua API), các chính sách như xem xét người dùng, hạn chế use case, giám sát và/hoặc giới hạn tỷ lệ cũng có thể giúp giảm tổn hại liên quan đến sử dụng độc hại hoặc ngăn chặn việc sử dụng nó trong các lĩnh vực có stakes cao mà các mô hình không phù hợp.
+
+Phụ lục E, F, G và H cung cấp chi tiết thêm về các rủi ro được mô tả trong phần này và phác thảo các cơ hội giảm thiểu và nghiên cứu bổ sung.
+
+8. Công trình Liên quan
+Sự hồi sinh deep learning đã dẫn đến những tiến bộ mạnh mẽ trong lĩnh vực học chương trình. Hai cách tiếp cận phổ biến đối với học chương trình neural là program induction và program synthesis.
+
+Trong program induction, một mô hình tạo ra đầu ra chương trình trực tiếp từ một biểu diễn chương trình tiềm ẩn. Learning to Execute (Zaremba & Sutskever, 2014) chứng minh rằng các mô hình có thể thực thi các tác vụ đơn giản như phép cộng và ghi nhớ. Các nỗ lực sau này trong program induction kết hợp các bias quy nạp dựa trên thiết bị tính toán hiện đại, như Neural Turing Machine (Graves et al., 2014), memory network (Weston et al., 2015; Sukhbaatar et al., 2015), Neural GPU (Kaiser & Sutskever, 2015), và differentiable neural computer (Graves et al., 2016). Các cách tiếp cận gần đây hơn như Neural Program Interpreter (Reed & de Freitas, 2016; Shin et al., 2018; Pierrot et al., 2021) và Universal Transformer (Dehghani et al., 2019) thấy rằng recurrence là một thành phần hữu ích trong program induction.
+
+Trong program synthesis, một mô hình tạo ra một chương trình một cách rõ ràng, thường từ một đặc tả ngôn ngữ tự nhiên. Một trong những cách tiếp cận cổ điển phổ biến nhất sử dụng một probabilistic context free grammar (PCFG) để tạo ra abstract syntax tree (AST) của một chương trình. Maddison & Tarlow (2014) cải thiện setup này bằng cách học một state vector được sử dụng để condition việc mở rộng node con. Sau này, Allamanis et al. (2015) áp dụng ý tưởng này trong text-to-code retrieval và Yin & Neubig (2017) sử dụng nó trong text-conditional code generation. Code2seq (Alon et al., 2018) thấy rằng AST cũng có thể được tận dụng cho code-to-text generation.
+
+Các chương trình cũng có thể được tổng hợp mà không đi qua biểu diễn AST. Hindle et al. (2012) điều tra các mô hình ngôn ngữ n-gram của code, thấy rằng code có thể dự đoán được hơn ngôn ngữ tự nhiên. Latent Predictor Networks (Ling et al., 2016) chỉ ra rằng các mô hình ngôn ngữ mức ký tự có thể tạo ra code hoạt động để triển khai card Magic the Gathering trong một đấu trường trực tuyến, khi được hỗ trợ với một chế độ tiềm ẩn cho phép thuộc tính card được sao chép vào code. DeepCoder (Balog et al., 2017) huấn luyện một mô hình để dự đoán các hàm xuất hiện trong source code, có thể được sử dụng để hướng dẫn tìm kiếm chương trình.
+
+Theo thành công của các mô hình ngôn ngữ tự nhiên lớn (Devlin et al., 2018; Radford et al., 2019; Liu et al., 2019; Raffel et al., 2020; Brown et al., 2020) các Transformer quy mô lớn cũng đã được áp dụng hướng tới program synthesis. CodeBERT (Feng et al., 2020) huấn luyện mục tiêu BERT trên docstring được ghép nối với hàm, và thu được kết quả mạnh mẽ trên tìm kiếm code. PyMT5 (Clement et al., 2020) tương tự về tinh thần với công trình của chúng tôi, và sử dụng mục tiêu T5 để huấn luyện một hệ thống có thể dịch giữa các tập con không chồng chéo của {signature, docstring, body}.
+
+Chúng tôi sử dụng tính đúng đắn chức năng để đánh giá các mô hình của chúng tôi, và quan sát được cải thiện trên metric này với nhiều sampling hơn. SPoC (Kulal et al., 2019) xem xét vấn đề tạo ra code đúng chức năng từ pseudocode với ngân sách cố định của các compilation, tương tự như metric pass@k của chúng tôi. TransCoder (Lachaux et al., 2020) huấn luyện một hệ thống dịch giữa các ngôn ngữ lập trình theo cách không giám sát, và cũng quan sát rằng tính đúng đắn chức năng nắm bắt khả năng của mô hình tốt hơn so với điểm BLEU. Thực tế, ContraCode (Jain et al., 2020) tận dụng không gian lớn của các chương trình đúng chức năng để huấn luyện một mô hình code contrastive, cải thiện hiệu suất mô hình trên các tác vụ như suy luận kiểu. Cuối cùng, RobustFill (Devlin et al., 2017) quan sát rằng cách tốt nhất để tìm một chương trình phù hợp với các ví dụ đầu vào là tổng hợp nhiều mẫu thông qua beam search.
+
+Hai bộ dữ liệu domain-specific sớm được sử dụng để đánh giá các hệ thống lập trình neural là FlashFill (Gulwani, 2011; Gulwani et al., 2012) và Hearthstone (Ling et al., 2016), mặc dù cộng đồng đã xu hướng hướng tới các bộ dữ liệu rộng hơn và khó hơn. Barone & Sennrich (2017) đề xuất một bộ dữ liệu huấn luyện và đánh giá lớn bao gồm các khai báo Python, docstring và thân hàm được cạo từ GitHub. Thách thức CodeSearchNet (Husain et al., 2019) xây dựng một corpus thậm chí lớn hơn từ GitHub với dữ liệu từ nhiều ngôn ngữ lập trình phổ biến. Gần đây, CodeXGLUE (Lu et al., 2021) tổng hợp một số benchmark lập trình, sử dụng metric CodeBLEU được đề xuất gần đây (Ren et al., 2020). Liên quan nhất đến công việc đánh giá của chúng tôi là benchmark APPS (Hendrycks et al., 2021) để đo tính đúng đắn chức năng dựa trên các bài toán từ trang web lập trình thi đấu Codeforces.
+
+Cuối cùng, chúng tôi lưu ý rằng coding là một hoạt động rộng liên quan đến nhiều hơn việc tổng hợp code từ docstring. Tufano et al. (2020) sử dụng Transformer để tạo unit test cho code vượt trội so với các dịch vụ thương mại. Aye et al. (2021) xây dựng một công cụ auto-complete nội bộ cho Facebook, và thấy rằng huấn luyện trên các completion được chấp nhận bởi người dùng tăng cường hiệu suất hệ thống. Phát triển cũng đòi hỏi việc định vị và sửa lỗi. Các công trình sớm sử dụng phân tích code tĩnh hoặc động (Agrawal et al., 1995; Korel & Rilling, 1997), học các quy tắc kết hợp (Jeffrey et al., 2009), và lập trình di truyền (Goues et al., 2012) để debug code lỗi. Những cách tiếp cận này dựa vào việc chạy đối với một test suite để không chỉ đánh giá tính đúng đắn của đề xuất mà còn phơi bày vấn đề trong execution trace hoặc tìm kiếm giải pháp. Các công trình gần đây hơn (Tufano et al., 2019; Drain et al., 2021) coi bug-fixing như neural machine translation từ chương trình lỗi sang chương trình đúng. Tuy nhiên, những công trình này sử dụng khớp chính xác đối với một tham chiếu thay vì tính đúng đắn chức năng, trích dẫn phát hiện của Qi et al. (2015) rằng hầu hết các giải pháp được đề xuất bởi genetic search trong (Goues et al., 2012) vượt qua qua các test suite yếu bằng cách xóa chức năng thất bại. Các nhà phát triển con người thường viết các test suite với độ bao phủ hạn chế nhưng có mục tiêu, nhưng điều này không phải lúc nào cũng hoạt động tốt đối với một thuật toán, làm nổi bật những thách thức của việc đánh giá tính đúng đắn của các chương trình.
+
+9. Kết luận
+Chúng tôi đã điều tra xem liệu có thể huấn luyện các mô hình ngôn ngữ lớn để tạo ra thân code đúng chức năng từ docstring ngôn ngữ tự nhiên hay không. Bằng cách tinh chỉnh GPT trên code từ GitHub, chúng tôi thấy rằng các mô hình của chúng tôi hiển thị hiệu suất mạnh mẽ trên một bộ dữ liệu các bài toán viết tay có mức độ khó so sánh với các bài toán phỏng vấn dễ. Hiệu suất mô hình có thể được cải thiện bằng cách huấn luyện trên một phân phối tương tự hơn với tập đánh giá, và cũng bằng cách tạo nhiều mẫu từ một mô hình. Chúng tôi cũng thấy rằng đơn giản để huấn luyện một mô hình hoàn thành tác vụ ngược của việc tạo docstring từ thân code, và rằng hồ sơ hiệu suất của những mô hình này tương tự. Cuối cùng, chúng tôi mở rộng về các tác động rộng hơn của các mô hình tạo code, và thảo luận các hạn chế của mô hình, tìm thấy chỗ để cải thiện đáng kể.
+
+Lời cảm ơn
+Chúng tôi cảm ơn Sandhini Agarwal, Casey Chu, Jeffrey Ding, Peter Eckersley, Gillian Hadfield, Rich Harang, Jacob Jackson, Yunxin Jiao, Jade Leung, Andrew Lohn, Ryan Lowe, Thomas McGuire, Margaret Mitchell, Florentine Eloundou Nekoul, Cullen O'Keefe, Long Ouyang, Pranav Shyam, Irene Solaiman, Aravind Srinivas, Helen Toner, Ashish Vaswani, và Jeffrey Wu cho các cuộc thảo luận hữu ích và phản hồi về các bản thảo của công trình này. Chúng tôi cũng biết ơn các nhóm Acceleration và Supercomputing tại OpenAI cho công việc của họ về cơ sở hạ tầng phần mềm và phần cứng mà dự án này đã sử dụng. Cuối cùng, chúng tôi cảm ơn GitHub vì đã hợp tác xây dựng GitHub Copilot và Microsoft Azure vì đã hỗ trợ huấn luyện mô hình với quản lý cơ sở hạ tầng.
+
+[Tiếp tục với phần References và Appendices...]
+
+[Nội dung còn lại sẽ được dịch trong phần tiếp theo do giới hạn độ dài...]

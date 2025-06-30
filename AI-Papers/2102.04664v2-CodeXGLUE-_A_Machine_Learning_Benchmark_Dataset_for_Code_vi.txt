@@ -1,0 +1,801 @@
+# 2102.04664v2.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2102.04664v2.pdf
+# Kích thước file: 1282683 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+CodeXGLUE: Một Benchmark Dataset cho Machine Learning trong việc Hiểu và Sinh Code
+
+Shuai Lu∗
+Đại học Bắc KinhDaya Guo∗
+Đại học Trung Sơn (Sun Yat-sen)Shuo Ren∗
+Đại học Bắc Hàng
+
+Junjie Huang∗
+Đại học Bắc HàngAlexey Svyatkovskiy
+MicrosoftAmbrosio Blanco
+Microsoft Research Asia
+
+Colin Clement
+MicrosoftDawn Drain
+MicrosoftDaxin Jiang
+Microsoft
+
+Duyu Tang
+Microsoft Research AsiaGe Li
+Đại học Bắc KinhLidong Zhou
+Microsoft Research Asia
+
+Linjun Shou
+MicrosoftLong Zhou
+Microsoft Research AsiaMichele Tufano
+Microsoft
+
+Ming Gong
+MicrosoftMing Zhou
+Microsoft Research AsiaNan Duan
+Microsoft Research Asia
+
+Neel Sundaresan
+MicrosoftShao Kun Deng
+MicrosoftShengyu Fu
+Microsoft
+
+Shujie Liu
+Microsoft Research Asia
+
+TÓM TẮT
+Các benchmark dataset có tác động đáng kể trong việc thúc đẩy nghiên cứu về các tác vụ liên quan đến ngôn ngữ lập trình. Trong bài báo này, chúng tôi giới thiệu CodeXGLUE, một benchmark dataset nhằm thúc đẩy nghiên cứu machine learning cho việc hiểu và sinh mã chương trình. CodeXGLUE bao gồm một tập hợp 10 tác vụ trên 14 dataset và một nền tảng cho việc đánh giá và so sánh mô hình. CodeXGLUE cũng có ba hệ thống baseline, bao gồm các mô hình kiểu BERT, kiểu GPT và Encoder-Decoder, để giúp các nhà nghiên cứu dễ dàng sử dụng nền tảng này. Việc có sẵn dữ liệu và baseline như vậy có thể giúp phát triển và xác thực các phương pháp mới có thể được áp dụng cho các vấn đề hiểu và sinh mã chương trình khác nhau¹.
+
+TỪ KHÓA
+hiểu chương trình, machine learning, tính tự nhiên của phần mềm
+
+1 GIỚI THIỆU
+Evans Data Corporation² ước tính rằng có 23.9 triệu lập trình viên chuyên nghiệp vào năm 2019 và con số này dự kiến sẽ đạt 28.7 triệu vào năm 2024. Với dân số lập trình viên đang tăng trưởng với tốc độ như vậy, code intelligence tận dụng trí tuệ nhân tạo (AI) để giúp các lập trình viên phần mềm cải thiện năng suất của quá trình phát triển đang trở nên ngày càng quan trọng.
+
+∗ cho biết đóng góp bằng nhau và thực tập tại Microsoft. Các tác giả được liệt kê theo thứ tự alpha-beta. Các tác giả liên hệ là Duyu Tang và Shujie Liu.
+¹ CodeXGLUE có sẵn công khai tại https://github.com/microsoft/CodeXGLUE. Người tham gia có thể gửi kết quả của họ bằng cách gửi email đến codexglue@microsoft.com.
+² https://evansdata.com/press/viewRelease.php?pressID=278
+
+Việc được chấp nhận rộng rãi rằng các benchmark có tác động đáng kể đến sự phát triển của nghiên cứu AI ứng dụng. Trong bài báo này, chúng tôi tập trung vào việc thiết lập một benchmark dataset cho code intelligence.
+
+Việc hiểu và sinh mã chương trình tự động có thể tăng năng suất của các lập trình viên phần mềm. Thực tế, các lập trình viên muốn tìm mã được viết bởi người khác với cùng ý định có thể tận dụng các hệ thống tìm kiếm mã [23,35,58,85] để tự động truy xuất các mã có liên quan về mặt ngữ nghĩa thông qua các truy vấn ngôn ngữ tự nhiên. Tương tự, các lập trình viên bối rối về việc viết gì tiếp theo có thể sử dụng các hệ thống hoàn thành mã [4,8,9,31,62,63,72,73] để tự động hoàn thành các token tiếp theo dựa trên các chỉnh sửa được thực hiện trên mã. Cuối cùng, khi các lập trình viên muốn triển khai mã Java bằng Python, các hệ thống dịch mã sang mã [11,41,46,54] có thể giúp dịch mã của họ từ một ngôn ngữ lập trình (Python) sang ngôn ngữ khác (Java).
+
+Trong những năm gần đây, các nhà nghiên cứu đã ngày càng áp dụng các mô hình thống kê, bao gồm mạng neural, cho các tác vụ code intelligence. Gần đây, việc ứng dụng các mô hình pretrained học từ dữ liệu ngôn ngữ lập trình lớn đã được truyền cảm hứng bởi thành công lớn của các mô hình pretrained như BERT [16] và GPT [69] trong xử lý ngôn ngữ tự nhiên (NLP). Các mô hình này, bao gồm CodeBERT [18] và IntelliCode Compose [72], đã dẫn đến các cải tiến thêm trong các vấn đề hiểu và sinh mã, nhưng chúng thiếu một bộ benchmark bao quát nhiều tác vụ. Việc sử dụng ImageNet [15] cho computer vision và việc sử dụng GLUE [81] cho NLP đã cho thấy rằng một benchmark dataset đa dạng có tác động đáng kể đến sự phát triển của nghiên cứu AI ứng dụng.arXiv:2102.04664v2  [cs.SE]  16 Mar 2021
+
+--- TRANG 2 ---
+Lu, Guo, Ren và Huang, et al.
+
+Bảng 1: Tóm tắt ngắn gọn về CodeXGLUE, bao gồm các tác vụ, dataset, ngôn ngữ, kích thước trong các trạng thái khác nhau và các hệ thống baseline. Các dataset được đánh dấu là mới được giới thiệu.
+
+Danh mục | Tác vụ | Tên Dataset | Ngôn ngữ | Kích thước Train/Dev/Test | Baseline
+Code-Code | Clone Detection | BigCloneBench [71] | Java | 900K/416K/416K | 
+| | POJ-104 [52] | C/C++ | 32K/8K/12K | 
+| Defect Detection | Devign [99] | C | 21K/2.7K/2.7K | 
+| Cloze Test | CT-all | Python,Java,PHP, JavaScript,Ruby,Go | -/-/176K | 
+| | CT-max/min [18] | Python,Java,PHP, JavaScript,Ruby,Go | -/-/2.6K | CodeBERT
+| Code Completion | PY150 [62] | Python | 100K/5K/50K | 
+| | Github Java Corpus[4] | Java | 13K/7K/8K | CodeGPT
+| Code Repair | Bugs2Fix [75] | Java | 98K/12K/12K | Encoder-
+| Code Translation | CodeTrans | Java-C# | 10K/0.5K/1K | Decoder
+Text-Code | NL Code Search | CodeSearchNet [35], AdvTest | Python | 251K/9.6K/19K | 
+| | CodeSearchNet [35], WebQueryTest | Python | 251K/9.6K/1K | CodeBERT
+| Text-to-Code Generation | CONCODE [38] | Java | 100K/2K/2K | CodeGPT
+Code-Text | Code Summarization | CodeSearchNet [35] | Python,Java,PHP, JavaScript,Ruby,Go | 908K/45K/53K | Encoder-Decoder
+Text-Text | Documentation Translation | Microsoft Docs | English-Latvian/Danish/Norwegian/Chinese | 156K/4K/4K | 
+
+Để giải quyết vấn đề này, chúng tôi giới thiệu CodeXGLUE, một benchmark dataset machine learning cho nghiên cứu hiểu và sinh mã chương trình bao gồm 14 dataset³, một tập hợp 10 tác vụ hiểu và sinh ngôn ngữ lập trình đa dạng, và một nền tảng cho việc đánh giá và so sánh mô hình. CodeXGLUE hỗ trợ các tác vụ sau:
+
+• code-code (phát hiện clone [10,52,71,84,89,93,97], phát hiện lỗi [47,57,61,82,83,99], cloze test [18], hoàn thành mã [4,8,9,31,62,63,72,73], sửa mã [2,28,30,75,76,78], và dịch code-to-code [11, 41, 46, 54])
+• text-code (tìm kiếm mã ngôn ngữ tự nhiên [23,35,85], sinh mã từ text [12, 26, 36, 38, 87, 90, 94, 95])
+• code-text (tóm tắt mã [3,12,19,34,37,80,85–87])
+• text-text (dịch tài liệu [40])
+
+CodeXGLUE bao gồm tám dataset đã được đề xuất trước đây — BigCloneBench [71], POJ-104 [52], Devign [99], PY150 [62], Github Java Corpus [4], Bugs2Fix [75], CONCODE [38], và CodeSearchNet [35]— nhưng cũng có các dataset mới được giới thiệu được đánh dấu trong Bảng 1. Các dataset được chọn hoặc tạo dựa trên việc xem xét rằng tác vụ có định nghĩa rõ ràng, và khối lượng của dataset có thể hỗ trợ phát triển và đánh giá các phương pháp machine learning dựa trên dữ liệu. Các dataset được tạo bởi chúng tôi bao gồm (1) hai bộ test cloze test bao quát 6 ngôn ngữ lập trình, (2) hai bộ test hoàn thành mã cấp dòng trong Java và Python tương ứng, (3) một dataset dịch code-to-code giữa Java và C#, (4) hai bộ test tìm kiếm mã ngôn ngữ tự nhiên với các truy vấn web và tên hàm và biến được chuẩn hóa tương ứng, và (5) một dataset dịch tài liệu bao quát năm ngôn ngữ tự nhiên.
+
+³ Chúng tôi dự định phát triển benchmark theo thời gian bằng cách mở rộng thêm các tác vụ.
+
+Để giúp cho người tham gia dễ dàng, chúng tôi cung cấp ba mô hình baseline để giúp thực hiện các tác vụ, bao gồm một mô hình pretrained kiểu BERT (trong trường hợp này là CodeBERT) để hỗ trợ các vấn đề hiểu mã, một mô hình pretrained kiểu GPT, mà chúng tôi gọi là CodeGPT, để giúp giải quyết các vấn đề hoàn thành và sinh, và một framework Encoder-Decoder giải quyết các vấn đề sinh sequence-to-sequence.
+
+2 TỔNG QUAN CÁC TÁC VỤ
+Trong phần này, chúng tôi cung cấp định nghĩa cho từng tác vụ.
+
+Clone detection [52, 71]. Tác vụ này nhằm đo lường độ tương tự ngữ nghĩa giữa các mã. Điều này bao gồm hai subtask: phân loại nhị phân giữa một cặp mã và truy xuất mã, trong đó mục tiêu là tìm các mã tương tự về mặt ngữ nghĩa.
+
+Defect detection [99]. Mục tiêu là xác định liệu một đoạn mã nguồn có chứa lỗi có thể được sử dụng để tấn công các hệ thống phần mềm hay không, chẳng hạn như rò rỉ tài nguyên, lỗ hổng use-after-free và tấn công DoS.
+
+Cloze test [18]. Điều này nhằm dự đoán token bị che của một mã và bao gồm hai subtask. Cái đầu tiên là đo độ chính xác của việc dự đoán token bị che từ toàn bộ từ vựng. Cái khác là kiểm tra khả năng lý luận ngữ nghĩa bằng cách phân biệt giữa "max" và "min".
+
+Code completion [4, 62]. Nó nhằm dự đoán các token tiếp theo dựa trên ngữ cảnh mã. Các subtask của nó là hoàn thành cấp token và hoàn thành cấp dòng. Cái đầu tiên kiểm tra xem token tiếp theo có được dự đoán đúng hay không, trong khi cái sau kiểm tra chất lượng của dòng được sinh.
+
+Code translation [54]. Nó bao gồm việc dịch một mã từ một ngôn ngữ lập trình sang một ngôn ngữ khác.
+
+--- TRANG 3 ---
+CodeXGLUE: Một Benchmark Dataset cho Machine Learning trong việc Hiểu và Sinh Code
+
+Code search [35]. Nó đo lường mức độ liên quan ngữ nghĩa giữa văn bản và mã và được cấu thành từ hai subtask. Cái đầu tiên là tìm mã liên quan nhất trong một tập hợp các mã theo một truy vấn ngôn ngữ tự nhiên. Subtask thứ hai bao gồm phân tích một cặp truy vấn-mã để dự đoán liệu mã có trả lời truy vấn hay không.
+
+Code repair [75]. Mục tiêu của nó là tinh chỉnh mã bằng cách sửa lỗi tự động.
+
+Text-to-code generation [38]. Điều này nhằm sinh một mã thông qua mô tả ngôn ngữ tự nhiên.
+
+Code summarization [37]. Mục tiêu là sinh chú thích ngôn ngữ tự nhiên cho một mã.
+
+Documentation translation [40]. Nó nhằm dịch tài liệu mã từ một ngôn ngữ tự nhiên sang ngôn ngữ khác.
+
+3 CÁC DATASET
+Trong phần này, chúng tôi mô tả các dataset có trong CodeXGLUE. Các dataset được chọn hoặc tạo dựa trên tiêu chí rằng khối lượng của dataset có thể hỗ trợ phát triển và đánh giá các phương pháp machine learning dựa trên dữ liệu.
+
+3.1 Clone detection
+Clone detection bao gồm hai subtask. Subtask đầu tiên là dự đoán liệu hai mã cho trước có cùng ngữ nghĩa hay không. Chúng tôi sử dụng dataset BigCloneBench [71] cho subtask này. Subtask thứ hai nhằm truy xuất các mã tương tự về mặt ngữ nghĩa với một mã làm truy vấn và chúng tôi sử dụng dataset POJ-104 [52] để thực hiện nó.
+
+BigCloneBench là một benchmark clone mã lớn được sử dụng rộng rãi chứa hơn 6,000,000 cặp clone đúng và 260,000 cặp clone sai từ 10 chức năng khác nhau. Dataset được cung cấp bởi Wang et al. [84] được lọc bằng cách loại bỏ các đoạn mã không có bất kỳ cặp clone đúng hoặc sai nào được gắn thẻ, để lại nó với 9,134 đoạn mã Java. Cuối cùng, dataset bao gồm 901,028/415,416/415,416 ví dụ cho training, validation và testing tương ứng.
+
+Dataset POJ-104 [52] đến từ một hệ thống open judge (OJ) lập trình giáo dục tự động đánh giá tính hợp lệ của mã nguồn được gửi cho các vấn đề cụ thể bằng cách chạy mã. Chúng tôi sử dụng dataset POJ-104, bao gồm 104 vấn đề và bao gồm 500 chương trình C/C++ được viết bởi sinh viên cho mỗi vấn đề. Khác với dataset BigCloneBench, tác vụ của POJ-104 nhằm truy xuất các chương trình khác giải quyết cùng vấn đề với một chương trình cho trước. Chúng tôi nhóm các dataset thành ba tập con dựa trên số lượng vấn đề chúng được yêu cầu giải quyết (64/16/24) cho training, validation và testing.
+
+3.2 Defect detection
+Cho tác vụ phát hiện lỗi, Zhou et al. [99] cung cấp dataset Devign bao gồm 27,318 hàm được gắn nhãn thủ công được thu thập từ hai dự án mã nguồn mở ngôn ngữ lập trình C lớn phổ biến trong các lập trình viên và đa dạng về chức năng, tức là QEMU và FFmpeg. Dataset được tạo bằng cách thu thập các commit liên quan đến bảo mật và trích xuất các hàm dễ bị tổn thương hoặc không dễ bị tổn thương từ các commit được gắn nhãn. Vì Zhou et al. [99] không cung cấp các tập training/validation/testing chính thức cho hai dự án, chúng tôi xáo trộn ngẫu nhiên dataset và chia 80%/10%/10% của dataset cho training/validation/testing. Tác vụ được công thức hóa như một phân loại nhị phân để dự đoán liệu một hàm có dễ bị tổn thương hay không.
+
+3.3 Cloze test
+Hình 1 cho thấy hai ví dụ về tác vụ cloze test (CT) trong domain mã, nhằm đánh giá khả năng của các mô hình hiểu một mã bằng cách yêu cầu các mô hình đó dự đoán mã bị che từ một số ứng viên. Chúng tôi tập trung vào hai subtask: CT-all với các ứng viên từ một từ vựng được lọc và CT-maxmin với các ứng viên "max" và "min".
+
+Mở hộp thả. Doc.:
+Code:def open(self): 
+self.workingArea .<mask> ( )
+self.runid_pkgidx_map = {}
+self.runid_to_return = deque()
+Đáp án: open
+
+Tìm giá trị min và max của mọi feature. Doc.:
+Code:deffit(self, X, y=None):
+X = check_array (X)
+self._ x_min = X.<mask> (axis=0)
+self._ x_max = X.max (axis=0)
+return self
+Đáp án: min
+
+Cloze Test -maxmin    Cloze Test-all
+
+Hình 1: Hai ví dụ trong dataset cloze test.
+
+Chúng tôi sử dụng các tập validation và testing của CodeSearchNet [35] để tạo các dataset CT-all và CT-maxmin cho sáu ngôn ngữ lập trình, tức là Go, Java, JavaScript (JS), PHP, Python và Ruby.
+
+CT-all. Để ít giới thiệu các tên biến dài và tránh vấn đề gây ra bởi việc sử dụng các tokenizer khác nhau, chúng tôi chọn các từ cloze đích bằng cách giữ lại các từ duy nhất sau Byte Pair Encoding [67], và chúng tôi loại bỏ các token vô nghĩa như dấu câu với các quy tắc thủ công. Cuối cùng, 930 token được chọn trong sáu ngôn ngữ tổng cộng. Chúng tôi chọn các mã chứa 930 token và thiết lập thủ công các giá trị ngưỡng xuất hiện token để cân bằng tần suất của 930 token trong CT-all.
+
+CT-maxmin. Để đánh giá thêm khả năng hiểu ngữ nghĩa mã của các mô hình, chúng tôi giới thiệu CT-maxmin để kiểm tra mô hình có thể phân biệt sự khác biệt giữa max và min tốt như thế nào. CT-maxmin đến từ dataset được sử dụng cho tác vụ PL-Probing trong CodeBERT [18], bao gồm các mã chứa từ khóa max hoặc min.
+
+Thống kê dữ liệu được liệt kê trong Bảng 2.
+
+3.4 Code completion
+Chúng tôi sử dụng hai dataset có ảnh hưởng cho hoàn thành mã, PY150 trong python và Github Java Corpus trong Java. Cả hai dataset đều có thể giúp đạt được hoàn thành mã cấp token. Chúng tôi tiến xa hơn bằng cách tạo hai bộ test cho tác vụ hoàn thành mã cấp dòng từ hai corpus. Tác vụ là hoàn thành một dòng chưa hoàn thành. Các mô hình nên
+
+--- TRANG 4 ---
+Lu, Guo, Ren và Huang, et al.
+
+Bảng 2: Thống kê dữ liệu về các dataset cloze test.
+
+Tác vụ | CT-all | CT-maxmin
+Go | 25,282 | 152
+Java | 40,492 | 482
+JavaScript | 13,837 | 272
+PHP | 51,930 | 407
+Python | 40,137 | 1,264
+Ruby | 4,437 | 38
+Tất cả | 176,115 | 2,615
+
+có khả năng dự đoán các chuỗi mã với các loại token tùy ý và cấu trúc mã.
+
+PY150 là một dataset Python [62] chứa 150,000 file nguồn Python được thu thập từ Github. Chúng tôi theo phân chia dữ liệu trong Raychev et al. [62], dẫn đến 100,000 file cho training và 50,000 file cho testing, bao gồm 76.3M token và 37.2M token tương ứng. Chúng tôi tiền xử lý các corpus bằng cách tokenize mã nguồn, loại bỏ comment, thay thế chuỗi có độ dài hơn 15 ký tự bằng chuỗi rỗng, và thêm token đặc biệt ⟨EOL⟩(end-of-line) để đánh dấu kết thúc của một dòng một cách rõ ràng. Cho hoàn thành mã cấp dòng, chúng tôi tạo 10,000 ví dụ từ các file khác nhau trong tập test của PY150 để testing. Vì chúng tôi có ý định kiểm tra khả năng của mô hình tự động hoàn thành một dòng tùy ý, chúng tôi chọn dòng được dự đoán một cách ngẫu nhiên. Chúng tôi sinh một test case bằng cách đảm bảo rằng có đủ ngữ cảnh, tức là ít nhất 15% của toàn bộ file. Các mô hình được kỳ vọng sinh dòng tiếp theo kết thúc bởi ⟨EOL⟩ cho ngữ cảnh. Số lượng token trung bình trong input và output lần lượt là 489.11 và 6.56. Hình 2 cho thấy một ví dụ về hoàn thành mã cấp dòng.
+
+Hình 2: Một ví dụ trong dataset hoàn thành mã cấp dòng.
+
+Github Java Corpus là một dataset Java được khai thác bởi Allamanis và Sutton [4], và nó thu thập hơn 14 nghìn dự án Java từ Github. Chúng tôi theo các thiết lập được thiết lập bởi Hellendoorn và Devanbu [29] cũng như Karampatsis et al. [42], sử dụng 1% của tập con trong corpus. Chúng tôi có 12,934/7,189/8,268 file cho training/validation/testing, bao gồm 15.8M/3.8M/5.3M token tương ứng. Chúng tôi thực hiện cùng tiền xử lý được tiến hành trên PY150, nhưng chúng tôi không thêm token đặc biệt ⟨EOL⟩ vì trong Java các ký hiệu ; và } được sử dụng để đánh dấu kết thúc của một câu lệnh mã. Cho hoàn thành mã cấp dòng, chúng tôi tạo 3,000 ví dụ để testing từ các file khác nhau trong tập test của corpus. Tương tự như quá trình chúng tôi theo cho Python, dòng được dự đoán được chọn ngẫu nhiên từ test file. Số lượng token trung bình lần lượt là 350.62 và 10.49 trong input và output.
+
+3.5 Code translation
+Dữ liệu training cho dịch mã là các cặp mã với chức năng tương đương trong hai ngôn ngữ lập trình. Trong bài báo này, chúng tôi cung cấp một dataset bao gồm các mã song song giữa Java và C#. Chúng tôi không sử dụng dataset của Lachaux et al. [46] vì họ không có dữ liệu cho training mô hình có giám sát. Theo Nguyen et al. [54] và Chen et al. [11], chúng tôi sử dụng dữ liệu được thu thập từ một số dự án mã nguồn mở, tức là Lucene⁴, POI⁵, JGit⁶ và Antlr⁷. Chúng tôi không sử dụng Itext⁸ và JTS⁹ do vấn đề bản quyền. Những dự án đó ban đầu được phát triển trong Java và sau đó được chuyển sang C#. Chúng là các hệ thống được thiết lập tốt với lịch sử phát triển dài và với cả phiên bản Java và C# đang được sử dụng.
+
+Bước tiếp theo là khai thác các hàm hoặc phương thức được ghép cặp từ những dự án đó. Theo quan sát của chúng tôi, cấu trúc thư mục và tên hàm hoặc phương thức của hai phiên bản giống nhau hoặc tương tự khi chúng được áp dụng cho cùng một dự án. Do đó, theo Nguyen et al. [54], chúng tôi một cách thận trọng tìm kiếm các hàm có cùng chữ ký trong các lớp có tên giống/tương tự và được bao gồm trong các cấu trúc thư mục giống/tương tự của cả hai phiên bản. Chúng tôi loại bỏ các cặp mã trùng lặp và các mã có nhiều mục tiêu được tìm kiếm bằng phương pháp trên. Sau bước này, chúng tôi loại bỏ các cặp có số lượng token chồng chéo ít hơn 1/3 độ dài câu. Để làm cho dữ liệu của chúng tôi có thể mở rộng hơn cho phân tích cú pháp và ngữ nghĩa thêm, chúng tôi cũng loại bỏ các hàm với thân hàm null theo abstract syntax tree (AST) của chúng. Sau đó chúng tôi xây dựng đồ thị data-flow [25] cho mỗi hàm, biểu diễn sự phụ thuộc giữa hai biến và cung cấp thông tin ngữ nghĩa có giá trị cho việc hiểu mã. Cuối cùng, một hàm không có data-flow được trích xuất từ AST của một hàm cụ thể cũng bị loại bỏ.
+
+Cuối cùng, tổng số hàm hoặc phương thức được ghép cặp là 11,800. Chúng tôi chọn ngẫu nhiên 500 cặp hàm cho tập development và 1,000 cặp khác cho tập test. Độ dài trung bình của các hàm Java và C# sau tokenization lần lượt là 38.51 và 46.16¹⁰. Một ví dụ về các cặp dịch được khai thác từ C# sang Java được hiển thị trong Hình 3.
+
+3.6 Code search
+Code search bao gồm hai subtask. Cái đầu tiên là tìm mã liên quan nhất từ một tập hợp các ứng viên cho một truy vấn ngôn ngữ tự nhiên. Chúng tôi tạo một tập testing thách thức, được gọi là CodeSearchNet AdvTest, từ corpus CodeSearchNet [35] để thực hiện tác vụ này. Một ví dụ về dataset này được hiển thị trong Hình 4. Subtask thứ hai là dự đoán liệu một mã có trả lời một truy vấn cho trước hay không. Chúng tôi cung cấp một tập testing WebQueryTest của các truy vấn người dùng thực. Hai ví dụ của dataset được minh họa trong Hình 5.
+
+⁴ http://lucene.apache.org/
+⁵ http://poi.apache.org/
+⁶ https://github.com/eclipse/jgit/
+⁷ https://github.com/antlr/
+⁸ http://sourceforge.net/projects/itext/
+⁹ http://sourceforge.net/projects/jts-topo-suite/
+¹⁰ https://github.com/c2nes/javalang
+
+--- TRANG 5 ---
+CodeXGLUE: Một Benchmark Dataset cho Machine Learning trong việc Hiểu và Sinh Code
+
+Hình 3: Một ví dụ trong dataset dịch mã.
+
+CodeSearchNet AdvTest là một dataset Python từ corpus CodeSearchNet [35]. Mỗi ví dụ bao gồm một hàm được ghép cặp với một tài liệu. Chúng tôi theo Husain et al. [35] để lấy đoạn đầu tiên của tài liệu làm truy vấn cho hàm tương ứng. Để cải thiện chất lượng của dataset, chúng tôi lọc nó bằng cách loại bỏ các ví dụ sau.
+
+(1) Các ví dụ có mã không thể được phân tích thành abstract syntax tree.
+(2) Các ví dụ có số token tài liệu ngắn hơn 3 hoặc lớn hơn 256.
+(3) Các ví dụ có tài liệu chứa token đặc biệt như "http://".
+(4) Các ví dụ có tài liệu rỗng hoặc không được viết bằng tiếng Anh.
+
+Ở cuối quá trình, chúng tôi có được một dataset với 251,820 / 9,604 / 19,210 ví dụ cho training/validation/testing. Sau khi chuẩn hóa tên hàm hoặc biến với các token đặc biệt, chúng tôi quan sát thấy rằng điểm Mean Reciprocal Rank (MRR) của RoBERTa [50] và CodeBERT [18] cho tác vụ tìm kiếm mã trên dataset CodesearchNet [35] giảm từ 0.809 xuống 0.419 và từ 0.869 xuống 0.507 tương ứng, trong ngôn ngữ lập trình Python. Để kiểm tra tốt hơn khả năng hiểu và khái quát hóa của mô hình, chúng tôi chuẩn hóa tên hàm và biến trong các tập testing và development như 𝑓𝑢𝑛𝑐 cho tên hàm và 𝑎𝑟𝑔 𝑖 cho tên biến thứ i. Hình 4 hiển thị một ví dụ trong dataset CodeSearchNet AdvTest. Tác vụ nhằm tìm kiếm mã nguồn từ các ứng viên cho một truy vấn ngôn ngữ tự nhiên. Trái ngược với giai đoạn testing của các công trình trước [18,35] chỉ liên quan đến 1,000 ứng viên, chúng tôi sử dụng toàn bộ tập testing cho mỗi truy vấn, điều này làm cho dataset CodeSearchNet AdvTest khó hơn. Tập training cho tác vụ này đến từ dataset CodeSearchNet được lọc [35].
+
+WebQueryTest: Hầu hết các dataset tìm kiếm mã sử dụng tài liệu mã hoặc câu hỏi từ các cộng đồng trực tuyến cho các lập trình viên phần mềm làm truy vấn, nhưng chúng khác với các truy vấn tìm kiếm người dùng thực. Để sửa chữa sự khác biệt này, chúng tôi cung cấp WebQueryTest, một tập testing của
+
+Quét qua một chuỗi để tìm các chuỗi con khớp với một số mẫu. Truy vấn:
+
+Mã Vàng:
+defmatchall(text, patterns):
+ret = []
+forpattern inpatterns:
+match = re.findall(pattern, text)
+ret += match
+return ret
+
+Mã Chuẩn hóa:
+deffunc (arg0, arg1):
+arg2 = []
+forarg3 inarg1:
+arg4 = re.findall(arg3, arg0)
+arg2 += arg4
+return arg2
+
+Hình 4: Một ví dụ trong dataset CodeSearchNet AdvTest.
+
+tìm kiếm mã thực cho Python. Vấn đề được công thức hóa như một tác vụ phân loại nhị phân và như một thiết lập bổ sung cho tình huống truy xuất. Cho một cặp truy vấn và hàm mã, một mô hình cần phân loại liệu hàm mã có thể trả lời truy vấn hay không.
+
+Quá trình tạo dữ liệu có thể được chia thành hai giai đoạn: thu thập dữ liệu và gán nhãn. Đầu tiên chúng tôi thu thập các truy vấn người dùng thực từ nhật ký truy vấn web của một công cụ tìm kiếm thương mại và chúng tôi giữ các truy vấn có "python". Được truyền cảm hứng bởi Yan et al. [91], chúng tôi thiết kế một số heuristic dựa trên khớp chính xác từ khóa để lọc ra các truy vấn không có ý định tìm kiếm mã. Sau đó chúng tôi chọn các mã ứng viên cho mỗi truy vấn từ các tập validation và testing Python trong CodeSearchNet. Để thu hẹp các ứng viên được gán nhãn cho mỗi truy vấn, chúng tôi chọn hai hàm hàng đầu với độ tương tự truy vấn-mã cao nhất được tính bởi một mô hình truy xuất mã dựa trên CodeBERT, được đào tạo trên 148K Python Stack Overflow Question-Code (StaQC) tự động [92] với các tham số mặc định được cung cấp bởi Feng et al. [18].
+
+Chúng tôi sử dụng một lược đồ gán nhãn hai giai đoạn để gắn nhãn mỗi thể hiện. Bước đầu tiên là đánh giá liệu truy vấn có ý định tìm kiếm mã hay không. Các thể hiện được gắn nhãn "-1" là những cái không có ý định tìm kiếm mã. Bước thứ hai là đánh giá liệu mã (với tài liệu của nó) có thể trả lời truy vấn hay không. Các thể hiện được gắn nhãn "1" là những cái mà mã có thể trả lời truy vấn. Nếu không, chúng được gắn nhãn "0". Hai ví dụ được minh họa trong Hình 5. Chúng tôi mời 13 lập trình viên thành thạo Python để gắn nhãn 1,300 thể hiện, với mỗi người gán nhãn xử lý 100 trong số chúng. Thảo luận được phép trong quá trình gán nhãn. Cuối cùng, số lượng thể hiện với nhãn -1, 0 và 1 lần lượt là 254, 642 và 422. Vì chúng tôi quan tâm hơn đến việc khớp truy vấn-mã, chúng tôi chỉ bao gồm các danh mục 0 và 1 trong tập test cuối cùng của chúng tôi. Các tập training và validation chúng tôi sử dụng cho tác vụ này là từ dataset CodeSearchNet gốc [35].
+
+3.7 Code repair
+Code repair nhằm sửa lỗi trong mã một cách tự động. Chúng tôi sử dụng dataset được phát hành bởi Tufano et al. [75]. Nguồn là các hàm Java bị lỗi, trong khi đích là các hàm được sửa tương ứng. Để xây dựng dataset này, đầu tiên họ tải xuống mọi sự kiện GitHub công khai
+
+--- TRANG 6 ---
+Lu, Guo, Ren và Huang, et al.
+
+python đo khoảng cách giữa 2 điểm Truy vấn:
+Code:defvector_distance (a, b):
+""" Khoảng cách Euclidean giữa hai vector """
+a = np.array (a)
+b = np.array (b)
+return np.linalg.norm (a -b)
+Nhãn: 1
+
+cách thêm object vào một chỉ số cụ thể trong list python Truy vấn:
+Code:defappend(self, item):           
+""" thêm item và in nó ra stdout """           
+print(item)           
+super( MyList , self).append(item)
+Nhãn: 0
+
+Hình 5: Hai ví dụ trong dataset WebQueryTest.
+
+giữa tháng 3 năm 2011 và tháng 10 năm 2017 từ GitHub Archive¹¹ và sử dụng API Google BigQuery để xác định tất cả các commit file Java có thông điệp chứa các mẫu [21]: ("fix" hoặc "solve") và ("bug" hoặc "issue" hoặc "problem" hoặc "error"). Cho mỗi commit sửa lỗi, họ trích xuất mã nguồn trước và sau quá trình sửa bằng cách sử dụng GitHub Compare API¹² để thu thập các mã bị lỗi (pre-commit) và đã sửa (post-commit). Sau đó, họ chuẩn hóa tất cả tên của các biến và phương thức tùy chỉnh, điều này hạn chế đáng kể kích thước từ vựng và cho phép mô hình tập trung vào việc học các mẫu sửa lỗi. Sau đó, họ lọc ra các cặp chứa lỗi từ vựng hoặc cú pháp trong mã bị lỗi hoặc đã sửa, cũng như các cặp có hơn 100 hành động sửa đổi AST nguyên tử giữa phiên bản bị lỗi và đã sửa. Để đạt được điều này, họ sử dụng công cụ GumTree Spoon AST Diff [17]. Cuối cùng, họ chia toàn bộ dataset thành hai tập con (small với token≤50 và medium với token >50 và ≤100) dựa trên độ dài mã. Cho tập con small, số lượng mẫu training, development và test lần lượt là 46,680, 5,835 và 5,835. Cho tập con medium, các số là 52,364, 6,545 và 6,545 tương ứng.
+
+3.8 Text-to-code generation
+Để thực hiện tác vụ này, chúng tôi sử dụng CONCODE [38], một dataset sinh mã được sử dụng rộng rãi, được thu thập từ khoảng 33,000 dự án Java trên GitHub. Nó chứa 100,000 ví dụ cho training và 4,000 ví dụ cho validation và testing. Mỗi ví dụ là một tuple bao gồm mô tả NL, môi trường mã và đoạn mã. Dataset được giao nhiệm vụ sinh các hàm thành viên lớp từ mô tả ngôn ngữ tự nhiên (comment phương thức kiểu Javadoc) và môi trường lớp. Môi trường lớp là ngữ cảnh lập trình được cung cấp bởi phần còn lại của lớp, bao gồm các biến thành viên và hàm thành viên khác trong lớp.
+
+3.9 Code summarization
+Cho tóm tắt mã, chúng tôi sử dụng dataset CodeSearchNet [35], bao gồm sáu ngôn ngữ lập trình; tức là Python, Java, JavaScript,
+
+¹¹ https://www.gharchive.org/
+¹² https://developer.github.com/v3/repos/commits/#compare-two-commits
+
+PHP, Ruby và Go. Dữ liệu đến từ các repository GitHub mã nguồn mở không fork có sẵn công khai và mỗi tài liệu là đoạn đầu tiên. Chúng tôi quan sát thấy rằng một số tài liệu chứa nội dung không liên quan đến hàm, chẳng hạn như liên kết "http://..." tham chiếu đến tài nguyên bên ngoài và thẻ hình ảnh HTML "<img ...>" chèn hình ảnh. Do đó, chúng tôi lọc dataset để cải thiện chất lượng của nó với cùng bốn quy tắc được đề cập trong Phần 3.6.
+
+Thống kê về dataset CodeSearchNet được lọc được sử dụng trong CodeXGLUE được liệt kê trong Bảng 3.
+
+Bảng 3: Thống kê dữ liệu về dataset CodeSearchNet được lọc cho tác vụ tóm tắt mã.
+
+Ngôn ngữ | Training | Dev | Testing
+Go | 167,288 | 7,325 | 8,122
+Java | 164,923 | 5,183 | 10,955
+JavaScript | 58,025 | 3,885 | 3,291
+PHP | 241,241 | 12,982 | 14,014
+Python | 251,820 | 13,914 | 14,918
+Ruby | 24,927 | 1,400 | 1,261
+
+3.10 Documentation translation
+Documentation translation nhằm dịch tài liệu mã tự động từ một ngôn ngữ tự nhiên (ví dụ: tiếng Anh) sang ngôn ngữ tự nhiên khác (ví dụ: tiếng Trung), như được hiển thị trong Hình 7. Dataset chúng tôi sử dụng được thu thập từ Microsoft Documentation¹³, bao gồm các tài liệu mô tả phần mềm và mã trong các ngôn ngữ khác nhau. Chúng tôi tập trung vào các cặp ngôn ngữ ít tài nguyên, nơi dữ liệu song song khan hiếm, và giới thiệu các tác vụ dịch máy đa ngôn ngữ, ví dụ: English ⇔Latvian, Danish, Norwegian và Chinese. Để cải thiện chất lượng dữ liệu, chúng tôi lọc corpus bằng cách loại bỏ các ví dụ sau.
+
+(1) Các cặp có câu nguồn giống với câu đích;
+(2) Các cặp có độ dài ngôn ngữ nguồn hoặc ngôn ngữ đích ít hơn ba từ;
+(3) Các cặp có tỷ lệ độ dài giữa ngôn ngữ nguồn và đích lớn hơn ba;
+(4) Các cặp có tỷ lệ căn chỉnh từ được tính bởi fast_align¹⁴ ít hơn 0.6.
+
+Dữ liệu training cuối cùng bao gồm 43K, 19K, 44K và 50K cặp câu cho English⇔Latvian, English⇔Danish, English⇔Norwegian và English ⇔Chinese tương ứng. Ngoài ra, mỗi cặp ngôn ngữ có 1K cặp câu development và test tương ứng.
+
+4 CÁC HỆ THỐNG BASELINE
+Chúng tôi cung cấp ba loại mô hình baseline để thực hiện các tác vụ đã đề cập trước đó, bao gồm một mô hình pretrained kiểu BERT (trong trường hợp này là CodeBERT), hỗ trợ các vấn đề hiểu chương trình, một mô hình pretrained kiểu GPT được gọi là CodeGPT giúp chúng ta giải quyết các vấn đề hoàn thành và sinh, và một
+
+¹³ https://docs.microsoft.com/, có tài liệu được đặt tại https://github.com/MicrosoftDocs/.
+¹⁴ https://github.com/clab/fast_align.
+
+--- TRANG 7 ---
+CodeXGLUE: Một Benchmark Dataset cho Machine Learning trong việc Hiểu và Sinh Code
+
+Hiểu | Sinh
+Các tác vụ được hỗ trợ: | Các tác vụ được hỗ trợ:
+• tìm kiếm mã | • hoàn thành mã
+• phát hiện clone mã | • sinh mã
+
+Các tác vụ được hỗ trợ:
+• sửa mã
+• dịch mã
+
+Token mã trước | Token mã tiếp theo
+CodeGPT Decoder
+
+Mã đầu vào | Mã đầu ra
+CodeBERT
+[SEP] [CLS] text/code code [SEP]
+FFNN + Softmax
+CodeBERT
+0 1 Phân phối danh mục
+
+Token đầu vào
+
+Hình 6: Ba pipeline, bao gồm CodeBERT, CodeGPT và Encoder-Decoder, được cung cấp.
+
+Đầu vào (tiếng Anh):
+Multinomial Logistic Regression (Softmax regression) được sử dụng để tính toán xác suất của một số kết quả có thể trong các vấn đề phân loại.
+
+Đầu ra (tiếng Trung):
+多项式逻辑回归 （Softmax回归）用于计算分类问题中几种可能结果的概率。
+
+Hình 7: Một ví dụ tiếng Anh sang tiếng Trung trong dataset dịch tài liệu.
+
+framework Encoder-Decoder giải quyết các vấn đề sinh sequence-to-sequence. Một minh họa của ba pipeline này được hiển thị trong Hình 6.
+
+4.1 CodeBERT
+Để thực hiện các tác vụ hiểu mã như phát hiện clone, phát hiện lỗi, cloze test và tìm kiếm mã, chúng tôi sử dụng CodeBERT [18] làm encoder của chúng tôi. Đây là một mô hình pretrained bimodal dựa trên Transformer với 12 tầng, 768 dimensional hidden state và 12 attention head cho ngôn ngữ lập trình (PL) và ngôn ngữ tự nhiên (NL). Feng et al. [18] pretrain CodeBERT bằng các mục tiêu masked language modeling và replaced token detection trên dataset CodeSearchNet [35], bao gồm 2.4M hàm với các cặp tài liệu cho sáu ngôn ngữ lập trình. Mô hình hỗ trợ các loại đầu vào sequence khác nhau như text/code và code/code với một token đặc biệt [𝐶𝐿𝑆] ở phía trước của sequence và một ký hiệu đặc biệt [𝑆𝐸𝑃] để chia hai loại dữ liệu.
+
+Mô hình có sẵn công khai tại https://huggingface.co/microsoft/codebert-base.
+
+4.2 CodeGPT
+Chúng tôi cung cấp CodeGPT, là một mô hình ngôn ngữ dựa trên Transformer được pretrain trên ngôn ngữ lập trình (PL), để hỗ trợ các tác vụ hoàn thành mã và sinh mã từ text. CodeGPT có cùng kiến trúc mô hình và mục tiêu training của GPT-2 [59], bao gồm 12 tầng Transformer decoder. Các thiết lập mô hình khác được liệt kê trong Bảng 4. Chúng tôi pretrain các mô hình đơn ngôn ngữ trên các corpus Python và Java từ dataset CodeSearchNet [35], bao gồm 1.1M hàm Python và 1.6M phương thức Java. Mỗi hàm trong dataset training có chữ ký hàm và thân hàm. Một số hàm cũng chứa tài liệu ngôn ngữ tự nhiên.
+
+Chúng tôi đào tạo hai mô hình CodeGPT cho mỗi ngôn ngữ lập trình. Một mô hình được pretrain từ đầu, để từ vựng BPE (byte pair encoder) [67] được lấy mới trên corpus mã và các tham số mô hình được khởi tạo ngẫu nhiên. Mô hình khác là một mô hình domain-adaptive, sử dụng mô hình GPT-2 làm điểm khởi đầu và được đào tạo liên tục trên corpus mã. Kết quả là, mô hình thứ hai có cùng từ vựng GPT-2 và khả năng hiểu ngôn ngữ tự nhiên. Chúng tôi gọi mô hình này là CodeGPT-adapted, và coi nó là mô hình mặc định cho các tác vụ hoàn thành mã và sinh mã từ text. Cả hai mô hình đều có sẵn công khai tại https://huggingface.co/microsoft/CodeGPT-small-java và https://huggingface.co/microsoft/CodeGPT-small-java-adaptedGPT2.¹⁵
+
+¹⁵ Thay thế "java" bằng "py" cho các mô hình được pre-train trên dataset python.
+
+--- TRANG 8 ---
+Lu, Guo, Ren và Huang, et al.
+
+Bảng 4: Tham số của các mô hình CodeBERT và CodeGPT.
+
+| | CodeBERT | CodeGPT |
+|---|---|---|
+| Số lượng tầng | 12 | 12 |
+| Độ dài tối đa của position | 512 | 1,024 |
+| Kích thước embedding | 768 | 768 |
+| Attention head | 12 | 12 |
+| Kích thước attention head | 64 | 64 |
+| Kích thước từ vựng | 50,265 | 50,000 |
+| Tổng số tham số | 125M | 124M |
+
+4.3 Encoder-Decoder
+Cho các vấn đề sinh sequence-to-sequence như sửa mã, dịch mã, tóm tắt mã và dịch tài liệu, chúng tôi cung cấp một framework Encoder-Decoder. Chúng tôi khởi tạo encoder bằng CodeBERT [18] và sử dụng một Transformer được khởi tạo ngẫu nhiên với 6 tầng, 768 dimensional hidden state và 12 attention head làm decoder trong tất cả các thiết lập.
+
+5 THỰC NGHIỆM
+Trong phần này, chúng tôi báo cáo số liệu độ chính xác của các hệ thống baseline trên 10 tác vụ. Chúng tôi cũng sẽ hiển thị thời gian cần thiết để đào tạo mô hình và thực hiện suy luận trên mô hình.
+
+5.1 Clone Detection
+Thiết lập. Chúng tôi sử dụng các dataset BigCloneBench và POJ-104 cho phát hiện clone. Tác vụ của dataset BigCloneBench được công thức hóa như một phân loại nhị phân để dự đoán liệu một cặp mã cho trước có cùng ngữ nghĩa hay không, với điểm F1 được sử dụng làm metric đánh giá. Tác vụ của dataset POJ-104 nhằm truy xuất 499 mã cho một mã cho trước từ tập development/test cho validation/testing, với Mean Average Precision (MAP) làm metric đánh giá. Điểm tổng thể của tác vụ phát hiện clone là giá trị trung bình của điểm F1 và MAP.
+
+Bảng 5: Kết quả trên tác vụ phát hiện clone.
+
+| Mô hình | BigCloneBench F1 | POJ-104 MAP | Tổng thể |
+|---|---|---|---|
+| RtvNN | 1.0 | - | - |
+| Deckard | 3.0 | - | - |
+| CDLH | 82.0 | - | - |
+| ASTNN | 93.0 | - | - |
+| FA-AST-GMN | 95.0 | - | - |
+| TBCCD | 95.0 | - | - |
+| code2vec* | - | 1.98 | - |
+| NCC* | - | 54.19 | - |
+| Aroma* | - | 55.12 | - |
+| MISIM-GNN* | - | 82.45 | - |
+| RoBERTa | 94.9 | 79.96 | 87.4 |
+| CodeBERT | 96.5 | 84.29 | 90.4 |
+
+Kết quả. Kết quả đạt được bởi các mô hình khác nhau được hiển thị trong Bảng 5. RtvNN [89] đào tạo một recursive autoencoder để học biểu diễn cho AST. Deckard [39] tính toán vector cho thông tin cấu trúc trong AST và sử dụng Locality Sensitive Hashing (LSH) [14] để phân cụm các vector tương tự. CDLH [88] học biểu diễn của các đoạn mã thông qua LSTM dựa trên AST. ASTNN [97] sử dụng RNN để mã hóa các subtree AST cho các câu lệnh. Nó đưa các mã hóa của tất cả các cây câu lệnh vào một RNN để học biểu diễn cho một chương trình. FA-AST-GMN [84] sử dụng GNN trên một AST được tăng cường flow để tận dụng thông tin control và data flow rõ ràng. TBCCD [96] đề xuất một position-aware character embedding và sử dụng tree-based convolution để nắm bắt cả thông tin cấu trúc của một đoạn mã từ AST của nó và thông tin từ vựng từ các token mã. Code2vec [6] học biểu diễn của các đoạn mã bằng cách tổng hợp nhiều đường dẫn cú pháp thành một vector duy nhất. NCC [7] mã hóa các chương trình bằng cách tận dụng cả data flow và control flow cơ bản của các chương trình. Aroma [51] là một công cụ gợi ý mã lấy một đoạn mã một phần và gợi ý một tập nhỏ các đoạn mã ngắn gọn chứa đoạn truy vấn. MISIM-GNN [93] học một biểu diễn cấu trúc của mã từ cấu trúc ngữ nghĩa nhận biết ngữ cảnh được thiết kế đặc biệt để nâng ý nghĩa ngữ nghĩa từ cú pháp mã.
+
+Trong thí nghiệm này, chúng tôi sử dụng các mô hình pretrained như RoBERTa [50] và CodeBERT [18] để mã hóa mã nguồn và lấy biểu diễn để tính toán mức độ liên quan ngữ nghĩa của hai mã thông qua một mạng feed forward hoặc tích trong. Mặc dù CodeBERT không tận dụng cấu trúc mã đã được chứng minh là hiệu quả trong việc đo lường độ tương tự mã [7,84,88,93,97], mô hình vẫn hoạt động tốt hơn RoBERTa trên tác vụ phát hiện clone, đạt điểm tổng thể 90.4. Những kết quả thí nghiệm này chứng minh rằng pretraining hữu ích cho phát hiện clone. Vẫn còn chỗ để cải thiện thêm nếu cấu trúc mã được tận dụng thêm.
+
+5.2 Defect Detection
+Thiết lập. Chúng tôi sử dụng dataset được đề cập trong Phần 3.2 cho phát hiện lỗi, nhằm dự đoán liệu một mã nguồn có chứa lỗi có thể được sử dụng để tấn công các hệ thống phần mềm hay không. Metric đánh giá là điểm accuracy. Chúng tôi sử dụng baseline CodeBERT để mã hóa mã nguồn và lấy biểu diễn của mã nguồn để tính toán xác suất bị phơi bày với các lỗ hổng.
+
+Kết quả. Bảng 7 hiển thị kết quả của các mô hình chúng tôi triển khai. Chúng tôi sử dụng Bidirectional LTSM (BiLTSM) [32], TextCNN [43], RoBERTa [50] và CodeBERT [18] để mã hóa biểu diễn của một mã nguồn tương ứng. Sau đó, một mạng feed forward hai tầng được theo sau bởi một tầng softmax được sử dụng để tính toán xác suất gặp các lỗ hổng. Như được hiển thị trong kết quả, CodeBERT đạt điểm accuracy 62.1, dẫn đến hiệu suất state-of-the-art. Tuy nhiên, cải thiện đạt được bởi các mô hình pretrained bị hạn chế so với TextCNN. Một hướng tiềm năng để cải thiện các mô hình pretrained này là kết hợp thông tin từ các cấu trúc mã như Abstract Syntax Tree, data flow, control flow, v.v.
+
+5.3 Cloze test
+Thiết lập. Chúng tôi sử dụng các dataset CT-all và CT-maxmin cho tác vụ cloze test. Các mô hình được kỳ vọng dự đoán token mã bị che bằng cách tận dụng tài liệu và ngữ cảnh của mã. Accuracy
+
+--- TRANG 9 ---
+CodeXGLUE: Một Benchmark Dataset cho Machine Learning trong việc Hiểu và Sinh Code
+
+Bảng 6: Kết quả trên tác vụ cloze test.
+
+| Mô hình | CT-all | | | | | | CT-maxmin | | | | | | Tổng thể |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| | Ruby | JS | Go | Python | Java | PHP | Ruby | JS | Go | Python | Java | PHP | |
+| RoBERTa | 47.44 | 59.96 | 40.77 | 54.35 | 50.73 | 60.16 | 73.68 | 64.71 | 71.71 | 59.18 | 59.75 | 69.78 | 62.45 |
+| CodeBERT(MLM) | 80.17 | 81.77 | 83.31 | 87.21 | 80.63 | 85.05 | 86.84 | 86.40 | 90.79 | 82.20 | 90.46 | 88.21 | 85.66 |
+
+Bảng 7: Kết quả trên tác vụ phát hiện lỗi.
+
+| Mô hình | Accuracy |
+|---|---|
+| BiLSTM | 59.37 |
+| TextCNN | 60.69 |
+| RoBERTa | 61.05 |
+| CodeBERT | 62.08 |
+
+được báo cáo cho mỗi ngôn ngữ, với điểm accuracy trung bình macro cho tất cả ngôn ngữ làm metric đánh giá tổng thể.
+
+Kết quả. Bảng 6 hiển thị kết quả trên các dataset CT-all và CT-maxmin. Chúng tôi báo cáo hiệu suất của RoBERTa [50] và CodeBERT (Masked Language Modeling, MLM) [18], được khởi tạo với RoBERTa và được đào tạo thêm với mục tiêu masked language modeling. Kết quả chứng minh rằng CodeBERT hoạt động tốt hơn RoBERTa chỉ học từ ngôn ngữ tự nhiên.
+
+5.4 Code completion
+Thiết lập. Chúng tôi sử dụng các dataset PY150 và Github Java Corpus cho các tác vụ hoàn thành mã cấp token và cấp dòng. Tác vụ cấp token là dự đoán token tiếp theo cho ngữ cảnh của các token trước đó, và các dự đoán được đánh giá theo accuracy cấp token; trong khi tác vụ cấp dòng bao gồm việc hoàn thành một dòng mã hoàn chỉnh, và chất lượng của mã được đánh giá thông qua các metric được biết đến là exact match accuracy và Levenshtein edit similarity [72]. Levenshtein edit similarity đo lường có bao nhiêu chỉnh sửa ký tự đơn cần thiết để biến đổi một chuỗi thành chuỗi khác. Đây là một metric đánh giá quan trọng cho tình huống hoàn thành mã vì nó đo lường bao nhiêu nỗ lực cần thiết để các lập trình viên sửa lỗi trong mã. Điểm trên mỗi dataset là giá trị trung bình của accuracy trên hoàn thành cấp token và edit similarity trên hoàn thành cấp dòng. Điểm tổng thể của tác vụ hoàn thành mã được tính bằng cách lấy trung bình điểm trên cả hai dataset.
+
+Kết quả. Bảng 8 hiển thị kết quả của tất cả mô hình trên cả hai dataset. Chúng tôi fine-tune LSTM [32], Transformer [77], GPT-2 [59], CodeGPT và CodeGPT-adapted để sinh các token tiếp theo. Các mô hình CodeGPT và CodeGPT-adapted được mô tả trong Phần 4.2. CodeGPT-adapted đạt hiệu suất state-of-the-art với điểm tổng thể 71.28.
+
+5.5 Code search
+Thiết lập. Chúng tôi sử dụng các dataset CodeSearchNet AdvTest và WebQueryTest được đề cập trong Phần 3.6 cho tìm kiếm mã. Để cải thiện hiệu quả, chúng tôi mã hóa riêng biệt văn bản và mã để thực hiện tìm kiếm mã. Cho dataset CodeSearchNet AdvTest, tác vụ là tìm mã liên quan nhất từ một tập hợp các ứng viên cho một truy vấn và được đánh giá thông qua metric Mean Reciprocal Rank (MRR). Cho dataset WebQueryTest, tác vụ được công thức hóa như một phân loại nhị phân để dự đoán liệu một mã có thể trả lời một truy vấn cho trước hay không và chúng tôi sử dụng điểm F1 và accuracy làm metric đánh giá. Điểm tổng thể cho tìm kiếm mã là trung bình của các giá trị được ghi nhận cho hai subtask.
+
+Kết quả. Bảng 9 trình bày kết quả trên các dataset CodeSearchNet AdvTest và WebQueryTest. Chúng tôi báo cáo hiệu suất của RoBERTa [50] và CodeBERT [18]. Bảng cho thấy CodeBERT hoạt động tốt hơn RoBERTa.
+
+5.6 Text-to-code generation
+Thiết lập. Chúng tôi sử dụng dataset CONCODE cho sinh mã từ text. Các mô hình được kỳ vọng sinh mã nguồn của các hàm thành viên lớp Java, cho các mô tả ngôn ngữ tự nhiên và môi trường lớp. Chúng tôi báo cáo exact match accuracy, điểm BLEU [56] và điểm CodeBLEU [65]. Chúng tôi sử dụng điểm CodeBLEU làm metric đánh giá tổng thể.
+
+Kết quả. Bảng 10 trình bày kết quả trên tập test CONCODE. Seq2Seq [70] là một mô hình sequence to sequence dựa trên RNN. Seq2Action + MAML [26] kết hợp một mô hình truy xuất nhận biết ngữ cảnh với model-agnostic meta-learning (MAML). Iyer-Simp + 200 idioms [36] trích xuất các idiom mã và áp dụng giải mã dựa trên idiom. Chúng tôi cũng báo cáo hiệu suất của các mô hình pretrained, bao gồm GPT-2 [59], CodeGPT và CodeGPT-adapted. CodeGPT-adapted đạt điểm CodeBLEU 35.98, dẫn đến hiệu suất state-of-the-art.
+
+5.7 Code translation
+Thiết lập. Chúng tôi sử dụng dataset chúng tôi xây dựng như mô tả trong Phần 3.5. Dataset chứa các mẫu khớp của các hàm Java và C#. Chúng tôi báo cáo exact match accuracy, điểm BLEU [56] và điểm CodeBLEU [65] trên tác vụ này. CodeBLEU được sử dụng làm metric đánh giá tổng thể.
+
+Kết quả. Bảng 12 hiển thị kết quả của các mô hình trên cả hai hướng dịch. Phương pháp Naive trực tiếp sao chép mã nguồn làm kết quả dịch. PBSMT là viết tắt của phrase-based statistical machine translation [44]. Transformer sử dụng cùng số lượng tầng và kích thước ẩn như các mô hình pretrained. Bảng cho thấy Transformer được khởi tạo với CodeBERT và được fine-tune với các cặp mẫu khớp tạo ra kết quả tốt nhất.
+
+5.8 Code repair
+Thiết lập. Chúng tôi sử dụng dataset ban đầu được phát hành bởi Tufano et al. [75], được mô tả trong Phần 3.7. Dataset chứa hai
+
+--- TRANG 10 ---
+Lu, Guo, Ren và Huang, et al.
+
+Bảng 8: Kết quả trên tác vụ hoàn thành mã.
+
+| Mô hình | PY150 | | Github Java Corpus | | Tổng thể |
+|---|---|---|---|---|---|
+| | token-level Accuracy | line-level EM | Edit Sim | token-level Accuracy | line-level EM | Edit Sim | |
+| LSTM | 58.00 | 17.93 | 50.05 | 56.02 | 10.30 | 41.55 | 51.41 |
+| Transformer | 73.26 | 36.65 | 67.51 | 64.16 | 15.33 | 50.39 | 63.83 |
+| GPT-2 | 74.22 | 38.55 | 68.94 | 74.89 | 24.30 | 60.70 | 69.69 |
+| CodeGPT | 74.93 | 39.11 | 69.69 | 76.45 | 25.30 | 61.54 | 70.65 |
+| CodeGPT-adapted | 75.11 | 39.65 | 69.84 | 77.13 | 26.43 | 63.03 | 71.28 |
+
+Bảng 9: Kết quả trên tác vụ tìm kiếm mã.
+
+| Mô hình | AdvTest MRR | WebQueryTest F1 | Accuracy | Tổng thể |
+|---|---|---|---|---|
+| RoBERTa | 18.33 | 57.49 | 40.92 | 33.63 |
+| CodeBERT | 27.19 | 58.95 | 47.80 | 40.28 |
+
+Bảng 10: Kết quả trên tác vụ sinh mã từ text.
+
+| Mô hình | EM | BLEU | CodeBLEU |
+|---|---|---|---|
+| Seq2Seq | 3.05 | 21.31 | 26.39 |
+| Seq2Action+MAML | 10.05 | 24.40 | 29.46 |
+| Iyer-Simp+200 idioms | 12.20 | 26.60 | - |
+| GPT-2 | 17.35 | 25.37 | 29.69 |
+| CodeGPT | 18.25 | 28.69 | 32.71 |
+| CodeGPT-adapted | 20.10 | 32.79 | 35.98 |
+
+tập con được thiết lập theo độ dài của các hàm Java: small≤50 và 50<medium≤100. Chúng tôi báo cáo exact match accuracy, điểm BLEU [56] và điểm CodeBLEU [65] trên tác vụ này. Exact match accuracy được sử dụng làm metric đánh giá tổng thể.
+
+Kết quả. Phương pháp Naive trực tiếp sao chép mã bị lỗi làm kết quả sửa chữa. Đối với Transformer, chúng tôi sử dụng cùng số lượng tầng và kích thước ẩn như các mô hình pretrained. Về phương pháp CodeBERT, chúng tôi khởi tạo Transformer encoder với mô hình CodeBERT pretrained và khởi tạo ngẫu nhiên các tham số của decoder và source-to-target attention. Sau đó chúng tôi sử dụng dữ liệu training để fine-tune toàn bộ mô hình. Như được hiển thị trong bảng, Transformer với khởi tạo CodeBERT đạt hiệu suất tốt nhất trong tất cả các mô hình.
+
+5.9 Code Summarization
+Thiết lập. Chúng tôi sử dụng dataset được đề cập trong Phần 3.9 cho tóm tắt mã. Để đánh giá các mô hình, chúng tôi theo Feng et al. [18], sử dụng smoothed BLEU score [49] làm metric đánh giá, vì điều này phù hợp để đánh giá các tài liệu ngắn. Chúng tôi sử dụng pipeline encoder-decoder để giải quyết vấn đề này. Độ dài tối đa của input và inference được đặt là 256 và 128 tương ứng. Chúng tôi sử dụng optimizer Adam để cập nhật các tham số của mô hình. Learning rate và batch size lần lượt là 5e-5 và 32. Chúng tôi điều chỉnh các siêu tham số và thực hiện early stopping trên tập development.
+
+Kết quả. Bảng 13 hiển thị kết quả đạt được bởi các mô hình khác nhau trong tóm tắt mã. Seq2Seq là một mô hình sequence to sequence dựa trên RNN. Transformer và RoBERTa sử dụng cùng thiết lập như CodeBERT, nhưng encoder được khởi tạo ngẫu nhiên và bởi RoBERTa [50] tương ứng. Tất cả các mô hình sử dụng từ vựng Byte Pair Encoding (BPE) [66]. Trong thí nghiệm này, CodeBERT có được cải thiện 1.3% trong điểm BLEU so với RoBERTa và đạt hiệu suất state-of-the-art trên sáu ngôn ngữ lập trình.
+
+5.10 Documentation translation
+Thiết lập. Chúng tôi sử dụng dataset Microsoft Docs cho các tác vụ dịch text-to-text, tập trung vào dịch đa ngôn ngữ ít tài nguyên giữa tiếng Anh (EN) và các ngôn ngữ khác, bao gồm Latvian (LA), Danish (DA), Norwegian (NO) và Chinese (ZH). Theo Johnson et al. [40], chúng tôi đào tạo một mô hình đa ngôn ngữ duy nhất làm baseline. Để phân biệt giữa các cặp dịch khác nhau, chúng tôi thêm một language token (ví dụ: ⟨2en⟩, ⟨2zh⟩) ở đầu câu nguồn để chỉ ra ngôn ngữ đích mà mô hình nên dịch. Chúng tôi khởi tạo encoder của mô hình dịch đa ngôn ngữ với XLM-R [13]. Các mô hình được đánh giá thông qua điểm BLEU [56], và điểm tổng thể cho dịch tài liệu là điểm BLEU trung bình trên tám hướng dịch.
+
+Kết quả. Bảng 14 hiển thị kết quả đạt được bởi các mô hình trên tám hướng dịch. Transformer Baseline là mô hình dịch đa ngôn ngữ [40]. pretrained Transformer khởi tạo encoder của Transformer Baseline với XLM-R [13]. Về hiệu suất tổng thể trên tám hướng dịch, Transformer Baseline và pretrained Transformer có được điểm BLEU lần lượt là 52.67 và 66.16. Kết quả thí nghiệm chứng minh rằng pretraining đạt được cải thiện 13.49 trong điểm BLEU so với mô hình baseline mạnh. Hình 8 hiển thị thời gian cần thiết để đào tạo mô hình và thực hiện suy luận trên mô hình, cũng như trong các tác vụ khác.
+
+6 CÔNG TRÌNH LIÊN QUAN
+Các benchmark dataset đã đóng vai trò trung tâm trong sự phát triển của nghiên cứu AI ứng dụng. Ví dụ, các dataset LibriSpeech [55] và SQuAD [60] thúc đẩy sự phát triển của các mô hình dựa trên dữ liệu cho nhận dạng giọng nói tự động và đọc hiểu của
+
+--- TRANG 11 ---
+CodeXGLUE: Một Benchmark Dataset cho Machine Learning trong việc Hiểu và Sinh Code
+
+Bảng 11: Kết quả trên tác vụ sửa mã.
+
+| Phương pháp | small | | | medium | | | Tổng thể |
+|---|---|---|---|---|---|---|---|
+| | BLEU | Acc | CodeBLEU | BLEU | Acc | CodeBLEU | |
+| Naive | 78.06 | 0.000 | - | 90.91 | 0.000 | - | 0.000 |
+| LSTM | 76.76 | 0.100 | - | 72.08 | 0.025 | - | 0.063 |
+| Transformer | 77.21 | 0.147 | 73.31 | 89.25 | 0.037 | 81.72 | 0.092 |
+| CodeBERT | 77.42 | 0.164 | 75.58 | 91.07 | 0.052 | 87.52 | 0.108 |
+
+Bảng 12: Kết quả trên tác vụ dịch mã.
+
+| Phương pháp | Java→C# | | | C# →Java | | | Tổng thể |
+|---|---|---|---|---|---|---|---|
+| | BLEU | Acc | CodeBLEU | BLEU | Acc | CodeBLEU | |
+| Naive | 18.54 | 0.000 | - | 18.69 | 0.000 | - | - |
+| PBSMT | 43.53 | 0.125 | 42.71 | 40.06 | 0.161 | 43.48 | 43.10 |
+| Transformer | 55.84 | 0.330 | 63.74 | 50.47 | 0.379 | 61.59 | 62.67 |
+| RoBERTa (code) | 77.46 | 0.561 | 83.07 | 71.99 | 0.579 | 80.18 | 81.63 |
+| CodeBERT | 79.92 | 0.590 | 85.10 | 72.14 | 0.580 | 79.41 | 82.26 |
+
+Bảng 13: Kết quả trên tác vụ tóm tắt mã.
+
+| Mô hình | Ruby | Javascript | Go | Python | Java | PHP | Tổng thể |
+|---|---|---|---|---|---|---|---|
+| Seq2Seq | 9.64 | 10.21 | 13.98 | 15.93 | 15.09 | 21.08 | 14.32 |
+| Transformer | 11.18 | 11.59 | 16.38 | 15.81 | 16.26 | 22.12 | 15.56 |
+| RoBERTa | 11.17 | 11.90 | 17.72 | 18.14 | 16.47 | 24.02 | 16.57 |
+| CodeBERT | 12.16 | 14.90 | 18.07 | 19.06 | 17.65 | 25.16 | 17.83 |
+
+Chi phí đào tạo và suy luận
+
+| Tác vụ | Tên Dataset | Ngôn ngữ | Chi phí Đào tạo | Chi phí Suy luận |
+|---|---|---|---|---|
+| Clone Detection | BigCloneBench | Java | 3 giờ đào tạo trên P100 x2 | 2 giờ trên p100 x2 |
+| | POJ-104 | C/C++ | 2 giờ đào tạo trên P100 x2 | 10 phút trên p100 x2 |
+| Defect Detection | Devign | C | 1 giờ trên P100 x2 | 2 phút trên p100 x2 |
+| Cloze Test | CT-all | Python, Java, PHP, JavaScript, Ruby, Go | N/A | 30 phút trên P100-16G x2 |
+| | CT-max/min | Python, Java, PHP, JavaScript, Ruby, Go | N/A | 1 phút trên P100-16G x2 |
+| Code Completion | PY150 | Python | 25 giờ trên P100 x2 | 30 phút trên P100 x2 |
+| | GitHub Java Corpus | Java | 2 giờ trên P100 x2 | 10 phút trên P100 x2 |
+| Code Repair | Bugs2Fix | Java | 24 giờ trên P100 x2 | 20 phút trên P100 x2 |
+| Code Translation | CodeTrans | Java-C# | 20 giờ trên P100 x2 | 5 phút trên P100 x2 |
+| NL Code Search | CodeSearchnet, AdvTest | Python | 5 giờ trên P100 x2 | 7 phút trên p100 x2 |
+| | CodeSearchNet, WebQueryTest | Python | 5 giờ trên P100 x2 | 1 phút trên P100 x2 |
+| Text-to-Code Generation | CONCODE | Java | 30 giờ trên P100 x2 | 20 phút trên P100 x2 |
+| Code Summarization | CodeSearchNet | Python, Java, PHP, JavaScript, Ruby, Go | Trung bình 12 giờ cho mỗi PL trên P100 x2 | Trung bình 1 giờ cho mỗi PL trên p100 x2 |
+| Documentation Translation | Microsoft Docs | English-Latvian/Danish/Norwegian/Chinese | 30 giờ trên P100x2 | 55 phút trên P100x2 |
+
+Hình 8: Chi phí thời gian đào tạo và suy luận cho mỗi tác vụ, được đánh giá trên hai GPU P100.
+
+--- TRANG 12 ---
+Lu, Guo, Ren và Huang, et al.
+
+Bảng 14: Kết quả trên tác vụ dịch tài liệu.
+
+| Tác vụ | Transformer Baseline | pretrained Transformer |
+|---|---|---|
+| EN→DA | 53.31 | 67.09 |
+| EN→LA | 37.85 | 51.92 |
+| EN→NO | 53.84 | 68.00 |
+| EN→ZH | 59.90 | 70.60 |
+| DA→EN | 58.73 | 67.02 |
+| LA→EN | 50.37 | 68.30 |
+| NO→EN | 57.73 | 71.84 |
+| ZH→EN | 50.00 | 64.47 |
+| Tổng thể | 52.67 | 66.16 |
+
+văn bản tương ứng. Với nhu cầu ngày càng tăng để kiểm tra khả năng khái quát hóa của các mô hình trên một loạt ứng dụng rộng, các nhà nghiên cứu đã tạo ra hoặc tập hợp các dataset bao quát nhiều tác vụ. Các mẫu đại diện của những dataset này bao gồm ImageNet [15] cho computer vision, GLUE [81] cho hiểu ngôn ngữ tự nhiên, XTREME [33] và XGLUE [48] cho xử lý ngôn ngữ tự nhiên đa ngôn ngữ. Theo hiểu biết tốt nhất của chúng tôi, CodeXGLUE là benchmark dataset đa dạng đầu tiên có thể được áp dụng cho các vấn đề code intelligence khác nhau.
+
+Nhiều tác vụ liên quan đến machine learning cho software engineering [1] có đủ lượng dữ liệu để hỗ trợ phát triển các phương pháp dựa trên dữ liệu, nhưng không được bao quát bởi CodeXGLUE. Chúng tôi dự định mở rộng đến những tác vụ này trong tương lai. Ví dụ, tác vụ khai thác idiom [5,36] là trích xuất các idiom mã, là các đoạn cú pháp tái diễn qua các dự án phần mềm và phục vụ một mục đích ngữ nghĩa duy nhất [5]. Bug localization [27,61,76] là chỉ ra vị trí lỗi khi một chương trình thất bại trong các test. Tác vụ sinh test case [22,74] là sinh các test case đơn vị tự động. Program synthesis [20,45,53,64,68,79,98] mở rộng tác vụ sinh mã từ text nhằm sinh các chương trình từ một đặc tả [24], chẳng hạn như pseudocode, mô tả ngôn ngữ tự nhiên và các ví dụ input/output.
+
+7 KẾT LUẬN
+Với CodeXGLUE, chúng tôi tìm cách hỗ trợ phát triển các mô hình có thể được áp dụng cho các vấn đề hiểu và sinh chương trình khác nhau, với mục tiêu tăng năng suất của các lập trình viên phần mềm. Chúng tôi khuyến khích các nhà nghiên cứu tham gia vào thử thách mở để tạo ra tiến bộ trong code intelligence. Tiến lên phía trước, chúng tôi đang lên kế hoạch mở rộng CodeXGLUE đến nhiều ngôn ngữ lập trình và tác vụ downstream hơn trong khi tiếp tục phát triển các mô hình pretrained tiên tiến bằng cách khám phá các cấu trúc mô hình mới, giới thiệu các tác vụ pretraining mới, sử dụng các loại dữ liệu khác nhau và nhiều hơn nữa.
+
+TÀI LIỆU THAM KHẢO
+[1] Miltiadis Allamanis, Earl T. Barr, Premkumar Devanbu, và Charles Sutton. 2018. A Survey of Machine Learning for Big Code and Naturalness. ACM Comput. Surv. 51, 4, Article 81 (July 2018), 37 pages. https://doi.org/10.1145/3212695
+
+[2] Miltiadis Allamanis, Marc Brockschmidt, và Mahmoud Khademi. 2017. Learning to represent programs with graphs. arXiv preprint arXiv:1711.00740 (2017).
+
+[3] Miltiadis Allamanis, Hao Peng, và Charles Sutton. 2016. A convolutional attention network for extreme summarization of source code. In International conference on machine learning. 2091–2100.
+
+[4] Miltiadis Allamanis và Charles Sutton. 2013. Mining Source Code Repositories at Massive Scale using Language Modeling. In 2013 10th Working Conference on Mining Software Repositories (MSR). IEEE, 207–216.
+
+[5] Miltiadis Allamanis và Charles Sutton. 2014. Mining idioms from source code. In Proceedings of the 22nd ACM SIGSOFT International Symposium on Foundations of Software Engineering. 472–483.
+
+[6] Uri Alon, Meital Zilberstein, Omer Levy, và Eran Yahav. 2019. code2vec: Learning distributed representations of code. Proceedings of the ACM on Programming Languages 3, POPL (2019), 1–29.
+
+[7] Tal Ben-Nun, Alice Shoshana Jakobovits, và Torsten Hoefler. 2018. Neural code comprehension: A learnable representation of code semantics. In Advances in Neural Information Processing Systems. 3585–3597.
+
+[8] Pavol Bielik, Veselin Raychev, và Martin Vechev. 2016. PHOG: Probabilistic Model for Code. In Proceedings of the 33rd International Conference on International Conference on Machine Learning - Volume 48 (New York, NY, USA) (ICML'16). JMLR.org, 2933–2942.
+
+[9] Marcel Bruch, Martin Monperrus, và Mira Mezini. 2009. Learning from Examples to Improve Code Completion Systems. In Proceedings of the 7th Joint Meeting of the European Software Engineering Conference and the ACM SIGSOFT Symposium on The Foundations of Software Engineering (Amsterdam, The Netherlands) (ESEC/FSE '09). Association for Computing Machinery, New York, NY, USA, 213–222. https://doi.org/10.1145/1595696.1595728
+
+[10] L. Büch và A. Andrzejak. 2019. Learning-Based Recursive Aggregation of Abstract Syntax Trees for Code Clone Detection. In 2019 IEEE 26th International Conference on Software Analysis, Evolution and Reengineering (SANER). 95–104. https://doi.org/10.1109/SANER.2019.8668039
+
+[11] Xinyun Chen, Chang Liu, và Dawn Song. 2018. Tree-to-tree neural networks for program translation. In Advances in neural information processing systems. 2547–2557.
+
+[12] Colin B Clement, Dawn Drain, Jonathan Timcheck, Alexey Svyatkovskiy, và Neel Sundaresan. 2020. PyMT5: multi-mode translation of natural language and Python code with transformers. arXiv preprint arXiv:2010.03150 (2020).
+
+[13] Alexis Conneau, Kartikay Khandelwal, Naman Goyal, Vishrav Chaudhary, Guillaume Wenzek, Francisco Guzmán, Edouard Grave, Myle Ott, Luke Zettlemoyer, và Veselin Stoyanov. 2019. Unsupervised cross-lingual representation learning at scale. arXiv preprint arXiv:1911.02116 (2019).
+
+[14] Mayur Datar, Nicole Immorlica, Piotr Indyk, và Vahab S Mirrokni. 2004. Locality-sensitive hashing scheme based on p-stable distributions. In Proceedings of the twentieth annual symposium on Computational geometry. 253–262.
+
+[15] Jia Deng, Wei Dong, Richard Socher, Li-Jia Li, Kai Li, và Li Fei-Fei. 2009. Imagenet: A large-scale hierarchical image database. In 2009 IEEE conference on computer vision and pattern recognition. Ieee, 248–255.
+
+[16] Jacob Devlin, Ming-Wei Chang, Kenton Lee, và Kristina Toutanova. 2018. Bert: Pre-training of deep bidirectional transformers for language understanding. arXiv preprint arXiv:1810.04805 (2018).
+
+[17] Jean-Rémy Falleri, Floréal Morandat, Xavier Blanc, Matias Martinez, và Martin Monperrus. 2014. Fine-grained and accurate source code differencing. In Proceedings of the 29th ACM/IEEE international conference on Automated software engineering. 313–324.
+
+[18] Zhangyin Feng, Daya Guo, Duyu Tang, Nan Duan, Xiaocheng Feng, Ming Gong, Linjun Shou, Bing Qin, Ting Liu, Daxin Jiang, et al. 2020. Codebert: A pre-trained model for programming and natural languages. arXiv preprint arXiv:2002.08155 (2020).
+
+[19] Patrick Fernandes, Miltiadis Allamanis, và Marc Brockschmidt. 2018. Structured neural summarization. arXiv preprint arXiv:1811.01824 (2018).
+
+[20] John K. Feser, Swarat Chaudhuri, và Isil Dillig. 2015. Synthesizing Data Structure Transformations from Input-Output Examples. In Proceedings of the 36th ACM SIGPLAN Conference on Programming Language Design and Implementation (Portland, OR, USA) (PLDI '15). Association for Computing Machinery, New York, NY, USA, 229–239. https://doi.org/10.1145/2737924.2737977
+
+[21] Michael Fischer, Martin Pinzger, và Harald Gall. 2003. Populating a release history database from version control and bug tracking systems. In International Conference on Software Maintenance, 2003. ICSM 2003. Proceedings. IEEE, 23–32.
+
+[22] Gordon Fraser và Andrea Arcuri. 2011. Evosuite: automatic test suite generation for object-oriented software. In Proceedings of the 19th ACM SIGSOFT symposium and the 13th European conference on Foundations of software engineering. 416–419.
+
+[23] Xiaodong Gu, Hongyu Zhang, và Sunghun Kim. 2018. Deep Code Search. In Proceedings of the 40th International Conference on Software Engineering (Gothenburg, Sweden) (ICSE '18). Association for Computing Machinery, New York, NY, USA, 933–944. https://doi.org/10.1145/3180155.3180167
+
+[24] Sumit Gulwani, Oleksandr Polozov, Rishabh Singh, et al. 2017. Program synthesis. Foundations and Trends ®in Programming Languages 4, 1-2 (2017), 1–119.
+
+[25] Daya Guo, Shuo Ren, Shuai Lu, Zhangyin Feng, Duyu Tang, Shujie Liu, Long Zhou, Nan Duan, Jian Yin, Daxin Jiang, et al. 2020. GraphCodeBERT: Pre-training Code Representations with Data Flow. arXiv preprint arXiv:2009.08366 (2020).
+
+--- TRANG 13 ---
+CodeXGLUE: Một Benchmark Dataset cho Machine Learning trong việc Hiểu và Sinh Code
+
+[26] Daya Guo, Duyu Tang, Nan Duan, Ming Zhou, và Jian Yin. 2019. Coupling Retrieval and Meta-Learning for Context-Dependent Semantic Parsing. arXiv preprint arXiv:1906.07108 (2019).
+
+[27] Rahul Gupta, Aditya Kanade, và Shirish Shevade. 2019. Neural Attribution for Semantic Bug-Localization in Student Programs. In Advances in Neural Information Processing Systems. 11884–11894.
+
+[28] Rahul Gupta, Soham Pal, Aditya Kanade, và Shirish Shevade. 2017. DeepFix: Fixing Common C Language Errors by Deep Learning. In Proceedings of the Thirty-First AAAI Conference on Artificial Intelligence (San Francisco, California, USA) (AAAI'17). AAAI Press, 1345–1351.
+
+[29] Vincent J Hellendoorn và Premkumar Devanbu. 2017. Are deep neural networks the best choice for modeling source code?. In Proceedings of the 2017 11th Joint Meeting on Foundations of Software Engineering. 763–773.
+
+[30] Vincent J Hellendoorn, Charles Sutton, Rishabh Singh, Petros Maniatis, và David Bieber. 2019. Global relational models of source code. In International Conference on Learning Representations.
+
+[31] Abram Hindle, Earl T Barr, Zhendong Su, Mark Gabel, và Premkumar Devanbu. 2012. On the naturalness of software. In 2012 34th International Conference on Software Engineering (ICSE). IEEE, 837–847.
+
+[32] Sepp Hochreiter và Jürgen Schmidhuber. 1997. Long short-term memory. Neural computation 9, 8 (1997), 1735–1780.
+
+[33] Junjie Hu, Sebastian Ruder, Aditya Siddhant, Graham Neubig, Orhan Firat, và Melvin Johnson. 2020. Xtreme: A massively multilingual multi-task benchmark for evaluating cross-lingual generalization. arXiv preprint arXiv:2003.11080 (2020).
+
+[34] Xing Hu, Ge Li, Xin Xia, David Lo, Shuai Lu, và Zhi Jin. 2018. Summarizing Source Code with Transferred API Knowledge. In Proceedings of the 27th International Joint Conference on Artificial Intelligence (Stockholm, Sweden) (IJCAI'18). AAAI Press, 2269–2275.
+
+[35] Hamel Husain, Ho-Hsiang Wu, Tiferet Gazit, Miltiadis Allamanis, và Marc Brockschmidt. 2019. Codesearchnet challenge: Evaluating the state of semantic code search. arXiv preprint arXiv:1909.09436 (2019).
+
+[36] Srinivasan Iyer, Alvin Cheung, và Luke Zettlemoyer. 2019. Learning programmatic idioms for scalable semantic parsing. arXiv preprint arXiv:1904.09086 (2019).
+
+[37] Srinivasan Iyer, Ioannis Konstas, Alvin Cheung, và Luke Zettlemoyer. 2016. Summarizing source code using a neural attention model. In Proceedings of the 54th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers). 2073–2083.
+
+[38] Srinivasan Iyer, Ioannis Konstas, Alvin Cheung, và Luke Zettlemoyer. 2018. Mapping language to code in programmatic context. arXiv preprint arXiv:1808.09588 (2018).
+
+[39] Lingxiao Jiang, Ghassan Misherghi, Zhendong Su, và Stephane Glondu. 2007. Deckard: Scalable and accurate tree-based detection of code clones. In 29th International Conference on Software Engineering (ICSE'07). IEEE, 96–105.
+
+[40] Melvin Johnson, Mike Schuster, Quoc V Le, Maxim Krikun, Yonghui Wu, Zhifeng Chen, Nikhil Thorat, Fernanda Viégas, Martin Wattenberg, Greg Corrado, et al. 2017. Google's multilingual neural machine translation system: Enabling zero-shot translation. Transactions of the Association for Computational Linguistics 5 (2017), 339–351.
+
+[41] Svetoslav Karaivanov, Veselin Raychev, và Martin Vechev. 2014. Phrase-Based Statistical Translation of Programming Languages. In Proceedings of the 2014 ACM International Symposium on New Ideas, New Paradigms, and Reflections on Programming Software (Portland, Oregon, USA) (Onward! 2014). Association for Computing Machinery, New York, NY, USA, 173–184. https://doi.org/10.1145/2661136.2661148
+
+[42] Rafael-Michael Karampatsis, Hlib Babii, Romain Robbes, Charles Sutton, và Andrea Janes. 2020. Big Code!= Big Vocabulary: Open-Vocabulary Models for Source Code. arXiv preprint arXiv:2003.07914 (2020).
+
+[43] Yoon Kim. 2014. Convolutional neural networks for sentence classification. arXiv preprint arXiv:1408.5882 (2014).
+
+[44] Philipp Koehn, Franz J Och, và Daniel Marcu. 2003. Statistical phrase-based translation. Technical Report. UNIVERSITY OF SOUTHERN CALIFORNIA MARINA DEL REY INFORMATION SCIENCES INST.
+
+[45] Sumith Kulal, Panupong Pasupat, Kartik Chandra, Mina Lee, Oded Padon, Alex Aiken, và Percy S Liang. 2019. Spoc: Search-based pseudocode to code. In Advances in Neural Information Processing Systems. 11906–11917.
+
+[46] Marie-Anne Lachaux, Baptiste Roziere, Lowik Chanussot, và Guillaume Lample. 2020. Unsupervised Translation of Programming Languages. arXiv preprint arXiv:2006.03511 (2020).
+
+[47] Yi Li, Shaohua Wang, Tien N Nguyen, và Son Van Nguyen. 2019. Improving bug detection via context-based code representation learning and attention-based neural networks. Proceedings of the ACM on Programming Languages 3, OOPSLA (2019), 1–30.
+
+[48] Yaobo Liang, Nan Duan, Yeyun Gong, Ning Wu, Fenfei Guo, Weizhen Qi, Ming Gong, Linjun Shou, Daxin Jiang, Guihong Cao, et al. 2020. Xglue: A new benchmark dataset for cross-lingual pre-training, understanding and generation. arXiv preprint arXiv:2004.01401 (2020).
+
+[49] Chin-Yew Lin và Franz Josef Och. 2004. Orange: a method for evaluating automatic evaluation metrics for machine translation. In COLING 2004: Proceedings of the 20th International Conference on Computational Linguistics. 501–507.
+
+[50] Yinhan Liu, Myle Ott, Naman Goyal, Jingfei Du, Mandar Joshi, Danqi Chen, Omer Levy, Mike Lewis, Luke Zettlemoyer, và Veselin Stoyanov. 2019. Roberta: A robustly optimized bert pretraining approach. arXiv preprint arXiv:1907.11692 (2019).
+
+[51] Sifei Luan, Di Yang, Celeste Barnaby, Koushik Sen, và Satish Chandra. 2019. Aroma: Code recommendation via structural code search. Proceedings of the ACM on Programming Languages 3, OOPSLA (2019), 1–28.
+
+[52] Lili Mou, Ge Li, Lu Zhang, Tao Wang, và Zhi Jin. 2016. Convolutional neural networks over tree structures for programming language processing. In Proceedings of the Thirtieth AAAI Conference on Artificial Intelligence. 1287–1293.
+
+[53] Arvind Neelakantan, Quoc V Le, và Ilya Sutskever. 2015. Neural programmer: Inducing latent programs with gradient descent. arXiv preprint arXiv:1511.04834 (2015).
+
+[54] Anh Tuan Nguyen, Tung Thanh Nguyen, và Tien N Nguyen. 2015. Divide-and-conquer approach for multi-phase statistical migration for source code (t). In 2015 30th IEEE/ACM International Conference on Automated Software Engineering (ASE). IEEE, 585–596.
+
+[55] Vassil Panayotov, Guoguo Chen, Daniel Povey, và Sanjeev Khudanpur. 2015. Librispeech: an asr corpus based on public domain audio books. In 2015 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP). IEEE, 5206–5210.
+
+[56] Kishore Papineni, Salim Roukos, Todd Ward, và Wei-Jing Zhu. 2002. BLEU: a method for automatic evaluation of machine translation. In Proceedings of the 40th annual meeting of the Association for Computational Linguistics. 311–318.
+
+[57] Michael Pradel và Koushik Sen. 2018. DeepBugs: A Learning Approach to Name-Based Bug Detection. Proc. ACM Program. Lang. 2, OOPSLA, Article 147 (Oct. 2018), 25 pages. https://doi.org/10.1145/3276517
+
+[58] Varot Premtoon, James Koppel, và Armando Solar-Lezama. 2020. Semantic Code Search via Equational Reasoning. In Proceedings of the 41st ACM SIGPLAN Conference on Programming Language Design and Implementation (London, UK) (PLDI 2020). Association for Computing Machinery, New York, NY, USA, 1066–1082. https://doi.org/10.1145/3385412.3386001
+
+[59] Alec Radford, Jeffrey Wu, Rewon Child, David Luan, Dario Amodei, và Ilya Sutskever. 2019. Language models are unsupervised multitask learners. OpenAI blog 1, 8 (2019), 9.
+
+[60] Pranav Rajpurkar, Jian Zhang, Konstantin Lopyrev, và Percy Liang. 2016. Squad: 100,000+ questions for machine comprehension of text. arXiv preprint arXiv:1606.05250 (2016).
+
+[61] Baishakhi Ray, Vincent Hellendoorn, Saheel Godhane, Zhaopeng Tu, Alberto Bacchelli, và Premkumar Devanbu. 2016. On the" naturalness" of buggy code. In 2016 IEEE/ACM 38th International Conference on Software Engineering (ICSE). IEEE, 428–439.
+
+[62] Veselin Raychev, Pavol Bielik, và Martin Vechev. 2016. Probabilistic Model for Code with Decision Trees. ACM SIGPLAN Notices (2016), 731–747.
+
+[63] Veselin Raychev, Martin Vechev, và Eran Yahav. 2014. Code Completion with Statistical Language Models. In Proceedings of the 35th ACM SIGPLAN Conference on Programming Language Design and Implementation (Edinburgh, United Kingdom) (PLDI '14). Association for Computing Machinery, New York, NY, USA, 419–428. https://doi.org/10.1145/2594291.2594321
+
+[64] Scott Reed và Nando De Freitas. 2015. Neural programmer-interpreters. arXiv preprint arXiv:1511.06279 (2015).
+
+[65] Shuo Ren, Daya Guo, Shuai Lu, Long Zhou, Shujie Liu, Duyu Tang, Ming Zhou, Ambrosio Blanco, và Shuai Ma. 2020. CodeBLEU: a Method for Automatic Evaluation of Code Synthesis. arXiv preprint arXiv:2009.10297 (2020).
+
+[66] Rico Sennrich, Barry Haddow, và Alexandra Birch. 2015. Neural machine translation of rare words with subword units. arXiv preprint arXiv:1508.07909 (2015).
+
+[67] Rico Sennrich, Barry Haddow, và Alexandra Birch. 2016. Neural Machine Translation of Rare Words with Subword Units. In Proceedings of the 54th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers). 1715–1725.
+
+[68] Rishabh Singh và Sumit Gulwani. 2015. Predicting a correct program in programming by example. In International Conference on Computer Aided Verification. Springer, 398–414.
+
+[69] Irene Solaiman, Miles Brundage, Jack Clark, Amanda Askell, Ariel Herbert-Voss, Jeff Wu, Alec Radford, Gretchen Krueger, Jong Wook Kim, Sarah Kreps, et al. 2019. Release strategies and the social impacts of language models. arXiv preprint arXiv:1908.09203 (2019).
+
+[70] Ilya Sutskever, Oriol Vinyals, và Quoc V Le. 2014. Sequence to sequence learning with neural networks. In Advances in neural information processing systems. 3104–3112.
+
+[71] Jeffrey Svajlenko, Judith F Islam, Iman Keivanloo, Chanchal K Roy, và Mohammad Mamun Mia. 2014. Towards a big data curated benchmark of inter-project code clones. In 2014 IEEE International Conference on Software Maintenance and Evolution. IEEE, 476–480.
+
+--- TRANG 14 ---
+Lu, Guo, Ren và Huang, et al.
+
+[72] Alexey Svyatkovskiy, Shao Kun Deng, Shengyu Fu, và Neel Sundaresan. 2020. IntelliCode Compose: Code Generation Using Transformer. arXiv preprint arXiv:2005.08025 (2020).
+
+[73] Alexey Svyatkovskiy, Ying Zhao, Shengyu Fu, và Neel Sundaresan. 2019. Pythia: ai-assisted code completion system. In Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. 2727–2735.
+
+[74] Michele Tufano, Dawn Drain, Alexey Svyatkovskiy, Shao Kun Deng, và Neel Sundaresan. 2020. Unit Test Case Generation with Transformers. arXiv preprint arXiv:2009.05617 (2020).
+
+[75] Michele Tufano, Cody Watson, Gabriele Bavota, Massimiliano Di Penta, Martin White, và Denys Poshyvanyk. 2019. An empirical study on learning bug-fixing patches in the wild via neural machine translation. ACM Transactions on Software Engineering and Methodology (TOSEM) 28, 4 (2019), 1–29.
+
+[76] Marko Vasic, Aditya Kanade, Petros Maniatis, David Bieber, và Rishabh Singh. 2019. Neural program repair by jointly learning to localize and repair. arXiv preprint arXiv:1904.01720 (2019).
+
+[77] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, và Illia Polosukhin. 2017. Attention is all you need. In Advances in neural information processing systems. 5998–6008.
+
+[78] Panagiotis Vekris, Benjamin Cosman, và Ranjit Jhala. 2016. Refinement Types for TypeScript. In Proceedings of the 37th ACM SIGPLAN Conference on Programming Language Design and Implementation (Santa Barbara, CA, USA) (PLDI '16). Association for Computing Machinery, New York, NY, USA, 310–325. https://doi.org/10.1145/2908080.2908110
+
+[79] Murali Vijayaraghavan, Chaudhuri Swarat, và Jermaine Chris. 2017. Bayesian Sketch Learning for Program Synthesis. CoRR.—-2017.—-Vol. abs/1703.05698.—-1703.05698 (2017).
+
+[80] Yao Wan, Zhou Zhao, Min Yang, Guandong Xu, Haochao Ying, Jian Wu, và Philip S Yu. 2018. Improving automatic source code summarization via deep reinforcement learning. In Proceedings of the 33rd ACM/IEEE International Conference on Automated Software Engineering. 397–407.
+
+[81] Alex Wang, Amanpreet Singh, Julian Michael, Felix Hill, Omer Levy, và Samuel R Bowman. 2018. Glue: A multi-task benchmark and analysis platform for natural language understanding. arXiv preprint arXiv:1804.07461 (2018).
+
+[82] Song Wang, Devin Chollak, Dana Movshovitz-Attias, và Lin Tan. 2016. Bugram: bug detection with n-gram language models. In Proceedings of the 31st IEEE/ACM International Conference on Automated Software Engineering. 708–719.
+
+[83] Song Wang, Taiyue Liu, và Lin Tan. 2016. Automatically Learning Semantic Features for Defect Prediction. In Proceedings of the 38th International Conference on Software Engineering (Austin, Texas) (ICSE '16). Association for Computing Machinery, New York, NY, USA, 297–308. https://doi.org/10.1145/2884781.2884804
+
+[84] Wenhan Wang, Ge Li, Bo Ma, Xin Xia, và Zhi Jin. 2020. Detecting Code Clones with Graph Neural Network and Flow-Augmented Abstract Syntax Tree. In 2020 IEEE 27th International Conference on Software Analysis, Evolution and Reengineering (SANER). IEEE, 261–271.
+
+[85] Wenhua Wang, Yuqun Zhang, Zhengran Zeng, và Guandong Xu. 2020. TranS³: A Transformer-based Framework for Unifying Code Summarization and Code Search. arXiv preprint arXiv:2003.03238 (2020).
+
+[86] Yanlin Wang, Lun Du, Ensheng Shi, Yuxuan Hu, Shi Han, và Dongmei Zhang. 2020. CoCoGUM: Contextual Code Summarization with Multi-Relational GNN on UMLs.
+
+[87] Bolin Wei, Ge Li, Xin Xia, Zhiyi Fu, và Zhi Jin. 2019. Code generation as a dual task of code summarization. In Advances in Neural Information Processing Systems. 6563–6573.
+
+[88] Huihui Wei và Ming Li. 2017. Supervised Deep Features for Software Functional Clone Detection by Exploiting Lexical and Syntactical Information in Source Code.. In IJCAI. 3034–3040.
+
+[89] Martin White, Michele Tufano, Christopher Vendome, và Denys Poshyvanyk. 2016. Deep learning code fragments for code clone detection. In 2016 31st IEEE/ACM International Conference on Automated Software Engineering (ASE). IEEE, 87–98.
+
+[90] Frank F Xu, Zhengbao Jiang, Pengcheng Yin, Bogdan Vasilescu, và Graham Neubig. 2020. Incorporating external knowledge through pre-training for natural language to code generation. arXiv preprint arXiv:2004.09015 (2020).
+
+[91] S. Yan, H. Yu, Y. Chen, B. Shen, và L. Jiang. 2020. Are the Code Snippets What We Are Searching for? A Benchmark and an Empirical Study on Code Search with Natural-Language Queries. In 2020 IEEE 27th International Conference on Software Analysis, Evolution and Reengineering (SANER). 344–354. https://doi.org/10.1109/SANER48275.2020.9054840
+
+[92] Ziyu Yao, Daniel S Weld, Wei-Peng Chen, và Huan Sun. 2018. StaQC: A Systematically Mined Question-Code Dataset from Stack Overflow. In Proceedings of the 2018 World Wide Web Conference. 1693–1703.
+
+[93] Fangke Ye, Shengtian Zhou, Anand Venkat, Ryan Marucs, Nesime Tatbul, Jesmin Jahan Tithi, Paul Petersen, Timothy Mattson, Tim Kraska, Pradeep Dubey, et al. 2020. MISIM: An End-to-End Neural Code Similarity System. arXiv preprint arXiv:2006.05265 (2020).
+
+[94] Pengcheng Yin, Bowen Deng, Edgar Chen, Bogdan Vasilescu, và Graham Neubig. 2018. Learning to Mine Aligned Code and Natural Language Pairs from Stack Overflow. In International Conference on Mining Software Repositories (MSR). ACM, 476–486. https://doi.org/10.1145/3196398.3196408
+
+[95] Pengcheng Yin và Graham Neubig. 2017. A syntactic neural model for general-purpose code generation. arXiv preprint arXiv:1704.01696 (2017).
+
+[96] Hao Yu, Wing Lam, Long Chen, Ge Li, Tao Xie, và Qianxiang Wang. 2019. Neural detection of semantic code clones via tree-based convolution. In 2019 IEEE/ACM 27th International Conference on Program Comprehension (ICPC). IEEE, 70–80.
+
+[97] Jian Zhang, Xu Wang, Hongyu Zhang, Hailong Sun, Kaixuan Wang, và Xudong Liu. 2019. A novel neural source code representation based on abstract syntax tree. In 2019 IEEE/ACM 41st International Conference on Software Engineering (ICSE). IEEE, 783–794.
+
+[98] Ruiqi Zhong, Mitchell Stern, và Dan Klein. 2020. Semantic Scaffolds for Pseudocode-to-Code Generation. arXiv preprint arXiv:2005.05927 (2020).
+
+[99] Yaqin Zhou, Shangqing Liu, Jingkai Siow, Xiaoning Du, và Yang Liu. 2019. Devign: Effective vulnerability identification by learning comprehensive program semantics via graph neural networks. In Advances in Neural Information Processing Systems. 10197–10207.

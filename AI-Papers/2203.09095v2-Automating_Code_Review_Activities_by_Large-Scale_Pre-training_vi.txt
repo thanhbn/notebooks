@@ -1,0 +1,628 @@
+# 2203.09095v2.pdf
+# Đã chuyển đổi từ PDF sang TXT  
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2203.09095v2.pdf
+# Kích thước file: 1567481 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+Tự động hóa các hoạt động Code Review bằng Large-Scale Pre-training
+Zhiyu Li∗†
+Đại học Bắc Kinh
+Trung Quốc
+AkinoLi@pku.edu.cn Shuai Lu∗
+Microsoft Research Asia
+Trung Quốc
+shuailu@microsoft.com Daya Guo†
+Đại học Trung Sơn
+Trung Quốc
+guody5@mail2.sysu.edu.cn
+
+Nan Duan‡
+Microsoft Research Asia  
+Trung Quốc
+nanduan@microsoft.com Shailesh Jannu
+LinkedIn
+Hoa Kỳ
+sjannu@linkedin.com Grant Jenks
+LinkedIn
+Hoa Kỳ
+gjenks@linkedin.com
+
+Deep Majumder
+LinkedIn
+Hoa Kỳ
+dmajumder@linkedin.com Jared Green
+LinkedIn
+Hoa Kỳ
+jagreen@linkedin.com Alexey Svyatkovskiy
+Microsoft DevDiv
+Hoa Kỳ
+alsvyatk@microsoft.com
+
+Shengyu Fu
+Microsoft DevDiv
+Hoa Kỳ
+shengyfu@microsoft.com Neel Sundaresan
+Microsoft DevDiv
+Hoa Kỳ
+neels@microsoft.com
+
+TÓM TẮT
+Code review là một phần thiết yếu trong vòng đời phát triển phần mềm vì nó nhằm đảm bảo chất lượng mã nguồn. Các hoạt động code review hiện đại đòi hỏi các nhà phát triển phải xem, hiểu và thậm chí chạy các chương trình để đánh giá logic, chức năng, độ trễ, phong cách và các yếu tố khác. Kết quả là các nhà phát triển phải dành quá nhiều thời gian để review mã nguồn của đồng nghiệp. Do đó, việc tự động hóa quy trình code review là một nhu cầu cấp thiết. Trong nghiên cứu này, chúng tôi tập trung vào việc sử dụng các kỹ thuật pre-training cho các tác vụ trong kịch bản code review. Chúng tôi thu thập một tập dữ liệu quy mô lớn về các thay đổi mã nguồn thực tế và code review từ các dự án mã nguồn mở bằng chín ngôn ngữ lập trình phổ biến nhất. Để hiểu rõ hơn về code diff và review, chúng tôi đề xuất CodeReviewer, một mô hình pre-trained sử dụng bốn tác vụ pre-training được thiết kế đặc biệt cho kịch bản code review. Để đánh giá mô hình của chúng tôi, chúng tôi tập trung vào ba tác vụ chính liên quan đến các hoạt động code review, bao gồm ước lượng chất lượng thay đổi mã nguồn, tạo ra comment review và cải tiến mã nguồn. Hơn nữa, chúng tôi thiết lập một tập dữ liệu benchmark chất lượng cao dựa trên dữ liệu đã thu thập cho ba tác vụ này và tiến hành các thí nghiệm toàn diện trên đó. Kết quả thí nghiệm
+
+∗Đóng góp ngang nhau.
+†Công việc được thực hiện trong thời gian thực tập tại Microsoft Research Asia.
+‡Tác giả liên hệ là Nan Duan.
+
+Quyền thực hiện các bản sao kỹ thuật số hoặc bản cứng của toàn bộ hoặc một phần công trình này cho mục đích cá nhân hoặc sử dụng trong lớp học được cấp miễn phí với điều kiện các bản sao không được thực hiện hoặc phân phối vì lợi nhuận hoặc lợi thế thương mại và các bản sao phải ghi rõ thông báo này và trích dẫn đầy đủ ở trang đầu tiên. Bản quyền cho các thành phần của công trình này thuộc sở hữu của những người khác ngoài (các) tác giả phải được tôn trọng. Trích dẫn có ghi rõ nguồn được phép. Để sao chép theo cách khác, hoặc tái xuất bản, đăng tải trên máy chủ hoặc phân phối lại cho các danh sách, cần phải có sự cho phép trước cụ thể và/hoặc phí. Yêu cầu quyền từ permissions@acm.org.
+ESEC/FSE '22, November 14–18, 2022, Singapore, Singapore
+©2022 Bản quyền thuộc về chủ sở hữu/tác giả. Quyền xuất bản được cấp phép cho ACM.
+ACM ISBN 978-1-4503-9413-0/22/11. . . $15.00
+https://doi.org/10.1145/3540250.3549081 chứng minh rằng mô hình của chúng tôi vượt trội hơn các phương pháp pre-training tiên tiến trước đây trong tất cả các tác vụ. Phân tích sâu hơn cho thấy các tác vụ pre-training được đề xuất và tập dữ liệu pre-training đa ngôn ngữ của chúng tôi có lợi cho mô hình trong việc hiểu các thay đổi mã nguồn và review.
+
+CÁC KHÁI NIỆM CCS
+•Phần mềm và kỹ thuật của nó →Lập trình tự động.
+
+TỪ KHÓA
+Code review, deep learning, tập dữ liệu, pre-training
+
+Định dạng Tham chiếu ACM:
+Zhiyu Li, Shuai Lu, Daya Guo, Nan Duan, Shailesh Jannu, Grant Jenks, Deep Majumder, Jared Green, Alexey Svyatkovskiy, Shengyu Fu, và Neel Sundaresan. 2022. Automating Code Review Activities by Large-Scale Pre-training. Trong Proceedings of the 30th ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering (ESEC/FSE '22), November 14–18, 2022, Singapore, Singapore. ACM, New York, NY, USA, 13 pages. https://doi.org/10.1145/3540250.3549081
+
+1 GIỚI THIỆU
+Code review, một quy trình kiểm tra thủ công mã nguồn bởi các thành viên nhóm khác ngoài tác giả mã nguồn, được công nhận là một phần quan trọng của vòng đời phát triển phần mềm [13]. Các nghiên cứu đã chỉ ra những lợi ích to lớn của code review [1,3,32,33]. So với quy trình code review truyền thống được chính thức hóa bởi Fagan vào năm 1976 [12], tránh việc đưa ra lỗi và khiếm khuyết nhưng cồng kềnh, các hoạt động code review hiện đại bao gồm ít yêu cầu chính thức hơn và nhằm hiểu đầy đủ các thay đổi mã nguồn [4]. Với những lợi ích của nó, code review đã được áp dụng rộng rãi trong cả các dự án mã nguồn mở và công nghiệp. Như Yang et al. [45] đã chỉ ra, trong các dự án mã nguồn mở, chẳng hạn như Qt, có hàng chục nghìn review diễn ra mỗi tháng (~22k review trong trường hợp Qt). Tuy nhiên, việc tận dụng tất cả các lợi thế của code review không phải là miễn phí. arXiv:2203.09095v2 [cs.SE] 11 Oct 2022
+
+--- TRANG 2 ---
+ESEC/FSE '22, November 14–18, 2022, Singapore, Singapore Z.Li, S.Lu, D.Guo, N.Duan, S.Jannu, G.Jenks, D.Majumder, J.Green, A.Svyatkovskiy, S.Fu and N.Sundaresan
+
+Để đưa ra phán đoán chính xác về việc có nên chấp nhận pull request hay không, các nhà phát triển phải dành nhiều thời gian và nỗ lực vào việc code reviewing, kiểm tra mã nguồn từ mọi khía cạnh, bao gồm logic, chức năng, độ phức tạp, phong cách mã nguồn, tài liệu, v.v. Ví dụ, Yang et al. [45] báo cáo rằng chỉ có 1,437 reviewer đã đưa ra hơn 1 triệu review trong 4 năm trong dự án Qt. Do đó, việc tự động hóa quy trình code review là một nhu cầu cấp thiết.
+
+Nhiều nhà nghiên cứu đã khám phá các cách để hỗ trợ reviewer và committer (tức là tác giả mã nguồn) giảm khối lượng công việc trong quy trình code review, chẳng hạn như gợi ý reviewer tốt nhất [9, 37], gợi ý hoặc tạo ra các comment review có thể [18,40,41] và thậm chí sửa đổi mã nguồn trước khi gửi để review [40]. Bài báo này chia sẻ cùng mục tiêu tự động hóa một số tác vụ cụ thể liên quan đến code review. Chúng tôi nhắm đến ba kịch bản từ cả quan điểm của reviewer và committer. Kịch bản đầu tiên được gọi là ước lượng chất lượng thay đổi mã nguồn, nhằm dự đoán liệu một code diff có cần comment review hay không. Nó hỗ trợ reviewer chọn một đoạn code diff có thể có vấn đề trong số lượng lớn các đoạn mã nguồn. Tác vụ thứ hai là tạo ra review có thể giảm đáng kể chi phí thời gian cho reviewer. Kịch bản cuối cùng dành cho committer, đó là cải tiến mã nguồn theo mã nguồn trước đó và comment của reviewer.
+
+Được thúc đẩy bởi việc áp dụng rộng rãi các kỹ thuật deep learning (DL) cho kỹ thuật phần mềm và sự phát triển nhanh chóng của các kỹ thuật pre-training, chúng tôi tận dụng pre-training để tự động hóa các hoạt động code review. Gần đây, các nhà nghiên cứu đã đề xuất nhiều mô hình pre-trained trên mã nguồn [7,14,17,43]. Tuy nhiên, chúng khó có thể xử lý quy trình code review. Chen et al. [7] đề xuất Codex, một mô hình pre-trained quy mô lớn dựa trên GPT-3 [6]. Codex đã được chứng minh là mô hình mạnh nhất cho các tác vụ tạo ra mã nguồn. Vì nó được huấn luyện trên các file mã nguồn ở định dạng thô, nó biết rất ít về code review. Chúng tôi chứng minh rằng nó không thể tạo ra bất kỳ comment có ý nghĩa nào trong tác vụ tạo ra review dựa trên đánh giá của chúng tôi. Tufano et al. [40] cố gắng sử dụng mô hình pre-trained để tự động hóa code review. Tuy nhiên, tập dữ liệu pre-training của họ được thu thập từ Stack Overflow và CodeSearchNet [22], không liên quan trực tiếp đến quy trình code review. Hơn nữa, họ lấy dạng bình thường của mã nguồn làm đầu vào mô hình, bỏ qua định dạng đặc biệt của code diff có thể giúp mô hình hiểu rõ hơn về các thay đổi mã nguồn.
+
+Để giải quyết các vấn đề này, chúng tôi pre-train CodeReviewer, một mô hình transformer encoder-decoder. Khác với công việc của Tufano et al. [40], CodeReviewer được pre-trained trên một tập dữ liệu lớn trong kịch bản code review, bao gồm các code diff hunk và comment code review. Chúng tôi đề xuất bốn tác vụ pre-training, bao gồm dự đoán diff tag, denoising code diff, denoising review comment, và tạo ra review comment để làm cho CodeReviewer hiểu rõ hơn về code diff và tạo ra comment review. Hình 1 cho thấy tổng quan về workflow của CodeReviewer của chúng tôi.
+
+Để làm cho CodeReviewer phù hợp hơn cho quy trình code review, chúng tôi xây dựng một tập dữ liệu quy mô lớn về các thay đổi mã nguồn và comment review tương ứng. Dữ liệu code review như vậy được thu thập từ các pull request GitHub trong các dự án chất lượng cao với số star cao bao gồm chín ngôn ngữ lập trình phổ biến nhất. Sử dụng dữ liệu code review GitHub, chúng tôi tạo ra tập dữ liệu pre-training và benchmark cho ba tác vụ liên quan đến quy trình code review. Theo hiểu biết của chúng tôi, đây là tập dữ liệu code review đa ngôn ngữ lớn nhất với thông tin đầy đủ về các thay đổi mã nguồn và review.
+
+Chúng tôi tiếp tục đánh giá mô hình CodeReviewer của chúng tôi trên tập dữ liệu benchmark của chúng tôi. So sánh với các mô hình generative tiên tiến (SOTA) trước đây cho mã nguồn, kết quả thí nghiệm cho thấy mô hình của chúng tôi vượt trội hơn các công trình trước đây trong tất cả ba tác vụ. Phân tích sâu hơn chứng minh hiệu quả của các tác vụ pre-training được đề xuất và tập dữ liệu đa ngôn ngữ chất lượng cao.
+
+Tóm lại, những đóng góp của công việc này là:
+• Mô hình pre-trained đầu tiên lấy code diff làm đầu vào trong kịch bản code review.
+• Các tác vụ pre-training mới để hiểu và tạo ra các thay đổi mã nguồn tốt hơn.
+• Một tập dữ liệu pre-training liên quan đến code review quy mô lớn và một tập dữ liệu benchmark chất lượng cao để đánh giá bằng chín ngôn ngữ lập trình.
+• Một đánh giá toàn diện về CodeReviewer và các mô hình SOTA trước đây. Tập dữ liệu, mã nguồn và mô hình của chúng tôi được phát hành¹.
+
+2 CÁC TÁC VỤ TỰ ĐỘNG HÓA CODE REVIEW
+Trong phần này, chúng tôi đưa ra mô tả có công thức của quy trình code review, cung cấp các định nghĩa chính thức của ba tác vụ chính được trừu tượng hóa từ quy trình code review, và làm rõ định dạng dữ liệu của các tác vụ. Các ký hiệu được sử dụng được liệt kê trong Bảng 1.
+
+2.1 Code Review
+Trong quy trình code review, các contributor (tác giả thay đổi mã nguồn, PC) cập nhật mã nguồn để hoàn thành các tính năng mới hoặc sửa lỗi trong phiên bản cũ. Mã nguồn gốc và mã nguồn được cập nhật được ký hiệu là C₀ và C₁. Khi các thay đổi mã nguồn (D: C₀ → C₁) sẵn sàng để review, tác giả của những thay đổi này tạo một pull request để bắt đầu quy trình code review. Các contributor đồng nghiệp khác (reviewer, PR) sẽ review các thay đổi mã nguồn và cung cấp comment hoặc gợi ý (Rnl) về chúng nếu cần thiết. Dựa trên các comment, tác giả thực hiện các sửa đổi và cung cấp phiên bản mã nguồn mới hơn C₂. Chúng tôi gọi các hoạt động cho đến nay là một vòng review. Lưu ý rằng quy trình review chưa kết thúc. Các reviewer có thể tiếp tục đưa ra gợi ý về các sửa đổi. Và tác giả cũng có thể sửa đổi mã nguồn một lần nữa. Sau một vài vòng review, một pull request cuối cùng sẽ được phê duyệt (các thay đổi được merge vào nhánh chính) hoặc bị loại bỏ.
+
+Thường có nhiều commit trong một pull request, và mỗi commit có thể liên quan đến nhiều thay đổi mã nguồn trên các file khác nhau. Do đó, việc mô hình hóa toàn bộ quy trình review là khó khăn và thách thức [19]. Như một bước đầu tiên, chúng tôi tập trung vào việc tự động hóa quy trình review của một commit duy nhất. Trong vòng review, có hai vai trò riêng biệt - contributor PC người commit một thay đổi mã nguồn (D: C₀ → C₁), và reviewer PR người đưa ra lời khuyên và comment (Rnl). Mục tiêu của tự động hóa code review là giúp giảm khối lượng công việc của họ. Để đạt được điều đó, chúng tôi tập trung vào ba tác vụ tự động hóa code review cụ thể trong cả hai kịch bản của các vai trò khác nhau. Một tổng quan về cả ba tác vụ được hiển thị trong hình 2.
+
+¹https://github.com/microsoft/CodeBERT/tree/master/CodeReviewer
+
+--- TRANG 3 ---
+Automating Code Review Activities by Large-Scale Pre-training ESEC/FSE '22, November 14–18, 2022, Singapore, Singapore
+
+Pull Request trong 
+GitHub from torch import (
+-reshard_output ,
++      _reshard_output ,
+) Code diff không có comment
+
+Code diff có comment from torch import (
+-reshard_output ,
++      _reshard_output ,
+)
+
+Reviewer: cần một số 
+thay đổi doc nhỏ CodeReviewer
+
+Pre-train một mô hình 
+transformer encoder-decoder D → R
+
+Tạo ra Review
+Ước lượng Chất lượng 
+Code Diff
+Cải tiến Mã nguồn
+
+Hình 1: Tổng quan về workflow của CodeReviewer.
+
+Code diff A
+Code diff B
+Không cần 
+review
+Cần review Tôi nghĩ "import *" không 
+được phép trong phân tích 
+mã nguồn tĩnh của Kylin. Tạo ra review Cải tiến mã nguồn -import java.sql.statement;
++import java.sql.Statement;
+import java.sql.Connection;
+import java.sql.DriverManager ;
++import java.util.*;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.kylin.common.util.DBUtils; Ước lượng 
+chất lượng
+
+-import java.util.*;
++import java.util. List;
++import java.util.Properties;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.kylin.common.util.DBUtils;
+
+Hình 2: Tổng quan về các tác vụ tự động hóa code review. Ba tác vụ được thực hiện riêng biệt.
+
+Bảng 1: Tóm tắt các ký hiệu và symbol trong bài báo này.
+
+Ký hiệu | Định nghĩa
+---|---
+PC, PR | Tác giả và reviewer của thay đổi mã nguồn
+C₀, C₁, C₂ | Các phiên bản khác nhau của mã nguồn
+D | Thay đổi mã nguồn giữa C₀ và C₁
+Rnl | Comment review được viết bằng ngôn ngữ tự nhiên
+X, Y | Không gian đầu vào và đầu ra của mô hình
+c₁, c₂, ···, cₙ | Các token mã nguồn
+w₁, w₂, ···, wₘ | Các token comment review
+L | Hàm loss huấn luyện
+
+2.2 Ước lượng Chất lượng Thay đổi Mã nguồn
+Tác vụ ước lượng chất lượng thay đổi mã nguồn là dự đoán liệu một thay đổi mã nguồn có chất lượng cao và sẵn sàng được chấp nhận trong quy trình review hay không. Đây là một tác vụ phân loại nhị phân, tức là Y={0,1}. Đầu vào là một thay đổi mã nguồn, tức là X={D(C₀,C₁)}. Như đã nói trước đó, thường có rất nhiều thay đổi trên các file mã nguồn khác nhau trong một pull request. Reviewer mất rất nhiều thời gian để review tất cả các thay đổi. Nhưng hóa ra hầu hết các thay đổi đều nhỏ và không cần comment hoặc gợi ý. Để cải thiện hiệu quả của code review, chúng tôi định nghĩa và tiến tới tự động hóa tác vụ ước lượng chất lượng thay đổi mã nguồn. Với các ước lượng, reviewer có thể ưu tiên cao hơn cho việc review các thay đổi mã nguồn đáng ngờ và chú ý nhiều hơn đến chúng, tiết kiệm thời gian và nỗ lực. Contributor cũng có thể tận dụng các ước lượng để cải thiện các thay đổi mã nguồn chất lượng thấp trước khi gửi chúng cho reviewer.
+
+2.3 Tạo ra Code Review
+Tạo ra code review là một tác vụ tạo ra chuỗi. Đầu ra là một comment review được dự đoán, tức là Y={w₁,···,wₙ} trong đó wᵢ là một từ ngôn ngữ tự nhiên và n∈ℕ là độ dài của comment review. Đầu vào vẫn là một thay đổi mã nguồn, tức là X={D(C₀,C₁)}, với ngữ cảnh của nó. Trong một số công trình trước đây [18,40,41], các nhà nghiên cứu sử dụng mã nguồn đã thay đổi làm đầu vào nhưng không phải code diff, không tính đến việc comment review phải tập trung vào phần đã thay đổi. Không được khuyến khích cho reviewer đưa ra gợi ý cho ngữ cảnh mã nguồn chưa được sửa đổi. Xem xét tính tự nhiên của phần mềm [21], các mô hình ngôn ngữ có thể nắm bắt các thuộc tính thống kê chung của chương trình do các chương trình có xu hướng lặp lại và có thể dự đoán được. Trong quy trình code review, cũng có những vấn đề chung trong một số thay đổi mã nguồn. Ví dụ, reviewer thường viết "Phương thức này nên là private" để gợi ý contributor thêm một decorator private cho một phương thức. Điều này cho chúng ta cơ hội học các mẫu code review chung và tạo ra comment tự động để giảm bớt gánh nặng của reviewer. Trong kịch bản thực tế,
+
+--- TRANG 4 ---
+ESEC/FSE '22, November 14–18, 2022, Singapore, Singapore Z.Li, S.Lu, D.Guo, N.Duan, S.Jannu, G.Jenks, D.Majumder, J.Green, A.Svyatkovskiy, S.Fu and N.Sundaresan
+
+mô hình tạo ra một vài ứng viên comment review và reviewer có thể chọn một cái lý tưởng từ chúng, thoát khỏi việc viết comment thủ công.
+
+2.4 Cải tiến Mã nguồn
+Trong tác vụ cải tiến mã nguồn, mô hình lấy làm đầu vào cả mã nguồn gốc C₁ được viết bởi contributor và comment review Rnl từ reviewer, và mục tiêu tạo ra phiên bản mã nguồn đã sửa đổi C₂ thực hiện các yêu cầu được đề cập trong Rnl. Khác với tác vụ cải tiến mã nguồn trong các kịch bản phát triển phần mềm khác nơi chỉ mã nguồn được lấy làm đầu vào [39], chúng tôi thiết kế đặc biệt cho quy trình code review để sử dụng comment review làm hướng dẫn cho việc cải tiến. Cải tiến mã nguồn là một tác vụ được thiết kế để hỗ trợ contributor. Khi họ mở pull request và nhận được comment review làm phản hồi, mô hình giúp sửa đổi mã nguồn đã gửi tự động dựa trên các comment.
+
+2.5 Định dạng Dữ liệu
+Cả ba tác vụ đều liên quan đến mã nguồn hoặc thay đổi mã nguồn. Trong quy trình code review, thường có nhiều file và function liên quan [19]. Một file mã nguồn hoặc một function/method quá lớn để xử lý, vì có thể có nhiều comment review và sửa đổi mã nguồn trải rộng trên một file hoặc function/method. Thay vào đó, chúng tôi định nghĩa các đầu vào của ba tác vụ ở mức diff hunk.
+
+Trong pull request, phiên bản gốc và phiên bản đã sửa đổi của mã nguồn được hiển thị trong một định dạng đặc biệt: diff (Hình 2). File diff được tạo ra bằng cách so sánh hai file trước và sau thay đổi. Công cụ diff tìm các chuỗi dòng chung cho cả hai file, xen kẽ với các nhóm dòng khác nhau được gọi là hunk. Cụ thể, một diff hunk là một chuỗi các dòng mã nguồn được bao quanh bởi một vài dòng không thay đổi. Diff hunk bao gồm các dòng bị xóa khỏi file gốc và được thêm vào file mới. Định dạng diff được các lập trình viên sử dụng thường xuyên để hiển thị rõ ràng các thay đổi trong mã nguồn. Hơn nữa, định dạng diff là một biểu diễn hiệu quả cho các thay đổi mã nguồn vì các dòng không thay đổi chỉ xuất hiện một lần, và các thay đổi được căn chỉnh với các tag "-" và "+" ở đầu mỗi dòng. Trong hai tác vụ đầu tiên, chúng tôi công thức hóa đầu vào như một diff hunk đại diện cho thay đổi mã nguồn. Trong tác vụ cải tiến mã nguồn, chúng tôi trích xuất các dòng đầu vào (C₁) và dòng đầu ra (C₂) từ revision diff hunk.
+
+3 TẬP DỮ LIỆU CODE REVIEW
+Ngày nay, nhiều nhà phát triển sử dụng các nền tảng phát triển phần mềm cộng tác như GitHub² và Gerrit³ không chỉ để chia sẻ mã nguồn của họ mà còn để thực hiện các hoạt động code review. Nền tảng GitHub cho phép contributor công khai tất cả các chi tiết review này, bao gồm nội dung chính xác của các thay đổi mã nguồn, comment review và tác giả của chúng, và thời gian xảy ra trong mỗi pull request, điều này làm cho việc thu thập và phân tích dữ liệu code review từ các dự án mã nguồn mở trở nên khả thi. Do đó, chúng tôi xây dựng tập dữ liệu CodeReview của mình dựa trên dữ liệu pull request được thu thập từ các dự án mã nguồn mở, bao gồm chín ngôn ngữ lập trình, trong GitHub.
+
+²https://github.com/
+³https://www.gerritcodereview.com/
+
+3.1 Lựa chọn Dự án
+Để đảm bảo chất lượng của tập dữ liệu, chúng tôi thu thập dữ liệu pull request từ các repository mã nguồn mở chất lượng cao có sẵn công khai. Chúng tôi đầu tiên sắp xếp các dự án theo "độ phổ biến" được chỉ ra bởi số lượng star. Để cải thiện khả năng tổng quát hóa của các mô hình được huấn luyện trên tập dữ liệu của chúng tôi, chúng tôi thu thập các dự án bằng chín ngôn ngữ lập trình phổ biến nhất trong GitHub, bao gồm C, C++, C#, Go, Java, JavaScript, PHP, Python và Ruby. Sau đó, chúng tôi giữ lại 10,000 dự án hàng đầu cho mỗi ngôn ngữ lập trình trong chín ngôn ngữ và loại bỏ những dự án không cho phép rõ ràng việc phân phối lại dữ liệu của họ. Cụ thể, tất cả các repository với các giấy phép phổ biến như giấy phép Apache-2.0 và giấy phép MIT⁴ được giữ lại. Nếu contributor viết trong file giấy phép rằng họ cho phép phân phối lại dữ liệu của họ, các dự án của họ cũng được thu thập. Để đảm bảo chất lượng của dự án và thu được càng nhiều dữ liệu code review càng tốt, chúng tôi tiếp tục sắp xếp các dự án theo số lượng pull request và lọc ra các dự án có ít hơn 1,500 pull request. Quy trình này chỉ giữ lại các dự án hoạt động với nhiều contributor và loại bỏ các repository được fork từ các dự án khác vì số lượng pull request không được kế thừa. Sau đó chúng tôi bắt đầu thu thập thông tin pull request của các dự án.
+
+3.2 Thu thập Dữ liệu Review
+Chúng tôi sử dụng GitHub REST API để thu thập dữ liệu pull request từ các dự án. GitHub API cung cấp một API dựa trên HTTP request để truy cập thông tin repository. Bằng cách gửi HTTP request đến GitHub, chúng tôi có thể truy cập các nhánh, commit, pull request, code diff, comment review, v.v. trong định dạng Json một cách thuận tiện. Nhiều nhà nghiên cứu đã sử dụng GitHub API để thu thập và phân tích dữ liệu pull request trong công việc của họ [20,35]. Để thúc đẩy nghiên cứu về code review, Heumüller et al. [20] phát triển cơ sở hạ tầng ETCR để khai thác tập dữ liệu code review từ bất kỳ dự án GitHub nào thực hành phát triển dựa trên pull-request. Công cụ ETCR có thể được thiết lập chỉ yêu cầu một GitHub API key và tên repository. ETCR sử dụng một web crawler dựa trên Kotlin và hoạt động trong bốn giai đoạn để thu thập dữ liệu của pull request, commit, comment và file mã nguồn thông qua GitHub API. Tất cả dữ liệu được lưu trữ trong một cơ sở dữ liệu quan hệ và do đó có thể được truy cập một cách thuận tiện. Chúng tôi đầu tiên sử dụng công cụ ETCR [20] để thu thập meta-information của pull request và comment review, bao gồm git commit hash và tên file đã thay đổi liên quan đến các comment. Sử dụng meta-information, chúng tôi có thể truy vấn thêm GitHub API để lấy các thay đổi mã nguồn (bao gồm file gốc, file mới và code diff) tương ứng với comment review. Những thay đổi mã nguồn và comment này tạo nên dữ liệu CodeReview của chúng tôi. Đến nay, chúng tôi đã thu thập tất cả dữ liệu cần thiết để xây dựng tập dữ liệu cho ba tác vụ downstream.
+
+3.3 Xây dựng Tập dữ liệu
+Tập dữ liệu pre-training là một tập hợp các thay đổi mã nguồn có hoặc không có comment review. Tuy nhiên, nó yêu cầu xử lý dữ liệu thêm để xây dựng tập dữ liệu cho ba tác vụ downstream: ❶Ước lượng chất lượng thay đổi mã nguồn: Tất cả các thay đổi mã nguồn được comment được coi là mã nguồn đáng ngờ gây ra lỗi hoặc xung đột với đặc tả mã nguồn. Các thay đổi mã nguồn khác không có comment được gắn nhãn là đúng. Vì số lượng thay đổi mã nguồn không có comment là khoảng
+
+⁴Apache-2.0, GPL-3.0, MIT, BSD-2.0, BSD-3.0, BSL-1.0, GPL-2.0 license, v.v.
+
+--- TRANG 5 ---
+Automating Code Review Activities by Large-Scale Pre-training ESEC/FSE '22, November 14–18, 2022, Singapore, Singapore
+
+Hình 3: Quy trình xây dựng tập dữ liệu của chúng tôi.
+
+2-3 lần số lượng thay đổi mã nguồn được comment, chúng tôi thực hiện random down-sampling trên các thay đổi không có comment review để xây dựng một tập dữ liệu cân bằng. ❷Tạo ra comment review: Các thay đổi mã nguồn có comment review sẽ được sử dụng cho tác vụ này. Chúng tôi lọc ra những comment được viết bởi tác giả thay đổi mã nguồn. Khi có hơn 1 comment liên quan đến một diff hunk, chúng tôi chỉ giữ lại comment sớm nhất. ❸Cải tiến mã nguồn: Chúng tôi duyệt qua mỗi pull request trong các dự án. Đối với mỗi thay đổi mã nguồn được comment, chúng tôi kiểm tra tất cả các commit trong pull request này để tìm xem có commit sau nào cập nhật lại phần mã nguồn này hay không. Cụ thể, khi reviewer viết comment về code diff D: C₀ → C₁ và các dòng mã nguồn đã sửa đổi trong C₁ được sửa đổi thêm thành phiên bản mới hơn C₂ trong một commit sau, chúng tôi giả định rằng các comment về thay đổi sớm đã giúp contributor thực hiện các cập nhật sau này. Sau đó các triplet (C₁, Rnl, C₂) được thu thập để xây dựng tập dữ liệu cải tiến mã nguồn. Trong một số trường hợp, một comment liên quan đến nhiều sửa đổi mã nguồn trong tương lai hoặc nhiều comment đóng góp vào một sửa đổi cùng nhau. Tất cả các mẫu này được loại bỏ khỏi tập dữ liệu vì việc mô hình hóa các tương tác giữa nhiều comment và nhiều thay đổi nằm ngoài phạm vi thảo luận của bài báo này. Mặc dù chúng tôi thu thập dữ liệu từ các dự án với số star và số PR cao, chất lượng tập dữ liệu vẫn khác nhau, đặc biệt là khi nói đến comment review. Để lọc ra các comment chất lượng thấp, chúng tôi làm sạch tập dữ liệu pre-training và downstream một cách cẩn thận theo các bước được mô tả trong Phụ lục (đính kèm như tài liệu bổ sung).
+
+3.4 Phân chia Dữ liệu
+Chúng tôi sử dụng dữ liệu CodeReview để xây dựng tập dữ liệu pre-training và tập dữ liệu benchmark cho ba tác vụ downstream. Để ngăn chặn rò rỉ thông tin của tập dữ liệu, chúng tôi phân chia dữ liệu ở mức dự án. Các repository mã nguồn có hơn 2,500 pull request được sử dụng để xây dựng tập dữ liệu pre-training và tập huấn luyện của tập dữ liệu benchmark. Các repository mã nguồn khác có [1,500,2,500) pull request được sử dụng để xây dựng tập dữ liệu validation và test.
+
+4 CODEREVIEWER
+Trong phần này, chúng tôi mô tả chi tiết mô hình CodeReviewer của chúng tôi, bao gồm kiến trúc mô hình, các biểu diễn đầu vào-đầu ra của mô hình, và các tác vụ pre-training được thiết kế cho code review. Chúng tôi phát triển CodeReviewer dựa trên Transformer [42] và thiết kế bốn tác vụ pre-training liên quan đến quy trình code review để cải thiện khả năng của mô hình trong việc tự động hóa các hoạt động code review.
+
+4.1 Kiến trúc Mô hình
+CodeReviewer là một mô hình encoder-decoder dựa trên Transformer [42]. Chúng tôi áp dụng cùng kiến trúc như mô hình Text-To-Text-Transfer Transformer (T5) [31]. Mô hình CodeReviewer bao gồm 12 lớp encoder Transformer và 12 lớp decoder. Có 12 attention head trong mỗi lớp và kích thước ẩn là 768. Tổng kích thước tham số của mô hình là 223M.
+
+Chúng tôi khởi tạo CodeReview với các tham số của CodeT5 [43]. Chúng tôi tiếp tục pre-train mô hình với bốn tác vụ pre-training của chúng tôi. Sau khi được pre-trained, CodeReviewer được fine-tuned và đánh giá trên các tác vụ downstream tương ứng.
+
+4.2 Biểu diễn Đầu vào-Đầu ra
+CodeReviewer lấy các đầu vào và đầu ra khác nhau cho các tác vụ khác nhau. Đối với các tác vụ hiểu mã nguồn hoặc tác vụ tạo ra comment, mô hình lấy code diff làm đầu vào. Đối với tác vụ cải tiến mã nguồn, mô hình lấy làm đầu vào cả mã nguồn gốc và comment review.
+
+Theo cách tiêu chuẩn của xử lý đầu vào trong Transformer, đầu vào được coi như một chuỗi token. Chúng tôi sử dụng cùng tokenizer RoBERTa [26] như CodeT5 để phân tách mã nguồn và comment review thành các token. Một token đặc biệt [CLS] được thêm vào đầu chuỗi, tạo thành đầu vào như {[CLS], c₁, c₂, ···, cₙ} trong đó cᵢ là token mã nguồn và n là độ dài chuỗi. Để giúp mô hình của chúng tôi hiểu định dạng diff tốt hơn, các tag dòng đặc biệt "-" và "+" trong file diff chỉ ra việc xóa dòng và chèn dòng được thay thế bằng các token đặc biệt [DEL] và [ADD]. Chúng tôi cũng chèn một [KEEP] trước mỗi dòng không thay đổi. Khi có cả token mã nguồn và token comment review trong đầu vào, một token [MSG] được chèn để phân tách hai chuỗi. Do đó đầu vào là {[CLS], c₁, c₂, ···, cₙ, [MSG], w₁, w₂, ···, wₘ}.
+
+Đầu ra của mô hình bao gồm hai thành phần: biểu diễn token từ encoder và chuỗi token được tạo ra từ decoder. Đối với các tác vụ phân loại, biểu diễn của token [CLS] được sử dụng để tạo ra các dự đoán. Đối với các tác vụ tạo ra chuỗi, decoder xuất ra chuỗi token được dự đoán.
+
+4.3 Các Tác vụ Pre-training
+Thách thức chính của việc tự động hóa các hoạt động code review là hiểu các thay đổi mã nguồn và nắm bắt mối quan hệ giữa các thay đổi mã nguồn và comment review tương ứng. Do đó, chúng tôi thiết kế bốn tác vụ pre-training để cải thiện khả năng của CodeReviewer.
+
+4.3.1 Diff Tag Prediction. Như đã đề cập trong Phần 2.5, diff là một định dạng đặc biệt chứa thông tin phong phú trong các thay đổi mã nguồn. So với việc mã hóa cả phiên bản mã nguồn gốc và mới, định dạng diff ngăn chặn trùng lặp của các dòng không thay đổi. Do đó, việc học code diff như một định dạng đặc biệt của mã nguồn là quan trọng đối với mô hình trong kịch bản code review.
+
+Chúng tôi sử dụng tác vụ Diff Tag Prediction (DTP) để trang bị cho mô hình khả năng hiểu các tag dòng đặc biệt trong code diff. Lưu ý rằng chúng tôi thay thế các tag "+" và "-" ở đầu các dòng diff bằng các tag đặc biệt
+
+--- TRANG 6 ---
+ESEC/FSE '22, November 14–18, 2022, Singapore, Singapore Z.Li, S.Lu, D.Guo, N.Duan, S.Jannu, G.Jenks, D.Majumder, J.Green, A.Svyatkovskiy, S.Fu and N.Sundaresan
+
+Hình 4: Các tác vụ pre-training của CodeReviewer.
+
+[ADD], [DEL] và bao gồm [KEEP] trong đầu vào mô hình. Trong huấn luyện DTP, ba loại tag đặc biệt được thay thế bằng token [MASK] trong đầu vào mô hình. Chúng tôi huấn luyện mô hình của chúng tôi để dự đoán các token đặc biệt [ADD], [DEL] hoặc [KEEP] ở các vị trí tương ứng. Bằng cách huấn luyện trên DTP, mô hình học cách phân biệt liệu một dòng có không thay đổi hay được cập nhật. Điều này giúp CodeReviewer hiểu định dạng code diff. Cụ thể, mô hình dự đoán một phân phối xác suất p⁽ⁱ⁾ = (p₀⁽ⁱ⁾, p₁⁽ⁱ⁾, p₂⁽ⁱ⁾) cho vị trí tag được mask thứ i và một cross-entropy loss tiêu chuẩn được sử dụng để huấn luyện mô hình của chúng tôi:
+
+L_DTP = -∑ᵢ y₀⁽ⁱ⁾ log p₀⁽ⁱ⁾ + y₁⁽ⁱ⁾ log p₁⁽ⁱ⁾ + y₂⁽ⁱ⁾ log p₂⁽ⁱ⁾     (1)
+
+4.3.2 Denoising Objective. Denoising objective là một mục tiêu pre-training không giám sát được giới thiệu bởi Lewis et al. [24] để có được hiểu biết chung về một corpus. Denoising objective gốc ngẫu nhiên mask các span trong câu đầu vào với tỷ lệ corrupt 15% và dự đoán các span này. Bằng cách học dự đoán các span được mask, mô hình có được kiến thức chung về phân phối corpus.
+
+Để hiểu rõ hơn về code diff và comment review, chúng tôi thiết kế hai denoising objective cho CodeReviewer: denoising code diff (DCD) và denoising review comment (DRC). Trong tác vụ DCD, chúng tôi ngẫu nhiên chọn 15% dòng mã nguồn và mask chúng. Chúng tôi corrupt đầu vào ở mức dòng chứ không phải mức span để giữ nguyên định dạng toàn vẹn của code diff. Đáng chú ý rằng để giảm độ khó của tác vụ này, các tag dòng ([ADD], [DEL] và [KEEP]) được bảo tồn để thông báo cho mô hình liệu một dòng có được cập nhật hay bị loại bỏ. Tác vụ DCD nhằm giúp mô hình học phân phối của các thay đổi mã nguồn, tăng cường cả encoder và decoder. Encoder tạo ra biểu diễn tốt hơn của các thay đổi mã nguồn có lợi cho cả tác vụ hiểu và tạo ra. Pre-training decoder trên DCD giúp mô hình tạo ra mã nguồn tốt hơn trong tác vụ cải tiến mã nguồn.
+
+Trong tác vụ DRC, mô hình được cung cấp một comment review bị corrupt làm đầu vào và được yêu cầu khôi phục các span được mask. Cụ thể, chúng tôi ngẫu nhiên mask các span với tỷ lệ corrupt 20% và huấn luyện decoder để tạo ra chúng. Huấn luyện với tác vụ DRC được kỳ vọng sẽ có lợi cho các tác vụ liên quan đến comment. Chúng tôi mô tả loss của các tác vụ DCD và DRC như sau:
+
+L_DCD = ∑ᵗ₌₁ᵏ -log P_θ(cₜ|c_mask, c<ₜ)     (2)
+
+L_DRC = ∑ᵗ₌₁ᵏ -log P_θ(wₜ|w_mask, w<ₜ)     (3)
+
+trong đó c_mask, w_mask là code diff và comment review được mask, và c<ₜ, w<ₜ là chuỗi span của code diff và comment review được tạo ra cho đến nay.
+
+4.3.3 Review Comment Generation. Trong mỗi tác vụ pre-training được đề cập ở trên, chỉ có một modal được liên quan, có nghĩa là mô hình chỉ học hiểu mã nguồn hoặc comment review trong một tác vụ. Tuy nhiên, phần thách thức nhất của code review là nắm bắt mối quan hệ giữa các thay đổi mã nguồn và comment review. Để trang bị cho mô hình của chúng tôi khả năng này, chúng tôi sử dụng dữ liệu bi-modal (thay đổi mã nguồn bằng ngôn ngữ lập trình và comment review liên quan bằng ngôn ngữ tự nhiên) trong tác vụ pre-training. Để có tính tổng quát, chúng tôi sử dụng một tác vụ conditional generation đơn giản: review comment generation (RCG). Trong RCG, mô hình được cung cấp một thay đổi mã nguồn làm đầu vào và được yêu cầu tạo ra comment review được viết bởi reviewer con người. Chúng tôi sử dụng negative log-likelihood loss:
+
+L_RCG = ∑ᵗ₌₁ᵏ -log P(wₜ|c, w<ₜ)     (4)
+
+trong đó c là thay đổi mã nguồn và w<ₜ là comment được tạo ra cho đến nay.
+
+4.4 Fine-Tuning
+Chúng tôi nhóm tất cả các tác vụ downstream thành các tác vụ phân loại và tác vụ tạo ra. Đối với các tác vụ phân loại như ước lượng chất lượng thay đổi mã nguồn, chúng tôi chỉ sử dụng encoder được pre-trained. Biểu diễn trong lớp cuối cùng của token đặc biệt [CLS] ở đầu h₀ được
+
+--- TRANG 7 ---
+Automating Code Review Activities by Large-Scale Pre-training ESEC/FSE '22, November 14–18, 2022, Singapore, Singapore
+
+đưa vào một linear classifier để tạo ra dự đoán. Đối với các tác vụ tạo ra như cải tiến mã nguồn, toàn bộ mô hình encoder-decoder được pre-trained được sử dụng. Một token negative log-likelihood loss tiêu chuẩn được tận dụng để tối ưu hóa xác suất của chuỗi mục tiêu.
+
+5 THIẾT KẾ NGHIÊN CỨU
+Để điều tra hiệu suất của mô hình CodeReviewer của chúng tôi trên các tác vụ code review, chúng tôi thực hiện một nghiên cứu quy mô lớn để trả lời các câu hỏi nghiên cứu sau (RQ):
+
+RQ1: CodeReviewer hoạt động như thế nào trên tác vụ ước lượng chất lượng thay đổi mã nguồn? Chúng tôi cung cấp cho CodeReviewer một thay đổi mã nguồn D₁: C₀ → C₁ làm đầu vào, và yêu cầu mô hình đưa ra dự đoán nhị phân liệu thay đổi mã nguồn có cần review hay không.
+
+RQ2: CodeReviewer hoạt động như thế nào trên tác vụ tạo ra review? Trong RQ này, CodeReviewer cũng được cung cấp một thay đổi mã nguồn D₁: C₀ → C₁, nhưng chúng tôi đánh giá khả năng của CodeReviewer trong việc tạo ra một comment ngôn ngữ tự nhiên Rnl như các reviewer sẽ làm.
+
+RQ3: CodeReviewer hoạt động như thế nào trên tác vụ cải tiến mã nguồn? Được cung cấp một vài dòng mã nguồn được gửi để code review và phản hồi từ reviewer được viết bằng ngôn ngữ tự nhiên, mô hình được yêu cầu cải tiến mã nguồn đã gửi để thực hiện các yêu cầu của comment review.
+
+Trong RQ1-RQ3, chúng tôi đánh giá CodeReviewer trên các tác vụ code review khác nhau. Để đánh giá đóng góp của mỗi tác vụ pre-training và tập dữ liệu đa ngôn ngữ của chúng tôi, chúng tôi tiếp tục điều tra RQ4 và RQ5.
+
+RQ4: Mỗi tác vụ pre-training đóng vai trò gì trong CodeReviewer? Trong RQ1-RQ3, mô hình CodeReviewer được đánh giá đã được pre-trained trên tất cả bốn tác vụ pre-training trước khi được áp dụng cho các tác vụ downstream. Chúng tôi loại bỏ các tác vụ pre-training từng cái một và đánh giá lại các mô hình kết quả để phơi bày ảnh hưởng của mỗi tác vụ pre-training đối với các tác vụ downstream khác nhau.
+
+RQ5: Tập dữ liệu đa ngôn ngữ có thể có lợi cho hiệu suất mô hình trong việc hiểu ngôn ngữ lập trình đơn lẻ không? Nghiên cứu hiện tại cho thấy rằng tập dữ liệu huấn luyện đa ngôn ngữ có thể có lợi cho hiệu suất mô hình so với tập dữ liệu đơn ngôn ngữ trên dịch máy thần kinh và dịch mã nguồn [8,48], đặc biệt là đối với các ngôn ngữ có ít tài nguyên. Chúng tôi đánh giá hiệu suất của CodeReview được pre-trained và fine-tuned trên tập dữ liệu đơn ngôn ngữ và so sánh nó với mô hình được huấn luyện trên tập dữ liệu đầy đủ để cho thấy ảnh hưởng của tập dữ liệu đa ngôn ngữ.
+
+Tập dữ liệu Chúng tôi xây dựng tập dữ liệu pre-training và 3 tập dữ liệu tác vụ downstream như được mô tả trong Phần 3.3. Bảng 2 tóm tắt thống kê của tập dữ liệu pre-training. Đối với tập dữ liệu benchmark, chi tiết được hiển thị trong Bảng 3.
+
+5.1 Các Mô hình Baseline
+Để chứng minh tính ưu việt của tập dữ liệu pre-training liên quan đến code review đa ngôn ngữ và các tác vụ pre-training được thiết kế cẩn thận của chúng tôi, chúng tôi so sánh mô hình CodeReviewer của chúng tôi với ba baseline, bao gồm một kiến trúc mô hình state-of-the-art (SOTA) Transformer [42] được huấn luyện từ đầu và hai mô hình pre-trained: T5 for code review [40] và CodeT5 [43].
+
+Bảng 2: Thống kê của tập dữ liệu pre-training.
+
+Ngôn ngữ | Thông tin Meta | Số lượng Dữ liệu
+---|---|---
+ | Dự án | PR† | Kích thước Dữ liệu | không có comment | có comment
+Python | 195 | 1,451k | 72.8G | 887k | 518k
+Java | 175 | 1,073k | 54.8G | 876k | 467k
+Go | 146 | 951k | 40.4G | 728k | 410k
+C++ | 133 | 999k | 82.1G | 474k | 202k
+JavaScript | 194 | 1,354k | 30.6G | 425k | 293k
+C | 77 | 441k | 135.4G | 292k | 110k
+C# | 77 | 463k | 28.2G | 324k | 199k
+Php | 92 | 574k | 16.0G | 215k | 157k
+Ruby | 72 | 626k | 3.8G | 90k | 126k
+Tổng cộng | 1,161 | 7,933k | 463.2G | 4,311k | 2,481k
+
+†Số lượng pull request của các dự án tổng cộng.
+
+Bảng 3: Thống kê của tập dữ liệu benchmark.
+
+Tập dữ liệu | Train # | Valid # | Test # | LOC
+---|---|---|---|---
+Quality Estimation | ~266k | ~31k | ~31k | ~11M
+Review Comment Generation | ~118k | ~10k | ~10k | ~1.8M
+Code Refinement | ~150k | ~13k | ~13k | ~1.3M
+
+Transformer. Transformer [42] là một kiến trúc mô hình SOTA cho nhiều tác vụ phân loại và tạo ra. Thành phần chính của Transformer là module multi-head attention và các lớp biến đổi tuyến tính được tham số hóa. Chúng tôi sử dụng cùng cài đặt mô hình như CodeT5-base, với encoder 12 lớp và decoder 12 lớp.
+
+T5 for code review. Tufano et al. [40] cố gắng sử dụng mô hình pre-trained để tự động hóa code review. Họ pre-train một phiên bản nhỏ của mô hình T5 với denoising objective được đề xuất bởi Raffel et al. [31] trên tập dữ liệu riêng của họ bao gồm Stack Overflow dumps và CodeSearchNet [22]. Mô hình bao gồm 61M tham số, với 6 lớp cho cả encoder và decoder. Chúng tôi gọi mô hình này là T5 cho thuận tiện sau này.
+
+CodeT5-base. CodeT5 là một mô hình encoder-decoder pre-trained thống nhất SOTA cho các tác vụ hiểu và tạo ra mã nguồn được đề xuất bởi Wang et al. [43]. Họ đề xuất pre-train CodeT5 với các tác vụ denoising nhận biết identifier và mục tiêu dual generation bimodal, điều này làm cho CodeT5 trở thành mô hình SOTA cho nhiều tác vụ downstream liên quan đến mã nguồn bao gồm tóm tắt mã nguồn, tạo ra mã nguồn, dịch mã nguồn và cải tiến mã nguồn. Phiên bản base của CodeT5 bao gồm 12 lớp encoder và lớp decoder với kích thước tham số 220M. Chúng tôi sử dụng CodeT5 để chỉ mô hình này.
+
+5.2 Các Metric Đánh giá
+Chúng tôi cung cấp mô tả ngắn gọn về các metric đánh giá được sử dụng cho ba tác vụ downstream trong phần này.
+
+Ước lượng chất lượng thay đổi mã nguồn. Đây là một tác vụ phân loại nhị phân. Chúng tôi sử dụng accuracy, precision, recall và F1 để đánh giá các dự đoán của mô hình. Lưu ý rằng khi tính toán 3 metric sau, các thay đổi mã nguồn có vấn đề (yêu cầu comment và cập nhật) được coi là lớp positive.
+
+Tạo ra comment review. Chúng tôi tính toán điểm BLEU (Bilingual Evaluation Understudy) [30] của các dự đoán. BLEU được
+
+--- TRANG 8 ---
+ESEC/FSE '22, November 14–18, 2022, Singapore, Singapore Z.Li, S.Lu, D.Guo, N.Duan, S.Jannu, G.Jenks, D.Majumder, J.Green, A.Svyatkovskiy, S.Fu and N.Sundaresan
+
+sử dụng rộng rãi để đánh giá chất lượng văn bản được tạo tự động trong các tác vụ tạo ra như dịch máy và tạo ra mã nguồn. Chúng tôi sử dụng biến thể BLEU-4, tính toán sự chồng chéo của n-gram giữa văn bản được tạo ra và văn bản tham chiếu với n từ 1 đến 4. Vì comment review đa dạng và không duy nhất, chúng tôi tiếp tục áp dụng đánh giá con người trên các comment được tạo ra từ hai góc độ: thông tin và mức độ liên quan. ❶Thông tin: trong metric này, chúng tôi đánh giá comment có thông tin như thế nào cho contributor để sửa đổi mã nguồn. Các comment như "khai báo biến này là private" có nhiều thông tin hơn những comment như "tại sao chúng ta cần điều này?". ❷Mức độ liên quan: trong metric này, chúng tôi đánh giá mức độ mà comment review liên quan đến thay đổi mã nguồn tương ứng. Các comment chỉ ra các vấn đề trong thay đổi mã nguồn sẽ được điểm cao, trong khi những comment không liên quan hoặc vi phạm logic trong thay đổi mã nguồn nên được điểm thấp. Các comment được gắn nhãn với điểm 1-5 cho mỗi metric. Chúng tôi mô tả chi tiết về hai metric trong Phụ lục.
+
+Cải tiến mã nguồn. Đối với tác vụ này, chúng tôi tính toán điểm BLEU giữa mã nguồn được tạo ra và mã nguồn mục tiêu và tỷ lệ exact match (EM). BLEU chỉ đánh giá sự tương tự giữa dự đoán và mục tiêu, trong khi một thay đổi nhỏ trong mã nguồn có thể dẫn đến lỗi compile và lỗi thực thi. Vì vậy exact match là một metric quan trọng hơn trong tác vụ này. Chỉ khi một dự đoán hoàn toàn giống như mục tiêu, nó mới được coi là đúng.
+
+5.3 Chi tiết Triển khai
+Chúng tôi triển khai mô hình của chúng tôi với framework phát triển deep learning phổ biến PyTorch⁵ và gói python transformers được phát triển bởi HuggingFace⁶. Chúng tôi pre-train mô hình CodeReviewer của chúng tôi với 2 máy chủ DGX-2 với 16 GPU NVIDIA V100-32G trên mỗi máy chủ. Learning rate và batch size trong giai đoạn pre-training được đặt thành 0.0002 và 768. Chúng tôi sử dụng optimizer AdamW với linear warmup để tối ưu hóa mô hình trong 250k bước. Số bước warmup được đặt thành 2500. Khi fine-tuning CodeReviewer và các mô hình baseline của chúng tôi trên ba tác vụ downstream, chúng tôi sử dụng batch size 72 và learning rate 0.0003. Mỗi thí nghiệm trên các tác vụ downstream được thực hiện trên một máy chủ với 4 GPU V100. Khi đánh giá tác vụ tạo ra comment review và tác vụ cải tiến mã nguồn, chúng tôi sử dụng beam search với kích thước 10.
+
+6 PHÂN TÍCH KẾT QUẢ
+Trong phần này, chúng tôi trả lời từng câu hỏi nghiên cứu dựa trên kết quả thí nghiệm của chúng tôi. Chúng tôi đầu tiên tập trung vào ba câu hỏi nghiên cứu liên quan đến hiệu suất của mô hình trong từng tác vụ và so sánh với các mô hình baseline state-of-the-art khác. Chúng tôi tiếp tục chứng minh tác động của các tác vụ pre-training và tập dữ liệu đa ngôn ngữ của chúng tôi.
+
+6.1 RQ1: Hiệu suất trên Ước lượng Chất lượng Thay đổi Mã nguồn
+Bảng 4 cho thấy kết quả trên tác vụ ước lượng chất lượng thay đổi mã nguồn. Từ bảng, chúng ta có thể thấy rằng cho dù các baseline được huấn luyện từ đầu hay là các mô hình pre-trained, CodeReviewer vượt trội hơn
+
+⁵https://pytorch.org/
+⁶https://huggingface.co/
+
+Bảng 4: Kết quả trên ước lượng chất lượng thay đổi mã nguồn.
+
+Mô hình (Số lớp #) | Precision | Recall | F1 | Accuracy
+---|---|---|---|---
+Transformer (12) | 74.50 | 46.07 | 56.93 | 65.16
+T5 (6) | 70.82 | 57.20 | 63.29 | 66.82
+CodeT5 (12) | 70.36 | 58.96 | 64.16 | 67.07
+CodeReviewer (12) | 78.60 | 65.63 | 71.53 | 73.89
+
+chúng một cách đáng kể trên tất cả bốn metric. Cụ thể, mô hình CodeReviewer của chúng tôi cải thiện F1 và accuracy lần lượt 8.24% và 7.07% so với T5. Sự cải thiện so với CodeT5 cũng trên/khoảng 7%, điều này chứng minh rằng các tác vụ pre-training của chúng tôi giúp CodeReviewer hiểu các thay đổi mã nguồn tốt hơn. Bên cạnh đó, hiệu suất của Transformer được huấn luyện từ đầu kém hơn ba mô hình khác, cho thấy tầm quan trọng của pre-training.
+
+6.2 RQ2: Hiệu suất trên Tạo ra Review
+Bảng 5 cho thấy kết quả trên tác vụ tạo ra review. CodeReviewer tạo ra điểm BLEU cao hơn các mô hình baseline. Tuy nhiên, điểm BLEU của mô hình chúng tôi vẫn thấp hơn 10, cho thấy đây là một tác vụ khó. Như đã đề cập trước đó, comment review đa dạng và không duy nhất. Tham khảo ví dụ được minh họa trong Hình 5, dự đoán mô hình của chúng tôi truyền đạt ý định tương tự như ground truth. Nhưng từ ngữ của chúng khác nhau rất nhiều nên điểm BLEU thấp hơn Codex. Để điều tra hiệu suất của các mô hình tốt hơn, chúng tôi thực hiện đánh giá con người trên các dự đoán của chúng.
+
+Chúng tôi đầu tiên chọn 300 mẫu ngẫu nhiên bằng Java và Python từ tập test và chọn thủ công 100 trong số chúng với các thay đổi mã nguồn và comment review chất lượng cao. Đối với các mẫu được chọn, chúng tôi mời 6 lập trình viên chuyên nghiệp tinh vi để chấm điểm comment tham chiếu và comment được tạo ra của mỗi mô hình như được mô tả trong Phần 5.2. Kết quả được liệt kê trong Bảng 5. Mô hình của chúng tôi cải thiện điểm thông tin và điểm mức độ liên quan của các comment được tạo ra khoảng 20% tương đối so với các mô hình baseline, có nghĩa là các comment được tạo ra bởi CodeReviewer hữu ích và phù hợp hơn. Hiệu suất của T5 kém hơn các mô hình khác, bao gồm cả baseline Transformer. Vì kích thước tham số của T5 (61M) là khoảng 1/4 của các mô hình khác (223M). Chúng tôi đoán rằng quá thách thức đối với một mô hình nhỏ để tạo ra các comment review.
+
+Trong tác vụ này, chúng tôi cũng tiến hành phân tích định tính về mô hình ngôn ngữ lớn nhất thế giới trên mã nguồn, Codex [7], đã được chứng minh là mô hình tạo ra mã nguồn mạnh nhất và có khả năng chuyển đổi tác vụ zero-shot. Vì chúng tôi không có quyền truy cập vào mô hình và không thể fine-tune nó, chúng tôi thay thế sử dụng GitHub Copilot [15] được hỗ trợ bởi Codex. Bằng cách cung cấp một số cặp code diff và comment review làm prompt, chúng tôi thấy rằng Codex không thể tạo ra bất kỳ review có ý nghĩa nào mà chỉ sao chép các comment trong các ví dụ đã cho. Hình 5 cho thấy hai ví dụ đầu ra được tạo ra bởi các mô hình khác nhau bao gồm Codex.
+
+--- TRANG 9 ---
+Automating Code Review Activities by Large-Scale Pre-training ESEC/FSE '22, November 14–18, 2022, Singapore, Singapore
+
+public class DockerOptions {
+for(int i = 0; i < maxContainerCount; i++) {
+node.add(caps, new DockerSessionFactory (clientFactory, docker, image, caps));
+}
+-LOG.info( String.format(
++ LOG.finest( String.format(
+"Mapping %s to docker image %s %d times", caps, name,
+
+Ground truth: Thay đổi này ngăn cản người dùng hiểu cách máy chủ của họ được cấu hình. Tốt nhất là để lại ở mức `info`.
+T5: Tôi không nghĩ thay đổi này là cần thiết. BLEU:4.93
+CodeT5: Tại sao chúng ta cần thay đổi này? BLEU:2.97
+Codex: Tôi nghĩ đây là một ví dụ tốt về cách sử dụng docker BLEU:8.83
+CodeReviewer: Đây là một trợ giúp debug quan trọng và không nên thấp hơn mức INFO hiển thị mặc định. BLEU:7.97
+
+public class MockExecutorLoader implements ExecutorLoader {
+public void unassignExecutor(int executionId) throws ExecutorManagerException {
+executionExecutorMapping. remove(executionId );
+}
++
++ @Override
++ public List<ExecutableFlow> fetchRecentlyFinishedFlows(long lifeTimeMs)
++ throws ExecutorManagerException {
++ return null;
++ }
+}
+
+Ground truth: Tôi nghĩ chúng ta nên trả về một list trống thay vì null ở đây.
+T5: Tôi không nghĩ chúng ta cần điều này.
+CodeT5: Tôi không nghĩ class này thuộc về đây.
+Codex: Tôi nghĩ đây là một ý tưởng hay.
+CodeReviewer: trả về list trống thay thế?
+
+Hình 5: Hai ví dụ của tác vụ tạo ra review. Đầu ra Codex được lấy bởi Copilot.
+
+Comment review: lật ngược các điều kiện, việc kiểm tra null nên được thực hiện trước
+
+T5:
+try{
+wallpaperManager.setBitmap(bitmap);ViewUtil.showLongToast(context, context.getString (R.string.wallpaper_set_successfully ));
+-if(progressDialog.isShowing() && progressDialog != null) {
++if(progressDialog.isShowing()) {
+progressDialog.dismiss();
+}
+} catch (IOException e) { ... }
+
+CodeT5:
+try{wallpaperManager.setBitmap(bitmap);ViewUtil.showLongToast(context, context.getString (R.string.wallpaper_set_successfully ));
+-if(progressDialog.isShowing() && progressDialog != null) {
++if(progressDialog.isShowing() || progressDialog != null) {
+progressDialog.dismiss();
+}
+} catch (IOException e) { ... }
+
+CodeReviewer:
+try{wallpaperManager.setBitmap(bitmap);ViewUtil.showLongToast(context, context.getString (R.string.wallpaper_set_successfully ));
+-if(progressDialog.isShowing() && progressDialog != null) {
++if(progressDialog != null && progressDialog.isShowing()) {
+progressDialog.dismiss();
+}
+} catch (IOException e) { ... }
+
+Hình 6: Một ví dụ của tác vụ cải tiến mã nguồn. Để rõ ràng, chúng tôi hiển thị code diff giữa các đầu vào và đầu ra mô hình thay vì dạng gốc của chúng.
+
+6.3 RQ3: Hiệu suất trên Cải tiến Mã nguồn
+Bảng 6 cho thấy kết quả trên tác vụ cải tiến mã nguồn. Phương pháp Naïve-Copy trực tiếp sao chép mã nguồn đầu vào làm kết quả cải tiến. Nó tạo ra điểm BLEU khá tốt nhưng 0.00 Exact Match (EM). CodeReviewer thành công tạo ra mã nguồn đã sửa chữa hoàn toàn giống như ground truth cho hơn 30% trường hợp, gấp hai lần kết quả của T5 và cao hơn CodeT5 25% tương đối, chứng minh khả năng vượt trội của CodeReviewer trong việc hiểu
+
+--- TRANG 10 ---
+ESEC/FSE '22, November 14–18, 2022, Singapore, Singapore Z.Li, S.Lu, D.Guo, N.Duan, S.Jannu, G.Jenks, D.Majumder, J.Green, A.Svyatkovskiy, S.Fu and N.Sundaresan
+
+Bảng 5: Kết quả trên tạo ra comment review. Điểm hoàn hảo của hai metric trong tập đánh giá con người đều là 5.
+
+Mô hình (Số lớp #) | Tập test | Tập đánh giá con người
+---|---|---
+ | BLEU | Thông tin | Mức độ liên quan
+Transformer (12) | 4.76 | 3.08 | 2.50
+T5 (6) | 4.39 | 2.54 | 1.62
+CodeT5 (12) | 4.83 | 3.03 | 2.40
+CodeReviewer (12) | 5.32 | 3.60 | 3.20
+
+Bảng 6: Kết quả trên cải tiến mã nguồn.
+
+Mô hình (Số lớp #) | BLEU | EM
+---|---|---
+NaïveCopy | 58.75 | 0.00
+T5 (6) | 77.03 | 15.08
+CodeT5 (12) | 80.82 | 24.41
+CodeReviewer (12) | 82.61 | 30.32
+
+Bảng 7: Nghiên cứu ablation trên ước lượng chất lượng thay đổi mã nguồn.
+
+Mô hình | Precision | Recall | F1 | Accuracy
+---|---|---|---|---
+CodeReviewer | 78.60 | 65.63 | 71.53 | 73.89
+w/o CMT | 77.14 | 66.35 | 71.34 | 73.35
+w/o DTP | 79.59 | 62.64 | 70.10 | 73.29
+w/o DCD | 79.87 | 60.94 | 69.13 | 72.80
+
+comment review và cải tiến mã nguồn dựa trên chúng. Điểm BLEU của CodeReviewer cũng cao hơn T5 và CodeT5. Hình 6 cho thấy một ví dụ về dự đoán hoàn hảo được tạo ra bởi mô hình của chúng tôi. Lưu ý rằng mô hình Transformer không thể hội tụ trong 10 epoch, tạo ra khoảng 0 điểm BLEU, vì vậy kết quả không được liệt kê trong bảng.
+
+6.4 RQ4: Ảnh hưởng của các Tác vụ Pre-training
+Chúng tôi chứng minh hiệu suất vượt trội của CodeReviewer trên các tác vụ downstream khác nhau trong RQ1-RQ3, chứng minh rằng các tác vụ pre-training được thiết kế tốt có lợi cho việc tự động hóa các hoạt động code review. Trong RQ này, chúng tôi đi sâu hơn và phơi bày đóng góp của mỗi tác vụ pre-training. Chúng tôi tiếp tục pre-train ba mô hình, mỗi mô hình được huấn luyện với một số tác vụ pre-training bị loại bỏ, và đánh giá hiệu suất của chúng trên tác vụ ước lượng chất lượng thay đổi mã nguồn. Các mô hình CodeReviewer w/o DTP, CodeReviewer w/o DCD và CodeReviewer w/o CMT đại diện cho CodeReviewer được huấn luyện mà không có tác vụ Diff Tag Prediction, tác vụ Denoising Code Diff, và hai tác vụ liên quan đến comment khác (Denoising Review Comment và Review Comment Generation) tương ứng.
+
+Bảng 7 cho thấy kết quả. Sự suy giảm hiệu suất của mô hình chứng minh tầm quan trọng của các tác vụ pre-training. Đối với tác vụ ước lượng chất lượng thay đổi mã nguồn, tất cả các tác vụ pre-training giúp mô hình của chúng tôi hiểu code diff tốt hơn. Nhưng tác vụ diff tag prediction và tác vụ denoising code diff quan trọng hơn. Kết quả phù hợp với động lực của chúng tôi trong Phần 4.3.
+
+Bảng 8: Nghiên cứu ablation của tập dữ liệu đa ngôn ngữ trên tác vụ ước lượng chất lượng thay đổi mã nguồn.
+
+Metric | Java | C# | Ruby
+---|---|---|---
+ | Multi | Single | Multi | Single | Multi | Single
+Accuracy | 74.04 | 72.45 | 74.80 | 72.21 | 82.70 | 79.92
+F1 | 70.53 | 69.34 | 76.52 | 75.53 | 89.23 | 88.10
+
+6.5 RQ5: Ảnh hưởng của Tập dữ liệu Đa ngôn ngữ
+Trong các thí nghiệm trước đó, CodeReviewer được huấn luyện trên các tập dữ liệu bao gồm chín ngôn ngữ lập trình. Để điều tra liệu các tập dữ liệu đa ngôn ngữ có giúp mô hình của chúng tôi hiểu rõ hơn một ngôn ngữ lập trình đơn lẻ hay không, chúng tôi xây dựng các tập dữ liệu đơn ngôn ngữ cho ngôn ngữ Java, C# và Ruby, tương ứng. Java đại diện cho các ngôn ngữ phổ biến và Ruby đại diện cho các ngôn ngữ ít tài nguyên như được hiển thị trong Bảng 2. Đối với mỗi ngôn ngữ trong ba ngôn ngữ, chúng tôi pre-train và finetune CodeReviewer trên các tập dữ liệu đơn ngôn ngữ và so sánh hiệu suất trên tác vụ ước lượng chất lượng thay đổi mã nguồn với CodeReviewer gốc được pre-trained và finetuned trên tập dữ liệu đa ngôn ngữ đầy đủ. Kết quả được liệt kê trong Bảng 8.
+
+CodeReviewer đa ngôn ngữ vượt trội hơn ba mô hình đơn ngôn ngữ một cách nhất quán, cải thiện accuracy trung bình 2.32% và điểm F1 trung bình 1.10%. Chúng tôi kết luận rằng tập dữ liệu đa ngôn ngữ của chúng tôi có lợi đáng kể cho CodeReviewer trong việc hiểu các ngôn ngữ cụ thể. Điều này tiết lộ tính ưu việt của tập dữ liệu đa ngôn ngữ của chúng tôi so với các tập dữ liệu cho ngôn ngữ lập trình đơn lẻ. Nó cũng chứng minh khả năng ứng dụng rộng rãi của CodeReviewer trong các ngôn ngữ lập trình khác nhau.
+
+7 CÁC CÔNG TRÌNH LIÊN QUAN
+
+7.1 Pre-training cho Các Tác vụ Liên quan đến Mã nguồn
+Các kỹ thuật Deep Learning đã được áp dụng rộng rãi trong nghiên cứu kỹ thuật phần mềm [10,44]. Trong những năm gần đây, được thúc đẩy bởi tác động to lớn của kỹ thuật pre-training trong lĩnh vực xử lý ngôn ngữ tự nhiên (NL) [6,11,24,31], các nhà nghiên cứu đã thực hiện các nỗ lực để điều tra liệu các mô hình pre-trained cho ngôn ngữ lập trình (PL) có thể tạo điều kiện thêm cho phát triển phần mềm hay không.
+
+Vì các mô hình pre-trained có thể giải quyết một số tác vụ downstream bằng fine-tuning, các công trình trước đây nhắm đến các phạm vi khác nhau của các tác vụ liên quan đến mã nguồn với các mô hình của họ. Kanade et al. [23] pre-train CuBERT trong một corpus mã nguồn Python chủ yếu cho các tác vụ phân loại như phân loại sử dụng sai biến, toán tử nhị phân sai, v.v. CodeBERT [14] và GraphCodeBERT [17] là các mô hình transformer hai chiều được pre-trained trên các cặp NL-PL bằng sáu ngôn ngữ lập trình, mô hình sau giới thiệu các tác vụ pre-training mới được thiết kế cho luồng dữ liệu mã nguồn. Cả hai mô hình đều đã cho thấy hiệu quả trên các tác vụ giao thoa mã nguồn-văn bản như tìm kiếm mã nguồn NL và tóm tắt mã nguồn, và các tác vụ hiểu mã nguồn khác như phát hiện clone mã nguồn và phát hiện khiếm khuyết nhờ cơ chế attention hai chiều. CodeGPT [27], GPT-C [36] và Codex [7] tập trung vào các tác vụ generative như hoàn thành mã nguồn và tạo ra mã nguồn vì chúng được pre-trained với kiến trúc transformer chỉ decoder. Đối với các mô hình encoder-decoder như PLBART [2] và CodeT5 [43] và các mô hình thống nhất như UniXcoder
+
+--- TRANG 11 ---
+Automating Code Review Activities by Large-Scale Pre-training ESEC/FSE '22, November 14–18, 2022, Singapore, Singapore
+
+[16], chúng có thể được áp dụng cho cả các tác vụ hiểu và tạo ra nhận mã nguồn hoặc văn bản làm đầu vào.
+
+Tất cả các mô hình trên không chú ý đến các tác vụ trong quy trình code review. Một đặc điểm riêng biệt của các tác vụ code review là các thay đổi mã nguồn nên được coi là đầu vào. Gần đây, Tufano et al. [40] pre-trained một mô hình T5 để tự động hóa các hoạt động code review. Tuy nhiên, công việc của họ khác với chúng tôi ở hai điểm. Thứ nhất, họ chỉ sử dụng các mục tiêu pre-training của T5 [31] và không tính đến cách tích hợp các thay đổi mã nguồn vào pre-training. Thứ hai, dữ liệu pre-training của họ không liên quan trực tiếp đến code review, nhưng chúng tôi thu thập dữ liệu từ các pull request GitHub để pre-training.
+
+7.2 Tự động hóa Các Hoạt động Code Review
+Như được chỉ ra bởi các nghiên cứu thực nghiệm trước đây, code review là một phần quan trọng trong vòng đời phát triển phần mềm và liên quan đến một lượng đáng kể nỗ lực và thời gian của reviewer [5,33]. Các nhà nghiên cứu đang chú ý nhiều hơn đến việc tự động hóa các hoạt động code review, bao gồm gợi ý reviewer [38,47], dự đoán vị trí comment [19,34], gợi ý comment review [18,35] và cải tiến mã nguồn [41].
+
+Thongtanunam et al. [38] tiết lộ rằng 4%-30% các review có vấn đề phân công reviewer mã nguồn. Do đó, họ đề xuất một công cụ dựa trên vị trí file RevFinder để gợi ý reviewer mã nguồn phù hợp. Để giải quyết cùng vấn đề, Zanjani et al. [47] thiết kế hệ thống cHRev sử dụng lịch sử code review để gợi ý reviewer cho một thay đổi mã nguồn. Trong khi những nhà nghiên cứu này nhằm cải thiện code review ở giai đoạn đầu, những người khác dành tâm huyết để giải quyết các tác vụ thách thức hơn trong quy trình code review. Shi et al. [34] đề xuất framework DACE dựa trên CNN và LSTM để dự đoán liệu một hunk trong thay đổi mã nguồn có được reviewer chấp nhận hay không. Hellendoorn et al. [19] sử dụng kiến trúc Transformer để giải quyết tác vụ này. Hơn nữa, họ cũng cố gắng nắm bắt mối quan hệ của các hunk khác nhau trong một pull request bằng cách mã hóa mỗi hunk và tính toán điểm attention qua các diff hunk để kết hợp thông tin. Li et al. [25] chính thức hóa automatic code review như một tác vụ multi-instance learning, trong đó mỗi hunk là một instance và mục tiêu là dự đoán liệu một pull request có được chấp nhận hay không.
+
+Các nhà nghiên cứu khác tập trung vào các tác vụ liên quan đến comment review. Để tiết kiệm thời gian reviewer dành cho việc viết review liên quan đến các vấn đề phổ biến như phong cách mã nguồn và tài liệu, Gupta và Sundaresan [18] đề xuất mô hình dựa trên LSTM DeepMem. DeepMem học các mối quan hệ giữa các thay đổi mã nguồn và comment review, và gợi ý comment review tự động dựa trên các code review và thay đổi mã nguồn hiện có. Siow et al. [35] cũng gợi ý code review theo cách dựa trên retrieval. Họ đề xuất mô hình attentional embedding đa cấp dựa trên LSTM CORE nhằm nắm bắt thông tin ngữ nghĩa trong cả mã nguồn và review. Tufano et al. [41] sử dụng các kỹ thuật deep learning để tự động hóa một tác vụ khác trong code review. Họ huấn luyện một mô hình Transformer để sửa đổi mã nguồn của contributor để thực hiện các yêu cầu từ comment review. Trong công việc trước đây, các nhà nghiên cứu thường huấn luyện một mô hình nhỏ cho một tác vụ cụ thể trong quy trình code review. Khác biệt, chúng tôi đề xuất một mô hình lớn được pre-trained trên bốn tác vụ pre-training chung cho code review, tạo ra hiệu suất vượt trội qua ba tác vụ code review khác nhau.
+
+7.3 Tập dữ liệu Code Review
+Để thúc đẩy nghiên cứu về tự động hóa các hoạt động code review, các nhà nghiên cứu cũng nỗ lực thu thập và xuất bản các tập dữ liệu code review. Tufano et al. [41] tạo ra hai tập dữ liệu với 17k thay đổi mã nguồn được trừu tượng hóa để dự đoán các thay đổi mã nguồn ở mức method. Code Review Open Platform (CROP) của Paixao et al. [29] là một tập dữ liệu dựa trên các dự án Gerrit cụ thể bao gồm 507k comment. Tập dữ liệu từ Mukadam et al. [28] có ít comment hơn (106k) và chỉ cung cấp metadata của mã nguồn. Yang et al. [46] đề xuất tập dữ liệu với số lượng comment lớn nhất. Nhưng họ cũng chỉ cung cấp metadata của mã nguồn. So với họ, chúng tôi đề xuất tập dữ liệu code review đa ngôn ngữ lớn nhất với thông tin hoàn chỉnh được thu thập từ hơn 1k repository GitHub với hơn 7.9M pull request tổng cộng.
+
+8 CÁC MỐI ĐE DỌA ĐỐI VỚI TÍNH HỢP LỆ
+Các mối đe dọa đối với tính hợp lệ nội bộ liên quan đến vai trò được đóng bởi kiến trúc mô hình và cài đặt siêu tham số. Chúng tôi thực hiện tìm kiếm lưới phạm vi nhỏ trên cài đặt learning rate và batch size, để các siêu tham số khác giống như trong CodeT5 [43]. Dự kiến rằng việc điều chỉnh siêu tham số nhiều hơn sẽ mang lại nhiều cải thiện hơn.
+
+Các mối đe dọa đối với tính hợp lệ bên ngoài chủ yếu liên quan đến tập dữ liệu chúng tôi thu thập và sử dụng trong bài báo này. Vì tập dữ liệu được thu thập từ GitHub, nó được xây dựng chỉ dựa trên các dự án mã nguồn mở, không phải các dự án công nghiệp. Bên cạnh đó, code review thường không được thực hiện bởi một reviewer duy nhất mà nhiều reviewer, và họ có thể đưa ra các comment khác nhau từ các góc độ khác nhau. Nhưng chúng tôi chỉ thu thập một comment duy nhất cho một thay đổi mã nguồn, dẫn đến bias trong tập dữ liệu của chúng tôi.
+
+Các mối đe dọa đối với tính hợp lệ cấu trúc bao gồm tính hợp lý của các metric đánh giá. Chúng tôi lập luận rằng điểm BLEU được sử dụng rộng rãi trong các tác vụ tạo ra văn bản không phù hợp cho tác vụ tạo ra review. Vì vậy chúng tôi tiến hành annotation con người để đánh giá kết quả tốt hơn.
+
+9 KẾT LUẬN
+Trong bài báo này, chúng tôi tập trung vào các kỹ thuật pre-training để tự động hóa các hoạt động code review. Chúng tôi bắt đầu bằng việc công thức hóa ba tác vụ trong quy trình code review với định dạng thay đổi mã nguồn. Chúng tôi thu thập và tổ chức một tập dữ liệu quy mô lớn từ GitHub để pre-training code review và một benchmark để đánh giá trên ba tác vụ. Đây là tập dữ liệu lớn nhất trong kịch bản code review, bao gồm chín ngôn ngữ lập trình phổ biến nhất trong GitHub. Dựa trên điều này, chúng tôi giới thiệu CodeReviewer, một mô hình encoder-decoder dựa trên transformer được pre-trained trên tập dữ liệu của chúng tôi với bốn tác vụ pre-training được thiết kế cho code review. Kết quả thí nghiệm chứng minh rằng mô hình của chúng tôi vượt trội hơn các mô hình state-of-the-art được pre-trained với mã nguồn trong tất cả ba tác vụ.
+
+TÀI LIỆU THAM KHẢO
+[1] A Frank Ackerman, Priscilla J Fowler, và Robert G Ebenau. 1984. Software inspections and the industrial production of software. Trong Proc. of a symposium on Software validation: inspection-testing-verification-alternatives. 13–40.
+[2] Wasi Ahmad, Saikat Chakraborty, Baishakhi Ray, và Kai-Wei Chang. 2021. Unified Pre-training for Program Understanding and Generation. Trong Proceedings of the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies. 2655–2668.
+
+--- TRANG 12 ---
+ESEC/FSE '22, November 14–18, 2022, Singapore, Singapore Z.Li, S.Lu, D.Guo, N.Duan, S.Jannu, G.Jenks, D.Majumder, J.Green, A.Svyatkovskiy, S.Fu and N.Sundaresan
+
+[3] Alberto Bacchelli và Christian Bird. 2013. Expectations, outcomes, and challenges of modern code review. Trong 35th International Conference on Software Engineering, ICSE '13, San Francisco, CA, USA, May 18-26, 2013, David Notkin, Betty H. C. Cheng, và Klaus Pohl (Eds.). IEEE Computer Society, 712–721. https://doi.org/10.1109/ICSE.2013.6606617
+
+[4] Moritz Beller, Alberto Bacchelli, Andy Zaidman, và Elmar Jürgens. 2014. Modern code reviews in open-source projects: which problems do they fix?. Trong 11th Working Conference on Mining Software Repositories, MSR 2014, Proceedings, May 31 - June 1, 2014, Hyderabad, India, Premkumar T. Devanbu, Sung Kim, và Martin Pinzger (Eds.). ACM, 202–211. https://doi.org/10.1145/2597073.2597082
+
+[5] Amiangshu Bosu và Jeffrey C. Carver. 2013. Impact of Peer Code Review on Peer Impression Formation: A Survey. Trong ESEM. IEEE Computer Society, 133–142.
+
+[6] Tom Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared D Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, et al. 2020. Language models are few-shot learners. Advances in neural information processing systems 33 (2020), 1877–1901.
+
+[7] Mark Chen, Jerry Tworek, Heewoo Jun, Qiming Yuan, Henrique Ponde de Oliveira Pinto, Jared Kaplan, Harri Edwards, Yuri Burda, Nicholas Joseph, Greg Brockman, et al. 2021. Evaluating large language models trained on code. arXiv preprint arXiv:2107.03374 (2021).
+
+[8] Ting-Rui Chiang, Yi-Pei Chen, Yi-Ting Yeh, và Graham Neubig. 2021. Breaking Down Multilingual Machine Translation. CoRR abs/2110.08130 (2021).
+
+[9] Moataz Chouchen, Ali Ouni, Mohamed Wiem Mkaouer, Raula Gaikovina Kula, và Katsuro Inoue. 2021. WhoReview: A multi-objective search-based approach for code reviewers recommendation in modern code review. Appl. Soft Comput. 100 (2021), 106908. https://doi.org/10.1016/j.asoc.2020.106908
+
+[10] Prem Devanbu, Matthew Dwyer, Sebastian Elbaum, Michael Lowry, Kevin Moran, Denys Poshyvanyk, Baishakhi Ray, Rishabh Singh, và Xiangyu Zhang. 2020. Deep learning & software engineering: State of research and future directions. arXiv preprint arXiv:2009.08525 (2020).
+
+[11] Jacob Devlin, Ming-Wei Chang, Kenton Lee, và Kristina Toutanova. 2018. Bert: Pre-training of deep bidirectional transformers for language understanding. arXiv preprint arXiv:1810.04805 (2018).
+
+[12] Michael E. Fagan. 2002. Design and Code Inspections to Reduce Errors in Program Development (Reprint). Trong Software Pioneers, Manfred Broy và Ernst Denert (Eds.). Springer Berlin Heidelberg, 575–607. https://doi.org/10.1007/978-3-642-59412-0_35
+
+[13] Michael E. Fagan. 2002. A History of Software Inspections. Trong Software Pioneers. Springer Berlin Heidelberg, 562–573.
+
+[14] Zhangyin Feng, Daya Guo, Duyu Tang, Nan Duan, Xiaocheng Feng, Ming Gong, Linjun Shou, Bing Qin, Ting Liu, Daxin Jiang, et al. 2020. CodeBERT: A Pre-Trained Model for Programming and Natural Languages. Trong Findings of the Association for Computational Linguistics: EMNLP 2020. 1536–1547.
+
+[15] Github. 2021. GitHub Copilot ·Your AI pair programmer. https://copilot.github.com/.
+
+[16] Daya Guo, Shuai Lu, Nan Duan, Yanlin Wang, Ming Zhou, và Jian Yin. 2022. UniXcoder: Unified Cross-Modal Pre-training for Code Representation. arXiv preprint arXiv:2203.03850 (2022).
+
+[17] Daya Guo, Shuo Ren, Shuai Lu, Zhangyin Feng, Duyu Tang, Shujie Liu, Long Zhou, Nan Duan, Alexey Svyatkovskiy, Shengyu Fu, et al. 2021. GraphCodeBERT: Pre-training Code Representations with Data Flow. Trong ICLR.
+
+[18] Anshul Gupta và Neel Sundaresan. 2018. Intelligent code reviews using deep learning. Trong Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining (KDD'18) Deep Learning Day.
+
+[19] Vincent J. Hellendoorn, Jason Tsay, Manisha Mukherjee, và Martin Hirzel. 2021. Towards Automating Code Review at Scale. Trong Proceedings of the 29th ACM Joint Meeting on European Software Engineering Conference and Symposium on the Foundations of Software Engineering (Athens, Greece) (ESEC/FSE 2021). Association for Computing Machinery, New York, NY, USA, 1479–1482. https://doi.org/10.1145/3468264.3473134
+
+[20] Robert Heumüller, Sebastian Nielebock, và Frank Ortmeier. 2021. Exploit Those Code Reviews! Bigger Data for Deeper Learning. Trong Proceedings of the 29th ACM Joint Meeting on European Software Engineering Conference and Symposium on the Foundations of Software Engineering (Athens, Greece) (ESEC/FSE 2021). Association for Computing Machinery, New York, NY, USA, 1505–1509. https://doi.org/10.1145/3468264.3473110
+
+[21] Abram Hindle, Earl T. Barr, Mark Gabel, Zhendong Su, và Premkumar Devanbu. 2016. On the Naturalness of Software. Commun. ACM 59, 5 (apr 2016), 122–131. https://doi.org/10.1145/2902362
+
+[22] Hamel Husain, Ho-Hsiang Wu, Tiferet Gazit, Miltiadis Allamanis, và Marc Brockschmidt. 2019. CodeSearchNet Challenge: Evaluating the State of Semantic Code Search. CoRR abs/1909.09436 (2019).
+
+[23] Aditya Kanade, Petros Maniatis, Gogul Balakrishnan, và Kensen Shi. 2020. Learning and evaluating contextual embedding of source code. Trong International Conference on Machine Learning. PMLR, 5110–5121.
+
+[24] Mike Lewis, Yinhan Liu, Naman Goyal, Marjan Ghazvininejad, Abdelrahman Mohamed, Omer Levy, Ves Stoyanov, và Luke Zettlemoyer. 2019. Bart: Denoising sequence-to-sequence pre-training for natural language generation, translation, and comprehension. arXiv preprint arXiv:1910.13461 (2019).
+
+[25] Heng-Yi Li, Shu-Ting Shi, Ferdian Thung, Xuan Huo, Bowen Xu, Ming Li, và David Lo. 2019. Deepreview: automatic code review using deep multi-instance learning. Trong Pacific-Asia Conference on Knowledge Discovery and Data Mining. Springer, 318–330.
+
+[26] Yinhan Liu, Myle Ott, Naman Goyal, Jingfei Du, Mandar Joshi, Danqi Chen, Omer Levy, Mike Lewis, Luke Zettlemoyer, và Veselin Stoyanov. 2019. Roberta: A robustly optimized bert pretraining approach. arXiv preprint arXiv:1907.11692 (2019).
+
+[27] Shuai Lu, Daya Guo, Shuo Ren, Junjie Huang, Alexey Svyatkovskiy, Ambrosio Blanco, Colin Clement, Dawn Drain, Daxin Jiang, Duyu Tang, et al. 2021. CodeXGLUE: A Machine Learning Benchmark Dataset for Code Understanding and Generation. Trong Thirty-fifth Conference on Neural Information Processing Systems Datasets and Benchmarks Track (Round 1).
+
+[28] Murtuza Mukadam, Christian Bird, và Peter C Rigby. 2013. Gerrit software code review data from android. Trong 2013 10th Working Conference on Mining Software Repositories (MSR). IEEE, 45–48.
+
+[29] Matheus Paixao, Jens Krinke, Donggyun Han, và Mark Harman. 2018. CROP: Linking Code Reviews to Source Code Changes. Trong Proceedings of the 15th International Conference on Mining Software Repositories (Gothenburg, Sweden) (MSR '18). Association for Computing Machinery, New York, NY, USA, 46–49. https://doi.org/10.1145/3196398.3196466
+
+[30] Kishore Papineni, Salim Roukos, Todd Ward, và Wei-Jing Zhu. 2002. Bleu: a method for automatic evaluation of machine translation. Trong Proceedings of the 40th annual meeting of the Association for Computational Linguistics. 311–318.
+
+[31] Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang, Michael Matena, Yanqi Zhou, Wei Li, và Peter J. Liu. 2020. Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer. J. Mach. Learn. Res. 21, 1, Article 140 (jan 2020), 67 pages.
+
+[32] Peter C. Rigby và Christian Bird. 2013. Convergent contemporary software peer review practices. Trong Joint Meeting of the European Software Engineering Conference and the ACM SIGSOFT Symposium on the Foundations of Software Engineering, ESEC/FSE'13, Saint Petersburg, Russian Federation, August 18-26, 2013, Bertrand Meyer, Luciano Baresi, và Mira Mezini (Eds.). ACM, 202–212. https://doi.org/10.1145/2491411.2491444
+
+[33] Caitlin Sadowski, Emma Söderberg, Luke Church, Michal Sipko, và Alberto Bacchelli. 2018. Modern code review: a case study at google. Trong Proceedings of the 40th International Conference on Software Engineering: Software Engineering in Practice, ICSE (SEIP) 2018, Gothenburg, Sweden, May 27 - June 03, 2018, Frances Paulisch và Jan Bosch (Eds.). ACM, 181–190. https://doi.org/10.1145/3183519.3183525
+
+[34] Shu-Ting Shi, Ming Li, David Lo, Ferdian Thung, và Xuan Huo. 2019. Automatic code review by learning the revision of source code. Trong Proceedings of the AAAI Conference on Artificial Intelligence, Vol. 33. 4910–4917.
+
+[35] Jing Kai Siow, Cuiyun Gao, Lingling Fan, Sen Chen, và Yang Liu. 2020. CORE: Automating Review Recommendation for Code Changes. Trong SANER. IEEE, 284–295.
+
+[36] Alexey Svyatkovskiy, Shao Kun Deng, Shengyu Fu, và Neel Sundaresan. 2020. IntelliCode Compose: Code Generation Using Transformer. Trong Proceedings of the 28th ACM Joint Meeting on European Software Engineering Conference and Symposium on the Foundations of Software Engineering (Virtual Event, USA) (ESEC/FSE 2020). Association for Computing Machinery, New York, NY, USA, 1433–1443. https://doi.org/10.1145/3368089.3417058
+
+[37] Patanamon Thongtanunam, Chakkrit Tantithamthavorn, Raula Gaikovina Kula, Norihiro Yoshida, Hajimu Iida, và Ken-ichi Matsumoto. 2015. Who should review my code? A file location-based code-reviewer recommendation approach for Modern Code Review. Trong 22nd IEEE International Conference on Software Analysis, Evolution, and Reengineering, SANER 2015, Montreal, QC, Canada, March 2-6, 2015, Yann-Gaël Guéhéneuc, Bram Adams, và Alexander Serebrenik (Eds.). IEEE Computer Society, 141–150. https://doi.org/10.1109/SANER.2015.7081824
+
+[38] Patanamon Thongtanunam, Chakkrit Tantithamthavorn, Raula Gaikovina Kula, Norihiro Yoshida, Hajimu Iida, và Ken-ichi Matsumoto. 2015. Who should review my code? a file location-based code-reviewer recommendation approach for modern code review. Trong 2015 IEEE 22nd International Conference on Software Analysis, Evolution, and Reengineering (SANER). IEEE, 141–150.
+
+[39] Michele Tufano, Cody Watson, Gabriele Bavota, Massimiliano Di Penta, Martin White, và Denys Poshyvanyk. 2019. An Empirical Study on Learning Bug-Fixing Patches in the Wild via Neural Machine Translation. ACM Trans. Softw. Eng. Methodol. 28, 4, Article 19 (sep 2019), 29 pages. https://doi.org/10.1145/3340544
+
+[40] Rosalia Tufano, Simone Masiero, Antonio Mastropaolo, Luca Pascarella, Denys Poshyvanyk, và Gabriele Bavota. 2022. Using Pre-Trained Models to Boost Code Review Automation. Trong Proceedings of the 44th International Conference on Software Engineering (Pittsburgh, Pennsylvania) (ICSE '22). Association for Computing Machinery, New York, NY, USA, 2291–2302. https://doi.org/10.1145/3510003.3510621
+
+[41] Rosalia Tufano, Luca Pascarella, Michele Tufano, Denys Poshyvanyk, và Gabriele Bavota. 2021. Towards Automating Code Review Activities. Trong 43rd IEEE/ACM International Conference on Software Engineering, ICSE 2021, Madrid,
+
+--- TRANG 13 ---
+Automating Code Review Activities by Large-Scale Pre-training ESEC/FSE '22, November 14–18, 2022, Singapore, Singapore
+
+Spain, 22-30 May 2021. IEEE, 163–174. https://doi.org/10.1109/ICSE43902.2021.00027
+
+[42] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, và Illia Polosukhin. 2017. Attention is All you Need. Trong NIPS. 5998–6008.
+
+[43] Yue Wang, Weishi Wang, Shafiq R. Joty, và Steven C. H. Hoi. 2021. CodeT5: Identifier-aware Unified Pre-trained Encoder-Decoder Models for Code Understanding and Generation. CoRR abs/2109.00859 (2021).
+
+[44] Cody Watson, Nathan Cooper, David Nader Palacio, Kevin Moran, và Denys Poshyvanyk. 2022. A Systematic Literature Review on the Use of Deep Learning in Software Engineering Research. ACM Trans. Softw. Eng. Methodol. 31, 2, Article 32 (mar 2022), 58 pages. https://doi.org/10.1145/3485275
+
+[45] Xin Yang, Raula Gaikovina Kula, Norihiro Yoshida, và Hajimu Iida. 2016. Mining the modern code review repositories: a dataset of people, process and product. Trong Proceedings of the 13th International Conference on Mining Software Repositories, MSR 2016, Austin, TX, USA, May 14-22, 2016, Miryung Kim, Romain Robbes, và Christian Bird (Eds.). ACM, 460–463. https://doi.org/10.1145/2901739.2903504
+
+[46] Xin Yang, Raula Gaikovina Kula, Norihiro Yoshida, và Hajimu Iida. 2016. Mining the Modern Code Review Repositories: A Dataset of People, Process and Product. Trong Proceedings of the 13th International Conference on Mining Software Repositories (Austin, Texas) (MSR '16). Association for Computing Machinery, New York, NY, USA, 460–463. https://doi.org/10.1145/2901739.2903504
+
+[47] Motahareh Bahrami Zanjani, Huzefa Kagdi, và Christian Bird. 2015. Automatically recommending peer reviewers in modern code review. IEEE Transactions on Software Engineering 42, 6 (2015), 530–543.
+
+[48] Ming Zhu, Karthik Suresh, và Chandan K Reddy. 2022. Multilingual Code Snippets Training for Program Translation. (2022).

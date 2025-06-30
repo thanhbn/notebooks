@@ -1,0 +1,658 @@
+# 2406.11931v1.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2406.11931v1.pdf
+# Kích thước file: 396316 bytes
+
+===============================================
+NỘI DUNG FILE PDF (DỊCH TIẾNG VIỆT)
+===============================================
+
+
+--- TRANG 1 ---
+DeepSeek-Coder-V2: Phá Vỡ Rào Cản của Các Mô Hình Closed-Source 
+trong Trí Tuệ Mã Nguồn
+
+Qihao Zhu*, Daya Guo*, Zhihong Shao*, Dejian Yang*, Peiyi Wang, Runxin Xu, Y. Wu
+Yukun Li, Huazuo Gao, Shirong Ma, Wangding Zeng, Xiao Bi, Zihui Gu, Hanwei Xu, Damai Dai
+Kai Dong, Liyue Zhang, Yishi Piao, Zhibin Gou, Zhenda Xie, Zhewen Hao, Bingxuan Wang
+Junxiao Song, Deli Chen, Xin Xie, Kang Guan, Yuxiang You, Aixin Liu, Qiushi Du, Wenjun Gao
+Xuan Lu, Qinyu Chen, Yaohui Wang, Chengqi Deng, Jiashi Li, Chenggang Zhao
+Chong Ruan, Fuli Luo, Wenfeng Liang
+
+DeepSeek-AI
+https://github.com/deepseek-ai/DeepSeek-Coder-V2
+
+Tóm tắt
+Chúng tôi giới thiệu DeepSeek-Coder-V2, một mô hình ngôn ngữ mã nguồn Mixture-of-Experts (MoE) 
+open-source đạt được hiệu suất tương đương với GPT4-Turbo trong các nhiệm vụ đặc thù về mã nguồn. 
+Cụ thể, DeepSeek-Coder-V2 được tiếp tục pre-train từ một checkpoint trung gian của DeepSeek-V2 
+với thêm 6 nghìn tỷ token. Thông qua quá trình tiếp tục pre-training này, DeepSeek-Coder-V2 
+nâng cao đáng kể khả năng lập trình và lý luận toán học của DeepSeek-V2, đồng thời duy trì 
+hiệu suất tương đương trong các nhiệm vụ ngôn ngữ tổng quát. So với DeepSeek-Coder-33B, 
+DeepSeek-Coder-V2 thể hiện những tiến bộ đáng kể trong nhiều khía cạnh của các nhiệm vụ liên quan 
+đến mã nguồn, cũng như khả năng lý luận và tổng quát. Ngoài ra, DeepSeek-Coder-V2 mở rộng 
+hỗ trợ ngôn ngữ lập trình từ 86 lên 338, đồng thời mở rộng độ dài ngữ cảnh từ 16K lên 128K. 
+Trong các đánh giá benchmark tiêu chuẩn, DeepSeek-Coder-V2 đạt được hiệu suất vượt trội so với 
+các mô hình closed-source như GPT4-Turbo, Claude 3 Opus, và Gemini 1.5 Pro trong các benchmark 
+lập trình và toán học.
+
+[Biểu đồ hiệu suất của DeepSeek-Coder-V2 trên các benchmark toán học và mã nguồn]
+
+*Các tác giả chính
+arXiv:2406.11931v1  [cs.SE]  17 Jun 2024
+
+--- TRANG 2 ---
+1. Giới thiệu
+
+Cộng đồng open-source đã đạt được những bước tiến đáng kể trong việc phát triển trí tuệ mã nguồn 
+thông qua việc phát triển các mô hình mã nguồn open-source như StarCoder (Li et al., 2023b; 
+Lozhkov et al., 2024), CodeLlama (Roziere et al., 2023), DeepSeek-Coder (Guo et al., 2024), 
+và Codestral (MistralAI, 2024). Những mô hình này đã liên tục tiến gần đến mức hiệu suất của 
+các đối tác closed-source, góp phần vào sự tiến bộ của trí tuệ mã nguồn. Tuy nhiên, vẫn còn 
+một khoảng cách rõ rệt khi so sánh chúng với các mô hình closed-source tiên tiến như GPT4-Turbo 
+(OpenAI, 2023), Claude 3 Opus (Anthropic, 2024), và Gemini 1.5 Pro (Reid et al., 2024). 
+Để thu hẹp khoảng cách này và tiếp tục thúc đẩy sự phát triển của các mô hình mã nguồn open-source, 
+chúng tôi giới thiệu dòng mô hình DeepSeek-Coder-V2. Những mô hình này được xây dựng trên nền tảng 
+của DeepSeek-V2 (DeepSeek-AI, 2024) và được tiếp tục pre-train với một kho dữ liệu bổ sung 
+6 nghìn tỷ token.
+
+Trong giai đoạn pre-training, bộ dữ liệu của DeepSeek-Coder-V2 được tạo ra với thành phần 
+60% mã nguồn, 10% kho dữ liệu toán học, và 30% kho dữ liệu ngôn ngữ tự nhiên. Mã nguồn bao gồm 
+1.170B token liên quan đến mã nguồn được lấy từ GitHub và CommonCrawl, sử dụng cùng pipeline 
+như DeepSeekMath (Shao et al., 2024). Kho dữ liệu này mở rộng từ 86 lên 338 ngôn ngữ lập trình 
+so với kho dữ liệu mã nguồn được sử dụng để train DeepSeek-Coder. Để chứng minh hiệu quả của 
+kho dữ liệu mã nguồn mới, chúng tôi tiến hành các nghiên cứu ablation với mô hình 1B tham số 
+và quan sát được sự cải thiện 6.7% và 9.4% về độ chính xác trên cả hai benchmark HumanEval 
+(từ 30.5% lên 37.2%) và MBPP (từ 44.6% lên 54.0%) (Austin et al., 2021a; Chen et al., 2021), 
+tương ứng. Đối với kho dữ liệu toán học, chúng tôi thu thập 221B token liên quan đến toán học 
+từ CommonCrawl sử dụng cùng pipeline, gấp đôi kích thước của kho dữ liệu DeepSeekMath 120B 
+(Shao et al., 2024), trong khi đối với kho dữ liệu ngôn ngữ tự nhiên, chúng tôi lấy mẫu trực tiếp 
+từ kho dữ liệu training trong DeepSeek-V2. Tổng cộng, DeepSeek-Coder-V2 đã được tiếp xúc với 
+10.2T token training, trong đó 4.2 nghìn tỷ token có nguồn gốc từ bộ dữ liệu DeepSeek V2, 
+trong khi 6 nghìn tỷ token còn lại đến từ bộ dữ liệu DeepSeek-Coder-V2.
+
+Để phù hợp với các đầu vào mã nguồn dài hơn và tăng cường khả năng ứng dụng trong nhiều 
+tình huống lập trình khác nhau, chúng tôi mở rộng độ dài ngữ cảnh từ 16K lên 128K token, 
+cho phép các mô hình của chúng tôi xử lý các nhiệm vụ lập trình phức tạp và rộng lớn hơn. 
+Sau khi tiếp tục pre-training DeepSeek-V2 trên các kho dữ liệu đa nguồn này, chúng tôi thấy 
+rằng DeepSeek-Coder-V2 nâng cao đáng kể khả năng lập trình và lý luận toán học của mô hình 
+đồng thời duy trì hiệu suất ngôn ngữ tổng quát tương đương.
+
+Trong giai đoạn alignment, trước tiên chúng tôi xây dựng một bộ dữ liệu instruction tuning 
+bao gồm dữ liệu mã nguồn và toán học từ DeepSeek-Coder (Guo et al., 2024) và DeepSeek-Math 
+(Shao et al., 2024), cũng như dữ liệu instruction tổng quát từ DeepSeek-V2 (DeepSeek-AI, 2024). 
+Bộ dữ liệu này được sử dụng để fine-tune mô hình cơ sở. Sau đó, trong giai đoạn reinforcement learning, 
+chúng tôi sử dụng thuật toán Group Relative Policy Optimization (GRPO) để align hành vi của nó 
+với sở thích của con người. Dữ liệu ưu tiên được thu thập trong domain lập trình sử dụng 
+phản hồi từ compiler và test cases, và một mô hình reward được phát triển để hướng dẫn 
+việc training mô hình policy. Cách tiếp cận này đảm bảo rằng các phản hồi của mô hình được 
+tối ưu hóa về tính chính xác và sở thích của con người trong các nhiệm vụ lập trình. 
+Để cho phép mô hình hỗ trợ code completion sau khi alignment, chúng tôi cũng sử dụng phương pháp 
+Fill-In-Middle (Guo et al., 2024) trong quá trình fine-tuning mô hình cơ sở với 16B tham số.
+
+1.1. Đóng góp
+
+Tóm lại, các đóng góp chính của chúng tôi là:
+
+• Chúng tôi giới thiệu DeepSeek-Coder-V2 với 16B và 236B tham số dựa trên framework 
+
+--- TRANG 3 ---
+DeepSeek-MoE, có tham số kích hoạt chỉ 2.4B và 21B, hỗ trợ hiệu quả các nhu cầu tính toán 
+và ứng dụng đa dạng. Ngoài ra, DeepSeek-Coder-V2 hỗ trợ 338 ngôn ngữ lập trình và 
+độ dài ngữ cảnh tối đa 128K token.
+
+• Chúng tôi thực hiện nỗ lực đầu tiên để phát triển một mô hình mã nguồn open-source 
+hàng trăm tỷ tham số nhằm thúc đẩy lĩnh vực trí tuệ mã nguồn. Kết quả thí nghiệm chỉ ra 
+rằng DeepSeek-Coder-V2 236B vượt trội hơn các mô hình closed-source tiên tiến, như GPT4-Turbo, 
+Claude 3 Opus, và Gemini 1.5 Pro, trong cả các nhiệm vụ lập trình và toán học.
+
+• Các mô hình DeepSeek-Coder-V2 được phát hành công khai dưới giấy phép linh hoạt, 
+cho phép cả nghiên cứu và sử dụng thương mại không hạn chế.
+
+1.2. Tóm tắt Đánh giá và Metrics
+
+• Mã nguồn: Về đánh giá benchmark sinh mã nguồn, DeepSeek-Coder-V2 thể hiện sự vượt trội 
+đáng kể so với tất cả các mô hình open source đồng thời thể hiện hiệu suất ngang bằng với 
+các mô hình closed-source hàng đầu, như GPT4-Turbo, Claude 3 Opus, và Gemini 1.5 Pro. 
+Đáng chú ý, chúng tôi đạt được điểm số 90.2% trên HumanEval (Chen et al., 2021), 
+76.2% trên MBPP (Austin et al., 2021a) (thiết lập kết quả state-of-the-art mới với 
+pipeline đánh giá EvalPlus), và 43.4% trên LiveCodeBench (Jain et al., 2024) 
+(các câu hỏi từ tháng 12/2023 đến tháng 6/2024). Ngoài ra, DeepSeek-Coder-V2 là 
+mô hình open-source đầu tiên vượt qua điểm số 10% trên SWEBench (Jimenez et al., 2023).
+
+• Toán học: DeepSeek-Coder-V2 thể hiện khả năng lý luận toán học mạnh mẽ, sánh ngang 
+với các mô hình closed-source hàng đầu như GPT-4o, Gemini 1.5 Pro, và Claude 3 Opus 
+trên cả các benchmark sơ cấp như GSM8K (Cobbe et al., 2021) và các benchmark cấp độ 
+thi đấu nâng cao bao gồm MATH (Hendrycks et al., 2021), AIME (MAA, 2024), và 
+Math Odyssey (Netmind.AI, 2024). Đáng chú ý, DeepSeek-Coder-V2 đạt được độ chính xác 
+75.7% trên benchmark MATH, gần như bằng với độ chính xác state-of-the-art 76.6% 
+do GPT-4o đạt được. Hơn nữa, nó vượt trội hơn hiệu suất của các mô hình closed-source 
+này trong cuộc thi AIME 2024.
+
+• Ngôn ngữ Tự nhiên: DeepSeek-Coder-V2 duy trì hiệu suất ngôn ngữ tổng quát tương đương 
+với DeepSeek-V2. Ví dụ, DeepSeek-Coder-V2 đạt được 79.2% trên MMLU với pipeline 
+simple-eval của OpenAI. Về đánh giá chủ quan với GPT-4 làm thẩm phán, DeepSeek-Coder-V2 
+đạt được 65.0 trên arena-hard (Li et al., 2024), 8.77 trên MT-bench (Zheng et al., 2023) 
+và 7.84 trên alignbench (Liu et al., 2023c). Những điểm số này tốt hơn đáng kể so với 
+các mô hình chuyên về mã nguồn khác, thậm chí có thể so sánh với các mô hình open source tổng quát.
+
+2. Thu thập Dữ liệu
+
+Dữ liệu pre-training cho DeepSeek-Coder-V2 chủ yếu bao gồm 60% mã nguồn, 10% kho dữ liệu toán học, 
+và 30% kho dữ liệu ngôn ngữ tự nhiên. Vì kho dữ liệu ngôn ngữ tự nhiên được lấy mẫu trực tiếp 
+từ bộ dữ liệu training của DeepSeek-V2, phần này tập trung vào các quy trình thu thập, làm sạch, 
+và lọc dữ liệu mã nguồn và toán học. Đồng thời, chúng tôi tiếp tục xác thực chất lượng của 
+dữ liệu này thông qua các thí nghiệm phân tích so sánh.
+
+Chúng tôi thu thập các repository công khai được tạo trước tháng 11/2023 trên GitHub. 
+Trước tiên, chúng tôi áp dụng cùng các quy tắc lọc và near-deduplication như những quy tắc 
+được sử dụng trong DeepSeek-Coder (Guo et al., 2024) để lọc ra mã nguồn chất lượng thấp 
+và trùng lặp. Để làm cho bài báo độc lập, chúng tôi mô tả ngắn gọn các quy tắc lọc. 
+Đầu tiên, chúng tôi lọc ra các file có độ dài dòng trung bình vượt quá 100 ký tự hoặc 
+độ dài dòng tối đa vượt quá 1000 ký tự. Ngoài ra, chúng tôi loại bỏ các file có ít hơn 
+25% ký tự chữ cái. Ngoại trừ ngôn ngữ lập trình XSLT, chúng tôi tiếp tục lọc ra các file 
+mà chuỗi "<?xml version=" xuất hiện trong 100
+
+--- TRANG 4 ---
+ký tự đầu tiên. Đối với các file HTML, chúng tôi xem xét tỷ lệ của văn bản hiển thị 
+so với mã HTML. Chúng tôi giữ lại các file mà văn bản hiển thị chiếm ít nhất 20% của 
+mã và không ít hơn 100 ký tự. Đối với các file JSON và YAML, thường chứa nhiều dữ liệu hơn, 
+chúng tôi chỉ giữ các file có số lượng ký tự từ 50 đến 5000 ký tự. Điều này loại bỏ 
+hiệu quả hầu hết các file có dữ liệu nặng. Bằng cách áp dụng các quy tắc lọc này và 
+near-deduplication, chúng tôi thu được 821B mã nguồn bao gồm 338 ngôn ngữ lập trình 
+và 185B văn bản liên quan đến mã nguồn, như markdown và issues. Danh sách các ngôn ngữ 
+lập trình được hỗ trợ có thể được tìm thấy trong Phụ lục A. Chúng tôi sử dụng cùng 
+tokenizer như DeepSeekV2, được mô tả chi tiết trong (DeepSeek-AI, 2024).
+
+Để thu thập văn bản web liên quan đến mã nguồn và toán học từ Common Crawl, chúng tôi 
+theo cùng pipeline như DeepSeekMath (Shao et al., 2024). Cụ thể, chúng tôi chọn các 
+diễn đàn lập trình như StackOverflow¹, các trang thư viện như tài liệu PyTorch², 
+và các trang web toán học như StackExchange³ làm kho dữ liệu seed ban đầu. Sử dụng 
+kho dữ liệu seed này, chúng tôi train một mô hình fastText (Joulin et al., 2016) 
+để thu hồi thêm các trang web liên quan đến lập trình và toán học. Vì tokenization 
+cho các ngôn ngữ như tiếng Trung không thể thực hiện thông qua khoảng trắng, 
+chúng tôi sử dụng tokenizer Byte Pair Encoding (BPE) từ DeepSeek-V2, điều này 
+cải thiện đáng kể độ chính xác thu hồi của fastText. Đối với mỗi domain, chúng tôi 
+tính toán tỷ lệ phần trăm của các trang web được thu thập trong lần lặp đầu tiên. 
+Các domain có hơn 10% trang web được thu thập được phân loại là liên quan đến 
+mã nguồn hoặc toán học. Sau đó, chúng tôi chú thích các URL liên kết với nội dung 
+liên quan đến mã nguồn hoặc toán học trong các domain đã xác định này. Các trang web 
+chưa được thu thập liên kết với các URL này được thêm vào kho dữ liệu seed. 
+Sau ba lần lặp thu thập dữ liệu, chúng tôi thu thập được 70 tỷ token liên quan đến 
+mã nguồn và 221B token liên quan đến toán học từ các trang web. Để tiếp tục thu thập 
+mã nguồn chất lượng cao từ GitHub, chúng tôi cũng áp dụng cùng pipeline trên GitHub 
+với hai lần lặp thu thập dữ liệu và thu thập được 94B mã nguồn. Kho dữ liệu seed 
+ban đầu được xây dựng bằng cách thu thập thủ công mã nguồn chất lượng cao, như những 
+mã có chứa mô tả chi tiết. Cuối cùng, kho dữ liệu mã nguồn mới bao gồm 1.170B token 
+liên quan đến mã nguồn được lấy từ GitHub và CommonCrawl.
+
+Để chứng minh hiệu quả của kho dữ liệu mã nguồn mới, chúng tôi đã tiến hành các nghiên cứu 
+ablation (xem Bảng 1) sử dụng mô hình 1B tham số, so sánh với kho dữ liệu được sử dụng 
+để train DeepSeek-Coder. Pre-training mô hình 1B trên kho dữ liệu mã nguồn mới sử dụng 
+1T token dẫn đến cải thiện 5.5% và 4.4% về độ chính xác trên các benchmark HumanEval 
+(từ 30.5% lên 36.0%) và MBPP (từ 44.6% lên 49.0%), tương ứng. Training thêm mô hình 1B 
+với 2T token dẫn đến cải thiện bổ sung, với điểm số HumanEval và MBPP tăng lên 37.2% 
+và 54.0%, tương ứng. Do đó, kho dữ liệu mã nguồn mới vượt trội hơn kho dữ liệu mã nguồn 
+được sử dụng để train DeepSeek-Coder.
+
+[Bảng 1: Hiệu suất của mô hình base 1B giữa DeepSeek-Coder và DeepSeek-Coder-V2]
+
+3. Chính sách Training
+
+3.1. Chiến lược Training
+
+Chúng tôi sử dụng hai mục tiêu training cho DeepSeek-Coder-v2 16B: Next-Token-Prediction 
+và Fill-In-Middle (FIM) (Bavarian et al., 2022; Guo et al., 2024; Li et al., 2023b). 
+Đối với DeepSeek-Coder-v2
+
+¹https://stackoverflow.com
+²https://pytorch.org/docs
+³https://math.stackexchange.com
+
+--- TRANG 5 ---
+236B, chúng tôi chỉ sử dụng mục tiêu Next-Token-Prediction. Ở đây chúng tôi đưa ra 
+một giới thiệu ngắn gọn về chính sách training FIM. Chúng tôi áp dụng phương pháp 
+training FIM để phát triển DeepSeek-Coder-v2-16B, tận dụng chế độ PSM (Prefix, Suffix, Middle). 
+Phương pháp này cấu trúc việc tái tạo nội dung theo chuỗi: Prefix, Suffix, và Middle, 
+như được minh họa dưới đây:
+
+<｜fim_begin｜>𝑓𝑝𝑟𝑒<｜fim_hole｜>𝑓𝑠𝑢 𝑓<｜fim_end｜>𝑓𝑚𝑖𝑑𝑑𝑙𝑒<|eos_token|>
+
+Cấu trúc này được áp dụng ở cấp độ tài liệu như một phần của quy trình pre-packing. 
+FIM được sử dụng với tỷ lệ 0.5, phù hợp với framework PSM, để tăng cường hiệu quả 
+training và hiệu suất mô hình.
+
+3.2. Kiến trúc Mô hình
+
+Kiến trúc của chúng tôi phù hợp với kiến trúc của DeepSeekV2 (DeepSeek-AI, 2024). 
+Các cài đặt hyperparameter, 16B và 236B, tương ứng với những cài đặt được sử dụng 
+trong DeepSeek-V2-Lite và DeepSeek-V2, tương ứng. Đáng chú ý, chúng tôi gặp phải 
+sự bất ổn trong quá trình training và các đột biến trong giá trị gradient, điều mà 
+chúng tôi cho là do kỹ thuật chuẩn hóa mũ. Để giải quyết vấn đề này, chúng tôi 
+quay lại phương pháp chuẩn hóa thông thường.
+
+3.3. Siêu tham số Training
+
+Phù hợp với phương pháp DeepSeek V2 (DeepSeek-AI, 2024), chúng tôi sử dụng optimizer 
+AdamW (Loshchilov và Hutter, 2019), được cấu hình với 𝛽1=0.9, 𝛽2=0.95, và weight decay 
+là 0.1. Kích thước batch và learning rate được điều chỉnh theo đặc tả DeepSeek-V2. 
+Để lập lịch learning rate, chúng tôi sử dụng chiến lược cosine decay, bắt đầu với 
+2000 bước warm-up và giảm dần learning rate xuống 10% giá trị ban đầu.
+
+Cả DeepSeek-Coder-V2 và DeepSeek-Coder-V2-Lite đều được train bằng cùng một phương pháp. 
+Để duy trì khả năng hiểu ngôn ngữ tự nhiên mạnh mẽ trong DeepSeek-Coder-V2, chúng tôi 
+tiếp tục quá trình pre-training từ một checkpoint trung gian của DeepSeek-V2. Checkpoint 
+trung gian ban đầu được train trên 4.2T token. Do đó, DeepSeek-Coder-V2 đã được tiếp xúc 
+với tổng cộng 10.2T token chất lượng cao trong giai đoạn pre-training.
+
+[Bảng 2: Cài đặt Training của DeepSeek-Coder-V2]
+
+3.4. Mở rộng Ngữ cảnh Dài
+
+Theo DeepSeek-V2, chúng tôi mở rộng độ dài ngữ cảnh của DeepSeek-Coder-V2 lên 128K 
+bằng cách sử dụng Yarn (Peng et al., 2023). Các hyperparameter của YARN giống như 
+DeepSeek-V2: scale 𝑠 thành 40, 𝛼 thành 1, 𝛽 thành 32. Chúng tôi tiếp tục training 
+mô hình bằng hai giai đoạn để tăng cường khả năng xử lý ngữ cảnh dài. Trong giai đoạn 
+đầu tiên, chúng tôi sử dụng độ dài sequence 32K và kích thước batch 1152 trong 1000 bước. 
+Trong giai đoạn thứ hai, chúng tôi train mô hình thêm 1000 bước, sử dụng độ dài sequence 
+128K và kích thước batch 288 sequence.
+
+--- TRANG 6 ---
+[Hình 2: Kết quả đánh giá trên các thử nghiệm "Needle In A Haystack" (NIAH). 
+DeepSeek-Coder-V2 hoạt động tốt trên tất cả độ dài cửa sổ ngữ cảnh lên đến 128K.]
+
+Cần lưu ý ở đây chúng tôi tăng tỷ lệ dữ liệu ngữ cảnh dài trong quá trình mở rộng 
+ngữ cảnh dài. Như được hiển thị trong Hình 2, kết quả trên các thử nghiệm "Needle In A Haystack" 
+(NIAH) chỉ ra rằng DeepSeek-Coder-V2 hoạt động tốt trên tất cả độ dài cửa sổ ngữ cảnh 
+lên đến 128K.
+
+3.5. Alignment
+
+3.5.1. Supervised Fine-Tuning
+
+Để xây dựng DeepSeek-Coder-V2 Chat, chúng tôi xây dựng bộ dữ liệu instruction training 
+kết hợp với dữ liệu mã nguồn và toán học. Trước tiên chúng tôi thu thập 20k dữ liệu 
+instruction liên quan đến mã nguồn và 30k dữ liệu liên quan đến toán học từ DeepSeek-Coder 
+và DeepSeek-Math. Để duy trì khả năng tổng quát, chúng tôi cũng lấy mẫu một số dữ liệu 
+từ dữ liệu instruction của DeepSeek-V2. Cuối cùng, chúng tôi sử dụng bộ dữ liệu instruction 
+300M token. Để training, chúng tôi sử dụng lịch trình cosine với 100 bước warm-up và 
+learning rate ban đầu 5𝑒−6. Chúng tôi cũng sử dụng kích thước batch 1M token và 
+tổng cộng 1B token.
+
+3.5.2. Reinforcement Learning
+
+Chúng tôi tiếp tục sử dụng các kỹ thuật Reinforcement Learning (RL) để mô phỏng đầy đủ 
+khả năng của DeepSeek-Coder-V2, điều này được chứng minh là khá hiệu quả.
+
+Prompts: Đã bỏ ra nỗ lực đáng kể để thu thập các prompt liên quan đến mã nguồn và toán học 
+từ nhiều nguồn khác nhau, và mỗi prompt mã nguồn đi kèm với các test case tương ứng. 
+Sau khi lọc các prompt, có khoảng 40k dữ liệu tổng cộng.
+
+Reward Modeling: Các mô hình reward đóng vai trò quan trọng trong training RL. Về dữ liệu 
+ưu tiên toán học, chúng tôi thu được chúng bằng cách sử dụng các nhãn ground-truth. 
+Về dữ liệu ưu tiên mã nguồn, mặc dù compiler mã nguồn tự nó đã có thể cung cấp phản hồi 
+0-1 (liệu mã có vượt qua tất cả test case hay không), một số prompt mã nguồn có thể 
+có số lượng test case hạn chế, và không cung cấp phủ sóng đầy đủ, và do đó việc sử dụng 
+trực tiếp phản hồi 0-1 từ compiler có thể có nhiễu và không tối ưu. Do đó, chúng tôi 
+vẫn quyết định train một mô hình reward trên dữ liệu được cung cấp bởi compiler, 
+và sử dụng mô hình reward để cung cấp tín hiệu trong quá trình training RL, điều này 
+mạnh mẽ hơn
+
+--- TRANG 7 ---
+và có khả năng tổng quát hóa tốt hơn, so với tín hiệu compiler thô. Như được minh họa 
+trong Hình 3, trong các bộ test nội bộ của chúng tôi (Leetcode và Leetcode-zh), 
+việc sử dụng mô hình reward để cung cấp tín hiệu training RL rõ ràng vượt trội hơn 
+việc sử dụng tín hiệu compiler thô. Do đó, chúng tôi sử dụng tín hiệu mô hình reward 
+thay vì tín hiệu compiler trong tất cả các thí nghiệm tiếp theo.
+
+Thuật toán Reinforcement Learning: Chúng tôi sử dụng Group Relative Policy Optimization (GRPO) 
+Shao et al. (2024) làm thuật toán RL của chúng tôi, giống như những gì DeepSeek-V2 sử dụng. 
+Đáng chú ý, GRPO được chứng minh là khá hiệu quả và có chi phí thấp hơn so với PPO, 
+vì không cần duy trì một mô hình critic bổ sung.
+
+[Hình 3: Hiệu suất của Các Phương pháp Khác nhau]
+
+4. Kết quả Thí nghiệm
+
+Trong phần này, chúng tôi đánh giá DeepSeek-Coder-V2 trên ba loại nhiệm vụ, bao gồm 
+lập trình, toán học, và ngôn ngữ tự nhiên tổng quát. Chúng tôi so sánh DeepSeek-Coder-V2 
+với các mô hình ngôn ngữ lớn state-of-the-art trước đó.
+
+• CodeLlama (Roziere et al., 2023) bao gồm một loạt các mô hình ngôn ngữ mã nguồn 
+dựa trên Llama2 (Touvron et al., 2023), và tiếp tục pre-training trên các bộ dữ liệu 
+từ 500 đến 1000 tỷ token mã nguồn. Những mô hình này có sẵn trong bốn kích thước: 
+7B, 13B, 34B, và 70B.
+
+• StarCoder (Lozhkov et al., 2024) là một mô hình có thể truy cập công khai với 
+15 tỷ tham số. Nó được train đặc biệt trên một tập con được tuyển chọn cẩn thận 
+của bộ dữ liệu Stack (Kocetkov et al., 2022), bao phủ 86 ngôn ngữ lập trình.
+
+• StarCoder2 (Lozhkov et al., 2024) bao gồm các mô hình 3B, 7B, và 15B tham số 
+được train trên 3.3 đến 4.3 nghìn tỷ token của bộ dữ liệu Stack2 (Lozhkov et al., 2024), 
+trải rộng 619 ngôn ngữ lập trình.
+
+• DeepSeek-Coder (Guo et al., 2024) bao gồm một loạt các mô hình ngôn ngữ mã nguồn, 
+từ 1 tỷ đến 33 tỷ tham số. Mỗi mô hình được train từ đầu trên 2 nghìn tỷ token, 
+với thành phần 87% mã nguồn và 13% ngôn ngữ tự nhiên bằng cả tiếng Anh và tiếng Trung. 
+Những mô hình này được pre-train trên kho dữ liệu mã nguồn cấp dự án sử dụng kích thước 
+cửa sổ 16K và một nhiệm vụ fill-in-the-blank bổ sung, cho phép hỗ trợ code completion 
+và infilling cấp dự án.
+
+• Codestral (MistralAI, 2024) là một mô hình 22B tham số được phát triển bởi Mistral. 
+Nó được train trên một bộ dữ liệu đa dạng của hơn 80 ngôn ngữ lập trình, bao gồm 
+những ngôn ngữ phổ biến như Python, Java, và JavaScript, cũng như các ngôn ngữ 
+chuyên biệt hơn như Swift và Fortran.
+
+--- TRANG 8 ---
+• Các mô hình ngôn ngữ tổng quát mà chúng tôi so sánh bao gồm Llama3 70B (Meta, 2024), 
+GPT-4 (OpenAI, 2023), Claude 3 Opus (Anthropic, 2024), và Gemini 1.5 Pro (Reid et al., 2024). 
+Mặc dù chúng không được train đặc biệt trên các kho dữ liệu mã nguồn lớn, chúng đạt được 
+hiệu suất state-of-the-art trong lập trình.
+
+4.1. Sinh Mã nguồn
+
+Benchmarks HumanEval và MBPP: Các benchmark HumanEval (Chen et al., 2021)⁴ và MBPP 
+(Austin et al., 2021b) thường được sử dụng để đánh giá hiệu suất của các Mô hình Ngôn ngữ 
+Lớn (LLM) sinh mã nguồn. HumanEval bao gồm 164 nhiệm vụ Python được xác minh thông qua 
+các test case để đánh giá hiệu suất của Code LLM trong tình huống zero-shot. Đối với MBPP, 
+chúng tôi sử dụng phiên bản MBPP-Plus (Liu et al., 2023a) để đánh giá các mô hình. 
+Để kiểm tra khả năng đa ngôn ngữ của các mô hình, chúng tôi mở rộng các bài toán benchmark 
+HumanEval sang bảy ngôn ngữ bổ sung: C++, Java, PHP, TypeScript, C#, Bash, JavaScript, 
+Swift, R, Julia, D, Rust và Racket. Đối với cả hai benchmark, chúng tôi sử dụng chiến lược 
+greedy search và tái tạo các kết quả baseline bằng cách sử dụng các script và môi trường 
+giống hệt nhau để đảm bảo so sánh công bằng.
+
+[Bảng 3: Metrics Hiệu suất cho Các Mô hình Khác nhau trên Benchmarks HumanEval và MBPP]
+
+Bảng 3 cung cấp một tổng quan toàn diện về các metrics hiệu suất cho các mô hình khác nhau 
+trên nhiều ngôn ngữ lập trình trên Benchmarks HumanEval và MBPP+. DeepSeek-Coder-V2-Instruct 
+thể hiện hiệu suất đặc biệt, đảm bảo điểm số trung bình cao thứ hai là 75.3%. Hiệu suất này 
+đáng chú ý vì nó phá vỡ sự thống trị thường thấy từ các mô hình closed-source, nổi bật 
+như một ứng cử viên open-source hàng đầu. Nó chỉ bị vượt qua bởi GPT-4o, dẫn đầu với 
+điểm số trung bình 76.4%. DeepSeek-Coder-V2-Instruct cho thấy kết quả hàng đầu trên 
+nhiều ngôn ngữ, bao gồm điểm số cao nhất trong Java và PHP, và hiệu suất mạnh mẽ trong 
+Python, C++, C#, TypeScript, và JavaScript, nhấn mạnh tính mạnh mẽ và linh hoạt 
+trong việc xử lý các thách thức lập trình đa dạng.
+
+Hơn nữa, DeepSeek-Coder-V2-Lite-Instruct cũng hoạt động ấn tượng, vượt qua mô hình 33B 
+lớn hơn. Với một khoảng cách đáng kể trong hiệu suất trung bình (65.6% so với 61.9%), 
+nó làm nổi bật hiệu quả của mô hình 16B trong việc cung cấp kết quả cạnh tranh mặc dù 
+có kích thước nhỏ hơn. Điều này nhấn mạnh hiệu quả của mô hình và những tiến bộ trong 
+kiến trúc mô hình và phương pháp training cho phép nó vượt trội hơn các đối tác lớn hơn.
+
+Lập trình Thi đấu: Để tiếp tục xác thực khả năng của mô hình trong các bài toán lập trình 
+thi đấu thực tế, chúng tôi sử dụng LiveCodeBench (Jain et al., 2024) và benchmark USACO 
+(Shi et al., 2024) để ước tính hiệu quả của DeepSeek-Coder-V2. LiveCodeBench là một 
+đánh giá tỉ mỉ và không bị nhiễm chéo của các Mô hình Ngôn ngữ Lớn (LLM) để sinh mã nguồn, 
+thu thập có hệ thống các thách thức mới theo thời gian từ ba nền tảng lập trình thi đấu 
+nổi tiếng: LeetCode, AtCoder, và CodeForces. Vì ngày cắt của dữ liệu training là trước 
+tháng 11/2023, chúng tôi sử dụng tập con (1201-0601) của Livecodebench. Benchmark USACO 
+chứa 307 bài toán từ USA Computing Olympiad, cùng với các unit test chất lượng cao, 
+mã tham chiếu, và phân tích chính thức cho mỗi bài toán.
+
+[Bảng 4: Hiệu suất trên các benchmark LiveCodeBench (LCB) và USACO]
+
+⁴Chúng tôi sử dụng template "Please complete the python function below. The final complete version of your function 
+must be returned within a code block. Here is the unfinished function:\n ```python\n{problem_description}\n\n" 
+để xây dựng instruction prompt.
+
+--- TRANG 9 ---
+Bảng 4 trình bày hiệu suất của các mô hình ngôn ngữ khác nhau trên hai benchmark. 
+Đáng chú ý, DeepSeek-Coder-V2-Instruct mang lại hiệu suất nổi bật, hòa với điểm số 
+cao nhất trong các mô hình lớn ở mức 43.4%, ngang bằng với GPT-4o. Kết quả đặc biệt 
+này đặt nó ở vị trí thứ hai tổng thể, chỉ sau GPT-4-Turbo-0409, dẫn đầu với hiệu suất 
+tổng thể 45.7%. Khả năng ấn tượng của DeepSeek-Coder-V2-Instruct trong việc xử lý 
+các thách thức lập trình phức tạp thiết lập chắc chắn nó như một ứng cử viên hàng đầu, 
+theo sát biến thể GPT-4-Turbo dẫn đầu.
+
+4.2. Code Completion
+
+4.2.1. Đánh giá Code Completion Cấp Repository
+
+Chúng tôi sử dụng RepoBench (Liu et al., 2023b) để đánh giá khả năng của các mô hình 
+mã nguồn open-source hiện có với kích thước dưới 35B trong các nhiệm vụ code completion 
+cấp repository. Bộ dữ liệu này được xây dựng từ một tập hợp đa dạng các repository 
+thực tế, open-source, có giấy phép cho phép trong hai ngôn ngữ lập trình phổ biến: 
+Python và Java. Đáng chú ý, phiên bản mới nhất (v1.1) của RepoBench lấy dữ liệu 
+từ các repository GitHub được tạo giữa ngày 6 tháng 10 và ngày 31 tháng 12 năm 2023, 
+trong khi dữ liệu pre-training của chúng tôi bao gồm mã được tạo trước tháng 11 năm 2023. 
+Để đảm bảo bộ dữ liệu này không có trong dữ liệu pre-training của chúng tôi và tránh 
+rò rỉ dữ liệu, chúng tôi chỉ sử dụng dữ liệu từ tháng 12 năm 2023.
+
+Đánh giá của chúng tôi bao gồm năm mức độ dài ngữ cảnh—2k, 4k, 8k, 12k, và 16k token—
+trên ba cài đặt: cross-file-first, cross-file-random, và in-file. Chúng tôi sử dụng 
+greedy search cho tất cả các mô hình dưới sự đánh giá. Các mô hình bị ràng buộc sinh 
+tối đa 64 token mới cho mỗi prompt, và dòng đầu tiên không rỗng và không phải comment 
+của đầu ra được chọn làm dự đoán. Độ dài token tối đa cho các prompt được đặt ở 15.800 
+bằng cách cắt bớt ngữ cảnh cross-file dư thừa. Chúng tôi báo cáo exact match trung bình 
+cho các mức độ dài ngữ cảnh khác nhau.
+
+[Bảng 5: Hiệu suất của các mô hình khác nhau trên tập con tháng 12 của RepoBench v1.1]
+
+Như được hiển thị trong Bảng 5, kết quả chỉ ra rằng mô hình DeepSeek-Coder-V2-Lite-Base, 
+mặc dù chỉ có 2.4 tỷ tham số hoạt động, đạt được khả năng code completion trong Python 
+tương đương với mô hình DeepSeek-Coder-Base 33B và trong Java tương đương với mô hình 
+DeepSeek-Coder-Base 7B. So với CodeStral, mô hình DeepSeek-Coder-V2-Lite-Base chỉ có 
+một phần mười tham số hoạt động của CodeStral, dẫn đến hiệu suất thấp hơn trong các 
+nhiệm vụ code completion. Tuy nhiên, chúng tôi tin rằng số lượng tham số hoạt động nhỏ hơn 
+trong DeepSeek-Coder-V2 làm cho nó nhanh hơn cho các tình huống code completion.
+
+4.2.2. Fill-in-the-Middle Code Completion
+
+DeepSeek-Coder-V2-Lite được train với một phương pháp độc đáo bao gồm tỷ lệ Fill-In-the-Middle 
+(FIM) 0.5 trong giai đoạn pre-training của chúng. Phương pháp này cho phép mô hình 
+hoàn thành mã một cách thành thạo bằng cách điền vào các chỗ trống sử dụng ngữ cảnh 
+xung quanh, bao gồm cả các đoạn mã trước và sau. Khả năng này đặc biệt có lợi cho 
+các công cụ code completion. Một số mô hình open-source, như SantaCoder (Allal et al., 2023), 
+StarCoder (Li et al., 2023b), và CodeLlama (Roziere et al., 2023), cũng tận dụng 
+các khả năng tương tự và đã thiết lập các tiêu chuẩn cao trong lĩnh vực sinh mã nguồn 
+và completion.
+
+Để đánh giá hiệu suất của các mô hình DeepSeek-Coder-V2, chúng tôi tiến hành phân tích 
+so sánh với các mô hình hàng đầu. Đánh giá dựa trên các benchmark Single-Line Infilling, 
+bao phủ ba ngôn ngữ lập trình khác nhau như được mô tả bởi Allal et al. (2023).
+
+--- TRANG 10 ---
+Metric chính cho đánh giá này là độ chính xác exact match của dòng⁵.
+
+[Bảng 6: Hiệu suất của các phương pháp khác nhau trên FIM-Tasks]
+
+Bảng trình bày hiệu suất của các mô hình lập trình khác nhau trên các nhiệm vụ FIM 
+(Fill-in-the-Middle) trên ba ngôn ngữ lập trình: Python, Java, và JavaScript, với 
+điểm Mean chỉ ra hiệu quả tổng thể. Trong số các mô hình được so sánh, DeepSeek-Coder-V2-Lite-Base, 
+với cấu hình 2.4B tham số hoạt động, đạt được kết quả xuất sắc. Nó ghi điểm 80.0% 
+trong Python, 89.1% trong Java, và 87.2% trong JavaScript, dẫn đến điểm Mean hàng đầu 
+86.4%. Điều này chứng minh hiệu quả vượt trội của DeepSeek-Coder-V2-Lite-Base, đặc biệt 
+trong việc xử lý các nhiệm vụ FIM trên các ngôn ngữ lập trình khác nhau, đạt được 
+hiệu suất tương đương với các mô hình lớn hơn khác trong đánh giá.
+
+4.3. Sửa lỗi Mã nguồn
+
+Để đánh giá khả năng sửa lỗi của mô hình, chúng tôi sử dụng các bộ dữ liệu Defects4J⁷, 
+SWE-bench (Jimenez et al., 2023), và Aider⁸ để kiểm tra. Defects4J là một bộ dữ liệu 
+được sử dụng rộng rãi trong lĩnh vực kỹ thuật phần mềm, được thiết kế đặc biệt cho 
+mục đích đánh giá và kiểm tra các kỹ thuật sửa chữa chương trình. Nó bao gồm một 
+tập hợp các lỗi phần mềm thực tế từ nhiều dự án open-source khác nhau, bao gồm 
+nhưng không giới hạn ở Apache Commons, JFreeChart, và Closure Compiler. Mỗi lỗi 
+trong bộ dữ liệu đi kèm với các test suite có thể được sử dụng để xác thực hiệu quả 
+của các công cụ sửa chữa chương trình. Vì các lỗi gốc trong Defec4J có thể cần sửa đổi 
+nhiều file trong repository dẫn đến ngữ cảnh dài, chúng tôi thu thập 238 lỗi chỉ cần 
+sửa đổi một phương thức từ benchmark này.
+
+SWE-bench là một benchmark toàn diện được thiết kế để đánh giá hiệu suất của các mô hình 
+ngôn ngữ lớn trong việc giải quyết các vấn đề phần mềm thực tế được lấy từ GitHub. 
+Benchmark trình bày một codebase cùng với một vấn đề cụ thể, thách thức mô hình ngôn ngữ 
+tạo ra một patch hiệu quả giải quyết vấn đề được mô tả. Framework đánh giá nghiêm ngặt 
+này đảm bảo rằng khả năng của mô hình ngôn ngữ trong việc hiểu và sửa các vấn đề phần mềm 
+thực tế được kiểm tra kỹ lưỡng, cung cấp một thước đo rõ ràng về tính hữu ích thực tế 
+và hiệu quả trong các nhiệm vụ phát triển phần mềm.
+
+Benchmark chỉnh sửa mã của Aider đánh giá khả năng của LLM trong việc sửa đổi các file 
+nguồn Python, hoàn thành 133 nhiệm vụ lập trình riêng biệt. Benchmark này không chỉ 
+kiểm tra kỹ năng lập trình của LLM mà còn kiểm tra tính nhất quán trong việc tạo ra 
+các chỉnh sửa mã theo các đặc tả trong prompt.
+
+⁵Chúng tôi sử dụng dòng được tạo đầu tiên thay vì toàn bộ chunk được tạo, do đó kết quả hơi khác so với 
+DeepSeek-Coder.
+⁷https://github.com/rjust/defects4j
+⁸https://github.com/paul-gauthier/aider
+
+--- TRANG 11 ---
+Đối với các mô hình DeepSeek-Coder-V2, chúng tôi sử dụng định dạng whole để đánh giá.
+
+[Bảng 7: Hiệu suất của các mô hình khác nhau trên các benchmark sửa chữa. 
+Chúng tôi không đánh giá Llama3-Instruct trên SWE-Bench vì nó chỉ hỗ trợ độ dài ngữ cảnh 8K.]
+
+Bảng 7 trình bày hiệu suất của các mô hình ngôn ngữ khác nhau trên các benchmark sửa chữa 
+phần mềm, bao gồm Defects4J, SWE-Bench, và Aider. Trong số các mô hình open-source, 
+DeepSeek-Coder-Instruct nổi lên như một điểm sáng, đạt được hiệu suất tốt nhất trong 
+các mô hình open source. Nó ghi điểm 21% trong Defects4J và 12.7% trong SWE-Bench, 
+tiến gần đến kết quả của các mô hình closed-source hàng đầu và thể hiện khả năng đáng kể 
+trong việc xử lý các chuỗi mã dài hơn. Đáng chú ý, DeepSeek-Coder-V2-Instruct đạt được 
+điểm số cao nhất 73.7% trong Aider, vượt qua tất cả các mô hình khác được liệt kê, 
+bao gồm cả các đối tác closed-source. Hiệu suất vượt trội này làm nổi bật hiệu quả 
+và tính mạnh mẽ trong các nhiệm vụ sửa chữa mã tự động, định vị DeepSeek-Coder-V2-Instruct 
+như mô hình open-source hàng đầu và một đối thủ đáng gờm với các lựa chọn thay thế 
+closed-source trong lĩnh vực này.
+
+4.4. Hiểu và Lý luận Mã nguồn
+
+Để đánh giá khả năng lý luận mã nguồn của các mô hình của chúng tôi, chúng tôi sử dụng 
+benchmark CRUXEval. Benchmark này bao gồm 800 hàm Python được ghép đôi với các ví dụ 
+input-output tương ứng. Nó được chia thành hai nhiệm vụ riêng biệt: CRUXEval-I, yêu cầu 
+mô hình ngôn ngữ lớn (LLM) dự đoán output dựa trên input đã cho, và CRUXEval-O, trong đó 
+mô hình phải dự đoán input từ output đã biết. Cấu trúc này thách thức khả năng của mô hình 
+trong việc hiểu và lý luận thông qua mã Python theo cả hướng thuận và nghịch. Bảng 8 
+trình bày hiệu suất của các mô hình ngôn ngữ khác nhau trên benchmark CruxEval, đánh giá 
+các mô hình trên hai metrics: CruxEval-I-COT và CruxEval-O-COT. Trong số các mô hình 
+open-source, DeepSeek-Coder-V2-Instruct nổi bật đáng kể. Nó ghi điểm 70.0% trên CruxEval-I-COT 
+và 75.1% trên CruxEval-O-COT, thể hiện khả năng vượt trội trong domain open-source. 
+Tuy nhiên, khi so sánh với các mô hình closed-source lớn hơn, có một khoảng cách hiệu suất. 
+Khoảng cách hiệu suất này có thể phần lớn được quy cho việc DeepSeek-Coder-V2-Instruct 
+hoạt động với chỉ 21 tỷ tham số kích hoạt, ít hơn đáng kể so với những tham số trong 
+các mô hình closed-source lớn hơn, tiên tiến hơn như GPT-4o. Hạn chế trong độ phức tạp 
+mô hình này có thể hạn chế khả năng học tập và giải quyết vấn đề.
+
+[Bảng 8: Hiệu suất của các mô hình khác nhau trên benchmark CruxEval]
+
+4.5. Lý luận Toán học
+
+Để đánh giá khả năng lý luận toán học của DeepSeekCoder-V2, chúng tôi sử dụng benchmark 
+cấp tiểu học phổ biến GSM8K (Cobbe et al., 2021), cùng với các benchmark cấp độ thi đấu 
+nâng cao bao gồm MATH (Hendrycks et al., 2021), Kỳ thi Toán Mời Gọi Mỹ (AIME) 2024 
+(MAA, 2024), và Math Odyssey (Netmind.AI, 2024)⁹.
+
+[Bảng 9: Hiệu suất của các mô hình khác nhau trong lý luận toán học]
+
+DeepSeek-Coder-V2-Instruct có thể đạt được 5/30 trên AIME 2024 với maj@64.
+
+⁹Hiệu suất của DeepSeek-Coder-V2 trên bốn benchmark toán học được thu được với zero-shot 
+chain-of-thought prompting; mỗi câu hỏi test được nối với instruction: " \nPlease reason step by step, 
+and put your final answer within \boxed{}."
+
+--- TRANG 12 ---
+Kết quả, được trình bày trong Bảng 9, được thu được bằng cách sử dụng greedy decoding 
+mà không có sự hỗ trợ của các công cụ hoặc kỹ thuật voting, trừ khi được chỉ định khác. 
+DeepSeek-Coder-V2 đạt được độ chính xác 75.7% trên benchmark MATH và 53.7% trên Math Odyssey, 
+tương đương với GPT-4o state-of-the-art. Ngoài ra, DeepSeek-Coder-V2 giải được nhiều 
+bài toán từ AIME 2024 hơn các mô hình khác, chứng minh khả năng lý luận toán học mạnh mẽ của nó.
+
+4.6. Ngôn ngữ Tự nhiên Tổng quát
+
+Vì DeepSeek-Coder-V2 được xây dựng dựa trên DeepSeek-V2, nó kế thừa khả năng ngôn ngữ 
+tự nhiên mạnh mẽ, thậm chí vượt qua DeepSeek-V2 trên các benchmark liên quan đến lý luận. 
+Chúng tôi so sánh DeepSeek-Coder-V2 Instruct với DeepSeek-V2 Chat trên các benchmark 
+tiêu chuẩn, bao phủ cả benchmark tiếng Anh và tiếng Trung, bao gồm BigBench Hard (BBH) 
+(Suzgun et al., 2022), MMLU (Hendrycks et al., 2020), ARC (Clark et al., 2018), TriviaQA 
+(Joshi et al., 2017), NaturalQuestions (Kwiatkowski et al., 2019), AGIEval (Zhong et al., 2023), 
+CLUEWSC (Xu et al., 2020), C-Eval (Huang et al., 2023), và CMMLU (Li et al., 2023a). 
+Bên cạnh đó, chúng tôi cũng đánh giá khả năng sinh mở của các mô hình, bao gồm Arena-Hard 
+(Li et al., 2024), AlpacaEval2.0 (Dubois et al., 2024), MT-Bench (Zheng et al., 2023), 
+và Alignbench (Liu et al., 2023c). Pipeline đánh giá và metrics giống như trong DeepSeek-V2, 
+trong đó MMLU được đánh giá sử dụng gói simple-eval của OpenAI https://github.com/openai/simple-evals.
+
+[Bảng 10: So sánh DeepSeek-Coder-V2 Instruct với DeepSeek-V2 Chat]
+
+Khi so sánh hiệu suất của các mô hình 16B, rõ ràng rằng DeepSeek-Coder-V2-Lite-Instruct 
+vượt trội hơn DeepSeek-V2-Lite-Chat trong các benchmark như BBH và Arena-Hard. Những 
+benchmark này đặt ra yêu cầu cao về khả năng lý luận của mô hình, điều mà DeepSeek-Coder-V2-Lite-Instruct 
+xuất sắc. Tuy nhiên, DeepSeek-Coder-V2-Lite Instruct tụt lại trong các benchmark 
+đòi hỏi kiến thức chuyên sâu như TriviaQA, chủ yếu do lượng dữ liệu web tương đối ít 
+được sử dụng trong quá trình pre-training.
+
+Chuyển sang các mô hình 236B, DeepSeek-Coder-V2 Instruct thể hiện sức mạnh lớn hơn 
+trong các benchmark lý luận, đặc biệt trong Arena-Hard, bao gồm tỷ lệ đáng kể các 
+câu hỏi về mã nguồn, toán học, và lý luận. Mặt khác, DeepSeek-V2 Chat thể hiện kết quả 
+hơi tốt hơn trong các benchmark như MT-bench (Zheng et al., 2023), AlpacaEval 2.0 
+(Dubois et al., 2024), và AlignBench (Liu et al., 2023c). Lợi thế này có thể được 
+quy cho giai đoạn alignment đa mục đích của DeepSeek-V2 Chat.
+
+5. Kết luận
+
+Trong bài báo này, chúng tôi giới thiệu DeepSeek-Coder-V2 để tiếp tục thúc đẩy lĩnh vực 
+trí tuệ mã nguồn, được tiếp tục pre-train từ DeepSeek-V2 với 6 nghìn tỷ token được lấy 
+từ một kho dữ liệu chất lượng cao và đa nguồn. Thông qua quá trình tiếp tục pre-training này, 
+chúng tôi thấy rằng DeepSeek-
+
+--- TRANG 13 ---
+Coder-V2 nâng cao đáng kể khả năng lập trình và lý luận toán học của mô hình đồng thời 
+duy trì hiệu suất ngôn ngữ tổng quát tương đương với DeepSeek-V2. So với DeepSeek-Coder, 
+DeepSeek-Coder-V2 hỗ trợ số lượng ngôn ngữ lập trình lớn hơn đáng kể, tăng từ 86 lên 338, 
+và mở rộng độ dài ngữ cảnh tối đa từ 16K lên 128K token. Kết quả thí nghiệm chứng minh 
+rằng DeepSeek-Coder-V2 đạt được hiệu suất tương đương với các mô hình closed-source 
+state-of-the-art như GPT-4 Turbo, Claude 3 Opus, và Gemini 1.5 Pro trong các nhiệm vụ 
+đặc thù về mã nguồn và toán học.
+
+Mặc dù DeepSeek-Coder-V2 đạt được hiệu suất ấn tượng trên các benchmark tiêu chuẩn, 
+chúng tôi thấy rằng vẫn còn một khoảng cách đáng kể trong khả năng tuân theo instruction 
+so với các mô hình state-of-the-art hiện tại như GPT-4 Turbo. Khoảng cách này dẫn đến 
+hiệu suất kém trong các tình huống và nhiệm vụ phức tạp như những tình huống trong SWEbench. 
+Do đó, chúng tôi tin rằng một mô hình mã nguồn cần không chỉ khả năng lập trình mạnh mẽ 
+mà còn khả năng tuân theo instruction đặc biệt để xử lý các tình huống lập trình phức tạp 
+trong thế giới thực. Trong tương lai, chúng tôi sẽ tập trung nhiều hơn vào việc cải thiện 
+khả năng tuân theo instruction của mô hình để xử lý tốt hơn các tình huống lập trình 
+phức tạp trong thế giới thực và nâng cao năng suất của quy trình phát triển.
+
+Tài liệu tham khảo
+
+[Danh sách tài liệu tham khảo được giữ nguyên như bản gốc]
+
+--- TRANG 14-18 ---
+[Các trang tài liệu tham khảo tiếp tục được giữ nguyên như bản gốc]
+
+--- TRANG 19 ---
+A. Các Ngôn ngữ Lập trình Được Hỗ trợ
+
+ABAP, ActionScript, Ada, Agda, AGS Script, Alloy, AmbientTalk, AMD GPU, AMPL, ANSYS
+Parametric Design Language, ANTLR, Apache Configuration, APL, AppleScript, Arc, Arduino,
+ASP, AspectJ, Assembly, Asymptote, Augeas, AutoHotkey, AutoIt, AWK, BC, Berry, BitBake,
+BlitzBasic, BlitzMax, Bluespec, BNF, Boo, Boogie, Brainfuck, BrightScript, Bro, BST, C, C#,
+C2HS Haskell, CADL, CapDL, Ceylon, Chapel, ChucK, Cirru, Click, Clojure, CMake, COBOL,
+COBOLFree, CoffeeScript, ColdFusion CFC, Common Lisp, C++, Crystal, Csound, Csound Score,
+CSS, CUDA, Cypher, Cython, Darcs Patch, Dart, DASM16, Debian Control File, DeviceTree, Diff,
+DM, Docker, Dockerfile, Dylan, EBNF, eC, Eiffel, Elixir, Elm, ELPi, Emacs Lisp, EmberScript,
+Erlang, Execline, F#, Factor, Fancy, Fantom, Felix, Fennel, Fish, Flux, Fortran, Fortran Fixed Form,
+FoxPro, FreeFem, FreeMarker, F*, Futhark, G-Code, GAP, GAS, GDScript, Genshi, Gentoo Ebuild,
+Gentoo Eclass, Gettext Catalog, GLSL, Glyph, Gnuplot, Go, Gosu, Grace, Gradle, Grammatical
+Framework, GraphQL, Graphviz DOT, Groff, Groovy, Groovy Server Pages, GSQL, Handlebars,
+Haskell, Haxe, HCL, HLSL, HTML, HTML Django, HTML ERB, HTML PHP, HTTP, Hy, Idris,
+IGOR Pro, Inform 6 Template, Inno Setup, Io, Isabelle, J, Jade, JAGS, Jasmin, Java, Java Server
+Pages, JavaScript, JavaScript MozPreproc, JCL, JFlex, JSON, JSONiq, JSX, Julia, Jupyter Notebook,
+K, Kconfig, Koka, Kotlin, KRL, Lean, Less, Lex, LFE, Lighttpd Configuration File, LilyPond,
+Limbo, Linker Script, Liquid, Literate Agda, Literate CoffeeScript, LLVM, Logtalk, LSL, Lua, M4,
+Makefile, Mako, Mason, MATLAB, Maxima, Meson, Metal, MiniScript, Mirah, Mizar, Modelica,
+Modula-2, Monkey, MooCode, MoonScript, Mosel, MQL, MUF, MuPAD, NASM, NCL, NetLinx,
+Nginx Configuration File, Nimrod, Ninja, Nit, Nix, NSIS, Nu, NuSMV, Objdump, Objective-C,
+Objective-C++, OCaml, Octave, Odin, OMG Interface Definition Language, ooc, Opa, OpenCL,
+OpenEdge ABL, OpenSCAD, Ox, Oz, Papyrus, Parrot Internal Representation, Pascal, PAWN,
+PEG, Perl, Perl 6, PHP, Pike, PkgConfig, POD, Pony, POV-Ray, PowerShell, Praat, Processing,
+Propeller Spin, Protocol Buffer, Pug, Puppet, PureBasic, PureScript, Python, Q, QML, QVTO, R,
+Racket, Ragel in Ruby Host, RAML, RConsole, Rd, REALbasic, ReasonML, Red, RenderScript,
+Ren'Py, REXX, RHTML, Ride, Robot Framework, Rouge, Ruby, Rust, S, Sage, SARL, SAS, Sass,
+Scala, Scheme, Scilab, SCSS, Self, Shell, ShExC, Sieve, Silver, Singularity, Slim, Smali, Smarty,
+Smithy, SMT, Solidity, SourcePawn, SPARQL, SQF, SQL, Squirrel, Stan, Standard ML, Stata,
+Stylus, SuperCollider, Swift, SWIG, SystemVerilog, Tcl, Tcsh, Tea, Terminfo, TeX, Thrift, Transact-
+SQL, Treetop, Turing, Twig, TypeScript, TypoScript, Unity3D Asset, Uno, UnrealScript, UrWeb,
+USD, Vala, VBScript, VCL, Velocity, Verilog, VHDL, VimL, Visual Basic, Vue, WebAssembly,
+Web IDL, Whiley, X10, XBase, XC, XML, XML Lasso, XQuery, XS, XSLT, Xtend, Xtlang, YANG,
+Zeek, Zephir, Zig, Zimpl

@@ -1,0 +1,251 @@
+# 2402.00905v4.pdf
+# Dịch từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2402.00905v4.pdf
+# Kích thước file: 1230719 bytes
+
+===============================================
+NỘI DUNG FILE PDF (TIẾNG VIỆT)
+===============================================
+
+
+--- TRANG 1 ---
+Fine-Tuning và Prompt Engineering cho Tự động hóa Code Review dựa trên Large Language Models
+
+Chanathip Pornprasita, Chakkrit Tantithamthavorna,∗
+aMonash University, Australia
+
+Tóm tắt
+Bối cảnh: Sự phát triển nhanh chóng của Large Language Models (LLMs) đã khơi dậy sự quan tâm đáng kể trong việc tận dụng khả năng của chúng để tự động hóa các quy trình code review. Các nghiên cứu trước đây thường tập trung vào việc phát triển LLMs cho tự động hóa code review, nhưng yêu cầu tài nguyên đắt đỏ, điều này không khả thi đối với các tổ chức có ngân sách và tài nguyên hạn chế. Do đó, fine-tuning và prompt engineering là hai phương pháp phổ biến để tận dụng LLMs cho tự động hóa code review.
+
+Mục tiêu: Chúng tôi nhằm mục đích điều tra hiệu suất của tự động hóa code review dựa trên LLMs trong hai ngữ cảnh, tức là khi LLMs được tận dụng bằng fine-tuning và prompting. Fine-tuning bao gồm việc huấn luyện mô hình trên một tập dữ liệu code review cụ thể, trong khi prompting bao gồm việc cung cấp các hướng dẫn rõ ràng để hướng dẫn quá trình sinh ra của mô hình mà không cần tập dữ liệu code review cụ thể.
+
+Phương pháp: Chúng tôi tận dụng các kỹ thuật fine-tuning mô hình và inference (tức là zero-shot learning, few-shot learning và persona) trên tự động hóa code review dựa trên LLMs. Tổng cộng, chúng tôi điều tra 12 biến thể của hai tự động hóa code review dựa trên LLMs (tức là GPT-3.5 và Magicoder), và so sánh chúng với phương pháp của Guo et al. và ba phương pháp tự động hóa code review hiện có (tức là CodeReviewer, TufanoT5 và D-ACT).
+
+Kết quả: Fine-tuning của GPT 3.5 với zero-shot learning giúp GPT-3.5 đạt được EM cao hơn 73.17% - 74.23% so với phương pháp của Guo et al. Ngoài ra, khi GPT-3.5 không được fine-tuned, GPT-3.5 với few-shot learning đạt được EM cao hơn 46.38% - 659.09% so với GPT-3.5 với zero-shot learning.
+
+Kết luận: Dựa trên kết quả của chúng tôi, chúng tôi khuyến nghị rằng (1) LLMs cho tự động hóa code review nên được fine-tuned để đạt hiệu suất cao nhất; và (2) khi dữ liệu không đủ cho fine-tuning mô hình (ví dụ: vấn đề cold-start), few-shot learning không có persona nên được sử dụng cho LLMs trong tự động hóa code review. Những phát hiện của chúng tôi đóng góp những hiểu biết có giá trị về các khuyến nghị thực tế và sự đánh đổi liên quan đến việc triển khai LLMs cho tự động hóa code review.
+
+Từ khóa: Modern Code Review, Code Review Automation, Large Language Models, GPT-3.5, Few-Shot Learning, Persona
+
+1. Giới thiệu
+Code review là một thực hành đảm bảo chất lượng phần mềm trong đó các nhà phát triển khác với tác giả (hay còn gọi là reviewer) xem xét một thay đổi code mà tác giả tạo ra để đảm bảo chất lượng của thay đổi code trước khi được tích hợp vào codebase. Mặc dù code review có thể đảm bảo chất lượng phần mềm cao, code review vẫn tốn thời gian và đắt đỏ. Do đó, các phương pháp tự động hóa code review dựa trên neural machine translation (NMT) đã được đề xuất [1, 2, 3] để hỗ trợ và đẩy nhanh quá trình code review. Tuy nhiên, các nghiên cứu trước đây [4, 5] phát hiện rằng các phương pháp như vậy vẫn chưa hoàn hảo do kiến thức hạn chế của các mô hình tự động hóa code review dựa trên NMT được huấn luyện trên một tập dữ liệu code review nhỏ.
+
+Để giải quyết thách thức nêu trên của các phương pháp tự động hóa code review dựa trên NMT, các nghiên cứu gần đây đã đề xuất các phương pháp dựa trên large language model (LLM) cho nhiệm vụ tự động hóa code review [5, 6]. Large language model là một mô hình deep learning lớn dựa trên kiến trúc transformer [7] và được pre-trained trên các tập dữ liệu văn bản khổng lồ. Một ví dụ về các phương pháp tự động hóa code review dựa trên LLM bao gồm CodeReviewer [5], một LLM pre-trained dựa trên mô hình CodeT5 [8]. Li et al. [5] đã chỉ ra rằng CodeReviewer được đề xuất của họ vượt trội hơn các phương pháp tự động hóa code review dựa trên NMT trước đây [1, 2, 3]. Tuy nhiên, quá trình huấn luyện của CodeReviewer đòi hỏi rất nhiều tài nguyên tính toán (tức là hai máy chủ DGX-2 được trang bị tổng cộng 32 GPU NVIDIA V100). Những tài nguyên tính toán lớn như vậy không khả thi đối với các tổ chức có ngân sách hạn chế.
+
+Vì pre-training LLMs cho tự động hóa code review có thể đắt đỏ, fine-tuning và prompt engineering là hai phương pháp phổ biến để tận dụng LLMs cho tự động hóa code review. Cụ thể, fine-tuning bao gồm việc huấn luyện thêm các LLMs đã được pre-trained trên một tập dữ liệu code review cụ thể. Ví dụ, Lu et al. [9] đề xuất LLaMa-Reviewer, là phương pháp tự động hóa code review dựa trên LLM được fine-tuned trên mô hình LLaMa cơ sở [10]. Mặt khác, prompting [11, 12, 13] bao gồm việc cung cấp các hướng dẫn rõ ràng để hướng dẫn quá trình sinh ra của mô hình mà không cần một tập dữ liệu code review cụ thể. Ví dụ, Guo et al. [14] đã tiến hành một nghiên cứu thực nghiệm để điều tra tiềm năng của GPT-3.5 cho tự động hóa code review bằng cách sử dụng zero-shot learning với GPT-3.5.
+
+--- TRANG 2 ---
+Mặc dù Guo et al. [14] chứng minh tiềm năng của việc sử dụng GPT-3.5 cho tự động hóa code review, nghiên cứu của họ vẫn có những hạn chế sau đây. Thứ nhất, kết quả của Guo et al. [14] chỉ giới hạn ở zero-shot GPT-3.5. Tuy nhiên, có những phương pháp khác để tận dụng GPT-3.5 (tức là fine-tuning và few-shot learning) không được bao gồm trong nghiên cứu của họ. Do đó, khó để các nhà thực hành kết luận phương pháp nào tốt nhất để tận dụng LLMs cho tự động hóa code review. Thứ hai, mặc dù các nghiên cứu trước đây [15, 16, 17] phát hiện rằng fine-tuning mô hình có thể cải thiện hiệu suất của các LLMs pre-trained, Guo et al. [14] không đánh giá hiệu suất của LLMs khi được fine-tuned. Do đó, khó để các nhà thực hành kết luận liệu LLMs cho tự động hóa code review có nên được fine-tuned để đạt kết quả hiệu quả nhất hay không. Thứ ba, Guo et al. [14] không điều tra tác động của few-shot learning, có thể cải thiện hiệu suất của LLMs so với zero-shot learning [18, 19, 20]. Do đó, khó để các nhà thực hành kết luận chiến lược prompting nào (tức là zero-shot learning, few-shot learning và persona) hiệu quả nhất cho tự động hóa code review.
+
+Trong nghiên cứu này, chúng tôi nhằm mục đích điều tra hiệu suất của tự động hóa code review dựa trên LLMs trong hai ngữ cảnh, tức là khi LLMs được tận dụng bằng fine-tuning và prompting. Cụ thể, chúng tôi đánh giá hai LLMs (tức là GPT-3.5 và Magicoder [21]) và các phương pháp tự động hóa code review dựa trên LLM hiện có [4, 5, 6] với các thước đo đánh giá sau: Exact Match (EM) [1, 4] và CodeBLEU [22]. Thông qua nghiên cứu thực nghiệm trên ba tập dữ liệu tự động hóa code review (tức là dữ liệu CodeReviewer [5], dữ liệu Tufano [6] và dữ liệu D-ACT [4]), chúng tôi trả lời ba câu hỏi nghiên cứu sau:
+
+(RQ1) Phương pháp hiệu quả nhất để tận dụng LLMs cho tự động hóa code review là gì?
+Kết quả: Fine-tuning của GPT 3.5 với zero-shot learning đạt được EM cao hơn 73.17% - 74.23% so với phương pháp của Guo et al. [14] (tức là GPT 3.5 không có fine-tuning). Kết quả ngụ ý rằng GPT-3.5 nên được fine-tuned để đạt hiệu suất cao nhất.
+
+(RQ2) Lợi ích của fine-tuning mô hình trên GPT-3.5 cho tự động hóa code review là gì?
+Kết quả: Fine-tuning của GPT 3.5 với few-shot learning đạt được Exact Match cao hơn 63.91% - 1,100% so với những mô hình không được fine-tuned. Kết quả cho thấy GPT-3.5 được fine-tuned có thể sinh ra code đã sửa đổi đúng hơn so với GPT-3.5 không có fine-tuning.
+
+(RQ3) Chiến lược prompting hiệu quả nhất trên GPT-3.5 cho tự động hóa code review là gì?
+Kết quả: GPT-3.5 với few-shot learning đạt được Exact Match cao hơn 46.38% - 659.09% so với GPT-3.5 với zero-shot learning. Mặt khác, khi một persona được bao gồm trong input prompts, GPT-3.5 đạt được Exact Match thấp hơn 1.02% - 54.17% so với khi persona không được bao gồm trong input prompts. Kết quả cho thấy chiến lược prompting tốt nhất khi sử dụng GPT-3.5 mà không có fine-tuning là sử dụng few-shot learning không có persona.
+
+Khuyến nghị: Dựa trên kết quả của chúng tôi, chúng tôi khuyến nghị rằng (1) LLMs cho tự động hóa code review nên được fine-tuned để đạt hiệu suất cao nhất; và (2) khi dữ liệu không đủ cho fine-tuning mô hình (ví dụ: vấn đề cold-start), few-shot learning không có persona nên được sử dụng cho LLMs trong tự động hóa code review.
+
+Đóng góp: Tóm lại, những đóng góp chính của nghiên cứu chúng tôi như sau:
+• Chúng tôi là những người đầu tiên điều tra hiệu suất của tự động hóa code review dựa trên LLMs khi sử dụng các kỹ thuật fine-tuning mô hình và inference (tức là zero-shot learning, few-shot learning và persona).
+• Chúng tôi cung cấp các khuyến nghị cho việc áp dụng LLMs cho tự động hóa code review đối với các nhà thực hành.
+
+Khoa học mở: Các mô hình fine-tuned, script và kết quả của chúng tôi được cung cấp trực tuyến [23].
+
+Tổ chức bài báo: Phần 2 mô tả nghiên cứu liên quan và xây dựng các câu hỏi nghiên cứu. Phần 3 mô tả thiết kế nghiên cứu của chúng tôi. Phần 4 trình bày kết quả thực nghiệm. Phần 5 thảo luận kết quả thực nghiệm của chúng tôi. Phần 6 mô tả các mối đe dọa có thể đối với tính hợp lệ. Phần 7 đưa ra kết luận của nghiên cứu.
+
+2. Nghiên cứu liên quan và Câu hỏi nghiên cứu
+
+Trong phần này, chúng tôi cung cấp kiến thức nền tảng về tự động hóa code review, thảo luận các phương pháp tự động hóa code review dựa trên large language model hiện có, và xây dựng các câu hỏi nghiên cứu.
+
+2.1. Tự động hóa Code Review
+Code review là một thực hành đảm bảo chất lượng phần mềm trong đó các nhà phát triển khác với tác giả (hay còn gọi là reviewer) cung cấp phản hồi cho một thay đổi code được tạo bởi tác giả để đảm bảo rằng thay đổi code có chất lượng đủ để đáp ứng các tiêu chuẩn chất lượng. Mặc dù code review có thể đảm bảo chất lượng phần mềm cao,
+
+--- TRANG 3 ---
+code review vẫn tốn thời gian và đắt đỏ. Do đó, các nhà phát triển vẫn gặp thách thức trong việc nhận phản hồi kịp thời từ các reviewer [24, 25]. Vì vậy, các phương pháp tự động hóa code review [1, 4, 5, 6, 26] đã được đề xuất để hỗ trợ và đẩy nhanh quá trình code review.
+
+Tự động hóa code review thường được hình thức hóa như một nhiệm vụ sinh chuỗi, trong đó một mô hình ngôn ngữ được huấn luyện để học mối quan hệ giữa code được gửi và code được sửa đổi. Sau đó, trong giai đoạn inference, mô hình nhằm sinh ra một phiên bản đã sửa đổi của một thay đổi code. Gần đây, các phương pháp tự động hóa code review dựa trên neural machine translation (NMT) đã được đề xuất [1, 2, 3]. Thông thường, các phương pháp tự động hóa code review dựa trên NMT được huấn luyện trên một tập dữ liệu code review cụ thể. Tuy nhiên, các nghiên cứu trước đây [4, 5] phát hiện rằng các phương pháp tự động hóa code review dựa trên NMT có thể hoạt động tốt, nhưng vẫn chưa hoàn hảo. Hiệu suất không hoàn hảo này có liên quan đến kiến thức hạn chế của các phương pháp tự động hóa code review dựa trên NMT được huấn luyện trên một tập dữ liệu code review nhỏ.
+
+2.2. Các phương pháp tự động hóa Code Review dựa trên LLMs
+Large language models (LLMs) cho tự động hóa code review đề cập đến các large language models được thiết kế đặc biệt để hỗ trợ các nhiệm vụ tự động hóa code review, nhằm hiểu và sinh ra source code được viết bởi các nhà phát triển và ngôn ngữ tự nhiên được viết bởi các reviewer. Vì source code và comment thường có cấu trúc ngữ nghĩa và cú pháp riêng, các nghiên cứu gần đây đã đề xuất nhiều phương pháp tự động hóa code review dựa trên LLMs [5, 6, 9]. Ví dụ, Li et al. [5] đề xuất CodeReviewer, một LLM pre-trained dựa trên mô hình CodeT5 [8]. Các nghiên cứu trước đây phát hiện rằng các phương pháp tự động hóa code review dựa trên LLMs thường vượt trội hơn những phương pháp dựa trên NMT [4, 5, 6]. Ví dụ, Li et al. [5] phát hiện rằng phương pháp được đề xuất của họ vượt trội hơn mô hình NMT dựa trên transformer 11.76%. Dưới đây, chúng tôi thảo luận ngắn gọn về pipeline mô hình hóa chung của LLMs cho tự động hóa code review được trình bày trong Hình 1.
+
+Pre-Training mô hình đề cập đến giai đoạn ban đầu của việc huấn luyện một large language model, trong đó mô hình được tiếp xúc với một lượng lớn dữ liệu không có nhãn để học các biểu diễn ngôn ngữ tổng quát. Giai đoạn này nhằm khởi tạo các tham số của mô hình và học các đặc trưng chung có thể được fine-tuned thêm cho các nhiệm vụ downstream cụ thể. Gần đây, đã có nhiều large language models cho code (tức là LLMs được huấn luyện đặc biệt trên source code và các ngôn ngữ tự nhiên liên quan). Ví dụ, các large language models do cộng đồng mã nguồn mở phát triển như Code-LLaMa [27], StarCoder [28] và Magicoder [21]; và các large language models thương mại như GPT-3.5.
+
+Tuy nhiên, việc phát triển large language models cho code đòi hỏi tài nguyên GPU đắt đỏ và ngân sách. Ví dụ, GPT-3.5 đòi hỏi 10,000 GPU NVIDIA V-100 cho pre-training mô hình. LLaMa2 [29] đòi hỏi Meta's Research Super Cluster (RSC) cũng như các cluster sản xuất nội bộ, bao gồm khoảng 2,000 GPU NVIDIA A-100 tổng cộng. Do đó, nhiều tổ chức phần mềm với tài nguyên và ngân sách hạn chế có thể không thể phát triển large language models của riêng họ. Vì vậy, fine-tuning và prompt engineering là hai phương pháp phổ biến để tận dụng các LLMs hiện có cho tự động hóa code review khi tài nguyên GPU đắt đỏ không có sẵn cho việc pre-training một large language model từ đầu, trong đó các kỹ thuật này được mong muốn hơn cho nhiều tổ chức để nhanh chóng áp dụng các công nghệ mới.
+
+Fine-Tuning mô hình là một thực hành phổ biến, đặc biệt trong các tình huống transfer learning, trong đó một mô hình pre-trained trên một tập dữ liệu lớn (domain nguồn, ví dụ: hiểu source code) được điều chỉnh cho một nhiệm vụ hoặc tập dữ liệu liên quan nhưng khác (domain đích, ví dụ: tự động hóa code review). Gần đây, các nhà nghiên cứu đã tận dụng các kỹ thuật fine-tuning mô hình cho LLMs để cải thiện hiệu suất của các phương pháp tự động hóa code review. Ví dụ, Lu et al. [9] đề xuất LLaMa-Reviewer, là một phương pháp tự động hóa code review dựa trên LLM được fine-tuned trên mô hình LLaMa cơ sở [10] sử dụng ba nhiệm vụ tự động hóa code review, tức là nhiệm vụ dự đoán tính cần thiết của review để kiểm tra xem diffhunks có cần review hay không, nhiệm vụ sinh comment code review để sinh ra các comment phù hợp cho một đoạn code được cho, và nhiệm vụ cải tiến code để sinh ra điều chỉnh nhỏ cho code hiện có. Lu et al. [9] phát hiện rằng bước fine-tuning trên LLMs có thể cải thiện đáng kể hiệu suất của các phương pháp tự động hóa code review hiện có.
+
+Inference đề cập đến quá trình sử dụng một mô hình ngôn ngữ pre-trained để sinh ra source code dựa trên một hướng dẫn prompt bằng ngôn ngữ tự nhiên được cho. Do đó, prompt engineering đóng một vai trò quan trọng trong việc tận dụng LLMs cho tự động hóa code review để hướng dẫn LLMs sinh ra đầu ra mong muốn. Các chiến lược prompting khác nhau đã được đề xuất. Ví dụ, zero-shot learning, few-shot learning [18, 30, 31], chain-of-thought [32, 33], tree-of-thought [32, 33], self-consistency [34] và persona [13]. Tuy nhiên, không phải tất cả các chiến lược prompting đều phù hợp với tự động hóa code review. Ví dụ, chain-of-thought, self-consistency và tree-of-thought prompting không áp dụng được cho nhiệm vụ tự động hóa code review vì chúng được thiết kế cho các vấn đề lý luận số học và logic. Do đó, chúng tôi loại trừ chúng khỏi nghiên cứu của mình.
+
+Ngược lại, zero-shot learning, few-shot learning và persona prompting là các chiến lược prompting dựa trên hướng dẫn, phù hợp hơn cho các nhiệm vụ software engineering (bao gồm tự động hóa code review) [35, 36, 37, 38]. Cụ thể, zero-shot learning bao gồm việc prompting LLMs để sinh ra một đầu ra từ một hướng dẫn và một đầu vào được cho. Mặt khác, few-shot learning [18, 30, 31] bao gồm việc prompting LLMs để sinh ra một đầu ra từ N ví dụ minh họa {(x1,y1),(x2,y2),...,(xN,yN)} và một đầu vào thực tế trong tập test, trong đó xi và yi là các đầu vào và đầu ra thu được từ tập huấn luyện, tương ứng. Persona [13] bao gồm việc prompting LLMs để hành động như một vai trò hoặc persona cụ thể để đảm bảo rằng LLMs sẽ sinh ra đầu ra tương tự như đầu ra được sinh ra bởi một persona được chỉ định.
+
+--- TRANG 4 ---
+Bảng 1: Sự khác biệt giữa nghiên cứu của chúng tôi và nghiên cứu của Guo et al. [14].
+
+Guo et al. [14] | Nghiên cứu của chúng tôi
+LLMs/phương pháp: GPT-3.5, CodeReviewer [5] | GPT-3.5, Magicoder [21], CodeReviewer [5], TufanoT5 [6], D-ACT [4]
+Bao gồm fine-tuning LLMs?: Không | Có
+Kỹ thuật Prompting: Zero-shot learning, Persona | Zero-shot learning, Few-shot learning, Persona
+
+2.3. GPT-3.5 cho Tự động hóa Code Review
+Gần đây, Guo et al. [14] đã tiến hành một nghiên cứu thực nghiệm để điều tra tiềm năng của GPT-3.5 cho tự động hóa code review. Tuy nhiên, nghiên cứu của họ vẫn có những hạn chế sau đây.
+
+Thứ nhất, kết quả của Guo et al. [14] chỉ giới hạn ở zero-shot GPT-3.5. Cụ thể, Guo et al. [14] đã tiến hành các thí nghiệm để tìm prompt tốt nhất cho việc tận dụng zero-shot learning với GPT-3.5. Tuy nhiên, có những phương pháp khác để tận dụng GPT-3.5 (tức là fine-tuning và few-shot learning) không được bao gồm trong nghiên cứu của họ. Việc thiếu đánh giá hệ thống về việc sử dụng fine-tuning và few-shot learning trên GPT-3.5 khiến các nhà thực hành khó kết luận phương pháp nào tốt nhất để tận dụng LLMs cho tự động hóa code review. Để giải quyết thách thức này, chúng tôi xây dựng câu hỏi nghiên cứu sau.
+
+RQ1: Phương pháp hiệu quả nhất để tận dụng LLMs cho tự động hóa code review là gì?
+
+Thứ hai, hiệu suất của LLMs khi được fine-tuned vẫn chưa được biết. Cụ thể, Guo et al. [14] không đánh giá hiệu suất của LLMs khi được fine-tuned. Tuy nhiên, các nghiên cứu trước đây [15, 16, 17] phát hiện rằng fine-tuning mô hình có thể cải thiện hiệu suất của các LLMs pre-trained. Việc thiếu thí nghiệm với fine-tuning mô hình khiến các nhà thực hành khó kết luận liệu LLMs cho tự động hóa code review có nên được fine-tuned để đạt kết quả hiệu quả nhất hay không. Để giải quyết thách thức này, chúng tôi xây dựng câu hỏi nghiên cứu sau.
+
+RQ2: Lợi ích của fine-tuning mô hình trên GPT-3.5 cho tự động hóa code review là gì?
+
+Thứ ba, hiệu suất của LLMs cho tự động hóa code review khi sử dụng few-shot learning vẫn chưa được biết. Cụ thể, Guo et al. [14] không điều tra tác động của few-shot learning đối với LLMs cho tự động hóa code review. Tuy nhiên, các nghiên cứu gần đây [18, 19, 20] phát hiện rằng few-shot learning có thể cải thiện hiệu suất của LLMs so với zero-shot learning. Việc thiếu thí nghiệm với few-shot learning trên LLMs cho tự động hóa code review khiến các nhà thực hành khó kết luận chiến lược prompting nào (tức là zero-shot learning, few-shot learning và persona) hiệu quả nhất cho tự động hóa code review. Để giải quyết thách thức này, chúng tôi xây dựng câu hỏi nghiên cứu sau.
+
+RQ3: Chiến lược prompting hiệu quả nhất trên GPT-3.5 cho tự động hóa code review là gì?
+
+Bảng 2: Các thiết lập thí nghiệm trong nghiên cứu của chúng tôi. Chúng tôi không bao gồm các thiết lập thí nghiệm #3 và #4 vì LLMs đã học mối quan hệ giữa đầu vào (tức là code được gửi để review) và đầu ra (tức là code đã sửa đổi).
+
+Thiết lập thí nghiệm | Fine-Tuning | Kỹ thuật Inference | Prompting | Sử dụng Persona
+#1 | ✓ | Zero-shot | ✗
+#2 | ✓ | | ✓
+#3 | | Few-shot | ✗
+#4 | | | ✓
+#5 | ✗ | Zero-shot | ✗
+#6 | | | ✓
+#7 | | Few-shot | ✗
+#8 | | | ✓
+
+3. Thiết kế Thí nghiệm
+
+Trong phần này, chúng tôi cung cấp tổng quan và chi tiết về thiết kế thí nghiệm của chúng tôi.
+
+3.1. Tổng quan
+Mục tiêu của nghiên cứu này là điều tra LLMs nào hoạt động tốt nhất khi sử dụng các kỹ thuật fine-tuning mô hình và inference (tức là zero-shot learning, few-shot learning [18, 30, 31] và persona [13]). Để đạt được mục tiêu này, chúng tôi tiến hành các thí nghiệm với hai LLMs (tức là GPT-3.5 và Magicoder [21]) trên các tập dữ liệu sau được nghiên cứu rộng rãi trong tài liệu tự động hóa code review [4, 9, 14, 39]: dữ liệu CodeReviewer [5], dữ liệu Tufano [6] và dữ liệu D-ACT [4]. Chúng tôi sử dụng Magicoder [21] trong thí nghiệm vì nó được huấn luyện thêm trên các hướng dẫn và giải pháp tổng hợp chất lượng cao.
+
+Trong nghiên cứu này, chúng tôi tiến hành các thí nghiệm dưới sáu thiết lập như được trình bày trong Bảng 2. Theo bảng, khi các LLMs được fine-tuned, chúng tôi sử dụng zero-shot learning có và không có persona. Chúng tôi không sử dụng few-shot learning với các LLMs được fine-tuned vì các LLMs đã học mối quan hệ giữa một đầu vào (tức là code được gửi để review) và một đầu ra (tức là code được cải thiện). Mặt khác, khi các LLMs không được fine-tuned, chúng tôi sử dụng zero-shot learning và few-shot learning, trong đó mỗi kỹ thuật inference được sử dụng có và không có persona. Cuối cùng, chúng tôi tiến hành tổng cộng 36 thí nghiệm (2 LLMs × 6 thiết lập × 3 tập dữ liệu).
+
+Hình 2 cung cấp tổng quan về thiết kế thí nghiệm của chúng tôi. Để bắt đầu, các tập dữ liệu code review được nghiên cứu được chia thành tập huấn luyện và tập test. Tập huấn luyện bao gồm code được gửi để review và comment của reviewer làm đầu vào; và code đã sửa đổi làm đầu ra. Mặt khác, tập test chỉ bao gồm code được gửi để review và comment của reviewer. Tiếp theo, để fine-tune các LLMs được nghiên cứu, trước tiên chúng tôi ngẫu nhiên lấy một tập các ví dụ huấn luyện từ tập huấn luyện vì việc sử dụng toàn bộ tập huấn luyện là quá đắt đỏ. Sau đó, chúng tôi sử dụng các ví dụ huấn luyện được chọn để fine-tune các LLMs được nghiên cứu. Mặt khác, để sử dụng các kỹ thuật inference (tức là zero-shot learning, few-shot learning và persona), trước tiên chúng tôi thiết kế các template prompt cho mỗi kỹ thuật inference dựa trên
+
+--- TRANG 5 ---
+[Tiếp tục dịch từ trang 5 với nội dung về Code Review Dataset, training example selection, v.v.]
+
+hướng dẫn từ OpenAI. Tuy nhiên, vì few-shot learning đòi hỏi các ví dụ minh họa, chúng tôi chọn một tập các ví dụ minh họa cho mỗi mẫu test từ tập huấn luyện. Sau đó, chúng tôi tạo các prompt trông tương tự như các template prompt. Cuối cùng, chúng tôi sử dụng các LLMs được nghiên cứu để sinh ra code đã sửa đổi từ các prompt được cho. Chúng tôi giải thích chi tiết về các tập dữ liệu được nghiên cứu, fine-tuning mô hình, inference thông qua prompting, các thước đo đánh giá và thiết lập siêu tham số dưới đây.
+
+3.2. Các Tập dữ liệu được Nghiên cứu
+Gần đây, Tufano et al. [1, 2] đã thu thập các tập dữ liệu với ràng buộc rằng code đã sửa đổi không được chứa các token code (ví dụ: identifier) không xuất hiện trong code được gửi để review. Do đó, các tập dữ liệu như vậy không phù hợp với thực hành code review thực tế vì các nhà phát triển có thể thêm các token code mới khi họ sửa đổi code đã gửi của mình. Vì vậy, trong nghiên cứu này, chúng tôi sử dụng các tập dữ liệu CodeReviewer [5], TufanoT5 [6] và D-ACT [4], không có ràng buộc nêu trên trong việc thu thập dữ liệu. Chi tiết của các tập dữ liệu được nghiên cứu như sau (thống kê của các tập dữ liệu được nghiên cứu được trình bày trong Bảng 3).
+
+• Dữ liệu CodeReviewer: Li et al. [5] đã thu thập tập dữ liệu này từ các dự án GitHub trên chín ngôn ngữ lập trình (tức là C, C++, C#, Java, Python, Ruby, php, Go và Javascript). Tập dữ liệu chứa các bộ ba của code được gửi để review (granularity diffhunk), comment của reviewer và phiên bản đã sửa đổi của code được gửi để review (granularity diffhunk).
+
+• Dữ liệu Tufano: Tufano et al. [6] đã thu thập tập dữ liệu này từ các dự án Java trong GitHub và 6,388 dự án Java được host trên Gerrit. Mỗi bản ghi trong tập dữ liệu chứa một bộ ba của code được gửi để review (granularity function), comment của reviewer và code sau khi được sửa đổi (granularity function). Tufano et al. [6] đã tạo hai loại của tập dữ liệu này (tức là dữ liệu Tufano (có comment) và dữ liệu Tufano (không có comment)).
+
+• Dữ liệu D-ACT: Pornprasit et al. [4] đã thu thập tập dữ liệu này từ ba dự án Java được host trên Gerrit (tức là Android, Google và Ovirt). Mỗi bản ghi trong tập dữ liệu chứa một bộ ba của codebase (granularity function), code của phiên bản đầu tiên của một patch (granularity function) và code của phiên bản được phê duyệt của một patch (granularity function).
+
+3.3. Fine-Tuning Mô hình
+Để fine-tune các LLMs được nghiên cứu, như được gợi ý bởi OpenAI, trước tiên chúng tôi chọn một vài ví dụ huấn luyện để fine-tune một LLM để xem liệu hiệu suất có cải thiện hay không. Do đó, chúng tôi ngẫu nhiên chọn một tập các ví dụ từ toàn bộ tập huấn luyện bằng cách sử dụng hàm random trong Python để giảm bias trong việc chọn dữ liệu. Tuy nhiên, không có quy tắc hoặc nguyên tắc hiện có để xác định số lượng ví dụ nên được chọn từ một tập huấn luyện. Do đó, chúng tôi sử dụng phương pháp thử và sai để xác định số lượng ví dụ huấn luyện phù hợp. Để làm như vậy, chúng tôi bắt đầu bằng cách sử dụng khoảng 6% ví dụ huấn luyện từ toàn bộ tập huấn luyện để fine-tune GPT-3.5. Chúng tôi phát hiện rằng GPT-3.5 được fine-tuned với các ví dụ huấn luyện như vậy vượt trội hơn các phương pháp tự động hóa code review hiện có [4, 5, 6]. Do đó, dựa trên phát hiện trên, chúng tôi sử dụng 6% ví dụ huấn luyện cho toàn bộ thí nghiệm.
+
+Sau đó, các ví dụ huấn luyện được chọn được sử dụng để fine-tune các LLMs được nghiên cứu. Cụ thể, chúng tôi fine-tune GPT-3.5 bằng cách sử dụng API được cung cấp bởi OpenAI. Mặt khác, để fine-tune Magicoder [21], chúng tôi tận dụng kỹ thuật fine-tuning hiệu quả tham số tiên tiến gọi là DoRA [40].
+
+--- TRANG 6 ---
+Bảng 3: Thống kê của các tập dữ liệu được nghiên cứu (tập dữ liệu của Android, Google và Ovirt là từ tập dữ liệu D-ACT [4]).
+
+Dataset | # Train | # Validation | # Test | # Language | Granularity | Has Comment
+Dữ liệu CodeReviewer [5] | 150,405 | 13,102 | 13,104 | 9 | DiffHunk | ✓
+Dữ liệu Tufano [6] | 134,238 | 16,779 | 16,779 | 1 | Function | ✓/✗
+Android [4] | 14,690 | 1,836 | 1,835 | 1 | Function | ✗
+Google [4] | 9,899 | 1,237 | 1,235 | 1 | Function | ✗
+Ovirt [4] | 21,509 | 2,686 | 2,688 | 1 | Function | ✗
+
+(Persona) Bạn là một nhà phát triển phần mềm chuyên gia trong <lang>. Bạn luôn muốn cải thiện code của mình để có chất lượng cao hơn.
+(Instruction) Nhiệm vụ của bạn là cải thiện code được gửi dựa trên comment của reviewer. Vui lòng chỉ sinh ra code đã cải thiện mà không có giải thích của bạn.
+(Input) <input code>
+(Input) <input comment>
+
+(a) Template prompt cho zero-shot learning.
+
+(Persona) Bạn là một nhà phát triển phần mềm chuyên gia trong <lang>. Bạn luôn muốn cải thiện code của mình để có chất lượng cao hơn. Bạn phải sinh ra một đầu ra tuân theo các ví dụ được cho.
+(Instruction and examples) Bạn được cung cấp 3 ví dụ. Mỗi ví dụ bắt đầu với "##Example" và kết thúc với "---". Mỗi ví dụ chứa code được gửi, comment của developer và code đã cải thiện. Code được gửi và code đã cải thiện được viết bằng <lang>. Nhiệm vụ của bạn là cải thiện code được gửi của bạn dựa trên comment mà một developer khác đã cho bạn.
+## Example
+Submitted code: <code>
+Developer comment: <comment>
+Improved code: <code>
+---
+<other examples>
+---
+(Input) Submitted code: <input code>
+(Input) Developer comment: <input comment>
+
+(b) Template prompt cho few-shot learning.
+
+Hình 3: Template prompt cho zero-shot learning và few-shot learning có chứa các hướng dẫn đơn giản (<lang> đề cập đến một ngôn ngữ lập trình). Văn bản màu xanh được bỏ qua khi comment của reviewer không được sử dụng trong thí nghiệm.
+
+3.4. Inference thông qua Prompting
+Trong nghiên cứu này, chúng tôi tiến hành các thí nghiệm với các kỹ thuật prompting sau: zero-shot learning, few-shot learning và persona. Chúng tôi giải thích từng kỹ thuật prompting dưới đây.
+
+Đối với zero-shot learning, trước tiên chúng tôi thiết kế template prompt như được trình bày trong Hình 3a bằng cách tuân theo các hướng dẫn từ OpenAI để đảm bảo rằng cấu trúc của prompt phù hợp với GPT-3.5. Template prompt bao gồm các thành phần sau: một hướng dẫn và một đầu vào (tức là code được gửi để review và comment của reviewer).
+
+Sau đó, chúng tôi tạo các prompt bằng cách sử dụng template prompt trong Hình 3a và code được gửi để review với comment của reviewer trong tập test. Cuối cùng, chúng tôi sử dụng các LLMs để sinh ra code đã sửa đổi từ các prompt được tạo.
+
+Đối với few-shot learning [18, 30, 31], trước tiên chúng tôi thiết kế template prompt như được trình bày trong Hình 3b. Tương tự như zero-shot learning, chúng tôi tuân theo các hướng dẫn từ OpenAI khi thiết kế template prompt. Template prompt bao gồm các thành phần sau: các ví dụ minh họa, một hướng dẫn và một đầu vào (tức là code được gửi để review và comment của reviewer).
+
+Trong few-shot learning, các ví dụ minh họa được yêu cầu để tạo một prompt. Do đó, chúng tôi chọn ba ví dụ minh họa, trong đó mỗi ví dụ bao gồm hai đầu vào (tức là code được gửi để review và comment của reviewer) và một đầu ra (tức là code đã sửa đổi), bằng cách sử dụng BM25 [41]. Chúng tôi sử dụng BM25 [41] vì các nghiên cứu trước đây [12, 42] cho thấy BM25 [41] vượt trội hơn các phương pháp chọn mẫu khác cho các nhiệm vụ software engineering. Trong nghiên cứu này, chúng tôi sử dụng BM25 [41] được cung cấp bởi gói gensim. Chúng tôi chọn ba ví dụ minh họa cho mỗi mẫu test vì Gao et al. [11] đã chỉ ra rằng GPT-3.5 sử dụng ba ví dụ minh họa đạt hiệu suất tương đương (tức là 90% của Exact Match cao nhất) khi so sánh với GPT-3.5 đạt hiệu suất cao nhất bằng cách sử dụng 16 hoặc nhiều ví dụ minh họa hơn.
+
+Sau đó, chúng tôi tạo các prompt từ template prompt trong Hình 3b; code được gửi để review và comment của reviewer trong tập test; và các ví dụ minh họa của code được gửi để review. Cuối cùng, chúng tôi sử dụng LLMs để sinh ra code đã sửa đổi từ các prompt.
+
+Đối với persona [13], chúng tôi bao gồm một persona trong các template prompt trong Hình 3 để hướng dẫn GPT-3.5 hành động như một nhà phát triển phần mềm. Chúng tôi làm như vậy để đảm bảo rằng code đã sửa đổi được sinh ra bởi GPT-3.5 trông giống như source code được viết bởi một nhà phát triển phần mềm.
+
+3.5. Các Thước đo Đánh giá
+Chúng tôi sử dụng các thước đo sau để đánh giá hiệu suất của các LLMs được nghiên cứu (tức là GPT-3.5 và Magicoder [21]) và các phương pháp tự động hóa code review (tức là CodeReviewer [5], TufanoT5 [6] và D-ACT [4]).
+
+1. Exact Match (EM) [4, 5, 6] là số lượng code đã sửa đổi được sinh ra giống với code đã sửa đổi thực tế trong tập dữ liệu test. Chúng tôi sử dụng thước đo này vì nó được sử dụng rộng rãi để đánh giá các phương pháp tự động hóa code review [1, 4, 6]. Để so sánh code đã sửa đổi được sinh ra với code đã sửa đổi thực tế, trước tiên chúng tôi tokenize cả code đã sửa đổi thành chuỗi các token. Sau đó, chúng tôi so sánh chuỗi token của code đã sửa đổi được sinh ra với chuỗi token của code đã sửa đổi thực tế. Giá trị EM cao cho thấy một mô hình có thể sinh ra code đã sửa đổi giống với code đã sửa đổi thực tế trong tập dữ liệu test.
+
+2. CodeBLEU [22] là phiên bản mở rộng của BLEU (tức là sự trùng lặp n-gram giữa bản dịch được sinh ra bởi một mô hình deep learning và bản dịch trong ground truth) [43] để đánh giá tự động code được sinh ra. Chúng tôi không đo BLEU như trong các nghiên cứu trước đây [5, 6] vì Ren et al. [22] phát hiện rằng thước đo này bỏ qua tính đúng đắn về cú pháp và ngữ nghĩa của code được sinh ra. Ngoài BLEU, CodeBLEU xem xét sự khớp n-gram có trọng số, thông tin cú pháp khớp (tức là abstract syntax tree: AST) và thông tin ngữ nghĩa khớp (tức là data flow: DF) khi tính toán sự tương đồng giữa code đã sửa đổi được sinh ra và code đã sửa đổi thực tế. Giá trị CodeBLEU cao cho thấy một mô hình có thể sinh ra code đã sửa đổi tương đồng về mặt cú pháp và ngữ nghĩa với code đã sửa đổi thực tế trong tập dữ liệu test.
+
+3.6. Thiết lập Siêu tham số
+Trong nghiên cứu này, chúng tôi sử dụng các thiết lập siêu tham số sau khi sử dụng GPT-3.5 để sinh ra code đã sửa đổi: temperature 0.0 (như được gợi ý bởi Guo et al. [14]), top p 1.0 (giá trị mặc định) và max length 512. Để fine-tune GPT-3.5, chúng tôi sử dụng các siêu tham số (ví dụ: số epoch và learning rate) được cung cấp tự động bởi OpenAI API.
+
+Đối với Magicoder [21], chúng tôi sử dụng siêu tham số tương tự như GPT-3.5 để sinh ra code đã sửa đổi. Để fine-tune Magicoder, chúng tôi sử dụng các siêu tham số sau cho DoRA [40]: attention dimension (r) là 16, alpha (α) là 8 và dropout là 0.1.
+
+Bảng 5: Chi tiết thống kê của GPT-3.5, Magicoder và các phương pháp tự động hóa code review hiện có.
+
+Mô hình | # tham số
+GPT-3.5 | 175 B
+Magicoder [21] | 6.7 B
+TufanoT5 [6] | 60.5 M
+CodeReviewer [5] | 222.8 M
+D-ACT [4] | 222.8 M
+
+4. Kết quả
+
+Trong phần này, chúng tôi trình bày kết quả của ba câu hỏi nghiên cứu sau.
+
+(RQ1) Phương pháp hiệu quả nhất để tận dụng LLMs cho tự động hóa code review là gì?
+
+Phương pháp: Để giải quyết RQ này, chúng tôi tận dụng fine-tuning và các kỹ thuật inference (tức là zero-shot learning, few-shot learning và persona) trên GPT-3.5 và Magicoder (Chi tiết của GPT-3.5 và Magicoder được trình bày trong Bảng 5). Sau đó, chúng tôi đo EM của kết quả thu được từ GPT-3.5, Magicoder và phương pháp của Guo et al. [14].
+
+Kết quả: Fine-tuning của GPT 3.5 với zero-shot learning giúp GPT-3.5 đạt được EM cao hơn 73.17% - 74.23% so với phương pháp của Guo et al. [14]. Bảng 4 cho thấy kết quả EM đạt được bởi GPT-3.5, Magicoder và phương pháp của Guo et al. [14]. Bảng cho thấy khi GPT-3.5 và Magicoder được fine-tuned, các mô hình như vậy đạt được EM cao hơn 73.17% - 74.23% và 26.00% - 28.53% so với phương pháp của Guo et al. [14], tương ứng.
+
+Kết quả cho thấy fine-tuning mô hình có thể giúp GPT-3.5 đạt được EM cao hơn khi so sánh với phương pháp của Guo et al. [14]. EM cao hơn có liên quan đến fine-tuning mô hình. Khi GPT-3.5 hoặc Magicoder được fine-tuned, các mô hình như vậy học mối quan hệ giữa các đầu vào (tức là code được gửi để review và comment của reviewer) và một đầu ra (tức là code đã sửa đổi) từ một số ví dụ trong tập huấn luyện. Ngược lại, phương pháp của Guo et al. [14] chỉ dựa vào hướng dẫn và đầu vào được cho để sinh ra code đã sửa đổi, mà GPT-3.5 chưa bao giờ học trong quá trình pre-training mô hình.
+
+(RQ2) Lợi ích của fine-tuning mô hình trên GPT-3.5 cho tự động hóa code review là gì?
+
+Phương pháp: Để giải quyết RQ này, chúng tôi fine-tune GPT-3.5 như được giải thích trong Phần 3. Sau đó, chúng tôi đo EM và CodeBLEU của kết quả thu được từ GPT-3.5 được fine-tuned và GPT-3.5 không được fine-tuned với zero-shot learning.
+
+Kết quả: Fine-tuning của GPT 3.5 với zero-shot learning giúp GPT-3.5 đạt được EM cao hơn 63.91% - 1,100% so với những mô hình không được fine-tuned. Bảng 4 cho thấy về mặt EM, fine-tuning của GPT 3.5 với zero-shot learning giúp GPT-3.5 đạt được hiệu suất cao hơn 63.91% - 1,100% so với những mô hình không được fine-tuned. Về mặt CodeBLEU, fine-tuning của GPT 3.5 với zero-shot learning giúp GPT-3.5 đạt được hiệu suất cao hơn 5.91% - 63.9% so với những mô hình không được fine-tuned.
+
+Kết quả cho thấy GPT-3.5 được fine-tuned đạt được EM và CodeBLEU cao hơn so với những mô hình không được fine-tuned. Trong quá trình fine-tuning mô hình, GPT-3.5 thích ứng với nhiệm vụ tự động hóa code review bằng cách học trực tiếp mối quan hệ giữa các đầu vào (tức là code được gửi để review và comment của reviewer)
+
+--- TRANG 8 ---
+[Tiếp tục với phần còn lại của bài báo, bao gồm các ví dụ code, kết quả thí nghiệm chi tiết, thảo luận, và kết luận...]
+
+[Phần này sẽ tiếp tục dịch phần còn lại của tài liệu, bao gồm:
+- Ví dụ về sự khác biệt giữa code được gửi để review và code đã sửa đổi
+- Kết quả RQ3 về chiến lược prompting hiệu quả nhất
+- Thảo luận về implications của findings
+- Phân tích chi phí và lợi ích
+- Threats to validity
+- Kết luận và tài liệu tham khảo]
+
+[Do giới hạn độ dài, tôi sẽ tiếp tục dịch phần còn lại nếu bạn yêu cầu]

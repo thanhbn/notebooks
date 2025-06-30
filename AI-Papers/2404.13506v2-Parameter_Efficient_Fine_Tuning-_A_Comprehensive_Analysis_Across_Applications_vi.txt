@@ -1,0 +1,350 @@
+# 2404.13506v2.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2404.13506v2.pdf
+# Kích thước file: 376226 bytes
+
+===============================================
+NỘI DUNG FILE PDF (DỊCH TIẾNG VIỆT)
+===============================================
+
+
+--- TRANG 1 ---
+Điều chỉnh Tham số Hiệu quả (Parameter Efficient Fine Tuning): Phân tích Toàn diện qua các Ứng dụng
+
+Charith Chandra Sai Balne1, Sreyoshi Bhaduri2*, Tamoghna Roy3† và Vinija Jain4 và Aman Chadha4,5*
+
+1Đại học Nam California
+2Amazon
+3Deepsig Inc.
+4Đại học Stanford
+5Amazon GenAI
+
+charithchandra23@gmail.com, sreyoshibhaduri@gmail.com,
+tamoghna.roy@gmail.com, hi@vinija.ai, hi@aman.ai
+
+Tóm tắt
+
+Sự phát triển của deep learning đã đánh dấu tiến bộ đáng kể trong các lĩnh vực như thị giác máy tính, xử lý ngôn ngữ tự nhiên và hình ảnh y tế, chủ yếu thông qua việc thích ứng các mô hình được huấn luyện trước cho các tác vụ cụ thể. Các phương pháp fine-tuning truyền thống, bao gồm việc điều chỉnh tất cả các tham số, gặp phải thách thức do nhu cầu tính toán và bộ nhớ cao. Điều này đã dẫn đến sự phát triển của các kỹ thuật Parameter Efficient Fine-Tuning (PEFT), cập nhật tham số một cách có chọn lọc để cân bằng hiệu quả tính toán với hiệu suất. Bài tổng quan này xem xét các phương pháp PEFT, cung cấp so sánh chi tiết về các chiến lược khác nhau, nêu bật các ứng dụng trong các lĩnh vực khác nhau, bao gồm tạo văn bản, hình ảnh y tế, mô hình hóa protein và tổng hợp giọng nói. Bằng cách đánh giá hiệu quả của các phương pháp PEFT trong việc giảm tải tính toán, tăng tốc độ huấn luyện và giảm sử dụng bộ nhớ, bài báo này góp phần làm cho deep learning trở nên dễ tiếp cận và thích ứng hơn, tạo điều kiện cho việc ứng dụng rộng rãi hơn và khuyến khích đổi mới trong tối ưu hóa mô hình. Cuối cùng, bài báo nhằm mục đích đóng góp những hiểu biết sâu sắc về bối cảnh phát triển của PEFT, hướng dẫn các nhà nghiên cứu và thực hành vượt qua những hạn chế của các phương pháp fine-tuning thông thường.
+
+1 Giới thiệu
+
+Deep learning đã cách mạng hóa lĩnh vực trí tuệ nhân tạo, cho phép những tiến bộ đáng kể trong nhiều ứng dụng khác nhau như các mô hình thị giác-ngôn ngữ quy mô lớn (VL) [Radford et al., 2021], [Jia et al., 2021], [Yao et al., 2021], [Alayrac et al., 2022], [Yuan et al., 2021], xử lý ngôn ngữ tự nhiên [Lu et al., 2022], [Yan et al., 2022], và nhận dạng giọng nói [Nassif et al., 2019], [Prabhavalkar et al., 2023]. Tuy nhiên, quá trình fine-tuning, bao gồm việc điều chỉnh *Công việc không liên quan đến vị trí tại Amazon. †Công việc không liên quan đến vị trí tại DeepSig Inc. trọng số mô hình để phù hợp với các tác vụ hoặc tập dữ liệu mới, có thể tốn kém về mặt tính toán và sử dụng bộ nhớ cao. Điều này đã dẫn đến sự quan tâm ngày càng tăng đối với các phương pháp PEFT có thể giảm chi phí tính toán và sử dụng bộ nhớ trong khi vẫn duy trì hiệu suất.
+
+Các phương pháp PEFT nhằm mục đích tạo ra sự cân bằng giữa độ chính xác và hiệu quả bằng cách cập nhật một cách có chọn lọc một tập con các tham số mô hình, tận dụng knowledge distillation, hoặc khai thác sự dư thừa cấu trúc. Những phương pháp này có tiềm năng giảm đáng kể chi phí tính toán và sử dụng bộ nhớ, làm cho deep learning trở nên dễ tiếp cận và có thể mở rộng hơn cho một loạt các ứng dụng và thiết bị rộng hơn. Bài báo tổng quan này nhằm mục đích cung cấp cái nhìn tổng quan toàn diện về những tiến bộ gần đây trong các phương pháp PEFT, thảo luận về các nguyên lý cơ bản, ứng dụng và sự đánh đổi của chúng. Chúng tôi khám phá các kỹ thuật tiên tiến, so sánh hiệu suất của chúng và nêu bật những thách thức và hướng nghiên cứu tương lai trong lĩnh vực mới nổi này. Bằng cách làm sáng tỏ các khía cạnh hiệu quả của fine-tuning, bài báo của chúng tôi mong muốn đóng góp vào việc dân chủ hóa deep learning và cho phép việc áp dụng rộng rãi trên các ứng dụng.
+
+2 Các Phương pháp Fine-tuning
+
+Các mô hình được huấn luyện trước hiện đại (như BERT [Devlin et al., 2018], GPT [Radford et al., 2019], T5 [Raffel et al., 2020], v.v.) bao gồm hàng tỷ, nếu không muốn nói là hàng nghìn tỷ (đặc biệt trong trường hợp kiến trúc mixture-of-experts), tham số. Các phương pháp fine-tuning truyền thống bao gồm việc điều chỉnh tất cả các tham số mô hình để phù hợp với tác vụ hoặc tập dữ liệu mới, điều này có thể tốn kém về mặt tính toán và sử dụng bộ nhớ cao. Phương pháp này thường được gọi là "full fine-tuning" [Lv et al., 2023]. Full fine-tuning đòi hỏi một lượng lớn dữ liệu và tài nguyên tính toán để hội tụ [Mohammadi và Chapon, 2020], điều này có thể là một hạn chế đối với các tác vụ có dữ liệu hạn chế hoặc ngân sách tính toán hạn chế. Ngoài ra, fine-tuning tất cả các tham số thường dẫn đến overfitting, đặc biệt khi tác vụ mới có dữ liệu hạn chế.
+
+Một hạn chế khác của các phương pháp fine-tuning truyền thống là chúng không tận dụng kiến thức thu được trong quá trình pre-training [Han et al., 2024]. Các mô hình được huấn luyện trước thường được huấn luyện trên các tập dữ liệu lớn và đã học được các đặc trưng tổng quát arXiv:2404.13506v2 [cs.LG] 23 Apr 2024
+
+--- TRANG 2 ---
+Parameter Efficient Fine Tuning
+
+Video Text Generation
+Medical Imaging
+Protein Models
+Code Review Generation
+Speech Synthesis
+
+CLIP, LLAMA-7B
+Bio Mistral, ResNet-50, Supervised ViT Base, ViT Base MAE, scBERT
+ESM2
+LLAMA-6.7B
+WavLm, Wav2Vec 2.0, Whisper Tiny
+
+AGAdapter + KaAdapter + PgAdapter
+Task-Specific Adapters (TSA), Scale-Shift Features (SSF), freezing layers tuning (FL) + BitFit (BF) + LoRA (LR)
+BitFit, LoRA
+Zero-init attention prefix tuning + LoRA
+adapter tuning, embedding prompt tuning, LoRA
+
+CLIP: 0.09%
+AP: 1.18%, FL: 16.66%, BF: 0.22%, LR: 0.81%
+BF: 0.22, LR: 0.81
+LR: < 1%
+LR: < 0.8%
+
+Applications | Backbone model used | PEFT methods used | Maximum % of parameters fine-tuned
+
+Commonsense and Arithmetic Reasoning | LLaMA-7B, LLaMA-13B | 10x-50x <: LR LoReFT
+
+Hình 1: Nghiên cứu so sánh PEFT trên các ứng dụng khác nhau.
+
+hữu ích trên nhiều tác vụ. Full fine-tuning loại bỏ kiến thức này và bắt đầu từ đầu (ví dụ: [Korbak et al., 2022]), có thể dẫn đến hiệu suất dưới tối ưu.
+
+Cuối cùng, các phương pháp fine-tuning truyền thống có thể dẫn đến catastrophic forgetting, nơi mô hình quên kiến thức đã học trong quá trình pre-training [Chen et al., 2020]. Điều này có thể dẫn đến hiệu suất kém trên cả tác vụ mới và tác vụ gốc, làm cho việc đạt được hiệu suất tốt trên nhiều tác vụ trở nên khó khăn. Những hạn chế này đã dẫn các nhà nghiên cứu khám phá các phương pháp PEFT có thể giải quyết những vấn đề này. PEFT cho phép chỉ fine-tune một số lượng nhỏ các tham số mô hình trong khi đóng băng hầu hết các tham số của LLM được huấn luyện trước. PEFT có những ưu điểm sau: (i) giảm chi phí tính toán (cần ít GPU và thời gian GPU hơn); (ii) thời gian huấn luyện nhanh hơn (hoàn thành huấn luyện nhanh hơn); (iii) yêu cầu phần cứng thấp hơn (hoạt động với GPU rẻ hơn với ít VRAM hơn); (iv) hiệu suất mô hình hóa tốt hơn (giảm overfitting); và (v) lưu trữ ít hơn (phần lớn trọng số có thể được chia sẻ trên các tác vụ khác nhau).
+
+3 Ứng dụng
+
+Trong phần này, chúng tôi khám phá parameter-efficient fine-tuning trên các ứng dụng khác nhau bao gồm lý luận thông thường và số học, tạo văn bản mô tả cho video, nâng cao độ chính xác hình ảnh y tế, tinh chỉnh các mô hình protein để có cái nhìn sâu sắc khoa học tốt hơn, tự động hóa code review và tạo code, và thúc đẩy công nghệ tổng hợp giọng nói. Phân tích so sánh các phương pháp PEFT được đưa ra trong Bảng 3.
+
+3.1 Lý luận Thông thường và Số học
+
+Representation Fine-Tuning (ReFT) là một kỹ thuật chỉ sửa đổi một tập con tối thiểu của trọng số mô hình để fine-tune các mô hình ngôn ngữ quy mô lớn thông qua [Wu et al., 2024]. Bài báo trình bày một biến thể cụ thể của ReFT, được gọi là Low-rank Linear Subspace ReFT (LoReFT), sửa đổi các biểu diễn nội bộ của mô hình và thể hiện hiệu quả tham số cao hơn nhiều, với cải thiện từ 10 đến 50 lần so với các phương pháp PEFT đương đại. Cơ chế nền tảng của khung LoReFT, được định nghĩa bởi công thức Distributed Interchange Intervention (DII) DII(b, s, R) = b + R^T(Rs - Rb). [Wu et al., 2024] sử dụng ma trận chiếu R để tinh chỉnh các trạng thái ẩn b, dẫn hướng chúng về phía trạng thái mục tiêu s. Phương pháp này được thiết kế để ảnh hưởng một cách tinh tế nhưng hiệu quả đến đầu ra của mô hình, hướng dẫn nó hướng tới những hành vi hoặc phản hồi mong muốn. Các đánh giá toàn diện được thực hiện bởi các tác giả trên các tác vụ lý luận và benchmark khác nhau như Alpaca-Eval v1.0 và GLUE cho thấy LoReFT không chỉ đạt được hiệu quả tốt hơn mà còn
+
+--- TRANG 3 ---
+hiệu suất vượt trội so với các phương pháp PEFT hàng đầu trên các tập dữ liệu khác nhau trong các danh mục tương ứng của chúng.
+
+LoReFT đạt được hiệu suất tiên tiến cho lý luận thông thường, vượt qua các phương pháp khác như Prefix Tuning [Bisk et al., 2019], các phương pháp dựa trên Adapter, và LoRA, đặc biệt trên các mô hình LLaMA-7B và LLaMA-13B. LoReFT cho thấy cải thiện độ chính xác, trung bình 80.2% và 83.3% trên các tập dữ liệu khác nhau BoolQ, PIQA, SIQA, HellaS., WinoG., ARC-e, ARC-c, OBQA, cho các mô hình Llama 7B và 13B tương ứng. Xem kết quả cụ thể từ bài báo trong Bảng 1.
+
+Bảng 1: Hiệu suất trung bình của lý luận thông thường trên các tập dữ liệu BoolQ, PIQA, SIQA, HellaS., WinoG., ARC-e, ARC-c, OBQA, cho các mô hình LLaMA-7B và LLaMA-13B. So sánh từ nghiên cứu được thực hiện bởi [Wu et al., 2024]
+
+Model | PEFT | Params (%) | Avg. Accuracy
+ChatGPT | — | — | 77.0%
+LLaMA-7B
+PrefT | 0.110% | 64.6%
+AdapterS | 0.990% | 70.8%
+AdapterP | 3.540% | 72.3%
+LoRA | 0.830% | 74.7%
+DoRA (half) | 0.430% | 77.5%
+DoRA | 0.840% | 78.1%
+LoReFT | 0.031% | 80.2%
+LLaMA-13B
+PrefT | 0.030% | 68.4%
+AdapterS | 0.800% | 79.5%
+AdapterP | 2.890% | 81.5%
+LoRA | 0.670% | 80.5%
+DoRA (half) | 0.350% | 80.8%
+DoRA | 0.680% | 81.5%
+LoReFT | 0.025% | 83.3%
+
+Hiệu suất của LoReFT trong các tác vụ lý luận số học [Hu et al., 2023] được thấy là thấp hơn so với LoRA và adapters, mặc dù nó vượt qua prefix-tuning. Phân tích cho thấy LoReFT có thể gặp nhiều thách thức hơn trong lý luận chuỗi suy nghĩ so với các tác vụ lý luận thông thường một bước. Khó khăn này được quy cho độ dài mở rộng của các thế hệ, làm giảm hiệu quả của can thiệp, và độ phức tạp vốn có của tác vụ. Ngoài ra, bài báo tiết lộ rằng LoReFT thể hiện hiệu suất được cải thiện với mô hình 13B so với mô hình 7B, gợi ý khả năng mở rộng của LoReFT với kích thước mô hình tăng. Xem kết quả cụ thể từ bài báo trong Bảng 2.
+
+3.2 Tạo Văn bản Video
+
+Hiểu biết video-văn bản liên quan đến cách video và từ ngữ liên quan với nhau. Lĩnh vực này tìm hiểu việc tìm video dựa trên mô tả văn bản và tạo chú thích cho video, điều này là chìa khóa để hiểu điều gì đang xảy ra trong video chỉ bằng cách nhìn vào những từ liên kết với nó. Fang et al. giới thiệu Alignment and Generation Adapter (AGAdapter) để nâng cao hiểu biết video-văn bản [Fang et al., 2023].
+
+Bảng 2: Hiệu suất lý luận số học của các mô hình LLaMA-7B và LLaMA-13B trên các tập dữ liệu AQuA, GSM8K, MAWPS, SVAMP. So sánh từ nghiên cứu được thực hiện bởi [Wu et al., 2024]
+
+Model | PEFT | Params (%) | AQuA | GSM8K | MAWPS | SVAMP | Avg.
+LLaMA-7B
+PrefT | 0.110% | 14.2 | 24.4 | 63.4 | 38.1 | 35.0
+AdapterS | 0.990% | 15.0 | 33.3 | 77.7 | 52.3 | 44.6
+AdapterP | 3.540% | 18.1 | 35.3 | 82.4 | 49.6 | 46.4
+LoRA | 0.830% | 18.9 | 37.5 | 79.0 | 52.1 | 46.9
+LoReFT | 0.031% | 21.4 | 26.0 | 76.2 | 46.8 | 42.6
+LLaMA-13B
+PrefT | 0.300% | 15.7 | 31.1 | 66.8 | 41.4 | 38.8
+AdapterS | 0.800% | 22.0 | 44.0 | 78.6 | 50.8 | 48.9
+AdapterP | 2.890% | 20.5 | 43.3 | 81.1 | 55.7 | 50.2
+LoRA | 0.670% | 18.5 | 47.5 | 83.6 | 54.6 | 51.1
+LoReFT | 0.025% | 23.6 | 38.1 | 82.4 | 54.2 | 49.6
+
+Điều này tích hợp một alignment adapter chia sẻ kiến thức với một mô hình ngôn ngữ lớn cho các tác vụ truy xuất video-văn bản và tạo chú thích video, đạt được hiệu suất tiên tiến trên các benchmark MSR-VTT và ActivityNet. Nghiên cứu của họ giới thiệu một phương pháp mới để hiểu video-văn bản bằng cách tích hợp mô hình CLIP được huấn luyện trước (CLIP-bigG/14) để mã hóa và mô hình LLaMA-7B cho xử lý ngôn ngữ, cùng với KaAdapter và PgAdapter để thích ứng hiệu quả. Các thành phần này hoạt động cùng nhau trong một tech stack mạnh mẽ tối ưu hóa sự căn chỉnh video và văn bản trên các tập dữ liệu khác nhau, bao gồm MSR-VTT và ActivityNet, được tùy chỉnh với độ dài video và chú thích được đặt theo yêu cầu cụ thể của tập dữ liệu. Kết quả số từ một nghiên cứu ablation trên tập dữ liệu MSR-VTT tiết lộ hiệu quả của AGAdapter, đặc biệt khi được tăng cường với LIcap, thể hiện những cải thiện đáng kể trong các chỉ số truy xuất video-văn bản và tạo chú thích video so với baseline CLIP-finetuned. Những kết quả này nhấn mạnh sự thành công của phương pháp trong việc mang lại những cải thiện hiệu suất đáng kể trong thời gian huấn luyện tối thiểu (0.12 đến 0.5 giờ), khẳng định tiềm năng của nó trong việc thúc đẩy các tác vụ hiểu video-văn bản với hiệu quả và hiệu suất cao.
+
+Tương tự, phương pháp KAdaptation, đạt được sự đánh đổi giữa độ chính xác và hiệu quả tham số trong vision transformer (ViT-B-224/32) thông qua CLIP pretraining [He et al., 2023]. Được đánh giá trên 20 tập dữ liệu từ benchmark ELEVATOR, phương pháp này đặc biệt xuất sắc bằng cách chỉ cập nhật 0.09 phần trăm tham số của mô hình, nhấn mạnh hiệu quả của nó. Kết quả này nhấn mạnh khả năng của phương pháp trong việc duy trì độ chính xác cao trong khi giảm đáng kể số lượng tham số có thể huấn luyện, thể hiện tiềm năng của nó cho việc thích ứng mô hình hiệu quả và hiệu suất.
+
+3.3 Hình ảnh Y tế
+
+Những tiến bộ trong công nghệ hình ảnh y tế đang dẫn đầu những thay đổi chuyển đổi qua các lĩnh vực khác nhau của y học hiện đại [Azizi et al., 2021], bao gồm cả chẩn đoán lâm sàng và nghiên cứu y sinh học. [Dutt et al., 2023] đánh giá các kỹ thuật PEFT cho phân tích hình ảnh y tế [Chambon et al., 2022], [Kirillov et al., 2023], tập trung vào các mạng dựa trên convolutional và transformer trên sáu tập dữ liệu. Nó đánh giá 16 phương pháp PEFT thông qua hơn 600 thí nghiệm, cho thấy tăng hiệu suất lên đến 22 phần trăm
+
+--- TRANG 4 ---
+Bảng 3: Phân tích so sánh các phương pháp PEFT phổ biến.
+
+Method | Parameter reduction (%) | Advantages | Disadvantages
+Full Fine-Tuning (ViT-B/16, BARD) [Liu et al., 2022] | 0 | Baseline hiệu suất | Dung lượng bộ nhớ cao (33B tham số)
+Adapter Modules (Tiny) [van der Marel et al., 2022] | 85 | Thiết kế linh hoạt, modular | Yêu cầu điều chỉnh siêu tham số
+Adapter Modules (Small) | 75 | Thiết kế linh hoạt, modular | Yêu cầu điều chỉnh siêu tham số
+LoRA [Zhou et al., 2021] | 90 | Hiệu quả bộ nhớ (3.3B tham số) | Kiểm soát hạn chế đối với các cập nhật
+LoReFT [Wu et al., 2024] | 70-90 | Hiệu quả bộ nhớ, có thể diễn giải | Hiệu quả phụ thuộc vào tác vụ và siêu tham số
+Prefix Tuning (Learned) [Luo et al., 2021] | 65 | Triển khai đơn giản | Có thể không nắm bắt được các đặc trưng video phức tạp
+Sparse Fine-Tuning (40% pruning) [Saied, 2016] | 60 | Hiệu quả bộ nhớ (13.2B tham số) | Yêu cầu lựa chọn cẩn thận các tham số
+Sparse Fine-Tuning (80% pruning) | 80 | Cực kỳ hiệu quả bộ nhớ (6.6B tham số) | Giảm độ chính xác đáng kể ở tỷ lệ pruning cao
+BitFit (8-bit) [Zaken et al., 2022] | 95 | Cực kỳ hiệu quả bộ nhớ (1.65B tham số) | Tăng hiệu suất hạn chế trong môi trường dữ liệu nhiều
+
+trong một số tình huống, đặc biệt trong các tác vụ tạo text-to-image y tế. Nghiên cứu chứng minh sự vượt trội của PEFT so với fine-tuning truyền thống trong các điều kiện nhất định, đặc biệt khi dữ liệu khan hiếm hoặc kích thước mô hình lớn. Nó nhấn mạnh hiệu quả của PEFT trong việc giảm chi phí tính toán trong khi duy trì hoặc cải thiện hiệu suất, làm cho nó trở thành một phương pháp có giá trị cho lĩnh vực y tế. [Liu et al., 2023] khám phá các phương pháp parameter-efficient fine-tuning cho chú thích loại tế bào trong dữ liệu scRNA-seq sử dụng scBERT [Choromanski et al., 2022]. Nó chứng minh rằng các phương pháp này có thể đạt được hiệu suất cao với số lượng tham số ít hơn đáng kể. Kết quả chính cho thấy các phương pháp như Adapter [Houlsby et al., 2019], BitFit và LoRA, mặc dù giảm các tham số có thể điều chỉnh BitFit chỉ sử dụng 0.22 phần trăm tham số của mô hình, vẫn duy trì hiệu suất gần với full fine-tuning, với LoRA và sự kết hợp của BitFit và LoRA nằm trong số các chiến lược hiệu quả nhất. Theo Thí nghiệm được thực hiện FT [vanilla fine-tuning] sử dụng 100 phần trăm tham số của mô hình, trong khi các phương pháp parameter-efficient sử dụng ít hơn đáng kể: AP[adapter] sử dụng 1.18 phần trăm, FL[freezing layers tuning] sử dụng 16.66 phần trăm, BF[BitFit] sử dụng 0.22 phần trăm, và LR[LoRA] sử dụng 0.81 phần trăm.
+
+Trả lời câu hỏi y sinh học được chỉ ra là cải thiện đáng kể độ chính xác chỉ với 0.152 phần trăm tham số baseline được fine-tuned [Wang et al., 2023]. Chiến lược được áp dụng bao gồm contrastive learning và self-consistency voting, được thử nghiệm trên các tập dữ liệu PubMedQA và BioASQ. Đáng chú ý, nó đạt được hiệu suất tương đương với GPT-4, vượt trội hơn các mô hình cụ thể của lĩnh vực mà không cần kiến thức bên ngoài. Các mô hình T5 nhấn mạnh việc điều chỉnh hiệu quả trong các môi trường hạn chế tài nguyên, cân bằng hiệu suất và chi phí tính toán.
+
+3.4 Mô hình Protein
+
+Các mô hình protein quy mô lớn đã biến đổi đáng kể lĩnh vực proteomics thông qua khả năng học từ khối lượng dữ liệu trình tự rộng lớn một cách tự động. Sau đó, các mô hình này được huấn luyện một chút về các tác vụ cụ thể để làm cho chúng thậm chí tốt hơn trong những gì chúng làm [Sledzieski et al., 2023] giới thiệu các phương pháp parameter-efficient fine-tuning cho các mô hình ngôn ngữ protein, tập trung vào các tác vụ như dự đoán tương tác protein-protein (PPI) và dự đoán đối xứng homooligomer. Nó cho thấy PEFT có thể đạt được hiệu suất tương đương hoặc vượt trội so với fine-tuning truyền thống với số lượng tham số ít hơn đáng kể. Đối với dự đoán PPI, các mô hình PEFT thậm chí còn vượt trội hơn các phương pháp truyền thống. Mặc dù giảm đáng kể các tham số có thể điều chỉnh (BitFit ở 0.22 phần trăm, Adapter ở 1.18 phần trăm, Low-Rank Adaptation ở 0.81 phần trăm, và Freezing Layers ở 16.66 phần trăm so với 100 phần trăm của mô hình đầy đủ), các phương pháp này duy trì hoặc gần như khớp với hiệu suất của fine-tuning truyền thống trên các tập dữ liệu khác nhau. Ví dụ, trên tập dữ liệu Zheng68k, độ chính xác và điểm F1 được căn chỉnh chặt chẽ qua các phương pháp, với Adapter và Low-Rank Adaptation cho thấy hiệu suất đặc biệt mạnh. Xu hướng tương tự được quan sát trong các tập dữ liệu Baron-human và Baron-mus, nơi các phương pháp parameter-efficient này đạt được độ chính xác cao và điểm F1, thể hiện khả năng của chúng trong việc cung cấp các giải pháp hiệu quả và có thể mở rộng cho chú thích loại tế bào trong khi giảm đáng kể tài nguyên tính toán.
+
+3.5 Code Review / Generation
+
+Kể từ khi Fagan [Fang et al., 2023] giới thiệu nó vào năm 1976, code review đã là chìa khóa trong việc tìm lỗi, cải thiện chất lượng và chia sẻ kiến thức trong phát triển phần mềm. Nhưng, tác vụ chủ yếu thủ công này có thể thực sự tích tụ công việc cho các nhà phát triển. Ngay cả với các phương pháp code review hiện đại ngày nay, tương đối mượt mà hơn các cách cũ, nó vẫn yêu cầu rất nhiều từ họ. [Lu et al., 2023] Nghiên cứu giới thiệu LLaMA-Reviewer, một khung tự động hóa các tác vụ code review bằng cách tận dụng các kỹ thuật PEFT trên mô hình LLaMA. Nó đạt được những hiểu biết số đáng chú ý qua các chỉ số khác nhau: Đối với Dự đoán Cần thiết Review trên tập dữ liệu CRer, nó đạt độ chính xác 60.99 phần trăm, độ nhạy 83.50 phần trăm, và điểm F1 70.49 phần trăm sử dụng Low-Rank Adaptation (LoRA). Trong Tạo Bình luận Code Review, LLaMA-Reviewer ghi điểm BLEU-4 5.70 trên tập dữ liệu CRer và 5.04 trên tập dữ liệu Tufano, thể hiện hiệu suất vượt trội so với các mô hình hiện tại như CodeReviewer và AUGER. Ngoài ra, đối với các tác vụ Code Refinement, nó đạt điểm BLEU-4
+
+--- TRANG 5 ---
+θ θ'
+θ' =
+θ' =
+θ' =
+
+Initial Model (φ)
+Pre-trained model (θ)
+
+Parameter Efficient Fine Tuning
+Addition
+Specification
+Reparameterization
+
+Frozen Parameters | Tunable Parameters
+
+Hình 2: Minh họa quy trình làm việc cho mô hình PEFT bắt đầu với một mô hình được huấn luyện trước (θ), được áp dụng các sửa đổi như additions, specifications, và reparameterizations, phân biệt hiệu quả giữa các tham số đóng băng và có thể điều chỉnh để nâng cao hiệu suất mô hình.
+
+82.27 trên tập dữ liệu CRer và 78.23 trên tập dữ liệu Tufano, chứng minh khả năng cạnh tranh hoặc vượt trội so với các mô hình truyền thống. Những kết quả này nêu bật hiệu quả của LLaMA-Reviewer trong tự động hóa code review, cung cấp những hướng hứa hẹn cho nghiên cứu kỹ thuật phần mềm tương lai với trọng tâm vào việc giảm thiểu nhu cầu điều chỉnh tham số rộng rãi trong khi duy trì hiệu suất cao.
+
+3.6 Mô hình 3D Pretrained
+
+Trong việc khám phá các phương pháp hiệu quả để fine-tune các mô hình 3D được huấn luyện trước, một khung mới có tên Point-PEFT [Tang et al., 2023] đã được đề xuất, chứng minh hiệu suất được nâng cao so với các phương pháp full fine-tuning truyền thống với dung lượng tính toán giảm đáng kể. Đáng chú ý, Point-PEFT đã vượt qua các benchmark full fine-tuning trên ModelNet40 và ScanObjectNN [Uy et al., 2019], đạt được mức độ chính xác 94.2% và 89.1% tương ứng, trong khi chỉ yêu cầu 5% tham số có thể huấn luyện so với 22.1M tham số trong thiết lập full fine-tuning. Những kết quả này nhấn mạnh hiệu quả và khả năng áp dụng chung của Point-PEFT trên các mô hình 3D được huấn luyện trước khác nhau, bao gồm PointBERT [Yu et al., 2022] và Point-M2AE [Zhang et al., 2022], nêu bật tiềm năng của nó cho việc áp dụng rộng rãi hơn trong lĩnh vực xử lý point cloud 3D [Tang et al., 2024]
+
+3.7 Tổng hợp Giọng nói
+
+Trong [Feng và Narayanan, 2023], các tác giả đã đánh giá kỹ lưỡng hiệu quả của các phương pháp PEFT, cụ thể là adapter tuning, embedding prompt tuning, và Low-rank approximation (LoRA), trên bốn tập dữ liệu SER [Chen và Rudnicky, 2023], [Feng et al., 2023] nổi bật [Houlsby et al., 2019]. Các phương pháp Fine-tuning so sánh cung cấp kết quả tốt hơn các phương pháp trước đó, chỉ phụ thuộc vào MLP (Multilayer Perceptron), CNN (Convolutional Neural Networks), RNN (Recurrent Neural Networks), Mixed data Neural Networks [Sanjeev et al., 2021] bằng cách trích xuất các hệ số cepstral tần số mel bậc cao hơn [Wanli và Guoxin, 2013]. Kết quả tiết lộ sự vượt trội đáng chú ý của LoRA trong việc nâng cao hiệu suất fine-tuning của các mô hình giọng nói được huấn luyện trước cho các tác vụ nhận dạng cảm xúc bằng cách sử dụng các mục tiêu học generative [?], discriminative [Baevski et al., 2020], [Schneider et al., 2019] và multi-task learning. Cụ thể, LoRA vượt trội hơn các phương pháp PEFT khác, đạt được Unweighted Average Recall (UAR) trung bình cao nhất là 67.3% trên mô hình WavLM Base+, chứng minh hiệu quả của nó trong việc thích ứng các mô hình được huấn luyện trước với các tác vụ SER một cách hiệu quả. Ngược lại, adapter tuning truyền thống và các phương pháp embedding prompt cho kết quả hiệu suất thấp hơn, với adapter tuning đạt UAR trung bình 63.07% trên mô hình Wav2Vec 2.0 Base [Radford et al., 2022] và embedding prompt tuning cho thấy ít tác động đến hiệu suất trên các mô hình khác nhau. Hơn nữa, nghiên cứu nhấn mạnh yêu cầu tham số bổ sung tối thiểu được giới thiệu bởi LoRA, nhấn mạnh tính thực tế của nó cho các ứng dụng thế giới thực. Ngoài ra, nghiên cứu nhấn mạnh tầm quan trọng của công bằng trong các hệ thống SER, với LoRA cho thấy kết quả hứa hẹn trong việc cải thiện điểm công bằng trên nhiều tập dữ liệu. Những phát hiện này không chỉ chứng minh tiềm năng của LoRA trong việc đạt được hiệu suất cao và công bằng trong các tác vụ SER mà còn mở đường cho các hướng nghiên cứu tương lai tập trung vào tối ưu hóa các phương pháp PEFT cho nhận dạng cảm xúc giọng nói. Một nghiên cứu tương tự và sáng tạo trong [Liu et al., 2024] nêu về nhận dạng whisper trẻ em, trong khi [Anjali et al., 2022] sử dụng một số kỹ thuật tương tự của transfer learning để hiểu hành vi trẻ em sử dụng giọng nói và âm thanh khóc của chúng.
+
+--- TRANG 6 ---
+4 Các Cân nhắc cho Đánh giá qua các Phương pháp PEFT
+
+PEFT đã nổi lên như một phương pháp hấp dẫn để tùy chỉnh các mô hình được huấn luyện trước lớn cho các tác vụ cụ thể trong khi giảm thiểu nhu cầu tính toán. Đánh giá của chúng tôi thấy rằng việc tận dụng PEFT qua các ứng dụng đa dạng đặt ra một số thách thức chính cần xem xét cẩn thận, khi các thực hành viên xem xét áp dụng PEFT cho các ứng dụng của họ:
+
+A) Cân bằng Hiệu quả và Hiệu suất: Một thách thức cốt lõi nằm trong việc tạo ra sự cân bằng tinh tế giữa việc giảm các tham số có thể huấn luyện và duy trì hiệu suất mạnh mẽ [Naveed et al., 2024]. Fine-tuning quá ít tham số có thể cản trở khả năng thích ứng hiệu quả của mô hình với tác vụ mục tiêu, trong khi fine-tuning quá mức có thể phủ nhận những lợi ích tính toán của PEFT [Dutt et al., 2023].
+
+B) Khan hiếm Dữ liệu và Khả năng Tổng quát: Sự thành công của PEFT có thể phụ thuộc vào chất lượng và số lượng dữ liệu có sẵn để fine-tuning. Trong các lĩnh vực với dữ liệu hạn chế hoặc nhiễu, PEFT có thể gặp khó khăn để đạt được cùng mức độ chính xác có thể đạt được với full fine-tuning trên một tập dữ liệu lớn hơn [Dutt et al., 2024]. Việc lựa chọn cẩn thận các kỹ thuật tăng cường dữ liệu và chiến lược transfer learning [Anjali et al., 2022] có thể quan trọng để giảm thiểu thách thức này.
+
+C) Đánh đổi Overfitting và Tổng quát: Có một rủi ro vốn có của overfitting mô hình với dữ liệu huấn luyện [Chavan et al., 2024], đặc biệt khi sử dụng một tập hạn chế các tham số để fine-tuning. Điều này có thể dẫn đến một tình huống trong đó mô hình hoạt động tốt trên dữ liệu huấn luyện nhưng thể hiện hiệu suất kém trên các ví dụ chưa thấy. Để giải quyết điều này, việc sử dụng các kỹ thuật regularization phù hợp và điều chỉnh siêu tham số tỉ mỉ trở nên cần thiết để thúc đẩy tổng quát tốt hơn cho dữ liệu mới [Kirk et al., 2024].
+
+D) Ràng buộc Dung lượng của các Module Tăng cường: Các phương pháp PEFT nhất định giới thiệu các module bổ sung với số lượng tham số giảm trên đầu mô hình được huấn luyện trước. Thách thức ở đây nằm trong việc đảm bảo rằng các module nhỏ hơn này có đủ dung lượng để học các phức tạp của tác vụ cụ thể một cách hiệu quả, đặc biệt khi có những ràng buộc nghiêm ngặt về số lượng tham số cho phép. Nghiên cứu đang diễn ra tập trung vào việc phát triển các phương pháp để nâng cao dung lượng của các module này mà không làm tổn hại đến hiệu quả tham số.
+
+5 Thảo luận
+
+Nghiên cứu này cung cấp một đánh giá toàn diện về tài liệu liên quan đến hiệu quả của các kỹ thuật PEFT khác nhau qua nhiều ứng dụng.
+
+Những điều này bao gồm Tạo Văn bản Video sử dụng các adaptor riêng biệt cho các tác vụ downstream, Hình ảnh Y sinh học được đặc trưng bởi tính bảo mật dữ liệu nghiêm ngặt và chi phí chú thích đáng kể, các mô hình Protein đòi hỏi các tham số rộng rãi để fine-tuning toàn diện, và Tạo Code Review. Phân tích của chúng tôi tiết lộ rằng Low-Rank Adaptation (LoRA) fine-tune một số lượng tối thiểu các tham số, do đó cho phép hiệu chuẩn lại trọng số huấn luyện trên một GPU duy nhất. Ngược lại, Differentiable Rank Adaptation (DoRA) chứng minh hiệu suất vượt trội, vượt trội hơn LoRA.
+
+Chúng tôi cũng đề xuất một số hướng tiềm năng cho nghiên cứu tương lai để tiếp tục thúc đẩy lĩnh vực PEFT, đặc biệt tập trung vào đánh giá các ứng dụng cụ thể:
+
+A) Kỹ thuật PEFT Không phụ thuộc Tác vụ:
+Nghiên cứu tương lai nên tập trung vào việc phát triển các phương pháp PEFT có thể áp dụng phổ quát qua các tác vụ downstream khác nhau. Điều này sẽ giảm nhu cầu cho các adaptor chuyên biệt trong mỗi lĩnh vực ứng dụng, nâng cao tính linh hoạt và dễ dàng triển khai PEFT. Khám phá meta-learning hoặc các phương pháp tham số có thể chuyển nhượng có thể đạt được hiệu quả không phụ thuộc tác vụ.
+
+B) PEFT Bảo vệ Quyền riêng tư cho Dữ liệu Nhạy cảm:
+Trong các lĩnh vực như hình ảnh y sinh học nơi quyền riêng tư dữ liệu là quan trọng, việc thích ứng PEFT để hoạt động trên các tập dữ liệu nhạy cảm mà không vi phạm tính bảo mật của bệnh nhân là cần thiết. Khám phá federated learning hoặc các kỹ thuật mã hóa homomorphic có thể cho phép PEFT bảo vệ quyền riêng tư.
+
+C) Dữ liệu Được gắn nhãn Hạn chế và PEFT:
+Với sự khan hiếm thường xuyên của dữ liệu được gắn nhãn trong các lĩnh vực như hình ảnh y sinh học, việc nâng cao tính mạnh mẽ của PEFT trong những bối cảnh này là quan trọng. Các điều tra tương lai có thể xem xét các kỹ thuật active learning hoặc curriculum learning để cải thiện fine-tuning trong điều kiện dữ liệu hạn chế.
+
+D) Khả năng Diễn giải của các Mô hình Protein được Fine-tuned:
+Trong khi PEFT giảm số lượng tham số trong các mô hình protein, tác động của nó đến khả năng diễn giải mô hình vẫn không chắc chắn. Nghiên cứu tương lai nên xem xét các phương pháp để làm sáng tỏ các quá trình ra quyết định và cơ chế trong các mô hình được fine-tuned này.
+
+Bằng cách giải quyết những hướng nghiên cứu tương lai này, chúng ta có thể khai thác đầy đủ khả năng của PEFT, đảm bảo sự phát triển tiến bộ của nó cho việc fine-tuning hiệu quả và hiệu suất của các mô hình lớn qua các ứng dụng đa dạng.
+
+Tài liệu tham khảo
+
+[Alayrac et al., 2022] Jean-Baptiste Alayrac, Jeff Donahue, Pauline Luc, Antoine Miech, Iain Barr, Yana Hasson, Karel Lenc, Arthur Mensch, Katie Millican, Malcolm Reynolds, Roman Ring, Eliza Rutherford, Serkan Cabi, Tengda Han, Zhitao Gong, Sina Samangooei, Marianne Monteiro, Jacob Menick, Sebastian Borgeaud, Andrew Brock, Aida Nematzadeh, Sahand Sharifzadeh, Mikolaj Binkowski, Ricardo Barreira, Oriol Vinyals, Andrew Zisserman, and Karen Simonyan. Flamingo: a visual language model for few-shot learning, 2022.
+
+[Anjali et al., 2022] Golla Anjali, Santosh Sanjeev, Akuraju Mounika, Gangireddy Suhas, G. Pradeep Reddy, and Yarlagadda Kshiraja. Infant cry classification using transfer learning. In TENCON 2022 - 2022 IEEE Region 10 Conference (TENCON), pages 1–7, 2022.
+
+[Azizi et al., 2021] Shekoofeh Azizi, Basil Mustafa, Fiona Ryan, Zachary Beaver, Jan Freyberg, Jonathan Deaton, Aaron Loh, Alan Karthikesalingam, Simon Kornblith, Ting Chen, Vivek Natarajan, and Mohammad Norouzi. Big self-supervised models advance medical image classification, 2021.
+
+[Baevski et al., 2020] Alexei Baevski, Henry Zhou, Abdelrahman Mohamed, and Michael Auli. wav2vec 2.0: A
+
+--- TRANG 7 ---
+framework for self-supervised learning of speech representations, 2020.
+
+[Bisk et al., 2019] Yonatan Bisk, Rowan Zellers, Ronan Le Bras, Jianfeng Gao, and Yejin Choi. Piqa: Reasoning about physical commonsense in natural language, 2019.
+
+[Chambon et al., 2022] Pierre Chambon, Christian Bluethgen, Jean-Benoit Delbrouck, Rogier Van der Sluijs, Małgorzata Połacin, Juan Manuel Zambrano Chaves, Tanishq Mathew Abraham, Shivanshu Purohit, Curtis P. Langlotz, and Akshay Chaudhari. Roentgen: Vision-language foundation model for chest x-ray generation, 2022.
+
+[Chavan et al., 2024] Arnav Chavan, Raghav Magazine, Shubham Kushwaha, Mérouane Debbah, and Deepak Gupta. Faster and lighter llms: A survey on current challenges and way forward, 2024.
+
+[Chen and Rudnicky, 2023] Li-Wei Chen and Alexander Rudnicky. Exploring wav2vec 2.0 fine-tuning for improved speech emotion recognition, 2023.
+
+[Chen et al., 2020] Sanyuan Chen, Yutai Hou, Yiming Cui, Wanxiang Che, Ting Liu, and Xiangzhan Yu. Recall and learn: Fine-tuning deep pretrained language models with less forgetting. arXiv preprint arXiv:2004.12651, 2020.
+
+[Choromanski et al., 2022] Krzysztof Choromanski, Valerii Likhosherstov, David Dohan, Xingyou Song, Andreea Gane, Tamas Sarlos, Peter Hawkins, Jared Davis, Afroz Mohiuddin, Lukasz Kaiser, David Belanger, Lucy Colwell, and Adrian Weller. Rethinking attention with performers, 2022.
+
+[Devlin et al., 2018] Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. Bert: Pre-training of deep bidirectional transformers for language understanding. arXiv preprint arXiv:1810.04805, 2018.
+
+[Dutt et al., 2023] Raman Dutt, Linus Ericsson, Pedro Sanchez, Sotirios A. Tsaftaris, and Timothy Hospedales. Parameter-efficient fine-tuning for medical image analysis: The missed opportunity, 2023.
+
+[Dutt et al., 2024] Raman Dutt, Ondrej Bohdal, Sotirios A. Tsaftaris, and Timothy Hospedales. Fairtune: Optimizing parameter efficient fine tuning for fairness in medical image analysis, 2024.
+
+[Fang et al., 2023] Han Fang, Zhifei Yang, Yuhan Wei, Xianghao Zang, Chao Ban, Zerun Feng, Zhongjiang He, Yongxiang Li, and Hao Sun. Alignment and generation adapter for efficient video-text understanding. In Proceedings of the IEEE/CVF International Conference on Computer Vision, pages 2791–2797, 2023.
+
+[Feng and Narayanan, 2023] Tiantian Feng and Shrikanth Narayanan. Peft-ser: On the use of parameter efficient transfer learning approaches for speech emotion recognition using pre-trained speech models. In 2023 11th International Conference on Affective Computing and Intelligent Interaction (ACII). IEEE, September 2023.
+
+[Feng et al., 2023] Tiantian Feng, Rajat Hebbar, and Shrikanth Narayanan. Trustser: On the trustworthiness of fine-tuning pre-trained speech embeddings for speech emotion recognition, 2023.
+
+[Han et al., 2024] Zeyu Han, Chao Gao, Jinyang Liu, Sai Qian Zhang, et al. Parameter-efficient fine-tuning for large models: A comprehensive survey. arXiv preprint arXiv:2403.14608, 2024.
+
+[He et al., 2023] Xuehai He, Chunyuan Li, Pengchuan Zhang, Jianwei Yang, and Xin Eric Wang. Parameter-efficient model adaptation for vision transformers, 2023.
+
+[Houlsby et al., 2019] Neil Houlsby, Andrei Giurgiu, Stanislaw Jastrzebski, Bruna Morrone, Quentin de Laroussilhe, Andrea Gesmundo, Mona Attariyan, and Sylvain Gelly. Parameter-efficient transfer learning for nlp, 2019.
+
+[Hu et al., 2023] Zhiqiang Hu, Lei Wang, Yihuai Lan, Wanyu Xu, Ee-Peng Lim, Lidong Bing, Xing Xu, Soujanya Poria, and Roy Lee. LLM-adapters: An adapter family for parameter-efficient fine-tuning of large language models. In Houda Bouamor, Juan Pino, and Kalika Bali, editors, Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing, pages 5254–5276, Singapore, December 2023. Association for Computational Linguistics.
+
+[Jia et al., 2021] Chao Jia, Yinfei Yang, Ye Xia, Yi-Ting Chen, Zarana Parekh, Hieu Pham, Quoc V. Le, Yunhsuan Sung, Zhen Li, and Tom Duerig. Scaling up visual and vision-language representation learning with noisy text supervision, 2021.
+
+[Kirillov et al., 2023] Alexander Kirillov, Eric Mintun, Nikhila Ravi, Hanzi Mao, Chloe Rolland, Laura Gustafson, Tete Xiao, Spencer Whitehead, Alexander C. Berg, Wan-Yen Lo, Piotr Dollár, and Ross Girshick. Segment anything, 2023.
+
+[Kirk et al., 2024] Robert Kirk, Ishita Mediratta, Christoforos Nalmpantis, Jelena Luketina, Eric Hambro, Edward Grefenstette, and Roberta Raileanu. Understanding the effects of RLHF on LLM generalisation and diversity. In The Twelfth International Conference on Learning Representations, 2024.
+
+[Korbak et al., 2022] Tomasz Korbak, Hady Elsahar, German Kruszewski, and Marc Dymetman. Controlling conditional language models without catastrophic forgetting. In International Conference on Machine Learning, pages 11499–11528. PMLR, 2022.
+
+[Liu et al., 2022] Siqi Liu, Marc Lanctot, Luke Marris, and Nicolas Heess. Simplex neural population learning: Any-mixture bayes-optimality in symmetric zero-sum games, 2022.
+
+[Liu et al., 2023] Yuhang Liu, Tianhao Li, Zixuan Wang, Guiquan Zhu, Yongqing Zhang, and Quan Zou. Exploring parameter-efficient fine-tuning of a large-scale pre-trained model for scrna-seq cell type annotation. In 2023 IEEE International Conference on Bioinformatics and Biomedicine (BIBM), pages 580–585, 2023.
+
+[Liu et al., 2024] Wei Liu, Ying Qin, Zhiyuan Peng, and Tan Lee. Sparsely shared lora on whisper for child speech recognition, 2024.
+
+--- TRANG 8 ---
+[Lu et al., 2022] Yujie Lu, Wanrong Zhu, Xin Eric Wang, Miguel Eckstein, and William Yang Wang. Imagination-augmented natural language understanding, 2022.
+
+[Lu et al., 2023] Junyi Lu, Lei Yu, Xiaojia Li, Li Yang, and Chun Zuo. Llama-reviewer: Advancing code review automation with large language models through parameter-efficient fine-tuning, 2023.
+
+[Luo et al., 2021] Huixiang Luo, Hao Cheng, Fanxu Meng, Yuting Gao, Ke Li, Mengdan Zhang, and Xing Sun. An empirical study and analysis on open-set semi-supervised learning, 2021.
+
+[Lv et al., 2023] Kai Lv, Yuqing Yang, Tengxiao Liu, Qinghui Gao, Qipeng Guo, and Xipeng Qiu. Full parameter fine-tuning for large language models with limited resources, 2023.
+
+[Mohammadi and Chapon, 2020] Samin Mohammadi and Mathieu Chapon. Investigating the performance of fine-tuned text classification models based-on bert. In 2020 IEEE 22nd International Conference on High Performance Computing and Communications; IEEE 18th International Conference on Smart City; IEEE 6th International Conference on Data Science and Systems (HPCC/SmartCity/DSS), pages 1252–1257, 2020.
+
+[Nassif et al., 2019] Ali Bou Nassif, Ismail Shahin, Imtinan Attili, Mohammad Azzeh, and Khaled Shaalan. Speech recognition using deep neural networks: A systematic review. IEEE access, 7:19143–19165, 2019.
+
+[Naveed et al., 2024] Humza Naveed, Asad Ullah Khan, Shi Qiu, Muhammad Saqib, Saeed Anwar, Muhammad Usman, Naveed Akhtar, Nick Barnes, and Ajmal Mian. A comprehensive overview of large language models, 2024.
+
+[Prabhavalkar et al., 2023] Rohit Prabhavalkar, Takaaki Hori, Tara N Sainath, Ralf Schlüter, and Shinji Watanabe. End-to-end speech recognition: A survey. IEEE/ACM Transactions on Audio, Speech, and Language Processing, 2023.
+
+[Radford et al., 2019] Alec Radford, Jeffrey Wu, Rewon Child, David Luan, Dario Amodei, Ilya Sutskever, et al. Language models are unsupervised multitask learners. OpenAI blog, 1(8):9, 2019.
+
+[Radford et al., 2021] Alec Radford, Jong Wook Kim, Chris Hallacy, Aditya Ramesh, Gabriel Goh, Sandhini Agarwal, Girish Sastry, Amanda Askell, Pamela Mishkin, Jack Clark, Gretchen Krueger, and Ilya Sutskever. Learning transferable visual models from natural language supervision, 2021.
+
+[Radford et al., 2022] Alec Radford, Jong Wook Kim, Tao Xu, Greg Brockman, Christine McLeavey, and Ilya Sutskever. Robust speech recognition via large-scale weak supervision, 2022.
+
+[Raffel et al., 2020] Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang, Michael Matena, Yanqi Zhou, Wei Li, and Peter J Liu. Exploring the limits of transfer learning with a unified text-to-text transformer. Journal of machine learning research, 21(140):1–67, 2020.
+
+[Saied, 2016] Amin Saied. On the fi-module structure of hi(γn,s), 2016.
+
+[Sanjeev et al., 2021] Santosh Sanjeev, Charith Chandra Sai Balne, Tudi Jayadeep Reddy, and G.Pradeep Reddy. Deep learning-based mixed data approach for covid-19 detection. In 2021 IEEE 18th India Council International Conference (INDICON), pages 1–6, 2021.
+
+[Schneider et al., 2019] Steffen Schneider, Alexei Baevski, Ronan Collobert, and Michael Auli. wav2vec: Unsupervised pre-training for speech recognition, 2019.
+
+[Sledzieski et al., 2023] Samuel Sledzieski, Meghana Kshirsagar, Minkyung Baek, Bonnie Berger, Rahul Dodhia, and Juan Lavista Ferres. Democratizing protein language models with parameter-efficient fine-tuning. bioRxiv, 2023.
+
+[Tang et al., 2023] Yiwen Tang, Ray Zhang, Zoey Guo, Xianzheng Ma, Dong Wang, Zhigang Wang, Bin Zhao, and Xuelong Li. Point-peft: Parameter-efficient fine-tuning for 3d pre-trained models, 2023.
+
+[Tang et al., 2024] Yiwen Tang, Ray Zhang, Zoey Guo, Dong Wang, Zhigang Wang, Bin Zhao, and Xuelong Li. Point-peft: Parameter-efficient fine-tuning for 3d pre-trained models, 2024.
+
+[Uy et al., 2019] Mikaela Angelina Uy, Quang-Hieu Pham, Binh-Son Hua, Duc Thanh Nguyen, and Sai-Kit Yeung. Revisiting point cloud classification: A new benchmark dataset and classification model on real-world data, 2019.
+
+[van der Marel et al., 2022] Nienke van der Marel, Jonathan P. Williams, Giovanni Picogna, Sierk van Terwisga, Stefano Facchini, Carlo F. Manara, Apostolos Zormpas, Megan Ansdell, and . High-resolution alma observations of transition disk candidates in lupus, 2022.
+
+[Wang et al., 2023] Binrui Wang, Yongping Du, Xingnan Jin, Rui Yan, and Qi Zhang. Low-resource efficient multi-stage tuning strategy for biomedical question answering task. In 2023 IEEE International Conference on Bioinformatics and Biomedicine (BIBM), pages 2281–2284, 2023.
+
+[Wanli and Guoxin, 2013] Zhang Wanli and Li Guoxin. The research of feature extraction based on mfcc for speaker recognition. In Proceedings of 2013 3rd International Conference on Computer Science and Network Technology, pages 1074–1077, 2013.
+
+[Wu et al., 2024] Zhengxuan Wu, Aryaman Arora, Zheng Wang, Atticus Geiger, Dan Jurafsky, Christopher D. Manning, and Christopher Potts. Reft: Representation finetuning for language models, 2024.
+
+[Yan et al., 2022] An Yan, Jiacheng Li, Wanrong Zhu, Yujie Lu, William Yang Wang, and Julian McAuley. Clip also understands text: Prompting clip for phrase understanding, 2022.
+
+[Yao et al., 2021] Lewei Yao, Runhui Huang, Lu Hou, Guansong Lu, Minzhe Niu, Hang Xu, Xiaodan Liang, Zhenguo Li, Xin Jiang, and Chunjing Xu. Filip: Fine-grained interactive language-image pre-training, 2021.
+
+--- TRANG 9 ---
+[Yu et al., 2022] Xumin Yu, Lulu Tang, Yongming Rao, Tiejun Huang, Jie Zhou, and Jiwen Lu. Point-bert: Pre-training 3d point cloud transformers with masked point modeling, 2022.
+
+[Yuan et al., 2021] Lu Yuan, Dongdong Chen, Yi-Ling Chen, Noel Codella, Xiyang Dai, Jianfeng Gao, Houdong Hu, Xuedong Huang, Boxin Li, Chunyuan Li, Ce Liu, Mengchen Liu, Zicheng Liu, Yumao Lu, Yu Shi, Lijuan Wang, Jianfeng Wang, Bin Xiao, Zhen Xiao, Jianwei Yang, Michael Zeng, Luowei Zhou, and Pengchuan Zhang. Florence: A new foundation model for computer vision, 2021.
+
+[Zaken et al., 2022] Elad Ben Zaken, Shauli Ravfogel, and Yoav Goldberg. Bitfit: Simple parameter-efficient fine-tuning for transformer-based masked language-models, 2022.
+
+[Zhang et al., 2022] Renrui Zhang, Ziyu Guo, Rongyao Fang, Bin Zhao, Dong Wang, Yu Qiao, Hongsheng Li, and Peng Gao. Point-m2ae: Multi-scale masked autoencoders for hierarchical point cloud pre-training, 2022.
+
+[Zhou et al., 2021] Youjia Zhou, Archit Rathore, Emilie Purvine, and Bei Wang. Topological simplifications of hypergraphs, 2021.

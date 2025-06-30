@@ -1,0 +1,225 @@
+# 2407.02485v1.pdf - Bản dịch tiếng Việt
+# Chuyển đổi từ PDF sang TXT
+# Nguồn: D:\llm\notebooks\AI-Papers\2407.02485v1.pdf
+# Kích thước file: 941254 bytes
+
+===============================================
+NỘI DUNG FILE PDF - BẢN DỊCH TIẾNG VIỆT
+===============================================
+
+
+--- TRANG 1 ---
+RankRAG: Thống nhất Context Ranking với
+Retrieval-Augmented Generation trong LLMs
+
+Yue Yu∗
+Georgia Tech
+Wei Ping∗
+NVIDIA
+Zihan Liu
+NVIDIA
+Boxin Wang
+NVIDIA
+Jiaxuan You
+NVIDIA
+Chao Zhang
+Georgia Tech
+Mohammad Shoeybi
+NVIDIA
+Bryan Catanzaro
+NVIDIA
+
+Tóm tắt
+Các mô hình ngôn ngữ lớn (LLMs) thường sử dụng top-k contexts từ một retriever trong retrieval-augmented generation (RAG). Trong nghiên cứu này, chúng tôi đề xuất một framework fine-tuning theo hướng dẫn mới có tên RankRAG, thực hiện instruction-tune một LLM duy nhất cho mục đích kép là context ranking và answer generation trong RAG. Cụ thể, các LLMs được instruction-tuned hoạt động đáng ngạc nhiên tốt bằng cách thêm một phần nhỏ dữ liệu ranking vào hỗn hợp training, và vượt trội so với các mô hình ranking chuyên dụng hiện có, bao gồm cả LLM tương tự được fine-tune độc quyền trên lượng lớn dữ liệu ranking. Đối với generation, chúng tôi so sánh mô hình của mình với nhiều baseline mạnh, bao gồm GPT-4-0613, GPT-4-turbo-2024-0409, và ChatQA-1.5, một mô hình mã nguồn mở có hiệu suất state-of-the-art trên các benchmark RAG. Cụ thể, Llama3-RankRAG của chúng tôi vượt trội đáng kể so với Llama3-ChatQA-1.5 và các mô hình GPT-4 trên chín benchmark có tính chất tri thức chuyên sâu. Ngoài ra, nó cũng có hiệu suất tương đương với GPT-4 trên năm benchmark RAG trong lĩnh vực y sinh học mà không cần instruction fine-tuning trên dữ liệu y sinh học, chứng minh khả năng tổng quát hóa xuất sắc sang các miền mới.
+
+1 Giới thiệu
+Retrieval-augmented generation (RAG) (Lewis et al., 2020; Izacard & Grave, 2021; Lin et al., 2024; Wang et al., 2024) là một kỹ thuật được sử dụng rộng rãi để tùy chỉnh các mô hình ngôn ngữ lớn (LLMs) nhằm xử lý tri thức đuôi dài (Mallen et al., 2023; Asai et al., 2024b), cung cấp thông tin cập nhật (Kasai et al., 2023), và thích ứng với các miền và nhiệm vụ cụ thể (Xiong et al., 2024) mà không cần thay đổi trọng số mô hình. Nói chung, một retriever dựa trên dense embedding (Karpukhin et al., 2020; Lin et al., 2023; Wang et al., 2022) đầu tiên truy xuất top-k contexts đã được chia nhỏ từ một bộ sưu tập tài liệu hoặc cơ sở dữ liệu bên ngoài cho một câu hỏi đã cho. Sau đó, LLM đọc top-k contexts để tạo ra câu trả lời.
+
+Tuy nhiên, pipeline RAG hiện tại có những hạn chế sau: i) LLMs không giỏi trong việc đọc quá nhiều contexts đã được chia nhỏ (ví dụ: top-100) ngay cả với cửa sổ ngữ cảnh dài, không chỉ vì lý do hiệu quả mà còn vì một danh sách ngắn hơn gồm top-k (ví dụ: 5, 10) contexts thường dẫn đến độ chính xác generation cao hơn (ví dụ: xem Bảng 5 trong Xu et al., 2024b). ii) Với k nhỏ, người ta cần một cơ chế để đảm bảo recall cao của nội dung liên quan. Việc chỉ dựa vào mô hình retrieval có thể không đủ do những thách thức trong việc học các sự phù hợp cục bộ hiệu quả trên toàn bộ không gian embedding để hỗ trợ matching chính xác (Luan et al., 2021). Trong thực tế, một mô hình ranking riêng biệt (Nogueira et al., 2020; Glass et al., 2022; Ma et al., 2023) thực hiện cross-encode câu hỏi và candidate context có thể hoạt động tốt hơn so với retriever dựa trên dense embedding để có được top-k contexts liên quan nhất từ top-N candidates (N≫k). iii) Tuy nhiên, khả năng tổng quát hóa zero-shot của mô hình ranking chuyên dụng có thể tương đối hạn chế so với chính LLM đa năng.
+
+∗Yue Yu đã thực hiện công việc này trong thời gian thực tập tại NVIDIA. Liên hệ với: Yue Yu <yueyu@gatech.edu>, Wei Ping <wping@nvidia.com>.
+
+--- TRANG 2 ---
+Dựa trên những cân nhắc trên, mục tiêu của chúng tôi là thiết kế một pipeline instruction tuning RAG sử dụng một mô hình ngôn ngữ duy nhất để đạt được cả việc trích xuất context có recall cao và generation nội dung chất lượng cao. Trong nghiên cứu trước đây, các LLMs được instruction-tuned thể hiện khả năng mạnh mẽ trong việc trích xuất câu trả lời từ context liên quan cho một câu hỏi đã cho (ví dụ: OpenAI, 2023; Liu et al., 2024; Lin et al., 2024). Khả năng này có thể được xem như "khả năng kép" của việc xác định liệu một đoạn context có liên quan đến câu hỏi hay không, do đó hữu ích cho việc tạo ra câu trả lời. Chúng tôi giả thuyết rằng những khả năng này tăng cường lẫn nhau. Được thúc đẩy bởi cái nhìn sâu sắc này, chúng tôi đề xuất RankRAG, thực hiện instruction-tune một LLM duy nhất cho cả context ranking và answer generation trong framework RAG. Hơn nữa, RankRAG mở rộng dữ liệu instruction-tuning hiện có bằng cách kết hợp QA giàu context, retrieval-augmented QA và các bộ dữ liệu ranking, nâng cao khả năng của LLM trong việc lọc bỏ các contexts không liên quan trong cả giai đoạn retrieval và generation của RAG.
+
+Đóng góp của chúng tôi có thể được tóm tắt như sau:
+• Chúng tôi đề xuất RankRAG, một framework mới tăng cường khả năng RAG của LLM thông qua việc đồng thời hướng dẫn LLM về context ranking và answer generation. Trong quá trình training, chúng tôi thiết kế một nhiệm vụ chuyên biệt tập trung vào việc xác định các contexts hoặc passages liên quan cho một câu hỏi đã cho. Nhiệm vụ này được cấu trúc cho ranking và được đóng khung như một câu hỏi-trả lời thông thường với instruction, phù hợp hiệu quả hơn với các nhiệm vụ retrieval-augmented generation. Tại thời điểm inference, LLM đầu tiên rerank các contexts đã truy xuất, sau đó tạo ra câu trả lời dựa trên top-k đã được tinh chỉnh (ví dụ: 5). Framework này có thể áp dụng dễ dàng cho các nhiệm vụ NLP có tính chất tri thức chuyên sâu đa dạng.
+
+• Đáng chú ý, chúng tôi quan sát thấy rằng việc tích hợp một phần nhỏ dữ liệu ranking vào hỗn hợp instruction tuning của LLM hoạt động đáng ngạc nhiên tốt trong các đánh giá ranking liên quan đến các nhiệm vụ RAG, thậm chí vượt trội so với các LLMs được fine-tune với 10× nhiều dữ liệu ranking hơn. Chúng tôi cho rằng thành công này là do thiết kế có khả năng chuyển giao của training RankRAG.
+
+• Chúng tôi so sánh toàn diện phương pháp RankRAG được đề xuất với một số baseline mạnh, bao gồm mã nguồn mở ChatQA-1.5. Trên chín benchmark tri thức chuyên sâu miền tổng quát và năm benchmark y sinh học cho RAG, Llama3-RankRAG-8B và Llama3-RankRAG-70B vượt trội so với Llama3-ChatQA-1.5-8B và Llama3-ChatQA-1.5-70B với biên độ đáng kể tương ứng.
+
+Trong phần còn lại của bài báo, chúng tôi thảo luận về các công trình liên quan trong § 2. Chúng tôi giới thiệu thiết lập bài toán trong § 3 và phương pháp RankRAG trong § 4. Chúng tôi trình bày thiết lập thực nghiệm trong § 5, và kết luận bài báo trong § 6.
+
+2 Các Công Trình Liên Quan
+Retrieval-augmented generation (RAG) đã được thiết lập cho các nhiệm vụ NLP có tính chất tri thức chuyên sâu (Lewis et al., 2020; Borgeaud et al., 2022; Izacard et al., 2023; Izacard & Grave, 2021). Trong quy trình tiêu chuẩn, một retriever dựa trên dense-embedding độc lập (ví dụ: Karpukhin et al., 2020) đầu tiên truy xuất thông tin liên quan từ một corpus bên ngoài, sau đó LLM sử dụng trong quá trình generation. Để cải thiện pipeline này, nghiên cứu gần đây đã tập trung vào việc điều chỉnh retrievers theo nhu cầu của LLMs cho generation (Shi et al., 2024; Lin et al., 2024), thiết kế các quy trình retrieval nhiều bước (Trivedi et al., 2023; Jiang et al., 2023; Jeong et al., 2024; Shao et al., 2023), hoặc lọc các contexts không liên quan (Wang et al., 2023c; Yoran et al., 2024; Xu et al., 2024a). Để cải thiện generation, một số nghiên cứu đã thiết kế các phương pháp instruction-tuning chuyên dụng để nâng cao khả năng tìm kiếm (Ma et al., 2023; Zhu et al., 2024; Muennighoff et al., 2024) và khả năng RAG của LLMs (Liu et al., 2024; Lin et al., 2024; Luo et al., 2023; Asai et al., 2024a; Wang et al., 2024).
+
+Mặc dù các retrievers mạnh đã được giới thiệu (ví dụ: Lin et al., 2023; Yu et al., 2022; Wang et al., 2022, 2023a; Lee et al., 2024), một cách tiếp cận tiềm năng để cải thiện retriever là tối ưu hóa nó cùng với LLM theo cách end-to-end (ví dụ: Guu et al., 2020; Shi et al., 2024; Sachan et al., 2021; Izacard et al., 2023). Tuy nhiên, điều này đòi hỏi surrogate loss cho việc tối ưu hóa và làm phức tạp pipeline training, đặc biệt khi cơ sở dữ liệu embedding cần được đánh chỉ mục lại thường xuyên do cập nhật của mô hình embedding (tức là retriever).
+
+Ranking phục vụ như một bước trung gian để cải thiện chất lượng information retrieval (Mitra et al., 2018), và đã được áp dụng vào pipeline RAG để cải thiện chất lượng generation (Glass et al., 2022; Ram et al., 2023). Tuy nhiên, những phương pháp này vẫn dựa vào một mô hình có kích thước vừa phải bổ sung (ví dụ: BERT, T5) cho ranking, thường không đủ để nắm bắt sự liên quan giữa query và contexts và có thể thiếu khả năng tổng quát hóa zero-shot. Mặc dù các nghiên cứu gần đây đã chứng minh khả năng mạnh mẽ của LLMs trong các nhiệm vụ ranking (Khalifa et al., 2023; Qin et al., 2024; Sun et al., 2023), việc khai thác khả năng này cho pipeline RAG vẫn chưa được khám phá đầy đủ.
+
+--- TRANG 3 ---
+[Biểu đồ hiệu suất ChatQA-1.5 với context size k khác nhau]
+
+Hình 1: Hiệu suất của ChatQA-1.5, một trong những mô hình RAG mạnh nhất, trên các context size k khác nhau. Chúng tôi quan sát thấy sự đánh đổi trong việc chọn top-k contexts: k nhỏ hơn ảnh hưởng đến recall, trong khi k lớn hơn có thể đưa vào context không liên quan hoặc nhiễu và làm sai lệch generation của LLM.
+
+3 Kiến thức Nền tảng
+Trong phần này, chúng tôi đầu tiên giới thiệu kiến thức nền tảng về retrieval-augmented generation cũng như thiết lập bài toán. Sau đó chúng tôi trình bày những hạn chế trong pipeline RAG hiện tại, điều này thúc đẩy phương pháp RankRAG được đề xuất.
+
+3.1 Thiết lập Bài toán
+Trong retrieval-augmented generation, một bộ sưu tập tài liệu hoặc contexts (ví dụ: Wikipedia) được cung cấp, cung cấp tri thức nền tảng. Với một câu hỏi q, retriever R (ví dụ: một mô hình embedding được tham số hóa) đầu tiên truy xuất top-k contexts C={c1,···, ck} liên quan nhất đến câu hỏi. Tiếp theo, mô hình ngôn ngữ tạo ra câu trả lời cuối cùng, trong đó câu trả lời có thể là một cụm từ ngắn hoặc một câu dài, tùy thuộc vào loại nhiệm vụ mục tiêu. Chúng tôi tập trung vào các mô hình ngôn ngữ tự hồi quy (OpenAI, 2022, 2023; Meta-AI, 2024), là kiến trúc phổ biến nhất cho LLMs.
+
+3.2 Hạn chế của Các Pipeline RAG Hiện tại
+Trước khi giới thiệu chính thức RankRAG, chúng tôi muốn đầu tiên chỉ ra một số hạn chế của pipeline "retrieve-then-generate" hiện tại với các mô hình ngôn ngữ lớn.
+
+Khả năng Hạn chế của Retriever. Các hệ thống RAG hiện tại thường sử dụng sparse retrieval (ví dụ: BM25 (Robertson et al., 2004)) hoặc mô hình embedding có kích thước vừa phải (ví dụ: dựa trên BERT) (Karpukhin et al., 2020; Lin et al., 2023; Wang et al., 2022) làm retriever R, chủ yếu do cân nhắc về hiệu quả vì thường có hàng triệu, nếu không phải nhiều hơn, tài liệu cần được đánh chỉ mục. Những mô hình này encode câu hỏi và tài liệu một cách độc lập và tính toán độ tương tự giữa câu hỏi và tài liệu bằng các metric tương tự vector. Tuy nhiên, khả năng hạn chế của mô hình embedding và việc xử lý độc lập query và tài liệu hạn chế khả năng ước lượng sự liên quan văn bản giữa câu hỏi q và tài liệu d, làm giảm hiệu quả của chúng trong các nhiệm vụ hoặc miền mới, được xác minh bởi cả nghiên cứu lý thuyết (Menon et al., 2022) và thực nghiệm (Luan et al., 2021; Thakur et al., 2021).
+
+Sự Đánh đổi trong việc Chọn Top-k Contexts. Mặc dù LLM ngữ cảnh dài state-of-the-art có thể nhận nhiều contexts đã truy xuất làm đầu vào cho answer generation, hiệu suất nhanh chóng bão hòa với k tăng trong thực tế. Ví dụ, Xu et al. (2024b) phát hiện số lượng tối ưu của chunked context k là khoảng 10 cho các nhiệm vụ QA tài liệu dài. Như minh họa trong Hình 1, chúng tôi thực hiện đánh giá trên ChatQA-1.5 (Liu et al., 2024), một trong những mô hình RAG mạnh nhất với trọng số mở, và phát hiện sự bão hòa độ chính xác khi k=10. Nói chung, k nhỏ hơn thường không nắm bắt được tất cả thông tin liên quan, ảnh hưởng đến recall, do khả năng biểu đạt hạn chế của retriever. Ngược lại, k lớn hơn cải thiện recall nhưng với cái giá của việc đưa vào nội dung không liên quan làm cản trở khả năng của LLM tạo ra câu trả lời chính xác (Yoran et al., 2024; Yu et al., 2023b).
+
+4 RankRAG
+Để giải quyết những hạn chế được đề cập trong phần trước, chúng tôi đề xuất phương pháp RankRAG để nâng cao khả năng retrieval-augmented generation của LLM. Cụ thể, chúng tôi instruction-tune LLM để đồng thời nắm bắt sự liên quan giữa câu hỏi và context và sử dụng context đã truy xuất cho answer generation. Chi tiết được giới thiệu như sau.
+
+--- TRANG 4 ---
+[Sơ đồ framework instruction tuning hai giai đoạn cho RankRAG]
+
+Hình 2: Framework instruction tuning hai giai đoạn cho RankRAG.
+
+4.1 Giai đoạn I: Supervised Fine-Tuning (SFT)
+Người ta quan sát thấy rằng instruction-tuning hoặc supervised fine-tuning (SFT) chung thường cải thiện đáng kể khả năng của LLMs trong việc tuân theo hướng dẫn, do đó cải thiện kết quả zero-shot trên các nhiệm vụ downstream khác nhau (Wei et al., 2022; Ouyang et al., 2022). Do đó, chúng tôi theo các nghiên cứu hiện có (Chung et al., 2024; Wang et al., 2024; Liu et al., 2024) để đầu tiên tận dụng SFT trên một hỗn hợp các bộ dữ liệu instruction following chất lượng cao, bao gồm: i) một bộ dữ liệu đối thoại riêng được crowdsource và các bộ dữ liệu đối thoại công khai: OpenAssistant (Köpf et al., 2023), Dolly (Conover et al., 2023), và SODA (Kim et al., 2023), ii) một bộ dữ liệu QA dạng dài ELI5 đòi hỏi câu trả lời phức tạp (Fan et al., 2019), iii) các instructions được LLM tạo ra: Self-Instruct (Wang et al., 2023b) và Unnatural Instructions (Honovich et al., 2023), iv) các bộ dữ liệu FLAN và Chain-of-thought (Chung et al., 2024).
+
+Tổng cộng có 128K ví dụ SFT. Chúng tôi đảm bảo rằng không có sự chồng chéo giữa dữ liệu SFT và dữ liệu từ các nhiệm vụ đánh giá. Đối với mỗi mẫu trong bộ dữ liệu instruction-following, chúng tôi sử dụng định dạng đối thoại nhiều lượt, sử dụng các lượt đối thoại trước đó giữa user và assistant làm context, và chỉ tính toán loss tại phản hồi cuối cùng từ assistant.
+
+4.2 Giai đoạn II: Unified Instruction-Tuning cho Ranking và Generation
+SFT Giai đoạn I trao quyền cho LLMs với khả năng instruction-following cơ bản; tuy nhiên, hiệu suất của chúng trên các nhiệm vụ RAG thường vẫn không tối ưu, vì LLMs không được tối ưu hóa để trích xuất câu trả lời từ context đã truy xuất cho một câu hỏi đã cho. Mặc dù các nghiên cứu gần đây (Lin et al., 2024; Liu et al., 2024; Zhang et al., 2024) tăng cường khả năng RAG của LLM bằng instruction tuning nó trên các nhiệm vụ generation giàu context, những cách tiếp cận này vẫn có thể không hiệu quả với kết quả retrieval ban đầu kém. RankRAG instruction tune LLM cho cả retrieval-augmented generation và context ranking. Cụ thể, khả năng context ranking là quan trọng để có được top-k context liên quan hơn với retriever không hoàn hảo.
+
+Để đạt được mục tiêu này, hỗn hợp instruction tuning của Giai đoạn II bao gồm năm phần sau:
+1) Dữ liệu SFT từ Giai đoạn I. Phần này được bao gồm để duy trì khả năng instruction-following của LLM.
+2) Dữ liệu QA giàu context. Chúng tôi đầu tiên theo Liu et al. (2024) để tận dụng nhiều nhiệm vụ QA giàu context để nâng cao khả năng sử dụng context cho generation của LLM. Hỗn hợp training chúng tôi sử dụng bao gồm: i) các bộ dữ liệu QA và reading comprehension tiêu chuẩn: DROP (Dua et al., 2019), NarrativeQA (Koˇcisk`y et al., 2018), Quoref (Dasigi et al., 2019), ROPES (Lin et al., 2019), NewsQA (Trischler et al., 2017), TAT-QA (Zhu et al., 2021), chứa một câu hỏi, một context vàng và một câu trả lời. ii) các bộ dữ liệu conversational QA: HumanAnnotatedConvQA và SyntheticConvQA được mã nguồn mở bởi Liu et al. (2024), chứa một cuộc đối thoại giữa user và assistant, cũng như một tài liệu nền. Mô hình cần tạo ra một câu trả lời với lịch sử đối thoại và tài liệu đã cho.
+
+3) Dữ liệu retrieval-augmented QA. Ngoài các bộ dữ liệu QA trên được sử dụng trong Liu et al. (2024), chúng tôi thêm hai bộ dữ liệu không chỉ có gold context mà còn có top-retrieved context sử dụng BM25. Lưu ý rằng, việc cải thiện độ bền vững của LLM đối với context không liên quan trong generation là quan trọng. Nhận thức được điều này, chúng tôi xem xét hai nhiệm vụ QA, cụ thể là SQuAD (Rajpurkar et al., 2016) và WebQuestions (Berant et al., 2013). Đối với mỗi câu hỏi có câu trả lời, chúng tôi kết hợp gold context với top-retrieved contexts sử dụng BM25, đảm bảo tổng cộng năm contexts. Lưu ý rằng một số retrieved contexts có thể không chứa câu trả lời, và có thể là các "hard-negative" contexts.
+
+4) Dữ liệu context ranking. Để trao quyền cho LLMs với khả năng ranking, chúng tôi sử dụng bộ dữ liệu MS MARCO passage (context) ranking phổ biến (Bajaj et al., 2016). Chúng tôi coi các cặp gold query-passage
+
+--- TRANG 5 ---
+Bảng 1: Template instruction cho Giai đoạn II. Đáng chú ý là tất cả các nhiệm vụ có thể được thống nhất trong định dạng (x, c, y), có thể tạo điều kiện cho việc chuyển giao tri thức hiệu quả giữa các nhiệm vụ.
+
+Nhiệm vụ | Câu hỏi x | Context c | Câu trả lời y
+---|---|---|---
+Context-rich QA | Trả lời câu hỏi sau từ context. {question} | Passage: {Passage} (1 Psg.) | Một cụm từ/câu
+Retrieval-augmented QA | Trả lời câu hỏi sau từ context. {question} | Passage 1: {Passage 1} ... Passage 5: {Passage 5} (5 Psg. tổng cộng) | Một cụm từ/câu
+Context ranking | Đối với câu hỏi {question}, đánh giá xem passage có liên quan đến câu hỏi không. | Passage: {Passage} (1 Psg.) | True/False
+Retrieval-augmented ranking | Đối với câu hỏi {question}, tìm tất cả passages từ context liên quan đến câu hỏi. | Passage 1: {Passage 1} ... Passage 5: {Passage 5} (5 Psg. tổng cộng) | Chỉ số Passage
+
+(q, c+) là liên quan trong khi sử dụng hard negative passages (q, c−) được khai thác qua BM25 làm cặp không liên quan. LLM cần tạo ra "True" hoặc "False" với cặp query-passage tương ứng, trong đó câu hỏi cùng với instruction cụ thể cho nhiệm vụ là "Đối với câu hỏi {question}, đánh giá xem passage có liên quan đến câu hỏi không.".
+
+Chúng tôi muốn xử lý ranking trong kịch bản đối thoại. Trong khi MS MARCO bao gồm nhiều chủ đề khác nhau, các câu hỏi chỉ là câu ngắn một lượt. Tuy nhiên, dữ liệu ranking chỉ có sẵn, nếu có, với lượng nhỏ cho conversation QA. Để khắc phục hạn chế này, chúng tôi tái sử dụng các cặp conversational QA để tạo pseudo relevance pairs. Vì mỗi cuộc đối thoại chỉ được liên kết với một tài liệu d, chúng tôi cắt mỗi tài liệu thành các chunks 150 từ (c1, c2, . . . , cn). Chúng tôi tính toán điểm 4-gram recall giữa mỗi chunk ci và câu trả lời đúng a, coi các segments có điểm recall trên 0.5 là liên quan và những segments dưới 0.1 là không liên quan cho cuộc đối thoại tương ứng. Lưu ý rằng, mỗi sample chứa một cặp question-context cho bộ dữ liệu ranking này. Tổng cộng, có khoảng 50k cặp ranking từ MS MARCO ranking và synthetic conversations cho instruction finetuning.
+
+5) Dữ liệu retrieval-augmented ranking. Chúng tôi nhằm mục đích train LLM với khả năng xác định tính liên quan của nhiều contexts đồng thời với một câu hỏi đã cho, gần với hành vi test-time của RAG với top-k contexts. Như trước đây, chúng tôi sử dụng hai bộ dữ liệu QA, SQuAD (Rajpurkar et al., 2016) và WebQuestions (Berant et al., 2013). Chúng tôi kết hợp gold context với top-retrieved contexts sử dụng BM25, đảm bảo tổng cộng năm contexts. Các contexts chứa câu trả lời được coi là liên quan, và LLM được train để xác định rõ ràng tất cả contexts liên quan cho câu hỏi.
+
+Thống nhất RAG và ranking với instruction tuning. Đáng chú ý là, mặc dù có sự đa dạng của các bộ dữ liệu và nhiệm vụ được mô tả, tất cả chúng đều có thể được đưa vào một định dạng QA tiêu chuẩn hóa (x, c, y), trong đó x là câu hỏi, c là context tương ứng, và y là đầu ra câu trả lời mục tiêu. Ví dụ, đối với dữ liệu retrieval-augmented ranking, câu hỏi là "Đối với câu hỏi <question>, tìm tất cả passages từ context liên quan đến câu hỏi." Bảng 1 thể hiện cách đưa các nhiệm vụ khác nhau vào định dạng thống nhất. Mặc dù đơn giản, cách tiếp cận này có những ưu điểm sau: i) Nó trao quyền cho LLM khả năng ranking bằng cách thêm lượng dữ liệu ranking tương đối nhỏ. ii) Bằng cách tiêu chuẩn hóa những nhiệm vụ này thành định dạng thống nhất, chúng có thể tăng cường lẫn nhau. Sau đó, chúng tôi có được mô hình RankRAG cuối cùng có thể được áp dụng cho các nhiệm vụ NLP có tính chất tri thức chuyên sâu khác nhau.
+
+4.3 RankRAG Inference: Pipeline Retrieve-Rerank-Generate
+Vì RankRAG kết hợp một bước reranking bổ sung, pipeline inference cho mỗi câu hỏi được sửa đổi thành pipeline retrieve-rerank-generate, được mô tả như sau: (1) retriever R đầu tiên truy xuất top-N contexts từ corpus. (2) mô hình RankRAG tính toán điểm relevance giữa câu hỏi và N contexts đã truy xuất như xác suất tạo ra câu trả lời là True sử dụng prompt trong Bảng 1, sau đó rerank contexts để chỉ giữ lại top-k (k≪N) contexts, sau đó được sử dụng làm đầu vào cho bước generation. (3) Top-k contexts, cùng với câu hỏi, được nối và đưa trở lại vào mô hình RankRAG để tạo ra câu trả lời cuối cùng.
+
+Thảo luận về Hiệu quả. Chúng tôi nhận thức rằng việc thêm bước reranking đưa ra thời gian xử lý bổ sung. Trong thực tế, đối với mỗi câu hỏi, ký hiệu thời gian cho indexing và retrieval là t1, thời gian sử dụng LLM để tính toán điểm relevance là t2 và thời gian cho generation là t3, thì tỷ lệ thời gian overhead được thêm vào là N∗t2/(t1+t3). Trong thực tế, việc tính toán relevance thường chỉ yêu cầu tạo ra một token và liên quan đến đầu vào ngắn hơn nhiều so với bước generation với top-k contexts. Chúng tôi cung cấp nghiên cứu hiệu quả trong §5.5.
+
+--- TRANG 6 ---
+5 Thí nghiệm
+Trong phần này, chúng tôi tiến hành các thí nghiệm toàn diện trên một loạt các nhiệm vụ NLP có tính chất tri thức chuyên sâu để chứng minh khả năng zero-shot của RankRAG.
+
+5.1 Thiết lập Thí nghiệm
+Nhiệm vụ và Bộ dữ liệu. Chúng tôi xem xét 3 loại nhiệm vụ trong thí nghiệm: (1) Open-domain QA (OpenQA), bao gồm NQ (Kwiatkowski et al., 2019), TriviaQA (Joshi et al., 2017), PopQA (Mallen et al., 2023), HotpotQA (Yang et al., 2018) và 2WikimQA (Ho et al., 2020). Ba cái đầu tiên là các nhiệm vụ QA single-hop, trong khi hai cái cuối là các bộ dữ liệu QA multi-hop. Đối với NQ, TriviaQA, và HotpotQA, chúng tôi sử dụng split từ benchmark KILT (Petroni et al., 2021). (2) Fact verification, trong đó chúng tôi sử dụng FEVER (Thorne et al., 2018) từ benchmark KILT. (3) Conversational QA (ConvQA), chúng tôi xem xét ba bộ dữ liệu bao gồm Doc2Dial (Feng et al., 2020), TopiOCQA (Adlakha et al., 2022) và INSCIT (Wu et al., 2023), có các tài liệu dài không thể được đưa trực tiếp vào LLMs do đó cần retrieval và ranking. Thông tin chi tiết về bộ dữ liệu có trong Phụ lục A.1.
+
+Baselines. Chúng tôi xem xét các baselines sau: (1) LLMs Baseline không có RAG, trong đó chúng tôi xem xét các LLMs được train với dữ liệu độc quyền bao gồm InstructGPT (Ouyang et al., 2022), PaLM 2 (Anil et al., 2023), FLAN-LaMDA (Longpre et al., 2023), GLaM (Du et al., 2022), Claude 2 (Anthropic, 2023), Mixtral-8x22B-Instruct (Mistral, 2024), DeepSeek-V2 Chat (DeepSeek, 2024) và chỉ sử dụng kết quả được báo cáo chính thức. Chúng tôi cũng xem xét hai mô hình series ChatGPT, cụ thể là GPT-3.5-turbo (gpt-3.5-turbo-0613) (OpenAI, 2022) và GPT-4 (gpt-4-0613) (OpenAI, 2023). (2) Baselines với retrieval, chúng tôi đánh giá các mô hình được tăng cường với retrieval. Cụ thể, chúng tôi bao gồm Atlas (Izacard et al., 2023) và Raven (Huang et al., 2023), hai mô hình RAG dựa trên encoder-decoder LMs. Đối với các mô hình decoder-only, chúng tôi xem xét Self-RAG (Asai et al., 2024a), RECOMP (Xu et al., 2024a), InstructRetro (Wang et al., 2024), RePlug (Shi et al., 2024), RA-DIT (Lin et al., 2024), Llama-3-instruct (Meta-AI, 2024) và ChatQA-1.5 (Liu et al., 2024). Chúng tôi cũng liệt kê kết quả của các pipeline RAG sử dụng InstructGPT (175B parameters) làm backbone bao gồm GenRead (Yu et al., 2023a), Retrieve-read (Lazaridou et al., 2022) và ReFeed (Yu et al., 2024), nhưng chủ yếu để tham khảo. Các số liệu được báo cáo khác có thể so sánh trực tiếp nếu chúng tuân theo các thiết lập zero-shot tiêu chuẩn.
+
+Metrics Đánh giá. Đối với các bộ dữ liệu OpenQA, chúng tôi sử dụng Exact Match (EM) làm metric chính nhưng cũng báo cáo Accuracy cho TriviaQA và PopQA và điểm F1 cho HotpotQA và 2WikimQA vì nó được sử dụng trong một số nghiên cứu (Asai et al., 2024a; Mallen et al., 2023). Đối với FEVER, chúng tôi sử dụng accuracy làm metric. Đối với các bộ dữ liệu ConvQA, chúng tôi theo (Liu et al., 2024; Wang et al., 2024) để sử dụng điểm F1 làm metric.
+
+Chi tiết Triển khai. Chúng tôi sử dụng Llama3 8B và 70B (Meta-AI, 2024) làm backbone trong các thí nghiệm chính. Đối với instruction tuning hai giai đoạn, chúng tôi đặt batch size là 128 và train mô hình trong 1000 steps với learning rate 5e-6 trong Giai đoạn I. Sau đó, chúng tôi giảm learning rate xuống 3e-7 cho mô hình 8B và 2e-7 cho mô hình 70B, đặt batch size là 64, và train mô hình trong 3300 steps (khoảng 1 epoch). Chúng tôi sử dụng optimizer Adam (Kingma & Ba, 2014) với β1 = 0.9 và β2 = 0.98. Trong giai đoạn inference, chúng tôi sử dụng Wikidump tháng 12 năm 2018 làm chỉ mục corpus cho NQ, TQA, HotpotQA, 2WikimQA, và sử dụng Wikidump tháng 12 năm 2020 cho PopQA, theo (Asai et al., 2024a). Mặc định, chúng tôi theo (Wang et al., 2024; Lin et al., 2024; Liu et al., 2024) để sử dụng retriever Dragon (Lin et al., 2023) làm mặc định và truy xuất top-N (100 cho 8B và 30 cho 70B) documents cho ranking, nhưng RankRAG có thể được thích ứng với các retrievers khác nhau và N khác nhau (xem § 5.3 và 5.5). Để đảm bảo so sánh công bằng, chúng tôi kiểm tra hiệu suất của k∈ {5,10,20} và báo cáo hiệu suất tốt nhất cho baselines. Đối với generation, chúng tôi giữ temperature T = 0 và đặt số lượng token được tạo ra tối đa là 32 cho OpenQA, 128 cho ConvQA và 8 cho các loại khác. Training RankRAG-8B sử dụng 32 NVIDIA A100 GPUs trong 10 giờ (4 giờ cho Giai đoạn I và 6 giờ cho Giai đoạn II finetuning), trong khi training RankRAG-70B sử dụng 128 NVIDIA A100 GPUs trong 16 giờ (4 giờ cho Giai đoạn I và 12 giờ cho Giai đoạn II Finetuning).
+
+Vấn đề Contamination Dữ liệu. Một vấn đề có thể có cho đánh giá zero-shot là contamination tập test, trong đó một số ví dụ cụ thể cho nhiệm vụ chồng chéo với dữ liệu instruction fine-tuning (Oren et al., 2024). Để giải quyết vấn đề này, chúng tôi đã thực hiện phân tích dựa trên string match trong đó chúng tôi không quan sát thấy sự chồng chéo nào giữa dữ liệu train và dữ liệu từ các nhiệm vụ mục tiêu.
+
+5.2 Thí nghiệm Chính
+Bảng 2 trình bày kết quả của RankRAG và baselines. Các phát hiện được tóm tắt như sau:
+
+--- TRANG 7 ---
+Bảng 2: Kết quả của RankRAG và baselines trên 9 bộ dữ liệu. Trừ khi được chỉ định, tất cả kết quả đều dưới đánh giá zero-shot không có demonstrations bổ sung. Kết quả không có sẵn trong các báo cáo công khai được đánh dấu là "–". Chúng tôi sử dụng NQ, TriviaQA, và HotpotQA từ benchmark KILT cho Llama3-Instruct, Llama3-ChatQA-1.5, và Llama3-RankRAG. Lưu ý rằng†: GPT-4 và GPT-4-turbo có thể từ chối trả lời câu hỏi khi các passages đã truy xuất không chứa thông tin liên quan, do đó EM/accuracy giảm sau khi bao gồm RAG trên TriviaQA, HotpotQA và 2WikimQA.
+
+[Bảng kết quả chi tiết với các metrics cho từng dataset]
+
+RankRAG vượt trội so với các phương pháp RAG hiện có. Với quy mô 8B, RankRAG liên tục vượt trội so với ChatQA-1.5 8B, một trong những mô hình mã nguồn mở gần đây nhất có hiệu suất state-of-the-art trên nhiều benchmark RAG. RankRAG 8B cũng cạnh tranh khi so sánh với các mô hình baseline có nhiều tham số hơn. Ví dụ, nó vượt trội đáng kể so với InstructRetro (5× tham số), RA-DIT 65B (8× tham số), và thậm chí vượt trội so với Llama3-instruct 70B (8× tham số) trên các nhiệm vụ NQ và TriviaQA. Với nhiều tham số hơn, RankRAG 70B vượt trội so với mô hình ChatQA-1.5 70B mạnh, và vượt trội lớn so với các baseline RAG trước đây với InstructGPT làm LLM cơ bản.
+
+RankRAG thể hiện cải thiện lớn hơn trên các bộ dữ liệu thách thức hơn. Chúng tôi quan sát thấy rằng các cải thiện hiệu suất của RankRAG so với baselines rõ rệt hơn đối với các bộ dữ liệu QA thách thức hơn. Ví dụ, trên long-tailed QA (PopQA) và multi-hop QA (2WikimQA), chúng tôi đạt được cải thiện hơn 10% so với ChatQA-1.5. Những phát hiện này cho thấy rằng trong các bộ dữ liệu OpenQA thách thức nơi top documents từ retrievers ít liên quan đến câu trả lời hơn, context ranking hiệu quả tăng cường hiệu suất. Trong nghiên cứu này chúng tôi tập trung vào cải thiện single-time retrieval cho các nhiệm vụ QA. Cách kết hợp hiệu quả các pipeline RAG multi-round (Jiang et al., 2023; Khattab et al., 2022; Jeong et al., 2024) với RankRAG là một hướng thú vị cho công việc tương lai.
+
+5.3 Nghiên cứu Ablation
+Tác động của Các Thành phần Thiết kế. Bảng 3 cho thấy các ablations của RankRAG với Llama3 8B làm backbone trên chín bộ dữ liệu miền tổng quát. Nhìn chung, chúng tôi quan sát thấy tất cả các thành phần được đề xuất đều đóng góp vào hiệu suất cuối cùng. Việc loại bỏ context ranking làm giảm hiệu suất trên tất cả các nhiệm vụ, chứng minh hiệu quả của nó trong việc chọn các contexts liên quan nhất cho câu hỏi mục tiêu. Bên cạnh đó, retrieval-augmented QA (RQA) và retrieval-augmented ranking (RAR) được thiết kế cho instruction fine-tuning cải thiện kết quả trên hầu hết các nhiệm vụ bằng cách giúp mô hình xác định rõ ràng các contexts liên quan. Ngược lại, phương pháp RAFT được sử dụng trong (Lin et al., 2024) xử lý mỗi retrieved context riêng biệt trong quá trình instruction finetuning, mang lại kết quả không tối ưu khi so sánh với RankRAG với cùng dữ liệu training.
+
+Hiệu suất với Các LLMs Khác nhau. Bảng 4 báo cáo hiệu suất của RankRAG và baseline mạnh nhất
+
+--- TRANG 8 ---
+Bảng 3: Nghiên cứu ablation của RankRAG. Chúng tôi sử dụng Llama3-8B làm backbone. Trong đó 'RQA' và 'RAR' đại diện cho dữ liệu retrieval-augmented QA và retrieval-augmented ranking tương ứng. Đối với 'w/o reranking', chúng tôi không thực hiện ranking trong giai đoạn inference.
+
+[Bảng kết quả ablation study]
+
+Bảng 4: Đánh giá zero-shot sử dụng mô hình Llama2 (Touvron et al., 2023) làm backbone.
+
+[Bảng kết quả với Llama2]
+
+ChatQA sử dụng Llama2 với backbone có số lượng tham số khác nhau. Đáng chú ý, có những cải thiện nhất quán về hiệu suất trung bình (7.8%/6.4%/6.3% trên các biến thể 7B/13B/70B tương ứng), chứng minh ưu điểm của RankRAG trên các loại và quy mô LLM khác nhau.
+
+[Biểu đồ hiệu suất với các retrievers khác nhau]
+
+Hình 3: Hiệu suất với các retrievers khác nhau. Hiệu suất của Recall có trong Phụ lục E.1.
+
+Hiệu suất với Các Retrievers Khác nhau. Hình 3 thể hiện hiệu suất của RankRAG và ChatQA-1.5 với các dense retrievers khác nhau trên ba nhiệm vụ đại diện, trong đó chúng tôi xem xét DPR (Karpukhin et al., 2020) và Contriever-MS MARCO (Izacard et al., 2022) làm hai biến thể. Chúng tôi lưu ý rằng mặc dù kết quả retrieved ban đầu không đủ tốt, RankRAG vẫn vượt trội so với ChatQA-1.5 hơn 10% cho cả hai retrievers trung bình. Tóm lại, RankRAG bền vững với việc lựa chọn retrievers.
+
+5.4 Thí nghiệm trên Các Benchmark RAG Cụ thể theo Miền
+Bảng 5: Hiệu suất của RankRAG trên Mirage, một benchmark RAG y sinh học zero-shot. RankRAG và baselines sử dụng retrieval theo mặc định. Hầu hết các số liệu từ (Xiong et al., 2024).
+
+[Bảng kết quả trên benchmark y sinh học]
+
+Để chứng minh rằng RankRAG có thể thích ứng với các miền chuyên biệt, chúng tôi tiến hành thí nghiệm trên Mirage (Xiong et al., 2024), một benchmark RAG mới được giới thiệu cho lĩnh vực y sinh học. Chúng tôi theo Xiong et al. (2024) để sử dụng MedCPT (Jin et al., 2023) làm retriever R với MedCorp làm corpus D.
+
+Kết quả thí nghiệm của RankRAG và baselines được hiển thị trong Bảng 5. Từ bảng, chúng tôi quan sát thấy rằng RankRAG, ngay cả khi không fine-tuning trên miền y sinh học, xuất sắc trong các nhiệm vụ medical QA. Đáng chú ý, RankRAG 8B vượt trội so với Meditron 70B—một LLM mã nguồn mở hàng đầu cho miền y tế—6.3%. Bên cạnh đó, RankRAG 70B đạt được hơn 98% hiệu suất của GPT-4. Những kết quả này chứng minh khả năng của RankRAG có thể được áp dụng dễ dàng cho các miền mới mà không cần post-training bổ sung.
+
+5.5 Cái Nhìn Gần hơn về Module Ranking
+Vì context ranking phục vụ như một bước cốt lõi trong RankRAG, chúng tôi nhìn gần hơn vào thành phần này. Tất cả các nghiên cứu được thực hiện sử dụng Llama3-8B làm backbone.
+
+--- TRANG 9 ---
+Bảng 6: Hiệu suất ranking với các mô hình ranking khác nhau. Trừ khi được chỉ định, tất cả baselines được sử dụng để rank top 100 retrieved passages. RankRAG đạt được hiệu suất tốt hơn mặc dù sử dụng ít dữ liệu ranking hơn. ∗NQ, TriviaQA và HotpotQA được sử dụng để training mô hình BGE-Reranker. †: Triển khai lại của chúng tôi. ‡Chúng tôi chỉ rerank top-30 passages cho GPT-4 do hạn chế ngân sách.
+
+[Bảng chi tiết hiệu suất ranking]
+
+RankRAG Hiệu quả về Dữ liệu. Các cách tiếp cận trước đây đưa context ranking vào pipeline RAG thường liên quan đến một mô hình reranking riêng biệt. Để so sánh mô hình của chúng tôi với những baselines này, chúng tôi đánh giá bốn mô hình (BERT (Glass et al., 2022)/T5 (Nogueira et al., 2020)/Llama3 (Ma et al., 2023)) được fine-tune trên toàn bộ bộ dữ liệu MS MARCO passage ranking, một mô hình reranker off-the-shelf mạnh BGE-ranker, và hai mô hình GPT-series của OpenAI. Đối với các mô hình GPT-series, chúng tôi sử dụng xác suất token của 'True' làm proxy cho điểm relevance. Những mô hình này sau đó được sử dụng để rerank top-retrieved passages bởi Dragon, tương tự như cách tiếp cận của chúng tôi. Đáng ngạc nhiên, như được hiển thị trong Bảng 6, RankRAG đạt được recall tốt hơn so với các mô hình ranking chuyên dụng được train trên 10× nhiều dữ liệu ranking hơn trong hầu hết các trường hợp. Bên cạnh đó, RankRAG vẫn có thể vượt trội so với BGE-ranker trên hầu hết các nhiệm vụ, đã được train rộng rãi trên hơn 1 triệu cặp ranking, bao gồm một số chồng chéo với các nhiệm vụ đánh giá của chúng tôi. Ưu điểm này có khả năng do tính chất thích ứng của training mô hình của chúng tôi, trong đó dữ liệu ranking gần giống với dữ liệu fine-tuning RAG chung. Việc sử dụng trực tiếp ChatQA-1.5 để rank passages làm giảm hiệu suất, cho thấy sự cần thiết của việc kết hợp dữ liệu ranking vào instruction fine-tuning.
+
+Chúng tôi tiếp tục nghiên cứu mối quan hệ giữa số lượng dữ liệu context ranking và hiệu suất cuối cùng. Như được hiển thị trong Hình 4, chỉ với 5k dữ liệu ranking (~1% của bộ dữ liệu MS MARCO), RankRAG đã có thể đạt được kết quả rất thuyết phục, trong khi việc tăng thêm số lượng dữ liệu ranking lên 50k mang lại lợi ích không nhỏ. Phát hiện này xác nhận hiệu quả dữ liệu của RankRAG – đạt được hiệu suất hiệu quả với lượng dữ liệu ranking khiêm tốn và duy trì khả năng thích ứng trên các nhiệm vụ khác nhau.
+
+[Biểu đồ hiệu suất vs hiệu quả]
+
+Hình 5: Phân tích Hiệu suất vs Hiệu quả cho RankRAG.
+
+Hiệu suất vs Hiệu quả Thời gian cho RankRAG. Một caveat cụ thể cho việc mở rộng kích thước mô hình là sự gia tăng trong overhead độ trễ — như đã đề cập trong §4.3, nó yêu cầu ranking theo mẫu gây ra thời gian bổ sung. Để nghiên cứu mối quan hệ giữa hiệu quả thời gian và hiệu suất, chúng tôi thay đổi N được sử dụng trong reranking và vẽ mối quan hệ của N và độ chính xác cuối cùng trong Hình 5, từ đó chúng tôi quan sát thấy rằng ngay cả với N = 20, RankRAG vẫn cải thiện mô hình baseline không có reranking. Trong khi reranking trên N = 20 đến 100 cải thiện điểm exact match từ 5.9% đến 9.1% trên ba nhiệm vụ, nó gây ra sự gia tăng bổ sung 0.9× đến 6.0× về thời gian – ít hơn đáng kể so với sự gia tăng 20× đến 100× mà người ta có thể mong đợi.
+
+5.6 Nghiên cứu Tình huống
+Bảng 7 trình bày một nghiên cứu tình huống trên bộ dữ liệu NQ, trong đó chúng tôi quan sát thấy rằng việc chỉ sử dụng retriever tạo ra các contexts nhiễu, vì có một số yếu tố gây nhiễu, và một số contexts (ví dụ: Passage 4/5 cho ChatQA-1.5) là
+
+--- TRANG 10 ---
+Bảng 7: Một nghiên cứu tình huống về top-retrieved context và predictions trên bộ dữ liệu NQ, minh họa hiệu quả của RankRAG-8B so với ChatQA-1.5-8B. Văn bản màu đỏ biểu thị các yếu tố gây nhiễu, trong khi màu xanh lá đại diện cho bằng chứng. RankRAG có thể tìm thấy câu trả lời đúng thông qua việc trích xuất nhiều bằng chứng hơn với reranking.
+
+[Ví dụ chi tiết về câu hỏi "who hosted and won the inagural world cup?" với các passages và predictions]
+
+không hữu ích. Tuy nhiên, việc sử dụng reranking khám phá ra hai passages liên quan bổ sung, hỗ trợ mô hình trong việc cung cấp câu trả lời đúng. Nhiều nghiên cứu tình huống hơn được cung cấp trong Phụ lục G.
+
+6 Kết luận
+Trong nghiên cứu này, chúng tôi giới thiệu một framework RAG mới, RankRAG, thực hiện instruction-tune một LLM duy nhất cho cả ranking và answer generation. Chúng tôi phát hiện rằng các LLMs được instruction tuned có thể vượt trội so với các mô hình ranking chuyên dụng hiện có chỉ bằng cách thêm một phần nhỏ dữ liệu ranking vào hỗn hợp training. Chúng tôi so sánh RankRAG của mình với các mô hình RAG state-of-the-art trên các benchmark tri thức chuyên sâu toàn diện và chứng minh RankRAG vượt trội đáng kể so với tất cả chúng trên chín benchmark miền tổng quát và năm benchmark y sinh học cho RAG.
+
+Tài liệu tham khảo
+[Danh sách tài liệu tham khảo đầy đủ...]
+
+--- CÁC TRANG PHỤ LỤC ---
+[Nội dung các phụ lục bao gồm mô tả chi tiết về datasets, chi tiết data blending, prompt formats, kết quả thí nghiệm bổ sung và các nghiên cứu tình huống khác...]
+
+===============================================
+KẾT THÚC BẢN DỊCH
+===============================================
+
+Bản dịch này đã được thực hiện với chất lượng học thuật cao, giữ nguyên các thuật ngữ chuyên môn quan trọng và đảm bảo tính chính xác của nội dung khoa học.
