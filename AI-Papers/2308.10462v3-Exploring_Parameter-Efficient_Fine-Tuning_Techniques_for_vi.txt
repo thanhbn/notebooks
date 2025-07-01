@@ -1,0 +1,832 @@
+# 2308.10462v3.pdf
+# Chuyển đổi từ PDF sang TXT  
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2308.10462v3.pdf
+# Kích thước tệp: 1063509 bytes
+
+===============================================
+NỘI DUNG TỆP PDF
+===============================================
+
+
+--- TRANG 1 ---
+Khám Phá Các Kỹ Thuật Tinh Chỉnh Hiệu Quả Tham Số cho
+Sinh Mã với Mô Hình Ngôn Ngữ Lớn
+MARTIN WEYSSOW∗, DIRO, Đại học Montreal, Canada
+XIN ZHOU, Đại học Quản lý Singapore, Singapore
+KISUB KIM, Đại học Quản lý Singapore, Singapore
+DAVID LO, Đại học Quản lý Singapore, Singapore
+HOUARI SAHRAOUI, DIRO, Đại học Montreal, Canada
+
+Các mô hình ngôn ngữ lớn (LLMs) thể hiện khả năng ấn tượng trong việc sinh ra các đoạn mã chính xác khi được cung cấp ý định bằng ngôn ngữ tự nhiên theo phương thức zero-shot, tức là không cần tinh chỉnh cụ thể. Mặc dù các nghiên cứu trước đây đã nổi bật những ưu điểm của việc tinh chỉnh LLMs, quá trình này phát sinh chi phí tính toán cao, khiến nó trở nên không thực tế trong môi trường khan hiếm tài nguyên, đặc biệt là đối với các mô hình có hàng tỷ tham số. Để giải quyết những thách thức này, nghiên cứu trước đây đã khám phá học trong ngữ cảnh (ICL) và sinh tăng cường truy xuất (RAG) như các chiến lược để hướng dẫn quá trình sinh của LLM với các ví dụ prompt cụ thể cho tác vụ. Tuy nhiên, ICL và RAG gây ra những bất tiện, chẳng hạn như nhu cầu thiết kế các prompt phù hợp với ngữ cảnh và việc thiếu học các tham số cụ thể cho tác vụ, do đó hạn chế hiệu suất tác vụ downstream. Trong bối cảnh này, chúng tôi dự báo tinh chỉnh hiệu quả tham số (PEFT) như một phương pháp tiềm năng để chuyên biệt hóa hiệu quả các LLMs cho dữ liệu cụ thể tác vụ trong khi duy trì mức tiêu thụ tài nguyên hợp lý. Trong bài báo này, chúng tôi thực hiện một nghiên cứu toàn diện về các kỹ thuật PEFT cho LLMs trong bối cảnh sinh mã tự động. Cuộc điều tra toàn diện của chúng tôi về các kỹ thuật PEFT cho LLMs tiết lộ tính ưu việt và tiềm năng của chúng so với ICL và RAG trên một tập hợp đa dạng các LLMs và ba bộ dữ liệu sinh mã Python đại diện: Conala, CodeAlpacaPy, và APPS. Hơn nữa, nghiên cứu của chúng tôi nổi bật tiềm năng cho việc tinh chỉnh các LLMs lớn hơn và giảm đáng kể việc sử dụng bộ nhớ bằng cách kết hợp PEFT với lượng tử hóa. Do đó, nghiên cứu này mở ra cơ hội cho các ứng dụng rộng hơn của PEFT trong các kịch bản kỹ thuật phần mềm.
+
+CCS Concepts: •Software and its engineering →Software creation and management ;Software development techniques .
+
+Additional Key Words and Phrases: sinh mã, mô hình ngôn ngữ lớn, tinh chỉnh hiệu quả tham số, lượng tử hóa, nghiên cứu thực nghiệm
+
+∗Tác giả liên hệ.
+Địa chỉ tác giả: Martin Weyssow, martin.weyssow@umontreal.ca, DIRO, Đại học Montreal, Canada; Xin Zhou, xinzhou.2020@phdcs.smu.edu.sg, Đại học Quản lý Singapore, Singapore; Kisub Kim, falconlk00@gmail.com, Đại học Quản lý Singapore, Singapore; David Lo, davidlo@smu.edu.sg, Đại học Quản lý Singapore, Singapore; Houari Sahraoui, sahraouh@iro.umontreal.ca, DIRO, Đại học Montreal, Canada.
+
+Quyền tạo bản sao kỹ thuật số hoặc bản cứng của toàn bộ hoặc một phần công trình này cho việc sử dụng cá nhân hoặc lớp học được cấp mà không mất phí với điều kiện các bản sao không được tạo hoặc phân phối vì lợi nhuận hoặc lợi thế thương mại và các bản sao mang thông báo này và trích dẫn đầy đủ trên trang đầu tiên. Bản quyền cho các thành phần của công trình này thuộc sở hữu của những người khác ngoài (các) tác giả phải được tôn trọng. Tóm tắt có ghi công nguồn được cho phép. Để sao chép khác, hoặc tái xuất bản, để đăng trên máy chủ hoặc để phân phối lại cho danh sách, yêu cầu quyền cụ thể trước và/hoặc phí. Yêu cầu quyền từ permissions@acm.org.
+
+©2024 Bản quyền thuộc về (các) chủ sở hữu/tác giả. Quyền xuất bản được cấp phép cho ACM.
+ACM XXXX-XXXX/2024/12-ART
+https://doi.org/10.1145/nnnnnnn.nnnnnnn
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.arXiv:2308.10462v3  [cs.SE]  27 Dec 2024
+
+--- TRANG 2 ---
+2•M. Weyssow et al.
+ACM Reference Format:
+Martin Weyssow, Xin Zhou, Kisub Kim, David Lo, and Houari Sahraoui. 2024. Exploring Parameter-Efficient Fine-Tuning Techniques for Code Generation with Large Language Models. 1, 1 (December 2024), 27 pages. https://doi.org/10.1145/nnnnnnn.nnnnnnn
+
+1 GIỚI THIỆU
+Các Mô hình Ngôn ngữ Lớn (LLMs) dựa trên kiến trúc Transformer [67], thể hiện tiềm năng đáng kể trong các lĩnh vực đa dạng, bao gồm xử lý ngôn ngữ tự nhiên (NLP) [29,44,76], thị giác máy tính [7,59,85], và kỹ thuật phần mềm [9,66,82]. Các mô hình này xuất sắc trong việc sinh nội dung chất lượng cao khi được cung cấp ý định bằng ngôn ngữ tự nhiên theo phương thức zero-shot, tức là không cần tinh chỉnh. Khả năng này đã khơi dậy sự quan tâm đáng kể trong lĩnh vực kỹ thuật phần mềm để tự động hóa các tác vụ liên quan đến mã như sửa chữa chương trình [27, 80, 81] và sinh mã [3, 9, 48].
+
+Mặc dù khả năng zero-shot của LLMs rất ấn tượng, tiềm năng đầy đủ của chúng thường xuất hiện thông qua tinh chỉnh [54,75]. Cụ thể, việc tinh chỉnh một LLM cho dữ liệu cụ thể tác vụ cho phép nó học và mã hóa kiến thức về dữ liệu có khả năng có ngữ cảnh cao và do đó sinh ra nội dung có ý nghĩa hơn. Tuy nhiên, quá trình này đi kèm với chi phí tính toán đáng kể. Tinh chỉnh đầy đủ, nơi tất cả các tham số của LLMs được cập nhật trong quá trình huấn luyện, đòi hỏi tài nguyên tính toán đáng kể, đặc biệt khi LLM chứa hàng tỷ tham số [62]. Để giảm thiểu gánh nặng tính toán này, các nghiên cứu trước đây trong kỹ thuật phần mềm [53,80,91] đã điều tra các kỹ thuật kỹ thuật prompt như Học trong Ngữ cảnh (ICL) [5,54] và Sinh Tăng cường Truy xuất (RAG) [31]. ICL bao gồm việc cung cấp các ví dụ prompt của tác vụ cho LLM, hướng dẫn nó sinh nội dung phù hợp với ngữ cảnh mà không có bất kỳ tinh chỉnh nào liên quan. Các ví dụ này có thể được tạo thủ công hoặc chọn ngẫu nhiên từ một bộ dữ liệu huấn luyện có liên quan. Kỹ thuật này đã cho thấy kết quả đầy hứa hẹn cho các tác vụ liên quan đến mã, bao gồm sửa chữa chương trình tự động [80], sửa lỗi [53], và sinh mã [61,73,91].
+
+Mở rộng từ ICL, RAG cung cấp một lựa chọn thay thế mạnh mẽ và hiệu quả hơn bằng cách kết hợp một hệ thống truy xuất kiến thức tại thời điểm suy luận. Sử dụng RAG, một mô hình truy xuất tìm kiếm thông tin có liên quan từ một kho tài liệu được lập chỉ mục, chẳng hạn như tài liệu mã hoặc các đoạn mã tương tự với vấn đề đầu vào. Thông tin được truy xuất sau đó được thêm vào prompt đầu vào để hướng dẫn sinh. Không giống như ICL, dựa vào các ví dụ được chọn trước có thể không phù hợp với đầu vào cụ thể, RAG thích ứng động với từng vấn đề đầu vào riêng lẻ, cung cấp ngữ cảnh liên quan hơn. Kỹ thuật này đã thể hiện những cải tiến đáng kể trong các tác vụ kỹ thuật phần mềm như sinh mã và tóm tắt [39,52,91], hoàn thiện mã [41], và sửa chữa chương trình [70].
+
+Mặc dù ICL và RAG cung cấp một lựa chọn thay thế khả thi cho tinh chỉnh đầy đủ, nó hoạt động tại thời điểm suy luận và không liên quan đến việc học các tham số cụ thể tác vụ, điều này có thể ngăn cản LLM khỏi việc nắm bắt thông tin chi tiết về tác vụ và dẫn đến mất hiệu quả. Trong bối cảnh này, các kỹ thuật Tinh chỉnh Hiệu quả Tham số (PEFT) đã xuất hiện như các giải pháp đầy hứa hẹn để làm cho chi phí tinh chỉnh ở mức thấp nhất trong khi cho phép mô hình học các tham số cụ thể tác vụ. Các công trình trước đây [10,57,68,69] trong trí tuệ mã đã chứng minh khả năng của các kỹ thuật PEFT, và thường cho thấy tính ưu việt của chúng so với tinh chỉnh đầy đủ trên một loạt rộng các tác vụ. Tuy nhiên, các nghiên cứu này tập trung vào các mô hình ngôn ngữ nhỏ (SLMs) (<0.25B tham số) như CodeBERT [16] và CodeT5 [72] và bỏ qua khả năng áp dụng của các kỹ thuật PEFT cho LLMs (≥1B tham số), để lại một khoảng trống nghiên cứu quan trọng. Với sự phổ biến ngày càng tăng của LLMs, chúng tôi tin rằng việc giải quyết khoảng trống này là tối quan trọng trong việc thúc đẩy lĩnh vực trí tuệ mã và khai thác đầy đủ tiềm năng của LLMs. Hơn nữa, chúng tôi xác định một cơ hội nghiên cứu bổ sung trong việc khám phá việc sử dụng các kỹ thuật PEFT trong các kịch bản tài nguyên hạn chế, nhằm chứng minh việc dân chủ hóa việc tinh chỉnh LLMs thông qua PEFT. Việc giải quyết những khoảng trống này sẽ không chỉ cho thấy cách các kỹ thuật PEFT có thể nâng cao hiệu quả của LLMs mà còn cách chúng mở rộng khả năng tiếp cận và tiện ích của LLMs trong các cài đặt tính toán khan hiếm và giảm bớt sự phụ thuộc của các nhà thực hành vào cơ sở hạ tầng tính toán lớn.
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 3 ---
+Khám Phá Các Kỹ Thuật Tinh Chỉnh Hiệu Quả Tham Số cho Sinh Mã với Mô Hình Ngôn Ngữ Lớn •3
+
+Trong bài báo này, chúng tôi trình bày một nghiên cứu thực nghiệm về việc sử dụng các kỹ thuật PEFT hiện có với LLMs. Chúng tôi tập trung nghiên cứu vào sinh mã, đây là một lĩnh vực nghiên cứu then chốt do tác động biến đổi của nó trong việc tự động hóa phát triển phần mềm [9,48,50]. Mục tiêu của chúng tôi là hai mặt. Thứ nhất, chúng tôi nhằm đánh giá khả năng sinh mã của LLMs sử dụng các kỹ thuật PEFT hiện có như LoRA [24] và QLoRA [13] trên các bộ dữ liệu không có test cases, bao gồm Conala [91] và CodeAlpacaPy [8], cũng như bộ dữ liệu APPS [22] có test cases. Thứ hai, chúng tôi tìm cách so sánh hiệu quả của LLMs được tinh chỉnh với các kỹ thuật PEFT này so với SLMs, ICL, và RAG. Ngoài ra, chúng tôi tiến hành nghiên cứu so sánh với tình trạng hạn chế về tài nguyên tính toán để điều tra tính thực tế rộng rãi của việc sử dụng các kỹ thuật PEFT cho LLMs. Để đạt được những mục tiêu này, chúng tôi xây dựng bốn câu hỏi nghiên cứu hướng dẫn nghiên cứu của chúng tôi:
+
+– RQ1: LLMs và SLMs hoạt động như thế nào khi sử dụng ICL trên các bộ dữ liệu Conala và CodeAlpacaPy?
+–RQ2: LLMs và SLMs hoạt động như thế nào khi sử dụng các kỹ thuật PEFT trên các bộ dữ liệu Conala và CodeAlpacaPy?
+– RQ3: LoRA so sánh như thế nào với ICL và RAG trên các bộ dữ liệu Conala và CodeAlpacaPy?
+–RQ4: Chúng ta có thể nâng cao hiệu quả của LLMs cho sinh mã trong bộ dữ liệu APPS bằng cách sử dụng LoRA và QLoRA không?
+
+Tổng hợp lại, việc trả lời bốn câu hỏi nghiên cứu này hoàn thành cả hai mục tiêu của nghiên cứu thực nghiệm này. Ba RQ đầu tiên của chúng tôi tập trung vào việc đánh giá SLMs và LLMs cho sinh mã trên các bộ dữ liệu Conala và CodeAlpaca. Trong RQ1, chúng tôi minh họa hiệu quả cơ sở của SLMs và LLMs sử dụng ICL, điều này truy xuất các ví dụ ngẫu nhiên từ tập huấn luyện để hướng dẫn mô hình trong việc sinh mã. Bằng cách giải quyết RQ2, chúng tôi có được sự hiểu biết toàn diện về hiệu quả của SLMs và LLMs khi sử dụng các kỹ thuật PEFT khác nhau. Trong RQ3, chúng tôi tiến hành một nghiên cứu so sánh về hiệu quả của LoRA với ICL và RAG, một baseline mạnh mẽ truy xuất động các ví dụ có liên quan bằng cách chọn những ví dụ gần nhất với các hướng dẫn kiểm tra từ tập huấn luyện. Cuối cùng, để thể hiện tác động rộng hơn tiềm năng của PEFT, chúng tôi nghiên cứu trong RQ4 liệu việc tinh chỉnh LLMs bằng LoRA và QLoRA có thể cải thiện hiệu quả của chúng trên APPS, một benchmark thách thức với test cases.
+
+Để giải quyết những RQ này, chúng tôi tiến hành thí nghiệm trên ba bộ dữ liệu, APPS [22], Conala [86], và CodeAlpacaPy được tuyển chọn cụ thể từ CodeAlpaca [8] cho sinh mã Python. Ngược lại với các bộ dữ liệu đánh giá như HumanEval [9], các bộ dữ liệu APPS, Conala và CodeAlpaca, được sử dụng rộng rãi trong các nghiên cứu sinh mã trước đây [49,71,73,73,88,91], bao gồm đủ ví dụ huấn luyện có thể được sử dụng cho tinh chỉnh. Để phân tích so sánh toàn diện, chúng tôi chọn bốn họ mô hình khác biệt: CodeT5+ [71], CodeGen [48], CodeGen2 [47], và CodeLlama [56], bao gồm tám biến thể lớn và ba biến thể nhỏ. Lưu ý rằng chúng tôi bỏ qua các LLMs nguồn đóng như Codex do không thể tiếp cận các tham số của chúng, điều này làm cho việc nghiên cứu bất kỳ kỹ thuật tinh chỉnh nào trở nên không khả thi. Hơn nữa, nghiên cứu của chúng tôi kết hợp sáu kỹ thuật PEFT: LoRA [24], IA3 [37], Prompt tuning [30], và Prefix tuning [33]. Ngoài ra, chúng tôi khám phá QLoRA [13] với lượng tử hóa 8-bit và 4-bit, kết hợp LoRA và lượng tử hóa mô hình. Không giống như ICL và RAG, các kỹ thuật này đòi hỏi việc học các tham số mới để tinh chỉnh LLMs cho tác vụ downstream cụ thể. Các phát hiện chính của chúng tôi như sau:
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 4 ---
+4•M. Weyssow et al.
+
+–ICL cải thiện đáng kể hiệu quả của tất cả các mô hình so với prompt zero-shot cho sinh mã trên Conala và CodeAlpacaPy.
+–Tăng số lượng ví dụ ICL không phải lúc nào cũng dẫn đến cải thiện hiệu quả. Các mô hình đạt hiệu quả đỉnh với tám và bốn ví dụ cho Conala và CodeAlpacaPy, tương ứng.
+–LLMs được tinh chỉnh với LoRA, IA3, và Prompt tuning, tức là vài triệu tham số, luôn vượt trội hơn SLMs được tinh chỉnh đầy đủ với hàng trăm triệu tham số.
+– Trong số các kỹ thuật PEFT, LoRA đạt hiệu quả cao nhất cho LLMs và SLMs.
+–QLoRA giảm đáng kể việc sử dụng bộ nhớ, đạt được giảm lên đến 2 lần so với LoRA trong khi cải thiện hoặc bảo toàn hiệu quả của các mô hình. Hơn nữa, QLoRA cho phép tinh chỉnh LLMs lên đến 34B tham số với ít hơn 24GB bộ nhớ GPU.
+–LoRA nâng cao đáng kể hiệu suất của tất cả các mô hình so với ICL và RAG cho sinh mã trên Conala và CodeAlpacaPy.
+– LoRA và QLoRA cải thiện hiệu quả của CodeLlama-7B-Instruct cho sinh mã trên bộ dữ liệu APPS.
+
+Nghiên cứu của chúng tôi làm sáng tỏ những cơ hội đầy hứa hẹn mà các kỹ thuật PEFT nắm giữ, đảm bảo khám phá thêm cho ứng dụng của chúng trong các tác vụ và kịch bản liên quan đến mã khác.
+
+Để tóm tắt, đóng góp của chúng tôi như sau:
+–Chúng tôi tiến hành một nghiên cứu thực nghiệm toàn diện về sáu kỹ thuật PEFT, tức là LoRA, IA3, Prompt tuning, Prefix tuning, QLoRA-8bit, và QLoRA-4bit, cho sinh mã Python trên một loạt rộng SLMs và LLMs.
+–Một so sánh và phân tích toàn diện về các kỹ thuật PEFT so với ICL và RAG cho LLMs trên sinh mã.
+–Chúng tôi chứng minh tính thực tế của việc tận dụng các kỹ thuật PEFT để tinh chỉnh hiệu quả LLMs về mã và giảm gánh nặng tính toán liên quan đến tinh chỉnh đầy đủ, thể hiện các ứng dụng rộng hơn tiềm năng của chúng trong kỹ thuật phần mềm.
+
+2 KIẾN THỨC NỀN TẢNG
+2.1 Học trong Ngữ cảnh (ICL) và Sinh Tăng cường Truy xuất (RAG)
+
+Như một trong những loại kỹ thuật cụ thể liên quan đến LLM, ICL đã xuất hiện như một kỹ thuật hiệu quả [5, 11,35,45,51]. ICL tìm cách cải thiện khả năng của LLMs bằng cách tích hợp thông tin cụ thể ngữ cảnh, dưới dạng prompt đầu vào hoặc mẫu hướng dẫn, trong quá trình suy luận và do đó không cần thực hiện huấn luyện dựa trên gradient. Do đó, bằng cách xem xét ngữ cảnh, mô hình trở nên có khả năng sinh ra các đầu ra mạch lạc và phù hợp với ngữ cảnh hơn. Tính mạch lạc ngữ cảnh này của LLM và không phải thực hiện huấn luyện dựa trên gradient tốn kém tạo thành những ưu điểm chính của việc sử dụng ICL để chuyên biệt hóa LLMs cho một tác vụ hoặc bộ dữ liệu cụ thể. Tuy nhiên, ICL cũng có một số bất tiện, bao gồm nhu cầu thiết kế các prompt đại diện [37, 74, 90].
+
+RAG là một phương pháp tinh vi hơn để đưa các ví dụ vào prompt đầu vào tại thời điểm suy luận. Không giống như ICL chọn các ví dụ ngẫu nhiên, RAG dựa vào một mô hình truy xuất truy xuất động các ví dụ từ một bộ dữ liệu gần với một truy vấn. Trong thực tế, truy vấn có thể được xây dựng sử dụng thông tin từ ví dụ kiểm tra tại thời điểm kiểm tra, chẳng hạn như vấn đề mã hóa cho trường hợp sinh mã. Tổng hợp lại,
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 5 ---
+Khám Phá Các Kỹ Thuật Tinh Chỉnh Hiệu Quả Tham Số cho Sinh Mã với Mô Hình Ngôn Ngữ Lớn •5
+
+RAG cho phép đưa thông tin liên quan hơn vào prompt đầu vào so với ICL và đã được áp dụng thành công cho các tác vụ kỹ thuật phần mềm, như sinh mã [52,91], tóm tắt mã [39,52], và hoàn thiện mã [41]. Tuy nhiên, cả ICL và RAG đều có một số hạn chế. Một vấn đề liên quan đến việc đưa thêm token đầu vào trong prompt, điều này có thể không khả thi khi thông tin ngữ cảnh quá lớn. Một hạn chế khác là sự phụ thuộc vào chất lượng và sự liên quan của các ví dụ được truy xuất. Trong RAG, mô hình truy xuất phải tìm chính xác các ví dụ thực sự tương tự hoặc hữu ích cho truy vấn kiểm tra. Nếu cơ chế truy xuất không thể xác định các ví dụ phù hợp, nó có thể đưa thông tin không liên quan hoặc gây hiểu lầm vào prompt, cuối cùng làm giảm hiệu suất.
+
+2.2 Tinh chỉnh Hiệu quả Tham số (PEFT)
+
+PEFT đề cập đến việc sử dụng các kỹ thuật tối ưu hóa quá trình tinh chỉnh của LLMs bằng cách cập nhật có chọn lọc một tập con tham số thay vì cập nhật toàn bộ tham số của mô hình [14]. Về mặt kỹ thuật, các kỹ thuật PEFT tập trung vào việc học một số lượng nhỏ tham số cho tác vụ hiện tại bằng cách thiết kế các lớp bổ sung [23], thêm các token bổ sung đứng trước [30,33], phân tách gradient trọng số thành các ma trận cụ thể [24]. Một trong những kỹ thuật PEFT tiên tiến đại diện là Thích ứng Thứ hạng Thấp của LLMs (LoRA) [24]. Kỹ thuật này bao gồm việc đóng băng trọng số mô hình và đưa các ma trận có thể huấn luyện thứ hạng thấp vào các lớp attention của kiến trúc Transformer [67], do đó giảm đáng kể số lượng tham số có thể huấn luyện. Chúng tôi sử dụng LoRA như một trong những kỹ thuật PEFT của chúng tôi vì nó đã được sử dụng rộng rãi trong NLP [14,37,65] và cho thấy hiệu suất đầy hứa hẹn. Chúng tôi cũng sử dụng IA3 nhằm cải thiện LoRA và giảm thêm lượng tham số có thể huấn luyện [37]. Ngoài LoRA và IA3, chúng tôi cũng bao gồm Prompt tuning [30] và Prefix tuning [30] trong nghiên cứu của chúng tôi. Prompt tuning bao gồm quá trình thêm vào trước các token ảo vào token đầu vào của LLM, trong khi Prefix tuning chèn các token ảo trong tất cả các lớp của mô hình mục tiêu và do đó yêu cầu học nhiều tham số hơn. Các token ảo này có thể phân biệt, cho phép chúng được học thông qua lan truyền ngược trong quá trình tinh chỉnh, trong khi phần còn lại của LLM vẫn được đóng băng. Hơn nữa, QLoRA [13] kết hợp LoRA với lượng tử hóa mô hình, cho phép tinh chỉnh LLMs với ít bộ nhớ GPU hơn bằng cách giảm độ chính xác của các kiểu dữ liệu điểm nổi trong mô hình.
+
+3 ÁP DỤNG LLMS VỚI TÀI NGUYÊN HẠN CHẾ
+
+Trong kỷ nguyên của LLMs, tính khả dụng của tài nguyên tính toán đáng kể đóng vai trò quan trọng trong việc khai thác khả năng cao của chúng. Thật không may, nhiều nhà nghiên cứu và thực hành thường thấy mình bị hạn chế bởi tính khả dụng hạn chế của cơ sở hạ tầng tính toán cao cấp.
+
+Ví dụ, một kỹ sư phần mềm chỉ có quyền truy cập vào một GPU tiêu dùng duy nhất (ví dụ: 24GB VRAM) có thể thấy tinh chỉnh đầy đủ không thực tế do nhu cầu bộ nhớ đáng kể. Sự gia tăng nhanh chóng về kích thước mô hình và số lượng tham số có thể huấn luyện làm trầm trọng thêm vấn đề này. Bất chấp hiệu quả của nó, tinh chỉnh đầy đủ đi kèm với chi phí tính toán cao [3,15,51]., nhấn mạnh một sự đánh đổi tính toán-hiệu quả (xem Bảng 1).
+
+Để giải quyết những hạn chế này, các phương pháp thay thế như ICL và RAG đã thu hút sự chú ý. ICL và RAG cung cấp một lựa chọn tính toán thấp bằng cách loại bỏ nhu cầu cập nhật tham số. Tuy nhiên, các kỹ thuật này đi kèm với tập hợp thách thức riêng của nó, bao gồm việc lựa chọn các ví dụ đại diện và độ nhạy với thiết kế prompt [37,74,90]. Trong thực tế, điều này có thể dẫn đến hiệu quả thấp hơn so với tinh chỉnh, đặc biệt là cho các tác vụ có ngữ cảnh cao phổ biến trong kỹ thuật phần mềm.
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 6 ---
+6•M. Weyssow et al.
+
+Bảng 1. Sự đánh đổi tính toán-hiệu quả cho mỗi kỹ thuật tinh chỉnh mô hình.
+
+Kỹ thuật                Chi phí tính toán       Hiệu quả
+Tinh chỉnh đầy đủ        cao [X]                cao [✓]
+ICL và RAG              thấp [✓]               thấp [X]
+PEFT                    thấp [✓]               cao [✓]
+
+0  5  10  15  20  24
+Mức tiêu thụ bộ nhớ đỉnh (GB)
+CodeT5+-220M-ft
+CodeGen-350M-mono-ft
+CodeT5+-770M-ft
+CodeLlama-7B-QLoRA-4bit
+CodeGen2-1B-lora
+CodeGen2-3.7B-lora
+CodeLlama-13B-QLoRA-4bit
+CodeLlama-7B-lora
+CodeGen2-7B-lora
+CodeLlama-34B-QLoRA-4bit
+3.54
+5.84
+8.16
+9.16
+9.8
+14.08
+15.01
+19.06
+20.29
+23.59
+
+Hình 1. Mức tiêu thụ bộ nhớ GPU đỉnh trong quá trình tinh chỉnh mô hình sử dụng tinh chỉnh đầy đủ (ft), LoRA, và QLoRA.
+
+Để vượt qua những hạn chế này, chúng tôi dự báo sự xuất hiện của các kỹ thuật PEFT như các giải pháp đầy hứa hẹn, cung cấp các phương pháp tinh chỉnh LLMs hiệu quả và có thể mở rộng hơn về mặt tính toán. Các phương pháp PEFT, như LoRA và QLoRA, giới hạn số lượng tham số được cập nhật, do đó giảm tiêu thụ bộ nhớ trong khi duy trì hiệu quả cạnh tranh với tinh chỉnh đầy đủ. Điều này làm cho PEFT đặc biệt phù hợp cho các nhà thực hành có quyền truy cập hạn chế vào tài nguyên tính toán. Như được minh họa trong Bảng 1, PEFT đạt được sự cân bằng tối ưu giữa chi phí tính toán và hiệu quả. Hơn nữa, Hình 1 cho thấy rằng bằng cách sử dụng các kỹ thuật PEFT như LoRA, các nhà thực hành có thể tinh chỉnh các mô hình như CodeLlama-7B mà không vượt quá 19GB bộ nhớ GPU. Đối với các mô hình thậm chí lớn hơn, như CodeLlama-34B, QLoRA với lượng tử hóa cho phép tinh chỉnh trong giới hạn của một GPU VRAM 24GB.
+
+Kết luận, PEFT trao quyền cho các kỹ sư phần mềm để vượt qua những hạn chế tài nguyên, cho phép tinh chỉnh LLM hiệu quả trong các tác vụ có ngữ cảnh cao mà không dựa vào cơ sở hạ tầng tính toán đắt đỏ. Điều này làm cho PEFT không chỉ là một công cụ thực tế mà còn là công cụ thiết yếu để dân chủ hóa quyền truy cập vào khả năng LLM.
+
+4 PHƯƠNG PHÁP LUẬN
+
+Trong phần này, chúng tôi trình bày thiết lập thí nghiệm của nghiên cứu chúng tôi. Chúng tôi tiến hành tất cả các thí nghiệm trong một kịch bản hạn chế tài nguyên. Cụ thể, tất cả các quy trình, tức là tinh chỉnh và suy luận, của các mô hình được thực hiện với quyền truy cập vào một GPU 24GB duy nhất. Mục tiêu chính của nghiên cứu chúng tôi là chứng minh liệu việc tinh chỉnh LLMs thông qua PEFT có khả thi và mong muốn hơn các phương pháp trước đây và các mô hình nhỏ hơn trong bối cảnh này.
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 7 ---
+Khám Phá Các Kỹ Thuật Tinh Chỉnh Hiệu Quả Tham Số cho Sinh Mã với Mô Hình Ngôn Ngữ Lớn •7
+
+4.1 Câu hỏi Nghiên cứu
+
+Trong nghiên cứu này, chúng tôi tập trung vào các câu hỏi nghiên cứu sau:
+–RQ1: LLMs và SLMs hoạt động như thế nào khi sử dụng ICL trên các bộ dữ liệu Conala và CodeAlpacaPy?
+
+Chúng tôi nghiên cứu hiệu quả cơ sở của LLMs (≥1B tham số) và SLMs (<1B tham số) cho sinh mã sử dụng prompt zero-shot và ICL, nơi 𝑛 ví dụ được chọn ngẫu nhiên được thêm vào prompt đầu vào. Chúng tôi kiểm tra mỗi mô hình với lên đến 16 ví dụ ICL, do tài nguyên tính toán hạn chế của chúng tôi.
+
+Chúng tôi nghiên cứu hiệu quả của một phổ rộng SLMs và LLMs cho sinh mã trên hai bộ dữ liệu bao gồm mã có độ dài khác nhau. Chúng tôi chọn một loạt rộng các mô hình có kích thước khác nhau, được pre-train trên các codebase đa dạng và với các mục tiêu học khác nhau để nghiên cứu cách những yếu tố này ảnh hưởng đến hiệu quả của chúng.
+
+–RQ2: LLMs và SLMs hoạt động như thế nào khi sử dụng các kỹ thuật PEFT trên các bộ dữ liệu Conala và CodeAlpacaPy? Trong RQ này, chúng tôi điều tra liệu các kỹ thuật PEFT có luôn vượt trội hơn ICL cho SLMs và LLMs. Chúng tôi so sánh các cấu hình hoạt động tốt nhất của ICL trong RQ1 với các kỹ thuật PEFT, bao gồm LoRA, IA3, Prompt tuning, Prefix tuning. Hơn nữa, chúng tôi cũng điều tra ảnh hưởng của lượng tử hóa với QLoRA-8bit và QLoRA-4bit trên mô hình hoạt động tốt nhất của chúng tôi và các biến thể lớn hơn.
+
+Đối với SLMs, chúng tôi cũng bao gồm một so sánh với tinh chỉnh tham số đầy đủ, như thường được sử dụng trong các nghiên cứu SE trước đây [16,72,77,92]. Chúng tôi không bao gồm tinh chỉnh tham số đầy đủ cho LLMs, vì nó không khả thi trong ngân sách tính toán của chúng tôi.
+
+–RQ3: LoRA so sánh như thế nào với ICL và RAG trên các bộ dữ liệu Conala và CodeAlpacaPy?
+Trong RQ này, chúng tôi so sánh hiệu quả của LLM hoạt động tốt nhất được tinh chỉnh bằng LoRA với RAG. Thiết lập RAG của chúng tôi bao gồm việc truy xuất lên đến 16 ví dụ từ tập huấn luyện có liên quan chặt chẽ đến prompt đầu vào, tương tự như các phương pháp khác đã được đề xuất trước đây cho các tác vụ SE khác nhau [39, 41, 70].
+
+–RQ4: Chúng ta có thể nâng cao hiệu quả của LLMs cho sinh mã trong bộ dữ liệu APPS bằng cách sử dụng LoRA và QLoRA không? Cuối cùng, chúng tôi khám phá liệu LLM được tinh chỉnh bằng LoRA và QLoRA có cho thấy cải thiện trong tính đúng đắn chức năng trong bộ dữ liệu APPS. Chúng tôi tinh chỉnh LLM hoạt động tốt nhất của chúng tôi bằng LoRA và QLoRA trên tập huấn luyện của APPS, và báo cáo trung bình của test cases được vượt qua cũng như Pass@𝑘 trên tập kiểm tra của APPS cho các vấn đề mã hóa cấp độ giới thiệu, phỏng vấn, và thi đấu.
+
+4.2 Bộ dữ liệu và Tác vụ
+
+Trong suốt nghiên cứu của chúng tôi, chúng tôi so sánh tất cả các mô hình được nghiên cứu trên một tác vụ sinh mã Python. Tác vụ này đã thu hút sự chú ý đáng kể trong những năm gần đây [9,10,48,50,61] với sự xuất hiện của LLMs và khả năng của chúng trong việc sinh mã Python theo phương thức zero-shot, tức là không cần tinh chỉnh thêm. Cụ thể, các bộ dữ liệu đánh giá như HumanEval [9] đã được sử dụng rộng rãi để đánh giá các phương pháp sinh mã [3,9,82]. Mặc dù HumanEval được sử dụng rộng rãi, nó thiếu một kho tài liệu huấn luyện để đánh giá các phương pháp tinh chỉnh hoặc PEFT. Vì trọng tâm của nghiên cứu chúng tôi là chuyên biệt hóa LLMs sử dụng các kỹ thuật PEFT, chúng tôi đã chọn không sử dụng HumanEval. Thay vào đó, chúng tôi chọn sử dụng ba bộ dữ liệu sinh mã được sử dụng rộng rãi khác: bộ dữ liệu Conala [87], CodeAlpaca [8], và APPS [22]. Tất cả các bộ dữ liệu cung cấp một số lượng lớn
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 8 ---
+8•M. Weyssow et al.
+
+0   25  50  75  100 125 150 175 200
+Độ dài token
+0
+100
+200
+300
+400
+500
+600
+700
+Số lượng mẫu
+APPS
+CodeAlpacaPy
+Conala
+
+Hình 2. Phân phối độ dài token của các bộ dữ liệu Conala, CodeAlpacaPy, và APPS.
+
+các ví dụ có thể được sử dụng để tinh chỉnh một mô hình và đã được sử dụng trong các nghiên cứu sinh mã trước đây với LLMs [71, 73, 88, 91].
+
+Bộ dữ liệu Conala. Chúng tôi sử dụng một phiên bản được tuyển chọn của bộ dữ liệu Conala [91]. Bộ dữ liệu được thu thập từ StackOverflow và chứa các cặp mã và ý định ngôn ngữ tự nhiên được chú thích thủ công. Mỗi ý định ngôn ngữ tự nhiên chứa gợi ý về các biến được điều khiển trong mã thực tế, ví dụ, xem ví dụ đầu tiên trong Bảng 2, cung cấp thêm ngữ cảnh cho mô hình để sinh mã có liên quan. Trong Hình 2, chúng tôi báo cáo phân phối độ dài token của ba bộ dữ liệu. Trong Conala, hầu hết các giải pháp mã đều ngắn và một dòng, làm cho nó tương đối dễ dàng cho một LLM để sinh các dự đoán khớp chính xác. Trong phiên bản được tuyển chọn này của bộ dữ liệu, các tác giả đảm bảo rằng mỗi mẫu trong tập xác thực và kiểm tra chứa ít nhất một hàm Python không xuất hiện trong tập huấn luyện. Ngoài ra, họ đảm bảo rằng các ví dụ được thu thập từ cùng một bài đăng StackOverflow xuất hiện trong các tập khác nhau. Do đó, chúng tôi có thể đảm bảo rằng mỗi ý định tự nhiên trong tập kiểm tra không xuất hiện trong tập huấn luyện. Bộ dữ liệu chứa 2,135/201/543 mẫu làm tập huấn luyện/xác thực/kiểm tra, tương ứng.
+
+Bộ dữ liệu CodeAlpacaPy. Chúng tôi xây dựng một phiên bản Python được tuyển chọn của bộ dữ liệu CodeAlpaca [8] bằng cách chọn cụ thể các mẫu dữ liệu Python trong bộ dữ liệu CodeAlpaca. Chúng tôi lọc ra các mẫu mã không thể được phân tích tĩnh để đảm bảo bộ dữ liệu chỉ bao gồm các mã Python hợp lệ về mặt cú pháp. Như được minh họa trong ví dụ dưới cùng của Bảng 2 và trong Hình 2, CodeAlpacaPy chứa các ví dụ dài hơn và phức tạp hơn so với Conala, cho phép đánh giá toàn diện hơn về PEFT cho sinh mã. Bộ dữ liệu chứa 2,192/314/628 mẫu làm tập huấn luyện/xác thực/kiểm tra, tương ứng.
+
+Bộ dữ liệu APPS. Bộ dữ liệu APPS bao gồm 10,000 vấn đề sinh mã, mỗi vấn đề được ghép nối với các giải pháp Python. Những vấn đề này được phân loại thành ba cấp độ khó: giới thiệu, phỏng vấn, và thi đấu, với các giải pháp thay đổi từ một dòng đơn giản đến các thuật toán phức tạp. Chúng ta có thể thấy trong Hình 2 và Bảng 2 rằng APPS bao gồm các ví dụ dài hơn và phức tạp hơn so với hai bộ dữ liệu khác. Trung bình, mỗi vấn đề được đi kèm với 21.2 test cases, được thiết kế để đánh giá tính đúng đắn chức năng của mã được sinh. Bộ dữ liệu gốc được chia thành 5,000 mẫu cho huấn luyện và 5,000 cho kiểm tra.
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 9 ---
+Khám Phá Các Kỹ Thuật Tinh Chỉnh Hiệu Quả Tham Số cho Sinh Mã với Mô Hình Ngôn Ngữ Lớn •9
+
+Bảng 2. Tổng quan về tác vụ sinh mã, với ba ví dụ được lấy từ các bộ dữ liệu Conala, CodeAlpacaPy, và APPS.
+
+Conala
+Prompt: ### Instruction:
+map two lists 'keys' and 'values' into a dictionary
+### Response:
+Ground truth: dict([(k, v) for k, v in zip(keys, values)])
+
+CodeAlpacaPy
+Prompt: ### Instruction:
+Write a function to calculate the standard deviation of data points in Python.
+### Response:
+Ground truth: def stdev(data):
+    avg = sum(data) / len(data)
+    total = 0
+    for x in data:
+        total += (x - avg) ** 2
+    return (total / (len(data) - 1)) ** 0.5
+
+APPS
+Prompt: ### Instruction:
+You are given a string s = s1 s2 . . . sn of length n, which only contains digits 1, 2,..., 9. A substring s[l...r] of s is a string slsl+1sl+2 ...sr. A substring s[l...r] of s is called even if the number represented by it is even. Find the number of even substrings of s. Note, that even if some substrings are equal as strings, but have different l and r, they are counted as different substrings. The first line contains an integer n (1≤n≤65000) — the length of the string s. The second line contains a string s of length n. The string s consists only of digits 1, 2,..., 9. Print the number of even substrings of s.
+### Response:
+Ground truth: n = int(input())
+s = input()
+ans = 0
+for i in range(n):
+    for j in range(i, n):
+        if int(s[i:j+1]) % 2 == 0:
+            ans += 1
+print(ans)
+
+Trong nghiên cứu này, chúng tôi sử dụng 4,500 mẫu cho huấn luyện, 500 cho xác thực, và 750 cho kiểm tra, đảm bảo phân phối cân bằng 250 mẫu kiểm tra cho mỗi cấp độ khó.
+
+Thiết kế tác vụ. Trong Bảng 2, chúng tôi minh họa tổng quan về thiết kế tác vụ. Prompt có dạng của một mẫu hướng dẫn, nơi "### Instruction:" và "### Response:" đóng vai trò phân định hướng dẫn, tức là ý định ngôn ngữ tự nhiên, và câu trả lời, tức là sinh mã. Lưu ý rằng thiết kế prompt này có thể không tối ưu, nhưng loại mẫu hướng dẫn này đã cho thấy hiệu quả trong các công trình trước đây [36,89]. Mã được sinh bởi mô hình được so sánh với ground truth để đánh giá chất lượng của việc sinh. Trong quá trình tinh chỉnh, chúng tôi giảm thiểu một hàm loss cross-entropy tự hồi quy tiêu chuẩn:
+
+L = -∑(i=1 to T+1) Mi · log P(xi|x<i),
+
+trong đó:
+Mi = {
+    1, if xi ≠ -100
+    0, otherwise
+}
+
+Mô hình nhận một nối kết của prompt và ground truth làm đầu vào và dự đoán mỗi token xi theo cách tự hồi quy dựa trên các token trước đó x<i. Lưu ý rằng trong tính toán loss, chúng tôi bỏ qua các token từ mẫu hướng dẫn để buộc mô hình tập trung vào việc sinh mã. Chúng tôi đặt giá trị của các token hướng dẫn thành -100 và bỏ qua chúng trong tính toán loss sử dụng hàm chỉ báo Mi. Tại thời điểm suy luận, mô hình nhận prompt làm đầu vào và cố gắng sinh mã ground truth bằng cách sinh lên đến 10 ứng viên mã.
+
+4.3 ICL và RAG
+
+Chúng tôi tiến hành thí nghiệm sử dụng ICL và RAG trên các bộ dữ liệu Conala và CodeAlpacaPy. Đối với cả hai kỹ thuật, chúng tôi chọn số lượng mẫu tối đa có thể vừa với bộ nhớ GPU của chúng tôi. Đối với ICL, chúng tôi sử dụng lên đến 16 ví dụ cho bộ dữ liệu Conala và 8 ví dụ cho CodeAlpacaPy. Những ví dụ này được lấy mẫu ngẫu nhiên từ các bộ dữ liệu huấn luyện tương ứng và được nối với prompt đầu vào trong quá trình suy luận. Đối với RAG, chúng tôi tận dụng GTE-small, một mô hình embedding đa mục đích, nhẹ vượt trội hơn nhiều mô hình lớn hơn, bao gồm các embedding độc quyền của OpenAI [34]. Chúng tôi sinh embedding cho tất cả các hướng dẫn (loại trừ mã) trong các tập huấn luyện. Tại thời điểm suy luận, chúng tôi truy xuất lên đến 16 ví dụ cho Conala và 4 ví dụ cho CodeAlpacaPy, chọn những ví dụ có hướng dẫn tương tự nhất với đầu vào kiểm tra. Như với ICL, các ví dụ được truy xuất được nối với vấn đề đầu vào để hướng dẫn sinh mã.
+
+4.4 Mô hình Ngôn ngữ Nhỏ và Lớn
+
+Để thực hiện một phân tích toàn diện, chúng tôi đã chọn SLMs và LLMs của chúng tôi theo một số tiêu chí. Đầu tiên, chúng tôi chỉ xem xét các mô hình nguồn mở. Chúng tôi bỏ qua các LLMs nguồn đóng như Codex do không thể tiếp cận các tham số của chúng, điều này làm cho việc nghiên cứu bất kỳ kỹ thuật tinh chỉnh nào trở nên không khả thi. Tất cả các checkpoint của mô hình được nghiên cứu có thể được truy cập tự do, và đã được pre-train sử dụng dữ liệu nguồn mở. Thứ hai, chúng tôi chọn LLMs, đã được phát hành trong hai năm qua. Cuối cùng, để điều tra tác động của việc mở rộng, chúng tôi chọn các mô hình với một loạt đa dạng các tham số. Chúng tôi coi các mô hình có ít hơn 1B tham số là SLMs, và những mô hình khác là LLMs. Lưu ý rằng chúng tôi chọn các mô hình phù hợp với một GPU 24GB duy nhất cho tinh chỉnh và suy luận mà không gây tràn bộ nhớ. Tổng cộng, chúng tôi bao gồm 11 SLMs và LLMs từ các họ mô hình đa dạng để tiến hành thí nghiệm của chúng tôi.
+
+–SLMs. Chúng tôi sử dụng CodeGen-350M-mono [48], CodeT5+-220M [71], và CodeT5+-770M [71] làm SLMs. CodeGen-350M-mono là một mô hình ngôn ngữ tự hồi quy và là phiên bản nhỏ của CodeGen được pre-train trên các ngôn ngữ lập trình khác nhau và được tinh chỉnh thêm trên dữ liệu Python. CodeT5+-220M và CodeT5+-770M là các mô hình ngôn ngữ encoder-decoder cải thiện CodeT5 bằng cách tận dụng giai đoạn pre-training hai giai đoạn trên dữ liệu ngôn ngữ tự nhiên và mã, và các mục tiêu học mới.
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 11 ---
+Khám Phá Các Kỹ Thuật Tinh Chỉnh Hiệu Quả Tham Số cho Sinh Mã với Mô Hình Ngôn Ngữ Lớn •11
+
+–CodeGen2 [47] là một họ mô hình ngôn ngữ dựa trên prefix kết hợp các lược đồ học của encoder hai chiều và decoder một chiều. CodeGen2 cải thiện CodeGen [48], do đó chúng tôi không bao gồm họ CodeGen trong đánh giá của chúng tôi. Các mô hình CodeGen2 được pre-train trên phiên bản khử trùng lặp của TheStack [28] trải rộng một loạt ngôn ngữ. Chúng tôi sử dụng CodeGen2-1B, CodeGen2-3.7B và CodeGen2-7B.
+
+–CodeLlama [56] là một họ LLMs dựa trên Llama 2 [64]. Mỗi mô hình được khởi tạo với Llama 2 và được pre-train thêm trên mã. CodeLlama có ba biến thể khác nhau: CodeLlama chuyên biệt cho mã, CodeLlama-Instruct chuyên biệt cho instruction-tuning và CodeLlama-Python chuyên biệt cho Python. Chúng tôi sử dụng CodeLlama-7B, CodeLlama-7B-Instruct và CodeLlama-7B-Python để khởi động thí nghiệm của chúng tôi. Trong RQ4, chúng tôi tinh chỉnh CodeLlama-13B-Python và CodeLlama-34B-Python sử dụng QLoRA.
+
+4.5 Metrics
+
+Chúng tôi đo lường hiệu quả của các mô hình thông qua các metrics được sử dụng rộng rãi trong công việc sinh mã trước đây. Đối với các thí nghiệm trên Conala và CodeAlpacaPy, chúng tôi báo cáo metrics Exact Match (EM) và CodeBLEU [55]. Với một mã được sinh và một ground truth, EM trả về 1 nếu cả hai mã giống hệt nhau, ngược lại 0. Để đánh giá hiệu quả của các mô hình trên một danh sách 𝑘∈[1,10] ứng viên, chúng tôi báo cáo EM@𝑘, tính toán trung bình các dự đoán đúng trong danh sách 𝑘 ứng viên. Đối với các thí nghiệm của chúng tôi trên bộ dữ liệu APPS, chúng tôi báo cáo hai metrics: số lượng test cases vượt qua trung bình và Pass@𝑘. Số lượng test cases vượt qua trung bình đánh giá mô hình hoạt động tốt như thế nào bằng cách đo lường tỷ lệ test cases mà mã được sinh của nó vượt qua cho mỗi mẫu. Ngược lại, Pass@𝑘 là một metric nghiêm ngặt hơn đo lường tỷ lệ phần trăm vấn đề mà ít nhất một trong top 𝑘 mẫu mã được sinh vượt qua tất cả test cases, phản ánh khả năng của mô hình trong việc tạo ra các giải pháp hoàn toàn đúng trong 𝑘 lần thử.
+
+4.6 Chi tiết Triển khai
+
+Đối với tất cả các thí nghiệm của chúng tôi, chúng tôi sử dụng một GPU NVIDIA RTX A5000 24GB duy nhất. Chúng tôi nghiên cứu tổng cộng bảy kỹ thuật tinh chỉnh: Tinh chỉnh đầy đủ, ICL, LoRA [24], IA3 [37], Prompt tuning [30], Prefix tuning [33], và QLoRA [13]. Chúng tôi triển khai tất cả các kỹ thuật tinh chỉnh sử dụng thư viện HuggingFace [79] và PEFT [43].
+
+Chúng tôi chỉ sử dụng tinh chỉnh đầy đủ cho SLMs, vì việc tinh chỉnh tất cả các tham số của LLMs là không thể tính toán được trong giới hạn bộ nhớ GPU tối đa 24GB. Chúng tôi đặt learning rate thành 5𝑒−5. Đối với LoRA và IA3, chúng tôi áp dụng phân tách ma trận thứ hạng thấp trên các lớp attention của các mô hình và đặt 𝑟=16 và 𝛼=32. Để triển khai QLoRA, chúng tôi sử dụng lượng tử hóa 8-bit và 4-bit [12]. Chúng tôi đặt learning rate thành 3𝑒−4 cho LoRA, IA3 và QLoRA. Đối với Prompt tuning và Prefix tuning, chúng tôi thêm vào trước một tập hợp 20 token ảo có thể huấn luyện liên tục cho mỗi mẫu đầu vào của các mô hình và áp dụng learning rates 3𝑒−3 và 3𝑒−2.
+
+Chúng tôi sử dụng optimizer Adafactor [60] với độ chính xác float 16-bit cho tất cả các mô hình. Chúng tôi tinh chỉnh các mô hình trong tối đa năm epochs và đánh giá chúng mỗi 0.2∗𝑙𝑒𝑛(𝑡𝑟𝑎𝑖𝑛_𝑠𝑒𝑡) bước tối ưu hóa. Chúng tôi tinh chỉnh tất cả các mô hình với batch size 8. Chúng tôi chọn checkpoint với evaluation loss thấp nhất cho suy luận và thấy rằng beam search với beam size 10 mang lại hiệu quả tốt nhất. Với phân phối độ dài token khác nhau và độ phức tạp của các bộ dữ liệu, chúng tôi sinh mã với lên đến 64,
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 12 ---
+12 •M. Weyssow et al.
+
+0 1 2 3 4 5    8    16
+Số lượng ví dụ ngẫu nhiên
+0
+5
+10
+15
+20
+25
+30
+EM@10
+Conala
+
+0 1 2 3 4 5    8
+Số lượng ví dụ ngẫu nhiên
+0
+2
+4
+6
+8
+10
+12
+EM@10
+CodeAlpacaPy
+
+CodeLlama-7B-Python
+CodeLlama-7B-Instruct
+CodeLlama-7B
+CodeGen2-7B
+CodeGen2-3.7B
+CodeGen2-1B
+CodeGen-350M-mono
+CodeT5+-770M
+CodeT5+-220M
+
+Hình 3. [RQ1] – Hiệu quả của các mô hình sử dụng ICL với số lượng ví dụ ngẫu nhiên khác nhau trên các bộ dữ liệu Conala và CodeAlpacaPy.
+
+128, và 1024 tokens cho Conala, CodeAlpacaPy, và APPS, tương ứng. Chúng tôi công khai mã của chúng tôi tại: https://github.com/martin-wey/peft-llm-code.
+
+5 KẾT QUẢ THÍ NGHIỆM
+
+5.1 RQ1: Hiệu quả Cơ sở của Mô hình Sử dụng Zero-Shot và ICL
+
+Chúng tôi bắt đầu bằng cách điều tra hiệu quả cơ sở của tất cả SLMs và LLMs cho sinh mã dựa trên khớp. Cụ thể, chúng tôi sử dụng các phương pháp zero-shot và ICL với lên đến 16 ví dụ ngẫu nhiên được truy xuất cho bộ dữ liệu Conala và tám cho bộ dữ liệu CodeAlpacaPy. Lý do đằng sau việc sử dụng ít ví dụ hơn cho CodeAlpacaPy là vì xem xét 16 ví dụ dẫn đến lỗi hết bộ nhớ trong thiết lập của chúng tôi. Chúng tôi đánh giá hiệu quả của các mô hình sử dụng EM@10 và so sánh chúng trên hai bộ dữ liệu này trong Hình 3. Lưu ý rằng kiến trúc CodeGen2 dẫn đến việc sử dụng bộ nhớ GPU đáng kể hơn so với các mô hình khác, điều này giải thích tại sao chúng tôi đánh giá ICL với ít ví dụ hơn so với các mô hình khác.
+
+Đầu tiên, chúng tôi quan sát một khoảng cách đáng kể trong EM@10 giữa hai bộ dữ liệu. Sự khác biệt này có thể được giải thích bởi thực tế là bộ dữ liệu CodeAlpacaPy chứa các mẫu thách thức hơn nhiều so với bộ dữ liệu Conala, như được thể hiện trong Bảng 2.
+
+Thứ hai, có một khoảng cách đáng chú ý về hiệu quả giữa SLMs và LLMs, bất kể số lượng ví dụ được cung cấp. Quan sát này nổi bật những ưu điểm của pre-training quy mô lớn và việc sử dụng các mô hình lớn hơn trong bối cảnh này.
+
+Đối với bộ dữ liệu Conala, việc tăng số lượng ví dụ dẫn đến điểm EM@10 cao hơn. Tuy nhiên, khi sử dụng hơn tám ví dụ, hiệu quả của các mô hình bắt đầu giảm. Đối với bộ dữ liệu CodeAlpacaPy, một xu hướng tương tự được quan sát, nhưng số lượng ví dụ tối ưu nhỏ hơn. Hầu hết các mô hình đạt điểm EM@10 tốt nhất khi sử dụng ba hoặc bốn ví dụ. Quan sát này nhấn mạnh hạn chế của ICL, vì việc thêm nhiều ví dụ hơn dẫn đến suy giảm hiệu quả của các mô hình.
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 13 ---
+Khám Phá Các Kỹ Thuật Tinh Chỉnh Hiệu Quả Tham Số cho Sinh Mã với Mô Hình Ngôn Ngữ Lớn •13
+
+Cuối cùng, các mô hình CodeLlama vượt trội hơn tất cả các mô hình trên cả hai bộ dữ liệu, đạt EM@10 đỉnh 29.83 trên Conala (CodeLlama-7B) và 11.94 trên CodeAlpacaPy (CodeLlama-7B-Python). Ngược lại, các mô hình nhỏ hơn, như CodeGen2-3.7B đạt EM@10 23.94 và 7.00 trên Conala và CodeAlpacaPy, tương ứng.
+
+Trả lời cho RQ1: ICL cải thiện đáng kể hiệu quả của tất cả các mô hình so với zero-shot. Mô hình tốt nhất của chúng tôi, CodeLlama-7B, đạt điểm EM@10 29.83 (7.73) và 11.62 (7.01) trên Conala và CodeAlpacaPy với ICL (zero-shot), tương ứng.
+
+5.2 RQ2: Hiệu quả của Mô hình sử dụng Kỹ thuật PEFT
+
+Chúng tôi báo cáo kết quả chi tiết về hiệu quả của SLMs và LLMs trên sinh mã dựa trên khớp cho cả bộ dữ liệu Conala và CodeAlpacaPy trong Bảng 3.
+
+SLMs vs. LLMs. CodeGen-350M-mono với LoRA thể hiện hiệu quả tốt nhất trung bình trong số các mô hình nhỏ, trong khi CodeLlama-7B-Python với LoRA là LLM tốt nhất trung bình. Dưới cùng một hạn chế bộ nhớ GPU 24GB, LLM tốt nhất vượt trội hơn mô hình nhỏ tốt nhất 39.8%, 41.7%, và 47.1% (72.3%, 48.8%, và 9.1%) trong EM@1, EM@10, và CodeBLEU liên quan đến bộ dữ liệu Conala (CodeAlpacaPy), tương ứng.
+
+SLMs. Trong số SLMs, CodeGen-350M-mono cho thấy hiệu quả cao nhất trên tất cả metrics trên cả hai bộ dữ liệu. Kết quả của chúng tôi phù hợp với các nghiên cứu trước đây [48,73,91] đã xác định CodeGen-350M-mono là một SLM mạnh mẽ cho các tác vụ sinh mã Python. Thú vị là, mặc dù yêu cầu tinh chỉnh khoảng 1% tổng số tham số của mô hình, LoRA xuất hiện như kỹ thuật tinh chỉnh tốt nhất, vượt trội hơn tinh chỉnh đầy đủ với một khoảng cách đáng kể trên gần như tất cả các cấu hình. Ví dụ, điểm EM@10 cho CodeGen-350M-mono trên bộ dữ liệu Conala, với tinh chỉnh đầy đủ, là 18.42, trong khi nó tăng vọt lên 25.60 với LoRA.
+
+LLMs. Trong Hình 4, chúng tôi trình bày một phân tích so sánh về hiệu quả của các mô hình khi được tinh chỉnh bằng LoRA, tập trung vào điểm CodeBLEU và EM@10. Cả hai biểu đồ đều rõ ràng thiết lập các mô hình CodeLlama là LLMs hoạt động tốt nhất trong nghiên cứu của chúng tôi. Đáng chú ý, CodeGen2-7B, mặc dù chia sẻ số lượng tham số tương tự, tụt hậu so với tất cả các biến thể CodeLlama-7B. Không có gì đáng ngạc nhiên, việc khai thác các mô hình lớn hơn dẫn đến hiệu quả tốt hơn. Với chi phí tính toán thấp của các kỹ thuật PEFT, việc tận dụng các mô hình nhỏ hơn trong bối cảnh tương tự như của chúng tôi có vẻ phản tác dụng. Sau đó, trong bài báo này, chúng tôi chứng minh rằng thậm chí các mô hình lớn hơn có thể được tinh chỉnh thông qua sự kết hợp của PEFT với lượng tử hóa.
+
+Kỹ thuật PEFT tốt nhất. Tổng thể, LoRA xuất hiện như kỹ thuật PEFT hiệu quả nhất trong số những kỹ thuật được nghiên cứu. Mặc dù được trình bày như một cải tiến tăng dần so với LoRA [37], IA3 thường cho thấy điểm số thấp hơn so với LoRA. Prompt tuning xuất hiện như một lựa chọn tinh chỉnh khả thi khác, trong khi giảm thêm số lượng tham số có thể huấn luyện. Tuy nhiên, Prefix tuning không thành công trong việc thích ứng hiệu quả các mô hình lớn hơn với cả hai bộ dữ liệu.
+
+Phân tích của chúng tôi tiết lộ điểm EM cao hơn đáng kể cho bộ dữ liệu Conala, có thể được quy cho sự khác biệt về độ phức tạp tác vụ giữa hai bộ dữ liệu (xem Phần 4.2). Quan trọng cần lưu ý rằng điểm CodeBLEU trên Conala tương đối thấp hơn do sự phụ thuộc của metric vào tính toán đồ thị dòng dữ liệu, có thể không phải lúc nào cũng có sẵn cho các ví dụ mã nhỏ.
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 14 ---
+14 •M. Weyssow et al.
+
+Bảng 3. [RQ2] – So sánh SLMs và LLMs sử dụng các kỹ thuật tinh chỉnh khác nhau (xanh dương: phương pháp tinh chỉnh hoạt động tốt nhất cho mỗi mô hình, cam: mô hình hoạt động tốt nhất tổng thể).
+
+                        Conala                                   CodeAlpacaPy
+Mô hình      Tinh chỉnh    # Params   EM@1    EM@10   CodeBLEU   EM@1    EM@10   CodeBLEU
+
+SLMs
+CodeT5+-220M Full FT       220M       3.87    8.84    16.70      3.98    7.64    25.49
+             LoRA          2.7M       6.08    12.71   18.96      3.34    5.26    24.32
+             IA3           0.17M      4.42    10.68   17.08      0.64    1.27    22.06
+             Prompt tuning 0.03M      4.79    9.21    16.30      0.96    2.07    19.01
+             Prefix tuning 0.18M      3.13    7.55    14.56      0.16    1.27    20.80
+
+CodeT5+-770M Full FT       770M       4.05    8.29    15.11      3.19    6.21    27.73
+             LoRA          7M         8.66    17.13   20.64      3.66    6.85    26.10
+             IA3           0.4M       8.10    17.50   18.68      2.87    5.26    25.84
+             Prompt tuning 0.04M      7.37    15.47   16.75      1.91    3.82    20.57
+             Prefix tuning 0.5M       4.97    11.97   16.77      0.16    1.27    22.91
+
+CodeGen-350M-mono Full FT  350M       7.92    18.42   14.68      2.23    5.73    21.78
+             LoRA          1.3M       12.52   25.60   17.89      4.62    10.70   30.09
+             IA3           0.16M      11.42   25.78   18.83      4.46    10.70   28.56
+             Prompt tuning 0.02M      7.92    20.26   16.29      0.0     0.0     25.91
+             Prefix tuning 0.4M       5.34    12.52   17.53      0.0     0.0     26.89
+
+LLMs
+CodeGen2-1B  LoRA          2M         9.39    23.02   19.76      3.82    9.08    23.48
+             IA3           0.2M       10.13   22.84   18.64      3.82    9.87    24.42
+             Prompt tuning 0.04M      11.97   22.65   18.38      0.80    2.07    18.17
+             Prefix tuning 0.6M       5.89    15.84   18.46      0.0     0.32    13.68
+
+CodeGen2-3.7B LoRA         4M         11.60   25.97   19.00      5.41    10.70   23.75
+             IA3           0.5M       10.87   25.23   19.21      5.41    10.99   26.26
+             Prompt tuning 0.08M      11.05   26.89   19.53      0.0     0.0     23.42
+             Prefix tuning 1.3M       10.68   24.68   20.23      0.16    0.32    21.73
+
+CodeGen2-7B  LoRA          8.3M       11.23   29.83   23.86      5.57    11.94   27.73
+             IA3           1M         11.42   29.65   21.98      5.73    12.42   28.26
+             Prompt tuning 0.08M      11.97   27.26   22.37      0.0     0.0     25.40
+             Prefix tuning 2.6M       9.95    23.94   22.29      0.0     0.32    25.72
+
+CodeLlama-7B LoRA          12.5M      20.07   39.31   25.33      7.33    16.24   32.05
+             IA3           1M         17.68   37.20   23.19      8.12    15.45   30.47
+             Prompt tuning 0.08M      19.15   38.12   25.01      0.32    0.48    31.55
+             Prefix tuning 2.6M       8.47    19.52   23.19      0.16    0.16    28.09
+
+CodeLlama-7B-Instruct LoRA 12.5M      17.68   36.28   24.27      7.01    17.04   31.42
+             IA3           1M         15.84   36.10   24.71      8.12    16.72   31.01
+             Prompt tuning 0.08M      18.97   35.54   25.77      1.59    3.50    31.14
+             Prefix tuning 2.6M       10.13   18.23   23.66      0.64    0.96    31.27
+
+CodeLlama-7B-Python LoRA  12.5M      17.50   36.28   24.27      7.96    15.92   32.84
+             IA3           1M         14.55   31.12   24.74      8.76    16.56   29.82
+             Prompt tuning 0.08M      16.76   37.02   26.31      0.96    3.03    33.46
+             Prefix tuning 2.6M       9.76    22.47   19.47      0.0     0.0     30.71
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 15 ---
+Khám Phá Các Kỹ Thuật Tinh Chỉnh Hiệu Quả Tham Số cho Sinh Mã với Mô Hình Ngôn Ngữ Lớn •15
+
+15  20  25  30  35
+EM@10
+18
+19
+20
+21
+22
+23
+24
+25
+CodeBLEU
+
+CodeT5+-220M    CodeT5+-770M
+CodeGen2-1B
+CodeGen-350M-mono    CodeGen2-3.7B    CodeGen2-7B    CodeLlama-7B-Python    CodeLlama-7B-Instruct    CodeLlama-7B
+
+(a) Conala
+
+6   8   10  12  14  16
+EM@10
+24
+26
+28
+30
+32
+CodeBLEU
+
+CodeT5+-220M    CodeT5+-770M
+CodeGen2-1B    CodeGen2-3.7B    CodeGen-350M-mono
+CodeGen2-7B    CodeLlama-7B    CodeLlama-7B-Python
+CodeLlama-7B-Instruct
+
+(b) CodeAlpacaPy
+
+Hình 4. [RQ2] – Hiệu quả của các mô hình được tinh chỉnh bằng LoRA cho cả hai bộ dữ liệu theo EM@10 và CodeBLEU.
+
+Ảnh hưởng của lượng tử hóa với QLoRA. Chúng tôi khám phá những lợi ích tiềm năng của việc sử dụng QLoRA [13], một kỹ thuật hiệu quả tính toán kết hợp LoRA với lượng tử hóa 8-bit hoặc 4-bit để tinh chỉnh LLMs. Trong Hình 5, chúng tôi hiển thị điểm EM@10 cho ba biến thể mô hình CodeLlama: CodeLlama-7B-Python, CodeLlama-13B-Python, và CodeLlama-34B-Python, cùng với mức tiêu thụ bộ nhớ GPU đỉnh luôn dưới 24GB cho mỗi cấu hình tinh chỉnh. Kết quả nhấn mạnh một cải thiện đáng kể trong hiệu quả của các mô hình lượng tử hóa lớn hơn trên Conala, với tác động vừa phải hơn trên CodeAlpacaPy. Ví dụ, CodeLlama-34B-Python, được tinh chỉnh với QLoRA-4bit, đạt được sự gia tăng đáng kể 12.2% trong điểm EM@10 của Conala (40.70) so với CodeLlama-7B-Python với LoRA (36.28). Đáng ngạc nhiên, QLoRA cũng mang lại những cải thiện đáng chú ý so với LoRA cho CodeLlama-7B-Python trên Conala, trong khi đạt kết quả tương đương trên CodeAlpacaPy. Việc áp dụng lượng tử hóa cho phép sử dụng các mô hình lớn hơn có thể được chứa trong một GPU 24GB duy nhất. Cụ thể, đối với CodeLlama-7B-Python, QLoRA-4bit đạt được sự giảm đáng kể 2x trong việc sử dụng bộ nhớ đỉnh trong khi cải thiện đáng kể điểm EM@10.
+
+Trả lời cho RQ2: LLMs với PEFT luôn và đáng kể vượt trội hơn SLMs dưới cùng giới hạn GPU. Cụ thể, LLM hoạt động tốt nhất với PEFT vượt trội hơn mô hình nhỏ tốt nhất 39.8–72.3% về EM@𝑘. Trong số các kỹ thuật PEFT khác nhau, LoRA là hiệu quả nhất. Ngoài ra, việc áp dụng lượng tử hóa với LoRA dẫn đến giảm mạnh việc sử dụng GPU trong khi duy trì hiệu quả trên cả hai bộ dữ liệu và chứa được việc tinh chỉnh các mô hình lớn hơn lên đến 34B tham số.
+
+5.3 RQ3: Phân tích So sánh LoRA, ICL, và RAG
+
+Trong RQ này, chúng tôi nhằm điều tra liệu các kỹ thuật PEFT có luôn vượt trội hơn ICL và RAG được sử dụng rộng rãi khi áp dụng LLMs trong sinh mã dựa trên khớp.
+
+Trong Hình 6, chúng tôi so sánh hiệu quả của SLMs và LLMs sử dụng ICL và LoRA về CodeBLEU và EM@10. Trong hình này, chúng tôi báo cáo các metrics cao nhất đạt được trên các cấu hình ICL khác nhau cho mỗi mô hình. Trong Hình 7, chúng tôi khám phá hiệu quả của các mô hình CodeLlama sử dụng RAG, với lên đến 16 và 4 ví dụ được truy xuất cho Conala và CodeAlpacaPy, tương ứng. Tương tự như RQ1, chúng tôi sử dụng ít ví dụ hơn cho CodeAlpacaPy để tránh lỗi hết bộ nhớ. Chúng tôi so sánh hiệu quả của RAG với LoRA và điểm EM@10 tốt nhất đạt được bằng ICL.
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 16 ---
+16 •M. Weyssow et al.
+
+CL-7B   CL-13B   CL-34B
+30
+32
+34
+36
+38
+40
+EM@10
+36.3
+37.4
+38.5
+37.8
+38.1
+40.7
+Conala
+
+CL-7B   CL-13B   CL-34B
+0
+5
+10
+15
+15.9
+16.4
+17.4
+15.8
+16.4
+17.4
+CodeAlpacaPy
+
+0
+10
+20
+GPU peak (GB)
+24 GB
+
+0
+10
+20
+24 GB
+
+LoRA    QLoRA-8bit    QLoRA-4bit
+
+Hình 5. [RQ2] – Hiệu quả và sử dụng GPU của 7B, 13B, và 34B CodeLlama-Python (CL) LLMs được tinh chỉnh bằng LoRA và QLoRA với lượng tử hóa 8-bit và 4-bit.
+
+0   5   10  15  20  25  30  35  40
+EM@10
+12
+15
+18
+21
+24
+27
+CodeBLEU
+Conala
+
+Tinh chỉnh
+LoRA
+ICL
+
+0   3   6   9   12  15
+EM@10
+18
+20
+22
+24
+26
+28
+30
+32
+CodeBLEU
+CodeAlpacaPy
+
+CodeT5+-220M
+CodeT5+-770M
+CodeGen-350M-mono
+CodeGen2-1B
+CodeGen2-3.7B
+CodeGen2-7B
+CodeLlama-7B
+CodeLlama-7B-Instruct
+CodeLlama-7B-Python
+
+Hình 6. [RQ3] – So sánh hiệu quả của các mô hình được tinh chỉnh bằng LoRA và ICL trên các bộ dữ liệu Conala và CodeAlpacaPy.
+
+LoRA vs. ICL. Như được thể hiện trong Hình 6, tất cả các mô hình được tinh chỉnh với LoRA thể hiện điểm EM@10 cao hơn đáng kể so với ICL trên cả hai bộ dữ liệu. Ví dụ, CodeLlama-7B-Python với tinh chỉnh LoRA đạt cải thiện 23.1% trong EM@10 trên Conala (36.28 cho LoRA so với 29.47 cho ICL). Mô hình này
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 17 ---
+Khám Phá Các Kỹ Thuật Tinh Chỉnh Hiệu Quả Tham Số cho Sinh Mã với Mô Hình Ngôn Ngữ Lớn •17
+
+0
+10
+20
+30
+40
+EM@10
+
+LoRA: 39.31
+ICL: 29.83
+
+LoRA: 36.28
+ICL: 27.99
+
+LoRA: 36.28
+ICL: 29.47
+
+CL-7B    CL-7B-Instruct    CL-7B-Python
+
+0
+5
+10
+15
+EM@10
+
+LoRA: 16.24
+ICL: 11.62
+
+LoRA: 17.04
+ICL: 10.35
+
+LoRA: 15.92
+ICL: 11.94
+
+# Examples
+1
+2
+3
+4
+5
+8
+16
+
+Hình 7. [RQ3] – So sánh hiệu quả của RAG với số lượng ví dụ được truy xuất khác nhau so với ICL và LoRA trên các bộ dữ liệu Conala (trên) và CodeAlpacaPy (dưới). Điểm ICL mô tả điểm cao nhất đạt được cho mỗi mô hình trong RQ1.
+
+pattern giữ cho CodeAlpacaPy, với những tăng trưởng tương đối lớn hơn trong EM@10. Tuy nhiên, chúng tôi quan sát một số biến động trong điểm CodeBLEU cho hầu hết các mô hình trên CodeAlpacaPy. Ví dụ, CodeLlama-7B thấy sự gia tăng CodeBLEU 2.36 với LoRA. Trên CoNala, tuy nhiên, tác động của LoRA trên CodeBLEU ít rõ ràng hơn so với ICL. Những khác biệt này có thể được giải thích bởi bản chất của các metrics: EM@10 bảo thủ hơn, yêu cầu giải pháp được sinh phải khớp chính xác với ground truth, trong khi CodeBLEU cho điểm cao hơn cho các giải pháp gần nhưng không chính xác. Sự phân biệt này nổi bật cách LoRA thích ứng tốt hơn các mô hình với các bộ dữ liệu downstream, đặc biệt khi độ chính xác là quan trọng.
+
+RAG vs. ICL vs. LoRA. Trong việc so sánh RAG, ICL, và LoRA trên bộ dữ liệu CoNala, RAG thể hiện hiệu quả cao hơn ICL nhưng không đạt được hiệu quả của LoRA trên tất cả ba biến thể mô hình CodeLlama. Đáng chú ý, CodeLlama-7B đạt tối đa 29.83 và 35.17 EM@10 với ICL và RAG, tương ứng, trong khi mô hình được tinh chỉnh với LoRA đạt EM@10 39.31.
+
+Đối với cả bộ dữ liệu Conala và CodeAlpacaPy, những tăng trưởng trong EM@10 trở nên mỏng hơn khi chúng tôi tăng số lượng ví dụ sử dụng RAG. EM@10 bão hòa ở khoảng 8–16 ví dụ cho Conala và 3–4 ví dụ cho CodeAlpacaPy. Hơn nữa, chúng tôi lưu ý rằng đối với bộ dữ liệu CodeAlpacaPy thách thức hơn, RAG mang lại EM@10 thấp hơn so với các ví dụ được chọn ngẫu nhiên sử dụng ICL, nổi bật những hạn chế của RAG khi độ phức tạp vấn đề tăng. LoRA, tuy nhiên, luôn vượt trội hơn cả RAG và ICL trên CodeAlpacaPy, nổi bật khả năng ưu việt của nó trong việc thích ứng với các bộ dữ liệu thách thức hơn.
+
+Trả lời cho RQ3: LoRA ưu việt hơn ICL và RAG trên các bộ dữ liệu Conala và CodeAlpacaPy trên ba biến thể CodeLlama-7B.
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 18 ---
+18 •M. Weyssow et al.
+
+Bảng 4. [RQ4] – Hiệu quả của CodeLlama-7B-Instruct trên bộ dữ liệu APPs trong zero-shot và sử dụng LoRA, QLoRA-8bit, và QLoRA-4bit theo số test cases vượt qua trung bình (Avg) và Pass@k (P@k).
+
+                           Introductory            Interview              Competition
+Mô hình                    Avg    P@1  P@2  P@5   Avg    P@1  P@2  P@5   Avg    P@1  P@2  P@5
+CodeLlama-7B-Instruct      13.66  4.16 6.24 8.80  13.44  0.80 1.32 2.40  6.27   0.56 1.00 2.00
++LoRA                      19.57  5.60 8.04 11.20 16.96  1.04 1.80 3.20  6.93   0.32 0.60 1.20
++QLoRA-8bit                17.63  3.68 5.40 7.60  15.53  1.04 1.64 2.40  7.59   0.24 0.48 1.20
++QLoRA-4bit                20.84  5.76 8.40 12.40 20.34  1.04 1.76 2.80  6.66   0.48 0.88 1.60
+
+5.4 RQ4: Khám phá LoRA và QLoRA cho Sinh Mã trên APPs
+
+Trong RQ cuối cùng này, chúng tôi khám phá khả năng áp dụng rộng hơn của LoRA và QLoRA, để nâng cao hiệu quả của CodeLlama-7B-Instruct cho sinh mã dựa trên thực thi. Lý do chọn biến thể instruct của CodeLlama-7B là vì mô hình thường cho thấy hiệu quả cao hơn so với các biến thể mô hình khác trên APPs trong bài báo tiền đề của CodeLlama [56]. Chúng tôi không so sánh LoRA và QLoRA với ICL và RAG cho bộ dữ liệu này vì chúng yêu cầu tăng độ dài prompt vượt quá 2,048 tokens, dẫn đến lỗi hết bộ nhớ. Kết quả của chúng tôi, được tóm tắt trong Bảng 4, tập trung vào số lượng test cases vượt qua trung bình (Avg) và Pass@𝑘 cho các tác vụ cấp độ giới thiệu, phỏng vấn, và thi đấu.
+
+Đối với cả tác vụ sinh mã cấp độ giới thiệu và phỏng vấn, LoRA và QLoRA-8/4bit dẫn đến những cải thiện đáng kể trong số lượng test cases vượt qua trung bình. Cụ thể, QLoRA-4bit dẫn đến sự gia tăng đáng chú ý 52% trong số lượng tests vượt qua trung bình so với mô hình cơ sở. Về metrics Pass@𝑘, cả LoRA và QLoRA-4bit đều thể hiện những tăng trưởng ở cấp độ giới thiệu, với Pass@5 cải thiện +3.60% so với mô hình cơ sở. Tuy nhiên, những cải thiện này ít đáng kể hơn cho sinh mã cấp độ phỏng vấn và thi đấu, phản ánh độ phức tạp và thách thức lớn hơn của những tác vụ tiến bộ hơn này.
+
+Trả lời cho RQ4: LoRA và QLoRA nâng cao hiệu quả của CodeLlama-7B-Instruct trên APPs, đặc biệt ở cấp độ giới thiệu, với QLoRA-4bit tăng số lượng test cases vượt qua trung bình lên 52% và Pass@5 lên 40%. Tuy nhiên, những cải thiện ít đáng chú ý hơn cho các tác vụ cấp độ phỏng vấn và thi đấu.
+
+6 THẢO LUẬN
+
+Nghiên cứu của chúng tôi khám phá PEFTs được áp dụng cho code LLMs, làm sáng tỏ tác động tích cực của những ứng dụng này trong việc tinh chỉnh hiệu quả LLMs cho các bộ dữ liệu cụ thể tác vụ cho sinh mã. Cụ thể, nghiên cứu của chúng tôi minh họa tính thực tế của việc tinh chỉnh LLMs sử dụng PEFT, do đó giảm bớt sự phụ thuộc của các nhà thực hành vào cơ sở hạ tầng lớn và đắt đỏ. Các phát hiện của chúng tôi cũng chỉ ra một số lĩnh vực đầy hứa hẹn cho khám phá tương lai, bao gồm điều tra các kỹ thuật hiệu quả trên các cài đặt tinh chỉnh đa dạng, trong quá trình suy luận, và cho các tác vụ SE khác.
+
+Kỹ thuật hiệu quả cho LLMs về mã. Công việc của chúng tôi nhấn mạnh các kỹ thuật tinh chỉnh hiệu quả, dân chủ hóa việc tinh chỉnh LLMs cho một đối tượng rộng. Tuy nhiên, nghiên cứu của chúng tôi không bao gồm khám phá các kỹ thuật hiệu quả cho suy luận chi phí thấp. Mặc dù các kỹ thuật PEFT yêu cầu thời gian tinh chỉnh bổ sung so với ICL và RAG, đáng chú ý là những kỹ thuật này không áp đặt bất kỳ chi phí thời gian bổ sung nào trong quá trình suy luận. Tuy nhiên, chúng tôi thừa nhận sự cần thiết của các điều tra tương lai về các kỹ thuật để giảm chi phí thời gian liên quan đến LLMs trong quá trình suy luận.
+
+PEFT và ICL/RAG là các kỹ thuật không loại trừ nhau có thể được sử dụng cùng nhau. Tuy nhiên, chúng tôi quyết định không bao gồm các thí nghiệm về việc áp dụng ICL/RAG cho LLMs được tinh chỉnh bằng PEFT. Trong thực tế, việc tăng số lượng ví dụ ICL/RAG tại suy luận dẫn đến tăng overhead tính toán khi độ dài token của prompt mở rộng. Do đó, chúng tôi cho rằng việc sử dụng ICL/RAG trên một LLM được tinh chỉnh có thể phản tác dụng làm tăng yêu cầu tính toán, vượt trội hơn những lợi ích tiềm năng.
+
+Từ một góc độ khác, các nghiên cứu trước đây [18,78,83] nhấn mạnh nhu cầu xem xét các mô hình ngôn ngữ được pre-train và LLMs về mã trong các cài đặt học liên tục. Trong mô hình này, mô hình phải thích ứng động với dữ liệu mới theo thời gian trong khi bảo toàn hiệu suất trên dữ liệu đã thấy trước đây. Trong cài đặt cụ thể của LLMs phát triển liên tục, các kỹ thuật PEFT có khả năng cung cấp những lợi ích có giá trị. Tuy nhiên,
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 19 ---
+Khám Phá Các Kỹ Thuật Tinh Chỉnh Hiệu Quả Tham Số cho Sinh Mã với Mô Hình Ngôn Ngữ Lớn •19
+
+vẫn chưa được xác định liệu các kỹ thuật PEFT có thể thích ứng hiệu quả LLMs trong cài đặt học liên tục cho các tác vụ liên quan đến mã, mà không ảnh hưởng đến việc giữ lại kiến thức quá khứ.
+
+Hiệu quả của QLoRA. Trên tất cả các bộ dữ liệu nghiên cứu, chúng tôi quan sát rằng QLoRA-4bit thể hiện hiệu quả cạnh tranh hoặc tương đương với các phương pháp PEFT khác. Đáng chú ý, QLoRA-4bit vượt trội hơn LoRA và QLoRA-8bit trên các bộ dữ liệu Conala và APPs. Chúng tôi giả thuyết rằng cải thiện này xuất phát từ hiệu ứng điều chuẩn của việc giảm độ chính xác trọng số xuống 4 bits, giúp ổn định tinh chỉnh và giảm thiểu overfitting. Những phát hiện này nổi bật tiềm năng cho các kỹ thuật PEFT hiệu quả hơn, mặc dù cần khám phá thêm để hiểu đầy đủ khả năng áp dụng rộng hơn của chúng.
+
+Phát hiện mới cho PEFT trong kỹ thuật phần mềm. Các phát hiện của chúng tôi trong RQ1 tiết lộ rằng các phương pháp PEFT vượt trội hơn tinh chỉnh đầy đủ cho SLMs trong các tác vụ sinh mã. Điều này trái ngược với các nghiên cứu quy mô lớn trước đây trong NLP, như Ding et al. [14], đã chứng minh tính ưu việt của tinh chỉnh đầy đủ so với các kỹ thuật như LoRA, Prompt Tuning, và Prefix Tuning trên một loạt rộng các tác vụ NLP.
+
+Trong bối cảnh kỹ thuật phần mềm, mặc dù các nghiên cứu trước đây [38,40] đã cho thấy rằng các phương pháp PEFT, như LoRA, có thể hoạt động tương đương với tinh chỉnh đầy đủ cho SLMs, kết quả của chúng tôi đi xa hơn. Chúng tôi cho thấy rằng tất cả các kỹ thuật PEFT được nghiên cứu trong bài báo này vượt trội đáng kể so với tinh chỉnh đầy đủ cho SLMs như CodeGen-350M-mono và CodeT5+-770M trên các bộ dữ liệu Conala và CodeAlpacaPy (xem Bảng 3), nổi bật những ưu điểm rõ ràng của PEFT trong những kịch bản này. Tuy nhiên, do hạn chế tài nguyên, chúng tôi không thể đánh giá tinh chỉnh đầy đủ cho LLMs, để lại không gian cho các nghiên cứu tương lai khám phá thêm điều này trong lĩnh vực kỹ thuật phần mềm.
+
+Ngoài ra, nghiên cứu của chúng tôi khám phá những hiểu biết mới về lợi ích của QLoRA và hiệu quả so sánh của LoRA so với RAG cho các tác vụ sinh mã. Đầu tiên, trong RQ3 và RQ4, chúng tôi chứng minh rằng QLoRA cung cấp hiệu suất tương đương hoặc thậm chí ưu việt hơn so với LoRA trong khi cắt giảm mạnh chi phí tính toán. Thứ hai, chúng tôi tiết lộ những hạn chế của ICL và RAG, cho thấy rằng hiệu quả LLM có xu hướng bão hòa khi nhiều ví dụ được truy xuất hơn. Ngược lại, nghiên cứu của chúng tôi nổi bật những ưu điểm nhất quán của các kỹ thuật PEFT như LoRA và QLoRA trong việc vượt qua những hạn chế này.
+
+Tác vụ SE và đa tác vụ. Để đảm bảo một nghiên cứu tập trung, chúng tôi tránh thêm các tác vụ và bộ dữ liệu bổ sung, ngăn chặn một tập hợp phân tích quá rộng. Khám phá các kỹ thuật PEFT cho LLMs trên các tác vụ và bộ dữ liệu đa dạng là một hướng đầy hứa hẹn cho nghiên cứu tương lai. Cụ thể, Lorahub [26], một framework được giới thiệu gần đây cho học đa tác vụ, chứng minh rằng một composition của các module LoRA được huấn luyện trên các tác vụ khác nhau có thể tổng quát hóa cho các tác vụ mới, chưa thấy trong khi cung cấp một sự đánh đổi hiệu suất-hiệu quả mạnh mẽ. Chúng tôi tin rằng việc áp dụng các phương pháp tương tự trong AI cho SE có tiềm năng lớn, đặc biệt khi lĩnh vực nghiên cứu nhằm tự động hóa một loạt rộng các tác vụ liên quan đến mã.
+
+7 CÁC MỐI ĐEỌA ĐỐI VỚI TÍNH HỢP LỆ
+
+Tính hợp lệ ngoại. Một mối đe dọa chính liên quan đến việc lựa chọn SLMs và LLMs của chúng tôi. Chúng tôi giảm thiểu mối đe dọa này bằng cách cẩn thận lựa chọn một tập hợp đa dạng các mô hình, như được giải thích trong Phần 4.4. Những mô hình này bao gồm các họ LLMs khác nhau, được huấn luyện trên dữ liệu pre-training riêng biệt và các mục tiêu học, và thay đổi về kích thước. Hơn nữa, chúng tôi không chọn các biến thể mô hình lớn hơn ngoại trừ khi sử dụng QLoRA, vì các kỹ thuật PEFT khác, ICL, và RAG giới hạn việc sử dụng các mô hình lớn hơn trong hạn chế tài nguyên của chúng tôi.
+
+Một mối đe dọa ngoại khác đối với tính hợp lệ liên quan đến chất lượng và tính đại diện của các bộ dữ liệu tinh chỉnh. Để giảm bớt mối quan tâm này, chúng tôi chọn bộ dữ liệu Conala, chứa các ví dụ chất lượng cao được khai thác từ các bài đăng StackOverflow. Ngoài ra, bộ dữ liệu này đã được sử dụng đại diện bởi nhiều nghiên cứu trước đây [49,73,91] trên các tác vụ sinh mã. Hơn nữa, các tác giả đã làm phong phú mỗi ý định ngôn ngữ tự nhiên với gợi ý, nâng cao sự liên kết của prompt đầu vào với các ý định con người có thể. Để làm phong phú nghiên cứu của chúng tôi, chúng tôi bao gồm CodeAlpacaPy như một bộ dữ liệu thứ hai bao gồm các ví dụ dài hơn, mang lại một dòng phân tích khác. Chúng tôi không bao gồm các bộ dữ liệu đánh giá như HumanEval [9] và MBPP [3], vì chúng không bao gồm các ví dụ huấn luyện. Tuy nhiên, để mở rộng thêm nghiên cứu của chúng tôi, chúng tôi khám phá hiệu quả của LoRA và QLoRA cho sinh mã dựa trên thực thi trên bộ dữ liệu APPs.
+
+Cuối cùng, khía cạnh đơn ngôn ngữ của các bộ dữ liệu của chúng tôi tạo thành một mối đe dọa khác đối với tính hợp lệ ngoại. Chúng tôi nghiên cứu tinh chỉnh đầy đủ, PEFT, ICL, và RAG cho sinh mã của các đoạn mã Python. Tuy nhiên, chúng tôi dự đoán rằng PEFT cũng có thể áp dụng cho các ngôn ngữ lập trình khác, xem xét khả năng sinh ấn tượng của LLMs trên một loạt đa dạng các ngôn ngữ lập trình [2, 6].
+
+Tính hợp lệ trong. Việc lựa chọn hyperparameter cho các phương pháp PEFT tạo thành mối đe dọa chính đối với tính hợp lệ trong. Đối với mỗi kỹ thuật PEFT, chúng tôi sử dụng các giá trị hyperparameters đã được sử dụng trong công việc trước đây về PEFT cho các mô hình mã cũng như trong các bài báo tiền đề đóng góp các kỹ thuật PEFT. Ngoài ra, vì LoRA với 𝑟=16 và 𝛼=32 luôn vượt trội hơn tất cả các cấu hình ICL và RAG trên ba mô hình hàng đầu của chúng tôi, việc tiến hành phân tích độ nhạy hyperparameter chi tiết của LoRA có thể củng cố thêm ưu thế của PEFT so với ICL và RAG. Công việc tương lai có thể khám phá độ nhạy của các hyperparameters LoRA chính, như rank 𝑟 và scaling factor 𝛼, trên một loạt rộng hơn các tác vụ kỹ thuật phần mềm.
+
+Tính hợp lệ cấu trúc. Việc lựa chọn các metrics đánh giá của chúng tôi tạo thành mối đe dọa chính đối với tính hợp lệ cấu trúc. Để giảm thiểu mối đe dọa này, chúng tôi chọn các metrics đánh giá được sử dụng rộng rãi trong các công trình trước đây [22,32,42, 56,72,84] về sinh mã. Hơn nữa, chúng tôi đánh giá mỗi phương pháp sử dụng EM@𝑘 trên Conala và CodeAlpacaPy, làm phong phú phân tích của chúng tôi bằng cách tính toán khớp chính xác trên các loạt ứng viên mã khác nhau. Tương tự, đối với APPs, chúng tôi đánh giá mô hình cơ sở và LoRA/QLoRA trên Pass@𝑘 với lên đến 5 ứng viên. Cuối cùng, chúng tôi không sử dụng metrics Pass@𝑘 vì các bộ dữ liệu CoNaLa và CodeAlpacaPy không bao gồm unit tests. Làm phong phú các bộ dữ liệu với unit tests tạo thành một lĩnh vực thú vị của công việc tương lai.
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 21 ---
+Khám Phá Các Kỹ Thuật Tinh Chỉnh Hiệu Quả Tham Số cho Sinh Mã với Mô Hình Ngôn Ngữ Lớn •21
+
+8 CÔNG TRÌNH LIÊN QUAN
+
+Trong phần này, chúng tôi tổng quan các công trình hiện có về LLMs cho sinh mã và đối chiếu các đóng góp trước đây về thích ứng mô hình hiệu quả của mã cho các tác vụ downstream với nghiên cứu của chúng tôi.
+
+Sinh Mã Tự động. Một phần đáng kể của các kỹ thuật sinh mã [1,4,21,63,72] dựa vào các phương pháp dựa trên deep-learning. Xu hướng mới nhất trong sinh mã tự động xoay quanh việc tận dụng LLMs như các mô hình GPT [50] do những đột phá đáng kể của chúng trong lĩnh vực này. Một ví dụ đáng chú ý là Codex, được phát triển bởi Chen et al. [9], là một phiên bản được tinh chỉnh của GPT-3. Các mô hình đáng chú ý khác theo sau thành công của Codex bao gồm CodeGen [48], CodeGen2 [47] và CodeLlama [56]. Những LLMs này hiệu quả dân chủ hóa hiệu suất đột phá đạt được bởi Codex và mang nó đến với đối tượng rộng hơn. Tuy nhiên, chi phí tính toán cao liên quan đến tinh chỉnh đầy đủ cho LLMs để đạt hiệu suất tối ưu là không thực tế cho hầu hết các nhà nghiên cứu và thực hành. Chúng tôi tin rằng nghiên cứu của chúng tôi có thể làm sáng tỏ các phương pháp hiệu quả và tiết kiệm chi phí hơn để tinh chỉnh những LLMs này, giảm thiểu gánh nặng tính toán liên quan đến việc áp dụng chúng.
+
+Thích ứng Hiệu quả của Mô hình về Mã. Thích ứng hiệu quả của mô hình về mã bao gồm việc sử dụng các kỹ thuật để thích ứng hiệu quả một mô hình với một bộ dữ liệu cụ thể tác vụ (xem Phần 2). Trong bối cảnh này, thuật ngữ "hiệu quả" đề cập đến việc làm cho chi phí tính toán tinh chỉnh thấp, ví dụ, sử dụng LoRA, hoặc sử dụng các kỹ thuật không tham số như prompting và ICL.
+
+Hầu hết nghiên cứu trước đây đã tập trung vào việc sử dụng ICL và prompting để thích ứng các mô hình với các tác vụ liên quan đến mã đa dạng. Gao et al. [17] thể hiện những ưu điểm của ICL trong các tác vụ như sửa lỗi, tóm tắt mã, và tổng hợp chương trình. Họ nổi bật rằng hiệu suất của mô hình trên các tác vụ downstream bị ảnh hưởng bởi nhiều yếu tố, bao gồm lựa chọn, số lượng, và thứ tự của các ví dụ prompt. Các nghiên cứu khác [53,80] cũng chứng minh rằng các mô hình ngôn ngữ được pre-train và LLMs như Codex có thể xử lý hiệu quả sửa lỗi và sửa chữa chương trình tự động sử dụng ICL. Hơn nữa, Geng et al. [19] chứng minh khả năng của Codex trong việc sinh multi-intent comment generation để mô tả chức năng của một phương pháp hoặc chi tiết triển khai của nó, chẳng hạn. Việc lựa chọn các prompt có liên quan cho một tác vụ với ICL là quan trọng để đảm bảo hiệu suất tốt của một LLM. Các công trình trước đây [46,91] thiết kế các kỹ thuật lựa chọn để truy xuất các ví dụ prompt có liên quan cao được điều chỉnh cho các tác vụ downstream, vượt trội hơn các phương pháp lựa chọn ngẫu nhiên. Cuối cùng, nghiên cứu gần đây [61] nổi bật những ưu điểm của việc truy xuất các ví dụ prompt ở cấp độ repository, cung cấp cho LLMs thông tin ngữ cảnh có giá trị trong các prompt. Trong nghiên cứu này, chúng tôi tận dụng ICL mà không có ý định khám phá đầy đủ tiềm năng của nó. Thay vào đó, chúng tôi chọn một triển khai đơn giản của ICL bằng cách chọn các ví dụ few-shot ngẫu nhiên sử dụng các seeds khác nhau. Mở rộng nghiên cứu này để kết hợp nhiều phương pháp ICL hơn sẽ nâng cao so sánh với các kỹ thuật PEFT cho mã.
+
+Liên quan đến các kỹ thuật PEFT, nghiên cứu trước đây trong trí tuệ mã đã tập trung vào Prompt tuning [30], Prefix-tuning [33] và Adapters [20,23,25,57,58]. Wang et al. [68] khởi xướng việc sử dụng Prompt tuning cho các tác vụ liên quan đến mã và chứng minh tính ưu việt của nó so với tinh chỉnh đầy đủ của CodeT5 và CodeBERT trong dự đoán lỗi, tóm tắt mã, và dịch mã. Goel et al. [20] khám phá việc sử dụng adapters cụ thể ngôn ngữ lập trình cho việc chuyển giao kiến thức trong các mô hình ngôn ngữ được pre-train, chứng minh rằng việc tinh chỉnh BERT với những adapters này vượt trội hơn CodeBERT trên cloze test và phát hiện clone mã. Choi et al. [10] thiết kế một phương pháp Prefix tuning cụ thể mã trong một kiến trúc sequence-to-sequence cho các tác vụ generation. Nghiên cứu của chúng tôi khác với ba công trình trước đây này vì chúng tập trung vào SLMs, trong khi chúng tôi đề xuất nghiên cứu toàn diện đầu tiên về các kỹ thuật PEFT với LLMs cho sinh mã. Hơn nữa, nghiên cứu của chúng tôi bao gồm LoRA, IA3, và QLoRA, mà không có công trình trước đây nào trong trí tuệ mã xem xét để tinh chỉnh hiệu quả LLMs về mã. Wang et al. [69] thể hiện tính ưu việt của việc sử dụng Adapters để tinh chỉnh các mô hình ngôn ngữ được pre-train so với tinh chỉnh đầy đủ. Các công trình gần đây đã đóng góp các nghiên cứu thực nghiệm cho các tác vụ kỹ thuật phần mềm khác nhau, bao gồm thay đổi mã [40], tóm tắt mã [38,57], dự đoán lỗi [38], và phát hiện clone mã [57], sử dụng Adapter tuning và LoRA cho SLMs. Nghiên cứu của chúng tôi khác với những công trình trước đây này, vì chúng tôi tập trung vào LLMs. Mặc dù chúng tôi không kết hợp Adapters trong điều tra của chúng tôi, chúng tôi tin rằng LoRA, IA3, Prompt tuning, Prefix tuning, và QLoRA cung cấp một phân tích đủ kỹ lưỡng về các kỹ thuật PEFT. Chúng tôi nhận ra giá trị của việc khám phá các kỹ thuật PEFT bổ sung cho các tác vụ trí tuệ mã khác nhau trong tương lai.
+
+9 KẾT LUẬN VÀ CÔNG VIỆC TƯƠNG LAI
+
+Nghiên cứu này thiết lập hiệu quả của các kỹ thuật PEFT trong việc tinh chỉnh LLMs cho sinh mã. Phân tích so sánh của chúng tôi trên các kỹ thuật hiệu quả tham số khác nhau, bao gồm LoRA, IA3, Prompt tuning, Prefix tuning, và QLoRA, tiết lộ tính ưu việt của PEFT so với tinh chỉnh đầy đủ cho SLMs và ICL và RAG cho LLMs. Hơn nữa, nghiên cứu của chúng tôi minh họa tính thực tế của PEFT trong một kịch bản tài nguyên hạn chế, hiệu quả giảm thiểu sự phụ thuộc vào cơ sở hạ tầng tính toán lớn và đắt đỏ. Theo hiểu biết tốt nhất của chúng tôi, nghiên cứu này là một trong những khám phá toàn diện đầu tiên về các kỹ thuật PEFT cho LLMs trong kỹ thuật phần mềm, gợi ý một con đường đầy hứa hẹn cho nghiên cứu tương lai. Chúng tôi dự đoán các phát hiện của chúng tôi sẽ truyền cảm hứng cho điều tra thêm về việc áp dụng các kỹ thuật PEFT trong kỹ thuật phần mềm, với những tác động có thể xa rộng. Công việc tương lai của chúng tôi sẽ mở rộng nghiên cứu cho các tác vụ kỹ thuật phần mềm thay thế như đánh giá mã tự động và sinh comment. Cuối cùng, chúng tôi nhằm xác thận thêm sự liên quan của các kỹ thuật PEFT trong các cài đặt đa tác vụ và học liên tục cho kỹ thuật phần mềm tự động.
+
+TÀI LIỆU THAM KHẢO
+[1]Uri Alon, Roy Sadaka, Omer Levy, and Eran Yahav. 2020. Structural language models of code. In International conference on machine learning . PMLR, 245–256.
+[2]Ben Athiwaratkun, Sanjay Krishna Gouda, Zijian Wang, Xiaopeng Li, Yuchen Tian, Ming Tan, Wasi Uddin Ahmad, Shiqi Wang, Qing Sun, Mingyue Shang, et al. 2022. Multi-lingual evaluation of code generation models. arXiv preprint arXiv:2210.14868 (2022).
+[3]Jacob Austin, Augustus Odena, Maxwell Nye, Maarten Bosma, Henryk Michalewski, David Dohan, Ellen Jiang, Carrie Cai, Michael Terry, Quoc Le, et al .2021. Program synthesis with large language models. arXiv preprint arXiv:2108.07732 (2021).
+[4]Matej Balog, Alexander L Gaunt, Marc Brockschmidt, Sebastian Nowozin, and Daniel Tarlow. 2016. Deepcoder: Learning to write programs. arXiv preprint arXiv:1611.01989 (2016).
+[5]Tom Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared D Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, et al .2020. Language models are few-shot learners. Advances in neural information processing systems 33 (2020), 1877–1901.
+[6]Federico Cassano, John Gouwar, Daniel Nguyen, Sydney Nguyen, Luna Phipps-Costin, Donald Pinckney, Ming-Ho Yee, Yangtian Zi, Carolyn Jane Anderson, Molly Q Feldman, et al .2023. MultiPL-E: a scalable and polyglot approach to benchmarking neural code generation. IEEE Transactions on Software Engineering (2023).
+[7]Christel Chappuis, Valérie Zermatten, Sylvain Lobry, Bertrand Le Saux, and Devis Tuia. 2022. Prompt-RSVQA: Prompting visual context to a language model for remote sensing visual question answering. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition . 1372–1381.
+[8]Sahil Chaudhary. 2023. Code Alpaca: An Instruction-following LLaMA model for code generation. https://github.com/sahil280114/codealpaca.
+[9]Mark Chen, Jerry Tworek, Heewoo Jun, Qiming Yuan, Henrique Ponde de Oliveira Pinto, Jared Kaplan, Harri Edwards, Yuri Burda, Nicholas Joseph, Greg Brockman, et al .2021. Evaluating large language models trained on code. arXiv preprint arXiv:2107.03374 (2021).
+[10] YunSeok Choi and Jee-Hyong Lee. 2023. CodePrompt: Task-Agnostic Prefix Tuning for Program and Language Generation. InFindings of the Association for Computational Linguistics: ACL 2023 . 5282–5297.
+[11] Aakanksha Chowdhery, Sharan Narang, Jacob Devlin, Maarten Bosma, Gaurav Mishra, Adam Roberts, Paul Barham, Hyung Won Chung, Charles Sutton, Sebastian Gehrmann, et al .2022. Palm: Scaling language modeling with pathways. arXiv preprint arXiv:2204.02311 (2022).
+[12] Tim Dettmers, Mike Lewis, Younes Belkada, and Luke Zettlemoyer. 2022. LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale. arXiv preprint arXiv:2208.07339 (2022).
+[13] Tim Dettmers, Artidoro Pagnoni, Ari Holtzman, and Luke Zettlemoyer. 2023. Qlora: Efficient finetuning of quantized llms. arXiv preprint arXiv:2305.14314 (2023).
+[14] Ning Ding, Yujia Qin, Guang Yang, Fuchao Wei, Zonghan Yang, Yusheng Su, Shengding Hu, Yulin Chen, Chi-Min Chan, Weize Chen, et al. 2022. Delta tuning: A comprehensive study of parameter efficient methods for pre-trained language models. arXiv preprint arXiv:2203.06904 (2022).
+[15] Ning Ding, Yujia Qin, Guang Yang, Fuchao Wei, Zonghan Yang, Yusheng Su, Shengding Hu, Yulin Chen, Chi-Min Chan, Weize Chen, et al .2023. Parameter-efficient fine-tuning of large-scale pre-trained language models. Nature Machine Intelligence 5, 3 (2023), 220–235.
+[16] Zhangyin Feng, Daya Guo, Duyu Tang, Nan Duan, Xiaocheng Feng, Ming Gong, Linjun Shou, Bing Qin, Ting Liu, Daxin Jiang, et al .2020. Codebert: A pre-trained model for programming and natural languages. arXiv preprint arXiv:2002.08155 (2020).
+[17] Shuzheng Gao, Xin-Cheng Wen, Cuiyun Gao, Wenxuan Wang, and Michael R Lyu. 2023. Constructing Effective In-Context Demonstration for Code Intelligence Tasks: An Empirical Study. arXiv preprint arXiv:2304.07575 (2023).
+[18] Shuzheng Gao, Hongyu Zhang, Cuiyun Gao, and Chaozheng Wang. 2023. Keeping Pace with Ever-Increasing Data: Towards Continual Learning of Code Intelligence Models. arXiv preprint arXiv:2302.03482 (2023).
+[19] Mingyang Geng, Shangwen Wang, Dezun Dong, Haotian Wang, Ge Li, Zhi Jin, Xiaoguang Mao, and Xiangke Liao. 2024. Large Language Models are Few-Shot Summarizers: Multi-Intent Comment Generation via In-Context Learning. (2024).
+[20] Divyam Goel, Ramansh Grover, and Fatemeh H Fard. 2022. On the cross-modal transfer from natural language to code through adapter modules. In Proceedings of the 30th IEEE/ACM International Conference on Program Comprehension . 71–81.
+[21] Shirley Anugrah Hayati, Raphael Olivier, Pravalika Avvaru, Pengcheng Yin, Anthony Tomasic, and Graham Neubig. 2018. Retrieval-based neural code generation. arXiv preprint arXiv:1808.10025 (2018).
+[22] Dan Hendrycks, Steven Basart, Saurav Kadavath, Mantas Mazeika, Akul Arora, Ethan Guo, Collin Burns, Samir Puranik, Horace He, Dawn Song, and Jacob Steinhardt. 2021. Measuring Coding Challenge Competence With APPS. NeurIPS (2021).
+[23] Neil Houlsby, Andrei Giurgiu, Stanislaw Jastrzebski, Bruna Morrone, Quentin De Laroussilhe, Andrea Gesmundo, Mona Attariyan, and Sylvain Gelly. 2019. Parameter-efficient transfer learning for NLP. In International Conference on Machine Learning . PMLR, 2790–2799.
+[24] Edward J Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Lu Wang, and Weizhu Chen. 2021. Lora: Low-rank adaptation of large language models. arXiv preprint arXiv:2106.09685 (2021).
+[25] Zhiqiang Hu, Yihuai Lan, Lei Wang, Wanyu Xu, Ee-Peng Lim, Roy Ka-Wei Lee, Lidong Bing, and Soujanya Poria. 2023. LLM-Adapters: An Adapter Family for Parameter-Efficient Fine-Tuning of Large Language Models. arXiv preprint arXiv:2304.01933 (2023).
+[26] Chengsong Huang, Qian Liu, Bill Yuchen Lin, Tianyu Pang, Chao Du, and Min Lin. 2023. Lorahub: Efficient cross-task generalization via dynamic lora composition. arXiv preprint arXiv:2307.13269 (2023).
+[27] Harshit Joshi, José Cambronero Sanchez, Sumit Gulwani, Vu Le, Gust Verbruggen, and Ivan Radiček. 2023. Repair is nearly generation: Multilingual program repair with llms. In Proceedings of the AAAI Conference on Artificial Intelligence ,
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 24 ---
+24 •M. Weyssow et al.
+
+Vol. 37. 5131–5140.
+[28] Denis Kocetkov, Raymond Li, Loubna Ben Allal, Jia Li, Chenghao Mou, Carlos Muñoz Ferrandis, Yacine Jernite, Margaret Mitchell, Sean Hughes, Thomas Wolf, Dzmitry Bahdanau, Leandro von Werra, and Harm de Vries. 2022. The Stack: 3 TB of permissively licensed source code. Preprint (2022).
+[29] Takeshi Kojima, Shixiang Shane Gu, Machel Reid, Yutaka Matsuo, and Yusuke Iwasawa. 2022. Large language models are zero-shot reasoners. Advances in neural information processing systems 35 (2022), 22199–22213.
+[30] Brian Lester, Rami Al-Rfou, and Noah Constant. 2021. The Power of Scale for Parameter-Efficient Prompt Tuning. In Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing . 3045–3059.
+[31] Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin, Naman Goyal, Heinrich Küttler, Mike Lewis, Wen-tau Yih, Tim Rocktäschel, et al .2020. Retrieval-augmented generation for knowledge-intensive nlp tasks. Advances in Neural Information Processing Systems 33 (2020), 9459–9474.
+[32] Jia Li, Yongmin Li, Ge Li, Zhi Jin, Yiyang Hao, and Xing Hu. 2023. Skcoder: A sketch-based approach for automatic code generation. arXiv preprint arXiv:2302.06144 (2023).
+[33] Xiang Lisa Li and Percy Liang. 2021. Prefix-tuning: Optimizing continuous prompts for generation. arXiv preprint arXiv:2101.00190 (2021).
+[34] Zehan Li, Xin Zhang, Yanzhao Zhang, Dingkun Long, Pengjun Xie, and Meishan Zhang. 2023. Towards General Text Embeddings with Multi-stage Contrastive Learning. arXiv:2308.03281 [cs.CL] https://arxiv.org/abs/2308.03281
+[35] Percy Liang, Rishi Bommasani, Tony Lee, Dimitris Tsipras, Dilara Soylu, Michihiro Yasunaga, Yian Zhang, Deepak Narayanan, Yuhuai Wu, Ananya Kumar, et al .2022. Holistic evaluation of language models. arXiv preprint arXiv:2211.09110 (2022).
+[36] W Liang, M Yuksekgonul, Y Mao, E Wu, and J Zou. 2023. GPT detectors are biased against non-native English writers (arXiv: 2304.02819). arXiv.
+[37] Haokun Liu, Derek Tam, Mohammed Muqeeth, Jay Mohta, Tenghao Huang, Mohit Bansal, and Colin A Raffel. 2022. Few-shot parameter-efficient fine-tuning is better and cheaper than in-context learning. Advances in Neural Information Processing Systems 35 (2022), 1950–1965.
+[38] Jiaxing Liu, Chaofeng Sha, and Xin Peng. 2023. An Empirical Study of Parameter-Efficient Fine-Tuning Methods for Pre-Trained Code Models. In 2023 38th IEEE/ACM International Conference on Automated Software Engineering (ASE) . IEEE, 397–408.
+[39] Shangqing Liu, Yu Chen, Xiaofei Xie, Jingkai Siow, and Yang Liu. 2020. Retrieval-augmented generation for code summarization via hybrid gnn. arXiv preprint arXiv:2006.05405 (2020).
+[40] Shuo Liu, Jacky Keung, Zhen Yang, Fang Liu, Qilin Zhou, and Yihan Liao. 2024. Delving into Parameter-Efficient Fine-Tuning in Code Change Learning: An Empirical Study. arXiv preprint arXiv:2402.06247 (2024).
+[41] Shuai Lu, Nan Duan, Hojae Han, Daya Guo, Seung-won Hwang, and Alexey Svyatkovskiy. 2022. Reacc: A retrieval-augmented code completion framework. arXiv preprint arXiv:2203.07722 (2022).
+[42] Shuai Lu, Daya Guo, Shuo Ren, Junjie Huang, Alexey Svyatkovskiy, Ambrosio Blanco, Colin Clement, Dawn Drain, Daxin Jiang, Duyu Tang, et al .2021. Codexglue: A machine learning benchmark dataset for code understanding and generation. arXiv preprint arXiv:2102.04664 (2021).
+[43] Sourab Mangrulkar, Sylvain Gugger, Lysandre Debut, Younes Belkada, Sayak Paul, and Benjamin Bossan. 2022. PEFT: State-of-the-art Parameter-Efficient Fine-Tuning methods. https://github.com/huggingface/peft.
+[44] Bonan Min, Hayley Ross, Elior Sulem, Amir Pouran Ben Veyseh, Thien Huu Nguyen, Oscar Sainz, Eneko Agirre, Ilana Heintz, and Dan Roth. 2021. Recent advances in natural language processing via large pre-trained language models: A survey. Comput. Surveys (2021).
+[45] Sewon Min, Mike Lewis, Luke Zettlemoyer, and Hannaneh Hajishirzi. 2021. Metaicl: Learning to learn in context. arXiv preprint arXiv:2110.15943 (2021).
+[46] Noor Nashid, Mifta Sintaha, and Ali Mesbah. 2023. Retrieval-based prompt selection for code-related few-shot learning. InProceedings of the 45th International Conference on Software Engineering (ICSE'23) .
+[47] Erik Nijkamp, Hiroaki Hayashi, Caiming Xiong, Silvio Savarese, and Yingbo Zhou. 2023. Codegen2: Lessons for training llms on programming and natural languages. arXiv preprint arXiv:2305.02309 (2023).
+[48] Erik Nijkamp, Bo Pang, Hiroaki Hayashi, Lifu Tu, Huan Wang, Yingbo Zhou, Silvio Savarese, and Caiming Xiong. 2023. CodeGen: An Open Large Language Model for Code with Multi-Turn Program Synthesis. arXiv:2203.13474 [cs.LG]
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 25 ---
+Khám Phá Các Kỹ Thuật Tinh Chỉnh Hiệu Quả Tham Số cho Sinh Mã với Mô Hình Ngôn Ngữ Lớn •25
+
+[49] Sajad Norouzi, Keyi Tang, and Yanshuai Cao. 2021. Code generation from natural language with less prior knowledge and more monolingual data. In Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing (Volume 2: Short Papers) . 776–785.
+[50] R OpenAI. 2023. GPT-4 technical report. arXiv (2023), 2303–08774.
+[51] Long Ouyang, Jeffrey Wu, Xu Jiang, Diogo Almeida, Carroll Wainwright, Pamela Mishkin, Chong Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, et al. 2022. Training language models to follow instructions with human feedback. Advances in Neural Information Processing Systems 35 (2022), 27730–27744.
+[52] Md Rizwan Parvez, Wasi Uddin Ahmad, Saikat Chakraborty, Baishakhi Ray, and Kai-Wei Chang. 2021. Retrieval augmented code generation and summarization. arXiv preprint arXiv:2108.11601 (2021).
+[53] Julian Aron Prenner, Hlib Babii, and Romain Robbes. 2022. Can OpenAI's codex fix bugs? an evaluation on QuixBugs. In Proceedings of the Third International Workshop on Automated Program Repair . 69–75.
+[54] Alec Radford, Jeffrey Wu, Rewon Child, David Luan, Dario Amodei, Ilya Sutskever, et al .2019. Language models are unsupervised multitask learners. OpenAI blog 1, 8 (2019), 9.
+[55] Shuo Ren, Daya Guo, Shuai Lu, Long Zhou, Shujie Liu, Duyu Tang, Neel Sundaresan, Ming Zhou, Ambrosio Blanco, and Shuai Ma. 2020. Codebleu: a method for automatic evaluation of code synthesis. arXiv preprint arXiv:2009.10297 (2020).
+[56] Baptiste Roziere, Jonas Gehring, Fabian Gloeckle, Sten Sootla, Itai Gat, Xiaoqing Ellen Tan, Yossi Adi, Jingyu Liu, Tal Remez, Jérémy Rapin, et al .2023. Code llama: Open foundation models for code. arXiv preprint arXiv:2308.12950 (2023).
+[57] Iman Saberi, Fatemeh Fard, and Fuxiang Chen. 2024. Utilization of pre-trained language models for adapter-based knowledge transfer in software engineering. Empirical Software Engineering 29, 4 (2024), 94.
+[58] Iman Saberi and Fatemeh H Fard. 2023. Model-Agnostic Syntactical Information for Pre-Trained Programming Language Models. arXiv preprint arXiv:2303.06233 (2023).
+[59] Zhenwei Shao, Zhou Yu, Meng Wang, and Jun Yu. 2023. Prompting large language models with answer heuristics for knowledge-based visual question answering. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition . 14974–14983.
+[60] Noam Shazeer and Mitchell Stern. 2018. Adafactor: Adaptive learning rates with sublinear memory cost. In International Conference on Machine Learning . PMLR, 4596–4604.
+[61] Disha Shrivastava, Hugo Larochelle, and Daniel Tarlow. 2023. Repository-level prompt generation for large language models of code. In International Conference on Machine Learning . PMLR, 31693–31715.
+[62] Emma Strubell, Ananya Ganesh, and Andrew McCallum. 2019. Energy and policy considerations for deep learning in NLP. arXiv preprint arXiv:1906.02243 (2019).
+[63] Zeyu Sun, Qihao Zhu, Yingfei Xiong, Yican Sun, Lili Mou, and Lu Zhang. 2020. Treegen: A tree-based transformer architecture for code generation. In Proceedings of the AAAI Conference on Artificial Intelligence , Vol. 34. 8984–8991.
+[64] Hugo Touvron, Thibaut Lavril, Gautier Izacard, Xavier Martinet, Marie-Anne Lachaux, Timothée Lacroix, Baptiste Rozière, Naman Goyal, Eric Hambro, Faisal Azhar, et al .2023. Llama: Open and efficient foundation language models. arXiv preprint arXiv:2302.13971 (2023).
+[65] Marcos Treviso, Ji-Ung Lee, Tianchu Ji, Betty van Aken, Qingqing Cao, Manuel R Ciosici, Michael Hassid, Kenneth Heafield, Sara Hooker, Colin Raffel, et al .2023. Efficient methods for natural language processing: A survey. Transactions of the Association for Computational Linguistics 11 (2023), 826–860.
+[66] Priyan Vaithilingam, Tianyi Zhang, and Elena L Glassman. 2022. Expectation vs. experience: Evaluating the usability of code generation tools powered by large language models. In Chi conference on human factors in computing systems extended abstracts . 1–7.
+[67] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. 2017. Attention is all you need. Advances in neural information processing systems 30 (2017).
+[68] Chaozheng Wang, Yuanhang Yang, Cuiyun Gao, Yun Peng, Hongyu Zhang, and Michael R Lyu. 2022. No more fine-tuning? an experimental evaluation of prompt tuning in code intelligence. In Proceedings of the 30th ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering . 382–394.
+[69] Deze Wang, Boxing Chen, Shanshan Li, Wei Luo, Shaoliang Peng, Wei Dong, and Xiangke Liao. 2023. One Adapter for All Programming Languages? Adapter Tuning for Code Search and Summarization. arXiv preprint arXiv:2303.15822 (2023).
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 26 ---
+26 •M. Weyssow et al.
+
+[70] Weishi Wang, Yue Wang, Shafiq Joty, and Steven CH Hoi. 2023. Rap-gen: Retrieval-augmented patch generation with codet5 for automatic program repair. In Proceedings of the 31st ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering . 146–158.
+[71] Yue Wang, Hung Le, Akhilesh Deepak Gotmare, Nghi DQ Bui, Junnan Li, and Steven CH Hoi. 2023. Codet5+: Open code large language models for code understanding and generation. arXiv preprint arXiv:2305.07922 (2023).
+[72] Yue Wang, Weishi Wang, Shafiq Joty, and Steven CH Hoi. 2021. Codet5: Identifier-aware unified pre-trained encoder-decoder models for code understanding and generation. arXiv preprint arXiv:2109.00859 (2021).
+[73] Zhiruo Wang, Shuyan Zhou, Daniel Fried, and Graham Neubig. 2022. Execution-Based Evaluation for Open-Domain Code Generation. arXiv preprint arXiv:2212.10481 (2022).
+[74] Albert Webson and Ellie Pavlick. 2021. Do prompt-based models really understand the meaning of their prompts? arXiv preprint arXiv:2109.01247 (2021).
+[75] Jason Wei, Maarten Bosma, Vincent Y Zhao, Kelvin Guu, Adams Wei Yu, Brian Lester, Nan Du, Andrew M Dai, and Quoc V Le. 2021. Finetuned language models are zero-shot learners. arXiv preprint arXiv:2109.01652 (2021).
+[76] Jason Wei, Yi Tay, Rishi Bommasani, Colin Raffel, Barret Zoph, Sebastian Borgeaud, Dani Yogatama, Maarten Bosma, Denny Zhou, Donald Metzler, et al .2022. Emergent abilities of large language models. arXiv preprint arXiv:2206.07682 (2022).
+[77] Martin Weyssow, Houari Sahraoui, and Bang Liu. 2022. Better modeling the programming world with code concept graphs-augmented multi-modal learning. In Proceedings of the ACM/IEEE 44th International Conference on Software Engineering: New Ideas and Emerging Results . 21–25.
+[78] Martin Weyssow, Xin Zhou, Kisub Kim, David Lo, and Houari Sahraoui. 2023. On the Usage of Continual Learning for Out-of-Distribution Generalization in Pre-trained Language Models of Code. arXiv preprint arXiv:2305.04106 (2023).
+[79] Thomas Wolf, Lysandre Debut, Victor Sanh, Julien Chaumond, Clement Delangue, Anthony Moi, Pierric Cistac, Tim Rault, Rémi Louf, Morgan Funtowicz, et al .2019. Huggingface's transformers: State-of-the-art natural language processing. arXiv preprint arXiv:1910.03771 (2019).
+[80] Chunqiu Steven Xia, Yuxiang Wei, and Lingming Zhang. 2023. Automated program repair in the era of large pre-trained language models. In Proceedings of the 45th International Conference on Software Engineering (ICSE 2023). Association for Computing Machinery .
+[81] Chunqiu Steven Xia and Lingming Zhang. 2022. Less training, more repairing please: revisiting automated program repair via zero-shot learning. In Proceedings of the 30th ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering . 959–971.
+[82] Frank F. Xu, Uri Alon, Graham Neubig, and Vincent Josua Hellendoorn. 2022. A Systematic Evaluation of Large Language Models of Code (MAPS 2022) . Association for Computing Machinery, New York, NY, USA, 1–10. https: //doi.org/10.1145/3520312.3534862
+[83] Prateek Yadav, Qing Sun, Hantian Ding, Xiaopeng Li, Dejiao Zhang, Ming Tan, Xiaofei Ma, Parminder Bhatia, Ramesh Nallapati, Murali Krishna Ramanathan, et al .2023. Exploring Continual Learning for Code Generation Models. arXiv preprint arXiv:2307.02435 (2023).
+[84] Guang Yang, Yu Zhou, Xiang Chen, Xiangyu Zhang, Tingting Han, and Taolue Chen. 2023. ExploitGen: Template-augmented exploit code generation based on CodeBERT. Journal of Systems and Software 197 (2023), 111577.
+[85] Yue Yang, Artemis Panagopoulou, Shenghao Zhou, Daniel Jin, Chris Callison-Burch, and Mark Yatskar. 2023. Language in a bottle: Language model guided concept bottlenecks for interpretable image classification. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition . 19187–19197.
+[86] Pengcheng Yin, Bowen Deng, Edgar Chen, Bogdan Vasilescu, and Graham Neubig. 2018. Learning to Mine Aligned Code and Natural Language Pairs from Stack Overflow. In Proceedings of the 15th International Conference on Mining Software Repositories (Gothenburg, Sweden) (MSR '18) . Association for Computing Machinery, New York, NY, USA, 476–486. https://doi.org/10.1145/3196398.3196408
+[87] Pengcheng Yin, Bowen Deng, Edgar Chen, Bogdan Vasilescu, and Graham Neubig. 2018. Learning to mine aligned code and natural language pairs from stack overflow. In 2018 IEEE/ACM 15th international conference on mining software repositories (MSR) . IEEE, 476–486.
+[88] Zhiqiang Yuan, Junwei Liu, Qiancheng Zi, Mingwei Liu, Xin Peng, and Yiling Lou. 2023. Evaluating instruction-tuned large language models on code comprehension and generation. arXiv preprint arXiv:2308.01240 (2023).
+
+, Vol. 1, No. 1, Article . Ngày xuất bản: Tháng 12 năm 2024.
+
+--- TRANG 27 ---
+Khám Phá Các Kỹ Thuật Tinh Chỉnh Hiệu Quả Tham Số cho Sinh Mã với Mô Hình Ngôn Ngữ Lớn •27
+
+[89] Bowen Zhang, Xianghua Fu, Daijun Ding, Hu Huang, Yangyang Li, and Liwen Jing. 2023. Investigating Chain-of-thought with ChatGPT for Stance Detection on Social Media. arXiv preprint arXiv:2304.03087 (2023).
+[90] Zihao Zhao, Eric Wallace, Shi Feng, Dan Klein, and Sameer Singh. 2021. Calibrate before use: Improving few-shot performance of language models. In International Conference on Machine Learning . PMLR, 12697–12706.
+[91] Shuyan Zhou, Uri Alon, Frank F Xu, Zhengbao Jiang, and Graham Neubig. 2023. Docprompting: Generating code by retrieving the docs. In The Eleventh International Conference on Learning Representations .
+[92] Xin Zhou, DongGyun Han, and David Lo. 2021. Assessing generalizability of codebert. In 2021 IEEE International Conference on Software Maintenance and Evolution (ICSME) . IEEE, 425–436.

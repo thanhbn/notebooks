@@ -1,0 +1,840 @@
+# 2406.19223v2.pdf
+# Chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2406.19223v2.pdf
+# Kích thước tệp: 2955205 bytes
+
+===============================================
+NỘI DUNG TỆP PDF
+===============================================
+
+
+--- TRANG 1 ---
+T-FREE: Tokenizer Không Cần Từ Con cho Mô Hình Ngôn Ngữ Lớn 
+Sinh Tạo thông qua Biểu Diễn Thưa để Nhúng Tiết Kiệm Bộ Nhớ
+
+Björn Deiseroth1,2,3Manuel Brack2,4Patrick Schramowski2,3,4
+Kristian Kersting2,3,4Samuel Weinbach1
+1Aleph Alpha @ IPAI2Đại học Kỹ thuật Darmstadt
+3Trung tâm Trí tuệ Nhân tạo Hessian (hessian.AI)
+4Trung tâm Nghiên cứu Trí tuệ Nhân tạo Đức (DFKI)
+
+Tóm tắt
+Tokenizer đóng vai trò quan trọng trong việc mã hóa thông tin
+trong các Mô hình Ngôn ngữ Lớn, nhưng sự phát triển của chúng
+gần đây đã trì trệ và chúng chứa các điểm yếu cố hữu. Các hạn chế
+chính bao gồm chi phí tính toán, sử dụng từ vựng không hiệu quả,
+và các lớp nhúng và đầu không cần thiết lớn. Thêm vào đó, hiệu
+suất của chúng thiên lệch về một corpus tham chiếu, dẫn đến hiệu
+quả giảm cho các ngôn ngữ ít được đại diện. Để khắc phục những
+vấn đề này, chúng tôi đề xuất T-FREE trực tiếp nhúng từ thông qua
+các mẫu kích hoạt thưa trên các bộ ba ký tự, và không yêu cầu
+corpus tham chiếu. T-FREE vốn dĩ khai thác các tương đồng hình
+thái học và cho phép nén mạnh các lớp nhúng. Trong đánh giá thực
+nghiệm toàn diện của chúng tôi, chúng tôi đạt được hiệu suất
+downstream cạnh tranh với việc giảm tham số hơn 85% trên các
+lớp này. Hơn nữa, T-FREE cho thấy cải thiện đáng kể trong học
+chuyển giao đa ngôn ngữ.
+
+1 Từ Biểu Diễn Văn Bản Cho Học Máy
+
+Các mô hình ngôn ngữ lớn (LLM) đã cho thấy khả năng đáng chú ý
+trong xử lý ngôn ngữ tự nhiên và các loại dữ liệu khác nhau. Tokenizer,
+một phần thiết yếu của bất kỳ LLM dựa trên ngôn ngữ nào, chia văn
+bản đầu vào thành các từ con và chuyển đổi dữ liệu văn bản thành biểu
+diễn số nguyên. Nó được xây dựng bằng cách điền vào một từ vựng
+có kích thước cố định dựa trên tần số thống kê trong corpus tham
+chiếu (Sennrich, 2016; Kudo và Richardson, 2018). Với các lớp nhúng
+được huấn luyện của LLM, các số nguyên này được chuyển đổi thành
+biểu diễn số thực (Mikolov et al., 2013b; Press và Wolf, 2017; Vaswani
+et al., 2017). Các thành phần này định hình đáng kể các mục tiêu huấn
+luyện và ảnh hưởng đến những gì một LLM có thể xử lý, diễn giải và
+sinh ra. Bất chấp những tiến bộ, các nguyên tắc cơ bản của tokenization
+và embedding đã hầu như không thay đổi trong những năm gần đây.
+
+Mặc dù cách tiếp cận này đã phục vụ tốt cộng đồng LLM, và những
+nhân vật có ảnh hưởng hướng tới tokenize tất cả các loại dữ liệu để
+"dẫn dắt một cuộc cách mạng công nghiệp mới"1, nó có những điểm
+yếu cố hữu đáng kể. Một mặt, các tokenizer từ con đòi hỏi huấn luyện
+chuyên dụng và do đó cần thêm tài nguyên tính toán. Các lựa chọn
+thiết kế và lỗi ở giai đoạn này có thể tác động tiêu cực đến mô hình
+downstream (Ali et al., 2023). Từ vựng của bất kỳ tokenizer nào được
+tối ưu hóa mạnh cho corpus tham chiếu, dẫn đến sụt giảm mạnh hiệu
+suất cho ví dụ các ngôn ngữ ít được đại diện. Chúng tôi cũng cho thấy
+rằng từ vựng kết quả của các tokenizer từ con được sử dụng kém, trong
+đó lên đến 34% token là các bản sao gần với thông tin bổ sung hạn chế.
+Bất chấp điều đó, các embedding tương ứng được huấn luyện độc lập.
+Những vấn đề này đã gây ra sự mở rộng đáng kể trong kích thước của
+từ vựng và các lớp nhúng tương ứng, với hàng tỷ tham số được phân
+bổ độc quyền cho mã hóa và giải mã văn bản.
+
+Để khắc phục những vấn đề này và thách thức các quan điểm truyền
+thống, chúng tôi đề xuất một sự thay đổi mô hình về cách chúng ta
+nhúng và giải mã văn bản cho LLM. Chúng tôi trình bày biểu diễn
+thưa không cần tokenizer cho embedding tiết kiệm bộ nhớ (T-FREE)
+như một thay thế cho các tokenizer từ con. Chúng tôi trực tiếp nhúng
+mỗi từ trong văn bản đầu vào với các mẫu kích hoạt thưa trên các bộ
+ba ký tự được băm. Do đó, chúng tôi loại bỏ nhu cầu về các token từ
+con, từ đó duy trì hiệu suất gần tối ưu trên các ngôn ngữ. Thêm vào
+đó, T-FREE mô hình hóa rõ ràng sự trùng lặp ký tự giữa các từ tương
+đồng hình thái học mà không cần học một embedding cho mỗi biến
+thể từ đầu thông qua một ánh xạ song ánh một-một. Phần cốt lõi của
+mô hình ngôn ngữ sẽ vẫn tự do khỏi tokenization từ con khi chúng ta
+trực tiếp
+
+https://github.com/Aleph-Alpha/trigrams
+1https://x.com/tsarnick/status/1801884651986030820?s=12&t=5I_
+_mymj5rXz7lxfplR8GgarXiv:2406.19223v2  [cs.CL]  7 Jan 2025
+
+--- TRANG 2 ---
+(a) Tokenizer Cổ điển.
+(b) T-FREE.
+Hình 1: So sánh phương pháp của Tokenization cổ điển (trái) và T-FREE (phải) cho mã hóa văn bản (trên) và 
+giải mã (dưới). Các tokenizer từ con cổ điển học một từ vựng nhãn đơn, tức là một token được ánh xạ song 
+ánh vào một mục duy nhất của từ vựng. Thay vào đó, T-FREE sử dụng ánh xạ đa nhãn song ánh qua nhiều 
+kích hoạt của các trigram ký tự được băm. Vì T-FREE mô hình hóa rõ ràng các tương đồng hình thái học, 
+nó cho phép nén lớp nhúng.
+
+mã hóa biểu diễn văn bản. Chúng tôi lập luận rằng embedding hội tụ
+của các từ tương tự như vậy nên vẫn gần gũi và do đó có thể được nén
+mạnh2. Việc khai thác các tương đồng này cho phép T-FREE giảm kích
+thước của các lớp nhúng 87.5%3 và độ dài mã hóa trung bình của văn
+bản 56%4. Ngoài các lợi ích cố hữu của T-FREE, cách tiếp cận vẫn rất
+cạnh tranh trên các benchmark hiệu suất mô hình downstream tiêu
+chuẩn. Cuối cùng, đối với học chuyển giao sang một ngôn ngữ chưa
+thấy, mô hình T-FREE nhanh chóng cải thiện hiệu suất, trong khi
+baseline tokenizer chỉ cho thấy sự thích ứng nhỏ.
+
+Các đóng góp của chúng tôi có thể được tóm tắt như sau:
+• Chúng tôi chứng minh một cách có hệ thống các điểm yếu cố hữu
+của các cách tiếp cận tokenization và embedding phổ biến.
+• Chúng tôi đề xuất T-FREE, một thay thế mạnh mẽ và hiệu quả
+cho các LLM không cần tokenizer.
+• Chúng tôi đánh giá toàn diện các siêu tham số của T-FREE trên
+các benchmark đã thiết lập bằng cách huấn
+
+2Tiếng Anh chứa khoảng 500k từ, trong khi "khả năng thông thạo bản ngữ" 
+được đạt được ở 10k từ (Nation, 2006).
+3So với baseline unigram 64k của chúng tôi.
+4So với Mistral 32k trung bình của EN, DE, RU, VI, AR.
+
+luyện LLM 1B từ đầu. So sánh của chúng tôi với các mô hình được
+huấn luyện tương đương với tokenization cổ điển cho thấy hiệu suất
+cạnh tranh bất chấp việc giảm đáng kể tài nguyên tính toán và tham số.
+• Chúng tôi chứng minh khả năng của T-FREE cho học chuyển giao
+đa ngôn ngữ trong tiền huấn luyện liên tục trên LLM 3B.
+
+2 Nguyên Tắc Tokenization Cổ Điển
+
+Trước khi chúng tôi rút ra T-FREE chi tiết, hãy trước tiên thiết lập một
+số khái niệm cơ bản về cách LLM truyền thống mã hóa và giải mã văn
+bản. Hầu hết các hoạt động LLM được thực hiện bằng số thực thông
+qua một loạt phép nhân ma trận và hàm kích hoạt phi tuyến. Do đó,
+chúng ta cần các kỹ thuật ánh xạ đầu vào văn bản rời rạc thành biểu
+diễn số thực và nghịch đảo biến đổi các dự đoán của mô hình trở lại
+thành văn bản.
+
+Truyền thống, bước đầu tiên trong quá trình này là chia bất kỳ đầu
+vào văn bản nào thành các khối nhỏ được gọi là token. Nói chung, các
+token này có thể có các định dạng tùy ý, trải dài nhiều ký tự, một hoặc
+thậm chí nhiều từ, và cũng có thể chứa các ký tự đặc biệt. Cái sau có
+thể đặc biệt hữu ích để mã hóa các ngôn ngữ lập trình. Một tokenizer
+bao
+
+--- TRANG 3 ---
+gồm các bước và quy tắc cần thiết để phân tích một văn bản thành một
+chuỗi token. Quan trọng là, tổng số token bị hạn chế, và chúng ta gọi
+tập hợp tất cả các token duy nhất là từ vựng.
+
+Mỗi token trong từ vựng được gán một token-id số nguyên, do đó
+các tokenizer tạo ra một chuỗi token-id cho bất kỳ đầu vào văn bản
+nào. Tiếp theo, một ma trận lớn có kích thước vocab_size × hidden_size,
+lớp nhúng của LLM, ánh xạ mỗi token-id thành một biểu diễn nội bộ
+như một vector số thực (xem Hình 1a). Để tạo ra văn bản mới, các mô
+hình sinh tạo được huấn luyện theo cách tự hồi quy. Nghĩa là, chúng
+lặp đi lặp lại dự đoán token tiếp theo, được thêm vào văn bản đầu vào.
+Do đó, mục tiêu huấn luyện được công thức hóa như một bài toán phân
+loại: một dự đoán nhãn đơn của token tiếp theo trên toàn bộ từ vựng.
+Do đó, lớp cuối cùng của mô hình—LM head—là một phép chiếu vào
+kích thước của từ vựng và do đó cũng có kích thước vocab_size × 
+hidden_size. Để giải mã, ví dụ chúng ta có thể luôn chọn token có giá
+trị được gán cao nhất, được gọi là lấy mẫu tham lam. Văn bản đầu ra
+được tạo ra bằng cách tra cứu đoạn văn bản tương ứng của mỗi token-id
+được dự đoán trong từ vựng.
+
+Nói chung, việc mã hóa bất kỳ văn bản nào trong càng ít token càng
+tốt để giảm chi phí tính toán là điều mong muốn. Đồng thời, các khái
+niệm ngữ nghĩa khác nhau nên được tách thành các token riêng biệt để
+đảm bảo hiểu ngôn ngữ tốt. Sự kết hợp của cả hai mục tiêu thường
+được thỏa mãn tốt nhất bằng cách mã hóa mỗi từ thành một token.
+
+2.1 Thuật Toán Tokenizer
+
+Phần lớn các LLM sử dụng tokenizer được xây dựng bằng một trong
+hai cách tiếp cận. Cả hai đều dần dần xây dựng các quy tắc tokenization
+và từ vựng của chúng dựa trên thống kê trong corpus tham chiếu.
+
+Mã Hóa Cặp Byte (BPE). BPE (Sennrich, 2016) bắt đầu với một tập
+hợp tất cả các ký tự như các token riêng lẻ. Dần dần, các cặp token
+thường xuyên nhất xuất hiện cùng nhau trong các tài liệu huấn luyện
+được hợp nhất. Token mới kết quả và quy tắc hợp nhất được thêm vào,
+và việc huấn luyện được hoàn thành khi đạt được số lượng token mong
+muốn. Để mã hóa văn bản bằng tokenizer đã được huấn luyện, BPE
+chia đầu vào thành các ký tự riêng lẻ và áp dụng quy tắc hợp nhất có
+thứ hạng thấp nhất cho đến khi không còn quy tắc nào khả dụng. Việc
+tìm kiếm toàn diện này có thể trở nên tốn kém về mặt tính toán, đặc
+biệt đối với các chuỗi đầu vào dài và từ vựng lớn.
+
+Unigram. Unigram (Kudo và Richardson, 2018) hoạt động ngược lại
+so với BPE. Đầu tiên, nó chia corpus huấn luyện thành một tập hợp lớn
+các từ tham chiếu và tần số tương ứng của chúng. Từ vựng ban đầu
+được điền với tất cả các chuỗi con có thể có của các từ này. Ở mỗi lần
+lặp, Unigram tính toán một mất mát của từ vựng hiện tại so với corpus
+huấn luyện cho tất cả các tokenization có thể. Các token ít ảnh hưởng
+nhất sau đó được loại bỏ cho đến khi đạt được kích thước từ vựng mong
+muốn. Để mã hóa văn bản, thuật toán Viterbi được áp dụng để xác định
+phân đoạn được ưa thích nhất của một từ cho trước dựa trên các token
+có sẵn được xếp hạng.
+
+Việc giải mã văn bản trong cả hai trường hợp ánh xạ trực tiếp trở lại
+vào danh sách từ vựng và các từ con tương ứng. Để đảm bảo rằng mọi
+từ có thể được biểu diễn, một "byte-fallback" vào unicode thường được
+sử dụng cho các ký tự không có trong từ vựng.
+
+2.2 Đối Mặt Với Các Lỗi
+
+Chung cho cả hai phương pháp là một tập hợp các lỗi riêng biệt.
+
+Từ Vựng Lớn F1) Các từ không xuất hiện trong từ vựng được chia
+thành nhiều token và do đó đòi hỏi nhiều tính toán hơn trong quá trình
+suy luận và huấn luyện mô hình. Để tránh các từ ngoài từ vựng và để
+đạt được các biểu diễn downstream tốt nhất trên một tập hợp ngôn ngữ
+và nhiệm vụ đa dạng, các nhà nghiên cứu có xu hướng sử dụng từ vựng
+ngày càng lớn hơn. Mặc dù một số mô hình vẫn dựa vào từ vựng 32k
+(Touvron et al., 2023; Jiang et al., 2023), các phiên bản gần đây hơn
+lên đến 128k (Meta, 2024) hoặc thậm chí vượt quá 250k (Mesnard et
+al., 2024; Gomez, 2024). Từ vựng lớn, đến lượt nó, đòi hỏi các lớp nhúng
+và head lớn. Ví dụ, Command-R (Gomez, 2024) với kích thước ẩn
+12,288 và từ vựng 256,000 token sử dụng 6.3B tham số chỉ cho lớp
+nhúng và head. Tự nhiên, một số lượng lớn tham số làm phức tạp việc
+huấn luyện mô hình và có thể đòi hỏi các kỹ thuật chia nhỏ tiên tiến
+như "song song mô hình". Ngay cả việc tokenization bản thân cũng có
+thể trở nên tốn kém về mặt tính toán (CPU) cho các tài liệu và từ vựng
+lớn. Tự nhiên, các ma trận nhúng ở quy mô này thường không phải là
+một lựa chọn cho các mô hình "on-the-edge" nhỏ hơn. Tuy nhiên, chúng
+vẫn chiếm một phần lớn tham số trong các mô hình nhỏ hơn, ví dụ 40%
+cho Gemma-2B (Mesnard et al., 2024).
+
+Token Trùng Lặp F2) Hơn nữa, từ vựng được phân bổ dự kiến sẽ được
+sử dụng kém do sự xuất hiện có khả năng thống kê của các token gần
+trùng lặp. Nổi bật nhất, một phần đáng kể của các token xuất hiện nhiều
+lần, chỉ khác nhau về việc viết hoa hoặc sự tồn tại của một khoảng
+
+--- TRANG 4 ---
+trắng đứng đầu (xem Phần 4.3). Ví dụ, để đánh vần tất cả 64 chuỗi con
+và biến thể của từ "_words"5, chúng ta cần tổng cộng 37 token duy nhất
+(xem Phụ lục Bảng 7). Vì các embedding tương ứng của tất cả token
+đều độc lập và được khởi tạo ngẫu nhiên, biểu diễn của mỗi token trùng
+lặp cần được học từ đầu mà không khai thác các hiệp lực hình thái học.
+Hơn nữa, các lớp nhúng lớn được sử dụng hoàn toàn vì một số token
+sẽ hiếm khi xuất hiện. Các trọng số embedding tương ứng của các token
+này do đó hiếm khi hoạt động trong khi vẫn đòi hỏi tính toán.
+
+Overfitting Dữ Liệu Huấn Luyện F3) Như đã thảo luận ở trên, các
+tokenizer này đòi hỏi huấn luyện chuyên dụng trước khi huấn luyện
+mô hình thực tế. Ngoài chi phí tính toán bổ sung, việc lựa chọn dữ liệu
+và các sai lầm tiềm ẩn trong quá trình huấn luyện tokenizer có tác động
+đáng kể đến LLM tiếp theo (Ali et al., 2023). Đối với ngôn ngữ tự nhiên,
+ví dụ, mô hình này có thể dẫn đến một từ vựng được thiết kế riêng cho
+một ngôn ngữ (thường là tiếng Anh) và do đó sụt giảm hiệu suất cho
+những ngôn ngữ khác, đặc biệt là những ngôn ngữ không được bao gồm
+rõ ràng. LLM kết quả vẫn có thể được thích ứng phần nào với các ngôn
+ngữ khác vì nhiều cấu trúc cấp thấp tương tự (Mikolov et al., 2013a).
+Tuy nhiên, hiệu suất huấn luyện và suy luận tổng thể của nó sẽ không
+hiệu quả như chúng tôi chứng minh.
+
+Ngược lại, T-FREE giải quyết tất cả những nhược điểm này. Nó hiệu
+quả về mặt tính toán và thực hiện tokenization tốt trên các ngôn ngữ
+mà không có trùng lặp. Nó giảm đáng kể các tham số cần thiết cho mã
+hóa văn bản, khai thác sự tương đồng chính tả từ. Quan trọng là, không
+có cải thiện nào trong số này làm giảm hiệu suất mô hình downstream.
+
+3 T-FREE
+
+Một động lực chính cho T-FREE là trực giác rằng những khác biệt nhỏ
+trong chính tả, như khoảng trắng đứng đầu hoặc viết hoa, không chứa
+đủ entropy để biện minh cho các token hoàn toàn độc lập. T-FREE mã
+hóa trực tiếp các tương đồng hình thái học bằng cách biểu diễn mỗi từ
+như một mã hóa đa nhãn của các bộ ba ký tự của nó. Sự trùng lặp được
+thiết kế này giữa các từ cho phép chúng ta giảm đáng kể kích thước của
+các lớp nhúng.
+
+Chúng tôi bây giờ rút ra cách tiếp cận của T-FREE đối với mã hóa và
+giải mã văn bản và thảo luận về ý nghĩa đối với LLM nói chung. Chúng
+tôi cung cấp một hình ảnh hóa cho mỗi bước trong Hình 1b và mã giả
+trong Phụ lục A.
+
+5_ đại diện cho một khoảng trắng.
+
+3.1 Mã Hóa Văn Bản
+
+Bước 1: Chia từ. Đầu tiên, chúng tôi chia nghiêm ngặt văn bản bằng
+chữ số và ký tự không chữ và số. Do đó, các phần được chia chứa toàn
+bộ từ, chữ số hoặc ký tự đặc biệt. Chúng tôi xem xét mỗi chữ số riêng
+biệt, vì đây là tiêu chuẩn trong các LLM SOTA (xem Bảng 1). Cụ thể,
+chúng tôi bao gồm 10 chữ số 0 đến 9, và nếu không, chúng tôi dựa vào
+attention để hiểu các số lớn hơn hoặc hỗn hợp với ký tự.
+
+Theo định nghĩa, chúng tôi biểu diễn mỗi từ với một khoảng trắng có
+tiền tố và hậu tố. Cụ thể, chúng tôi giả định rằng toàn bộ từ được mã
+hóa thành một embedding duy nhất, và tương tự, chúng tôi dự đoán toàn
+bộ từ cùng một lúc. Do đó, chúng ta không còn cần mô hình hóa rõ ràng
+khoảng trắng như một ký tự và loại bỏ các token gần trùng lặp. Tuy
+nhiên, chúng tôi thêm một token "khoảng trắng" và "không khoảng
+trắng" chuyên dụng vào tokenizer. Các token đặc biệt này cho phép
+chúng tôi mô hình hóa các trường hợp trong đó các chuỗi con nên
+(không) được nối với khoảng trắng, ví dụ các chữ số đơn của các số
+lớn hơn. Để giảm nhu cầu của chúng, chúng tôi thêm một tập quy tắc
+ưu tiên (không) khoảng trắng ở phía trước hoặc sau các ký tự nhất định.
+Nói chung, chúng tôi ưu tiên không thêm khoảng trắng sau một embedding
+chữ số và tương tự không có khoảng trắng trước dấu chấm câu. Một mô
+tả chi tiết của tập quy tắc được tìm thấy trong Phụ lục B.
+
+Xem xét ví dụ trong Hình 1b, văn bản đầu vào "Hello_word!" sẽ được
+tokenize thành ['Hello','word','!'].
+
+Bước 2: Mã hóa. Tiếp theo, chúng tôi định nghĩa một hàm băm mạnh
+mẽ ánh xạ đồng nhất một token thành n descriptors, trong đó n thường
+bằng độ dài từ6. Cụ thể, chúng tôi áp dụng convolution kích thước ba
+và stride theo byte cho mỗi từ. Thao tác này tạo ra một tập hợp các bộ
+ba ký tự, mà chúng tôi gọi là "trigram". Do đó, "Hello" được phân tích
+thành {_He,Hel,ell,llo,lo_}. Trigram thường chứa đủ thông tin về mối
+quan hệ giữa các chữ cái để tái lắp ráp từ từ tập hợp không có thứ tự.
+
+Tiếp theo, chúng tôi chiếu mỗi descriptor trigram thành một vector
+biểu diễn ẩn thưa của m "mục hoạt động" trên lớp nhúng. Cụ thể, T-FREE
+tính toán m hash số của mỗi trigram, có thể được xem như các định
+danh. Chúng tôi ánh xạ những cái này vào ma trận nhúng của LLM bằng
+cách tính toán mỗi giá trị hash modulo v để xác định các chỉ số hoạt
+động. Việc lựa chọn vocab_size v được giải thích thêm trong Bước 3.
+
+Tổng thể, chúng tôi có được n·m tổng kích hoạt cho bất kỳ
+
+6Chỉ có ngoại lệ là unicode fallback.
+
+--- TRANG 5 ---
+từ đơn lẻ nào. Để khai thác thêm sự tương đồng từ và bootstrap huấn
+luyện, chúng tôi tính toán k∈[0, m) trong số các tính toán hash này với
+trigram viết thường. Ánh xạ từ trigram đến biểu diễn ẩn này là tĩnh và
+có thể được tính toán trước7.
+
+Bước 3: Tập hợp. Tương tự như các cách tiếp cận nhúng cổ điển (xem
+Hình 1a) T-FREE cũng sử dụng một ma trận nhúng có kích thước v với
+hidden_size h. Tuy nhiên, chúng tôi không có từ vựng cố định, có kích
+thước quy định v. Thay vào đó, chúng tôi có thể chọn độc lập v như một
+siêu tham số với các từ và trigram chia sẻ các mục riêng lẻ để mã hóa
+tốt hơn các tương đồng. Cuối cùng, chúng tôi tính tổng tất cả n·m mục
+nhúng để tạo ra một embedding cuối cùng tương ứng với một từ, chẳng
+hạn như "Hello".
+
+Lưu ý một lần nữa rằng chúng tôi sử dụng một số lượng nhúng nhỏ
+hơn đáng kể so với số lượng trigram. Trong khi các hash của chúng có
+thể tự nhiên trùng lặp, chúng tôi đảm bảo tính duy nhất của toàn bộ
+mẫu thông qua m hash đồng thời. Vì chúng tôi đảm bảo rằng các mã
+hóa trigram không va chạm, mã hóa từ cũng sẽ không va chạm.
+
+3.2 Mục Tiêu Huấn Luyện & Giải Mã Văn Bản
+
+Vì biểu diễn của một từ trong T-FREE hiện là một số lượng kích hoạt,
+chúng tôi phản ánh sự thay đổi này trong LM head cũng vậy (xem phần
+Decode trong Hình 1, Phụ lục Alg. 3,5). Cụ thể, chúng tôi thay đổi hàm
+mất mát mục tiêu từ binary cross-entropy (BCE) nhãn đơn cổ điển sang
+BCE đa nhãn (ML) trên tất cả n·m kích hoạt của các mục tiêu từ tiếp
+theo:
+
+L_ML_BCE = -∑_{j=1}^v [y_j log(ŷ_j) + (1-y_j) log(1 - ŷ_j)],
+
+với ŷ là dự đoán của LM và y là nhãn từ vựng nhị phân mục tiêu với
+∑_{j=1}^v y_j = n·m.
+
+Giải mã token tiếp theo được hiển thị trong Hình 2. Chúng tôi đầu tiên
+lắp ráp một từ điển của tất cả các từ tiếp theo có thể và tính toán trước
+các mẫu kích hoạt của chúng. Quan trọng là, chỉ n·m trong số v mục sẽ
+khác không cho mỗi từ, và vì chúng ta chọn m << v, ma trận từ điển có
+thể được mã hóa như một ma trận thưa, do đó cải thiện thời gian chạy.
+Ngoài ra, lưu ý sự tương đồng mẫu giữa các từ tương tự, như đã mô tả
+trước đây. Đầu ra của lớp ẩn cuối cùng h được sigmoid, và nhân với ma
+trận từ điển. Cuối cùng, chúng tôi tính giá trị sigmoid trung bình mỗi
+mục từ điển, h', để lấy mẫu từ tiếp theo, ví dụ sử dụng argmax tiêu
+chuẩn. Tổng thể, đối với một từ điển với 512k mục, quy trình này chỉ
+tăng nhẹ thời gian chạy giải mã do
+
+7Lưu ý rằng chỉ có 256³≈16.7M trigram.
+
+thuộc tính thưa của các mẫu kích hoạt. Mô tả thêm, cùng với mã giả,
+mô tả chi tiết và phân tích thời gian chạy từng bước có thể được tìm
+thấy trong Phụ lục 5.
+
+Lưu ý rằng ma trận giải mã không cần thiết trong quá trình huấn luyện,
+và có thể được trao đổi động. Chúng tôi tạo ra nó bằng cách lấy mẫu
+top-500k từ xuất hiện trong tập dữ liệu huấn luyện, và động thêm các
+từ còn thiếu của prompt.
+
+3.3 Những Khác Biệt Của Sự Thay Đổi Mô Hình
+
+Đáng chú ý, sự thay đổi mô hình này sang từ vựng đa lớp cho phép giải
+mã mạnh mẽ hơn về mặt ngữ nghĩa. Với cách tiếp cận cổ điển, quá trình
+học tập có nhiều nhiễu rõ ràng có thể dẫn đến các khái niệm không liên
+quan xuất hiện trong số các dự đoán hàng đầu (xem 'House' và 'Car'
+trong Hình 1a). Hiệu ứng này có thể có tác động đáng kể đến việc lấy
+mẫu token tiếp theo và có khả năng có kết quả tàn phá cho các sửa đổi
+mô hình như nén (Deiseroth et al., 2024). Ngược lại, việc trigramification
+và sự trùng lặp nhúng kết quả của các từ tương tự với T-FREE vốn dĩ
+ưa thích các từ tương tự trong quá trình giải mã (xem 'ouse' trong Hình
+1b). Hơn nữa, các kích hoạt trong nhúng và LM head được phân phối
+đồng đều hơn, dẫn đến sử dụng tham số tốt hơn và hành vi mô hình ổn
+định hơn.
+
+Các từ có thể dự đoán vẫn được lấy từ một từ điển. Tuy nhiên, danh
+sách từ vựng này có thể trao đổi được và không cần thiết trong quá trình
+huấn luyện. Do đó, tùy thuộc vào trường hợp sử dụng, nó có thể được
+giữ ở kích thước hợp lý. Hơn nữa, một giải mã phân cấp khai thác các
+cấu trúc hình thái học có thể được triển khai một cách đơn giản, ví dụ
+đầu tiên giải mã từ viết thường, sau đó các biến thể viết hoa (hoặc tương
+tự nhóm theo gốc hoặc kết thúc).
+
+Cuối cùng, thiết kế của chúng tôi về một hàm băm mạnh mẽ trên từ
+giải quyết các lỗi đã đề cập trước đây (Phần 2.2) như kết quả của phần
+tiếp theo chứng minh.
+
+4 Đánh Giá Thực Nghiệm
+
+Chúng tôi tiếp tục với một chứng minh thực nghiệm về hiệu suất của
+T-FREE, và cách nó khắc phục các lỗi của các tokenizer tiêu chuẩn như
+đã nêu trong Phần 2.2. Để phân tích kỹ lưỡng sự khác biệt hiệu suất,
+chúng tôi đã thiết kế ba thí nghiệm liên tiếp: Đầu tiên, chúng tôi thực
+hiện ablation siêu tham số trên một loạt mô hình 1B tham số, đạt được
+điểm số cạnh tranh trên các benchmark tiêu chuẩn với từ vựng giảm,
+điều này đến lượt nó giải quyết F1. Thứ hai, chúng tôi phân tích các
+bản sao trong tokenizer của các
+
+--- TRANG 6 ---
+∘= =h'
+σ(h)
+1
+Hình 2: Ví dụ về dự đoán từ tiếp theo với T-FREE. Đối với danh sách các từ có thể dự đoán có kích thước d, chúng tôi tạo một lần các mẫu tương ứng trong kích thước từ vựng có sẵn v, như được mô tả trong bước mã hóa 2 của Phần 3.1. Lưu ý cách các từ gần nhau về mặt hình thái học sẽ tạo ra các mẫu trùng lặp. Các giá trị sigmoid theo từng phần tử của đầu ra của lớp ẩn cuối cùng, σ(h), được nhân với ma trận mẫu này bằng cách sử dụng tích vô hướng tiêu chuẩn. Cuối cùng, chúng tôi sử dụng h' cho quá trình lấy mẫu, giá trị sigmoid trung bình của một từ. Xem Phụ lục A để biết thêm chi tiết.
+
+LLM gần đây về F2. Đáng chú ý, T-FREE về mặt thiết kế tự do khỏi các
+bản sao. Cuối cùng, chúng tôi xem xét F3 và đánh giá hiệu suất của
+các tokenizer khác nhau trên các ngôn ngữ. Hơn nữa, chúng tôi đã huấn
+luyện các mô hình 3B tham số trên tiếng Anh và tiếp tục huấn luyện
+trên dữ liệu tiếng Đức để điều tra thực tế khả năng thích ứng ngôn ngữ.
+T-FREE có hiệu suất tokenization tốt hơn trên các ngôn ngữ và vượt
+trội hơn các tokenizer cổ điển trong chuyển giao ngôn ngữ.
+
+4.1 Chi Tiết Thực Nghiệm
+
+Đầu tiên, hãy làm rõ một số chi tiết về thiết lập thực nghiệm của chúng
+tôi. Chúng tôi cung cấp thêm chi tiết cho mỗi phần trong Phụ lục.
+
+Dữ Liệu và Mã. Chúng tôi sử dụng tập dữ liệu slimpajama (Soboleva
+et al., 2023) làm corpus dữ liệu tiếng Anh và Occiglot Fineweb v0.5
+(Brack et al., 2024) làm corpus dữ liệu tiếng Đức. Cả hai tập dữ liệu
+đều chứa một loạt nội dung đa dạng và đã được lọc và khử trùng lặp
+một cách toàn diện.
+
+Như một baseline, chúng tôi đã huấn luyện các tokenizer BPE và Unigram
+có kích thước 32k và 64k trên một mẫu 20GB ngẫu nhiên
+
+mẫu slimpajama sử dụng Sentencepiece8. Thêm chi tiết được mô tả
+trong Phụ lục C.
+
+Để đảm bảo so sánh công bằng, chúng tôi đã huấn luyện các mô hình
+1B và 3B từ đầu cho các baseline và T-FREE sử dụng cơ sở mã đã điều
+chỉnh của chúng tôi9.
+
+Tiền Huấn Luyện LLM. Tất cả các mô hình đều là kiến trúc transformer,
+chỉ giải mã tương tự như Llama-2. Chúng tôi chỉ thay đổi tokenizer,
+lớp nhúng và LM head. Do đó, ablation với các kích thước nhỏ hơn
+
+8https://github.com/google/sentencepiece
+9https://github.com/Aleph-Alpha/trigrams
+
+của v dẫn đến số lượng tham số tổng thể thấp hơn, làm méo mó mạnh
+so sánh có lợi cho baseline. Đối với ablation siêu tham số của T-FREE,
+chúng tôi huấn luyện các mô hình 1B trong 50k bước với độ dài chuỗi
+2k và kích thước batch tổng cộng 1k. Sau đó chúng tôi mở rộng các mô
+hình baseline và T-FREE lên 3B tham số và huấn luyện trong 110k bước
+trên slimpajama với độ dài chuỗi 4k. Đối với thí nghiệm học đa ngôn
+ngữ, chúng tôi tiếp tục huấn luyện mô hình 3B tiếng Anh này với tốc
+độ học thấp hơn trong 20k bước nữa trên dữ liệu Occiglot tiếng Đức
+với 20% replay tiếng Anh.
+
+Đánh Giá. Chúng tôi đánh giá hiệu suất tokenizer một cách riêng biệt
+bằng cách sử dụng các đo lường fertility tương tự như Rust et al. (2021).
+Fertility đánh giá số lượng token cần thiết mỗi từ với 1.0 do đó là giá
+trị tối ưu. Cụ thể, chúng tôi so sánh các tokenizer khác nhau trên 5 ngôn
+ngữ đa dạng trên dữ liệu tương ứng từ Wikipedia.
+
+So sánh benchmark downstream được thực hiện trên 18 benchmark
+tiêu chuẩn10 bằng tiếng Anh đo lường một loạt khả năng LLM, bao gồm
+mô hình hóa ngôn ngữ chung, trả lời câu hỏi và lý luận thông thường.
+Để đánh giá tiếng Đức và tiếng Anh so sánh, chúng tôi sử dụng bản
+dịch tiếng Đức của các benchmark Hellaswag, Truthfulqa và Arc-Challenge11.
+
+Chúng tôi xây dựng từ điển dự đoán của T-FREE từ top 80k từ xuất
+hiện trong slimpajama, và thêm top 20k từ từ dữ liệu Occiglot tiếng Đức.
+
+10https://github.com/EleutherAI/lm-evaluation-harness
+11https://github.com/bjoernpl/GermanBenchmark
+
+--- TRANG 7 ---
+4.2 T-FREE Thực Hiện Ở Kích Thước Từ Vựng 8k
+
+Chúng tôi trình bày kết quả của nghiên cứu ablation siêu tham số của
+T-FREE cho các mô hình 1B trong Hình 3. Tất cả điểm số được báo cáo
+như sự khác biệt so với baseline Unigram 64k và cho các tham số cố
+định m=10 và k=0. Nói chung, T-FREE vẫn rất cạnh tranh với baseline
+vì tất cả các phiên bản đều vượt trội hơn mô hình Unigram trên một số
+benchmark. Hơn nữa, chúng tôi đạt được kết quả tốt nhất cho kích thước
+từ vựng v của 8k tại đó T-FREE vượt trội hơn baseline trung bình. Ngược
+lại, kích thước từ vựng ≤2k có vẻ không đủ với các outlier tàn phá.
+Chúng tôi đã thực hiện thêm ablation trên các tham số m và k, được
+nêu trong Phụ lục H.
+
+Những kết quả này chứng minh rằng T-FREE thành công giải quyết
+lỗi của các từ vựng và lớp nhúng lớn (xem F1 trong Phần 2.2). Chúng
+tôi có thể đạt được hiệu suất cạnh tranh chỉ với 12.5%12 của các tham
+số nhúng sử dụng T-FREE thay vì Unigram.
+
+Lưu ý rằng chúng tôi không điều chỉnh bất kỳ tham số mô hình nào
+khác khi giảm kích thước từ vựng. Do đó, kết quả benchmark so sánh
+một mô hình Unigram với 1.07B tham số với một mô hình T-FREE với
+0.84B tham số (cho v=8k). Do đó, chúng tôi chứng minh rằng một LLM
+sử dụng T-FREE thay vì Unigram hoạt động tốt hơn, bất chấp có hơn
+20% ít tham số hơn.
+
+4.3 T-FREE Không Có Bản Sao Theo Thiết Kế
+
+Bây giờ hãy xem xét các token trùng lặp (gần) trong các tokenizer thường
+được sử dụng (xem F2 trong Phần 2.2). Nói chung, có ba loại trùng lặp
+trong từ vựng: 1) Cùng một token có và không có viết hoa, 2) có và
+không có khoảng trắng đứng đầu, và 3) các token chuyên dụng cho
+nhiều chữ số.
+
+Trong Bảng 1, chúng tôi báo cáo tỷ lệ phần trăm token trùng lặp cho
+các tokenizer baseline của chúng tôi và các mô hình thường được sử
+dụng. Tổng thể, giữa 15% và 35% từ vựng có sẵn được chi cho thông
+tin trùng lặp (gần) với sự khác biệt hạn chế về entropy. Nói chung, các
+tokenizer chứa nhiều bản sao nhất cho việc viết hoa, ít hơn một chút
+cho khoảng trắng, và chỉ một vài chữ số trùng lặp. Lượng trùng lặp
+tương đối có xu hướng giảm với từ vựng lớn hơn, mặc dù Gemma đánh
+dấu một ngoại lệ đáng xấu hổ.
+
+Ngược lại, T-FREE vốn dĩ được thiết kế để tự do khỏi các bản sao.
+Chúng ta thậm chí có thể điều chỉnh tham số
+
+128k thay vì 64k.
+
+k để mô hình hóa rõ ràng sự trùng lặp của các từ với biểu diễn viết
+thường của chúng. Do đó, tất cả các biến thể vốn dĩ được biểu diễn tốt
+trong lớp nhúng.
+
+4.4 T-FREE Có Fertility Thấp Hơn Trên Các Ngôn Ngữ,
+và Thích Ứng Hơn Với Ngôn Ngữ Mới
+
+Cuối cùng, chúng tôi điều tra tính linh hoạt của các tokenizer ngoài
+ngôn ngữ (chính) của chúng (xem F3 trong Phần 2.2). Chúng tôi báo
+cáo fertility của các baseline và các mô hình phổ biến khác trong tiếng
+Anh, tiếng Đức và ba ngôn ngữ khác biệt cũng chứa sự khác biệt đáng
+kể về mức độ ký tự trong Bảng 1. Chung cho tất cả tokenizer là hiệu
+suất giảm đáng kể đối với các ngôn ngữ không phải tiếng Anh, đặc biệt
+là tiếng Nga và tiếng Việt. Tự nhiên, kích thước từ vựng lớn hơn có xu
+hướng có phạm vi đa ngôn ngữ tốt hơn, đặc biệt là đối với các nhóm
+ngôn ngữ gần với tiếng Anh, nhưng vẫn gặp phải sự sụt giảm hiệu suất
+đáng kể. So sánh, tokenization của T-FREE, chủ yếu dựa trên việc chia
+khoảng trắng, cung cấp hiệu suất tương đối tốt trên tất cả 5 ngôn ngữ13.
+Sự gia tăng fertility cho tiếng Nga hoặc tiếng Việt vẫn nhỏ và không có
+sự khác biệt hiệu suất cho tiếng Đức hoặc tiếng Ả Rập. Lưu ý rằng các
+hiệp lực này được mô hình hóa rõ ràng, và không cần corpus tham chiếu
+để huấn luyện và thiên lệch fertility của T-FREE. Do đó, T-FREE cho
+phép thích ứng mô hình dễ dàng và hiệu quả hơn với các ngôn ngữ ít
+tài nguyên.
+
+Bây giờ chúng tôi chỉ ra rõ ràng những hậu quả tàn phá của các tokenizer
+thiên lệch đối với khả năng chuyển giao ngôn ngữ của LLM. Như đã
+thảo luận ở trên, chúng tôi đầu tiên huấn luyện các mô hình 3B cho
+T-FREE và Unigram trên tiếng Anh, sau đó chuyển sang tiếng Đức.
+Thông qua thêm ablation, chúng tôi cố định các kích hoạt thành m=7
+và sự trùng lặp trigram viết thường thành k=3. Hình 4 cho thấy hiệu
+suất trung bình trên các phiên bản tiếng Anh và tiếng Đức của các benchmark
+tiêu chuẩn. Hiệu suất baseline trong tiếng Đức đã được cải thiện với
+T-FREE, cho thấy rằng các tương đồng cú pháp và ngữ nghĩa giữa các
+ngôn ngữ được nắm bắt tốt hơn trong các biểu diễn đã học. Thêm vào
+đó, T-FREE gần như đạt được hiệu suất mức tiếng Anh trên tiếng Đức
+sau 20k bước huấn luyện. Ngược lại, biến thể tokenizer cổ điển chỉ cải
+thiện nhẹ với cùng lượng huấn luyện.
+
+Chúng tôi, một lần nữa, không điều chỉnh bất kỳ tham số mô hình nào
+khác khi giảm kích thước từ vựng. Do đó,
+
+13Đánh giá chi tiết hơn được tìm thấy trong Phụ lục E.
+
+--- TRANG 8 ---
+Mô hình/Tokenizer | Phần trăm token trùng lặp (%) ↓ | Fertility trên các ngôn ngữ ↓
+Total | Cap. | Space | Digits | EN | DE | RU | VI | AR
+Unigram (64k) | 35.24 | 23.27 | 13.47 | 0.00 | 1.280 | 2.004 | 11.431 | 5.060 | 9.455
+BPE (64k) | 35.24 | 23.27 | 13.47 | 0.00 | 1.275 | 2.025 | 11.423 | 4.755 | 9.465
+Mistral (32k) | 31.47 | 19.10 | 16.45 | 0.00 | 1.397 | 1.931 | 2.560 | 3.346 | 4.722
+Phi-2 (50k) | 23.23 | 12.91 | 16.89 | 3.32 | 1.265 | 2.266 | 6.729 | 4.339 | 5.225
+Gemma (256k) | 34.68 | 20.27 | 20.50 | 0.04 | 1.176 | 1.447 | 1.903 | 1.726 | 1.793
+Command-R (255k) | 15.31 | 15.31 | 14.00 | 0.00 | 1.152 | 1.411 | 1.590 | 1.597 | 1.578
+T-FREE (Của chúng tôi) | 0.00 | 0.00 | 0.00 | 0.00 | 1.163 | 1.182 | 1.338 | 1.400 | 1.086
+
+Bảng 1: Chứng minh các lợi ích cố hữu của T-FREE so với các tokenizer truyền thống. Hiệu suất không còn suy 
+giảm khi đối mặt với các ngôn ngữ ngoài ngôn ngữ chủ yếu được huấn luyện. Thêm vào đó, từ vựng của các 
+tokenizer cổ điển chứa phần lớn các token chỉ khác nhau về việc viết hoa hoặc khoảng trắng đứng đầu. 
+T-FREE không xây dựng từ vựng như vậy ngay từ đầu và do đó sử dụng nhúng hiệu quả hơn.
+
+[Biểu đồ cho thấy hiệu suất tiền huấn luyện liên tục với baseline và các bước từ 5k đến 20k]
+
+Hình 4: Hiệu suất tiền huấn luyện liên tục. Được huấn luyện là các mô hình 3B trên dữ liệu slimpajama tiếng 
+Anh trong 90k bước ("baseline"), và tiếp tục trên dữ liệu occiglot tiếng Đức trong 20k bước. Được vẽ là điểm 
+số trung bình của hai benchmark có sẵn bằng tiếng Đức và tiếng Anh: Hellaswag và Arc-Challenge. Đáng chú ý, 
+T-FREE vượt trội trong tiếng Đức ngay với baseline. Trong 20k bước tiếp tục, T-FREE cải thiện 5% trung bình 
+trong 0 và 2-shot, trong khi cách tiếp cận tokenizer cổ điển hầu như không cải thiện. Cả hai mô hình đều giảm 
+nhẹ hiệu suất trong tiếng Anh, mặc dù phiên bản tokenizer giảm mạnh hơn. Đánh giá đầy đủ được tìm thấy 
+trong Phụ lục Bảng 8,9,10.
+
+T-FREE sử dụng ít hơn 10% tham số so với baseline (2.77B thay vì 3.11B)
+và vẫn vượt trội mạnh so với biến thể Unigram. Đánh giá chi tiết hơn
+được tìm thấy trong Phụ lục J.
+
+5 Thảo Luận
+
+Nghiên cứu trước đây đã chứng minh rằng việc ánh xạ vào biểu diễn
+ẩn thưa và việc huấn luyện lớp tập hợp dày đặc như được áp dụng trong
+T-FREE, là một bộ xấp xỉ hàm toàn cục (Aved'yan, 1995). Những kết
+quả này cung cấp thêm động lực lý thuyết cho cách tiếp cận của chúng
+tôi.
+
+T-FREE cho phép nén đáng kể từ vựng của LLM hơn 85% mà không
+suy giảm hiệu suất. Đáng chú ý, các lớp nhúng và head bị ảnh hưởng
+là những lớp lớn nhất trong LLM về số lượng tham số. Chúng cũng là
+những lớp có ảnh hưởng nhất đến LLM, vì chúng quyết định việc ánh
+xạ giữa văn bản và biểu diễn số. Một mặt, những cải thiện lớn này cho
+phép sử dụng tốt hơn hàng tỷ tham số trong các mô hình lớn. Việc nén
+của T-FREE đặc biệt mở đường cho việc xây dựng các mô hình ít tài
+nguyên tốt hơn, bằng cách giảm kích thước mô hình và chi phí huấn
+luyện và cải thiện khả năng thích ứng. Ví dụ, trong các thí nghiệm của
+chúng tôi mà không có pipe hoặc song song mô hình, chúng tôi có thể
+tăng gấp ba kích thước micro-batch, mang lại các lần lặp huấn luyện
+nhanh hơn.
+
+Hơn nữa, chúng tôi quan sát các đường cong mất mát ổn định hơn cho
+T-FREE, đặc biệt cho các tốc độ học cao hơn. Những cải thiện này có
+thể được quy cho việc mô hình hóa rõ ràng các từ tương tự, việc loại bỏ
+các bản sao, và mục tiêu huấn luyện đa nhãn ít biến động hơn. Hơn
+nữa, việc băm đồng nhất phân phối gradient đều giữa kích thước từ
+vựng có sẵn, trái ngược với các cách tiếp cận cổ điển. Chúng tôi cung
+cấp thêm chi tiết trong Phụ lục D,G.
+
+Các quy tắc chúng tôi sử dụng để có được biểu diễn từ là toàn cục và
+được định nghĩa rõ ràng tại thời điểm tiền huấn luyện. Chúng không
+thay đổi theo thời gian, đặc biệt là không khi thêm ngôn ngữ sau này.
+T-FREE cũng giảm chi phí tính toán do fertility thấp và chia khoảng
+trắng dễ xử lý. Do đó, tiền xử lý, huấn luyện và suy luận của LLM đều
+yêu cầu ít tính toán hơn.
+
+Cuối cùng, T-FREE cho phép mô hình hóa và điều khiển rõ ràng quá
+trình giải mã tại thời điểm suy luận, bằng cách thay đổi từ điển có sẵn.
+Do đó, ảo giác có thể sẽ được giảm do ít hơn "các phân chia từ dự phòng
+chung". Hơn nữa, người ta có thể động thêm hoặc loại bỏ từ. Đáng chú
+ý rằng lợi ích nén của T-FREE cũng có thể được kết hợp với các tokenizer
+truyền thống. Thay
+
+--- TRANG 9 ---
+vì việc chia khoảng trắng đơn giản, người ta có thể giữ tokenization
+truyền thống và trigramify "token cổ điển".
+
+6 Công Trình Liên Quan
+
+Ít các thay thế cho BPE và Unigram đã được tìm thấy trong các LLM
+và nghiên cứu gần đây. Tay et al. (2022) đề xuất một mô-đun tokenization
+có thể huấn luyện dựa trên gradient trái ngược với cách tiếp cận dựa
+trên thống kê khác.
+
+Cách tiếp cận ngây thơ của việc chia văn bản đầu vào thành byte hoặc
+ký tự tối đa hóa fertility và do đó tăng yêu cầu tính toán. Yu et al. (2023)
+sử dụng hỗn hợp nhiều mô hình để cải thiện nhược điểm này của xử lý
+theo byte. Cụ thể họ giới thiệu một tập hợp embedding ký tự cố định và
+một mô hình giải mã ký tự thứ hai. Tuy nhiên, họ sử dụng byte-width
+cố định được xử lý cùng một lúc, không được căn chỉnh với việc chia
+từ.
+
+Do đó, nghiên cứu trước đây đã đề xuất các phương pháp hợp nhất
+byte, ví dụ thông qua các mô hình không gian trạng thái (Wang et al.,
+2024). Tuy nhiên, các cách tiếp cận này vẫn dẫn đến suy giảm hiệu suất.
+
+Cuối cùng, các cách tiếp cận có động lực ngôn ngữ học đã xây dựng
+tokenizer dựa trên các quy tắc hình thái học đã biết (Jabbar, 2024).
+Tuy nhiên, các phương pháp này thường được thiết kế riêng cho các
+ứng dụng cụ thể và thường quá tốn kém và dễ lỗi cho các mô hình lớn,
+mục đích chung.
+
+Bojanowski et al. (2017) đặc biệt thảo luận về cách thêm thông tin từ
+con, chẳng hạn như trigram, làm phong phú việc mã hóa từ và dẫn đến
+nén đáng tin cậy. Svenstrup et al. (2017) tiến hành nghiên cứu về việc
+quá tải các hàm băm khác nhau để cải thiện và nén thêm các biểu diễn
+nhúng. Xue và Aletras (2022) huấn luyện các mô hình encoder kiểu
+BERT dựa trên một tập hợp hash khác nhau trên từ. Clark et al. (2022)
+đề xuất một sơ đồ mã hóa đa giai đoạn sử dụng các hàm băm và convolution
+để tăng cường việc mã hóa BERT của từ.
+
+Một hướng công việc khác để giảm số lượng tham số từ vựng là việc
+sử dụng weight tying, hiệu quả làm giảm một nửa, vì các lớp nhúng và
+head trở thành "liên kết" với cùng một ma trận (Press và Wolf, 2017).
+Tuy nhiên, các hiệu ứng đối với hiệu suất vẫn chưa được khám phá đầy
+đủ, và nó có thể áp đặt một mục tiêu huấn luyện khó khăn hơn.
+
+7 Kết Luận
+
+Trong công trình này chúng tôi trình bày T-FREE, một thay thế cho các
+tokenizer từ con với một hàm băm mạnh mẽ đơn giản và được mô hình
+hóa rõ ràng trên từ. Nó loại bỏ nhu cầu và cạm bẫy để giới hạn "tiềm
+năng của mô hình" thành một từ vựng "được tiền huấn luyện trước".
+Chúng tôi, hơn nữa, thay đổi cơ bản mục tiêu đã thiết lập của việc huấn
+luyện mô hình ngôn ngữ, trước đây được thiết kế như một vấn đề nhãn
+đơn, thành một dự đoán đa nhãn dựa trên sự tương đồng từ. Sự tương
+đồng đặc biệt bao gồm khoảng trắng đứng đầu và các biến thể viết hoa,
+mà các tokenizer từ con thêm các token cụ thể được huấn luyện độc lập
+từ đầu. Những đóng góp này cho phép chúng tôi huấn luyện các mô hình
+ngôn ngữ mạnh mẽ hơn, thích ứng hơn khi tiếp tục tiền huấn luyện với
+ngôn ngữ mới, và với kích thước tham số giảm đáng kể (xuống 12.5%)
+mà không giảm điểm benchmark. Do vai trò đặc biệt của các ma trận,
+cái sau đặc biệt cho phép tăng micro-batchsize, điều này càng tăng tốc
+thời gian huấn luyện. Cuối cùng, việc mã hóa giống convolution kết quả
+đạt được điểm fertility SOTA trên hầu hết các ngôn ngữ và cho phép
+theo thiết kế các hiệp lực với các nhóm ngôn ngữ tương tự. Chúng tôi
+đã chứng minh cái sau cho thấy rằng 3B của chúng tôi gần như đạt được
+hiệu suất "ngôn ngữ bản ngữ" sau một lượng nhỏ các bước huấn luyện
+chuyển giao ngôn ngữ, trái ngược với baseline tokenizer.
+
+Hạn Chế
+
+Với T-FREE chúng tôi đề xuất một cách tiếp cận cơ bản khác về mã hóa
+và giải mã văn bản trong LLM. Do tài nguyên dày đặc cần thiết để huấn
+luyện LLM, chúng tôi đã tập trung vào đánh giá các mô hình lên đến 3B
+tham số. Đánh giá trên các mô hình thậm chí lớn hơn và tập dữ liệu
+huấn luyện vẫn là một điểm điều tra có liên quan cho công việc tương
+lai. Tuy nhiên, chúng tôi quan sát một sự chuyển giao dễ dàng từ 1B
+đến 3B tham số, và chúng tôi sẽ tiếp tục huấn luyện và phát hành các
+mô hình tiên tiến hơn.
+
+Chúng tôi mong đợi T-FREE gặp phải một số bất ổn số học cho các từ
+rất dài vì embedding từ đơn được tính toán như tổng của n·m kích hoạt
+của chúng. Tuy nhiên, ít hơn 2% của toàn bộ tập dữ liệu slimpajama
+chứa từ có hơn 10 ký tự (xem Phụ lục I), và chúng tôi không gặp phải
+bất kỳ vấn đề nào với các benchmark. Do đó, những bất ổn tiềm ẩn như
+vậy vẫn không đáng kể về mặt thống kê. Tuy nhiên, chúng ta có thể
+giải quyết đầy đủ các outlier dài với một quy tắc chia bổ sung dựa trên
+độ dài từ hoặc tại sự xuất
+
+--- TRANG 10 ---
+hiện của các lặp lại. Các tokenizer từ con đã chứng minh rằng các cách
+tiếp cận như vậy sẽ hoạt động, ngay cả khi các token thoạt nhìn vô nghĩa
+và chưa được sử dụng—và một lần nữa, những trường hợp này vẫn là
+các outlier. Hơn nữa, một thiết lập hybrid sử dụng tokenizer lớn (>512k
+token) với T-FREE để tối ưu hóa bộ nhớ được mô tả trong Hình 16.
+
+Tương tự, chúng tôi không nghiên cứu kỹ lưỡng ảnh hưởng của các
+trigram lặp lại trong từ. Những cái này cũng không xuất hiện đủ thường
+xuyên để có bất kỳ ảnh hưởng có thể đo lường nào đến các thí nghiệm
+của chúng tôi. Hiện tại, chúng tôi chỉ tích lũy một mẫu từ theo cách
+nhị phân, không tính đến các trigram xuất hiện nhiều lần trong một từ
+đơn. Như một dự phòng, người ta có thể một lần nữa chia từ tại vị trí
+của các lặp lại. Một hướng hứa hẹn khác sẽ quá tải nhúng với mã hóa
+vị trí tương tự như rotary (Su et al., 2024).
+
+Mặc dù fertility của T-FREE trên code ngang bằng với LLama2 (xem
+Phụ lục E), nó có thể được cải thiện thêm bằng cách mô hình hóa rõ
+ràng các mẫu code. Trong công trình này, chúng tôi đã tập trung vào
+ngôn ngữ tự nhiên và để lại đánh giá chi tiết T-FREE trong các nhiệm
+vụ coding downstream cho nghiên cứu tương lai. Hơn nữa, chúng tôi
+không điều tra các ngôn ngữ hoàn toàn dựa vào mã hóa byte Unicode,
+chẳng hạn như tiếng Trung. Tuy nhiên, vì chúng dường như hoạt động
+out-of-the-box với các tokenizer từ con, chúng tôi không mong đợi các
+vấn đề ở đây bằng cách chia chúng theo ký tự/từ. Đặc biệt đối với các
+ký hiệu châu Á, việc dịch thêm các ký hiệu sang romanization thông
+qua bảng chữ cái ngữ âm như pinyin có thể cải thiện thêm các hiệp lực
+của mã hóa từ.
+
+Cuối cùng, chúng tôi chỉ nghiên cứu một hàm băm được xây dựng duy
+nhất cho T-FREE. Vì công trình này mở đường để mô hình hóa các tính
+năng ngôn ngữ cần thiết một cách rõ ràng hơn, chúng tôi mong đợi các
+biến thể của phương pháp T-FREE được đề xuất.
+
+Lời Cảm Ơn
+
+Chúng tôi trân trọng cảm ơn sự hỗ trợ của Trung tâm Trí tuệ Nhân tạo
+Đức (DFKI) dự án "SAINT", Bộ Giáo dục Đại học, Nghiên cứu và Nghệ
+thuật Hessian (HMWK) các dự án cluster "The Adaptive Mind" và "The
+Third Wave of AI", và Mạng lưới Trung tâm Xuất sắc Nghiên cứu AI
+ICT-48 "TAILOR" (EU Horizon 2020, GA No 952215).
+
+Tài Liệu Tham Khảo
+
+[Phần tài liệu tham khảo tiếp tục với danh sách các bài báo và nghiên cứu được trích dẫn trong bài báo...]
+
+--- TRANG 11 ---
+[Tiếp tục danh sách tài liệu tham khảo...]
+
+--- TRANG 12 ---
+[Tiếp tục danh sách tài liệu tham khảo...]
+
+--- TRANG 13 ---
+Phụ Lục
+
+A Thuật Toán T-FREE
+
+Thuật toán 1,2,3,4,5 hiển thị các bước cốt lõi để mã hóa văn bản thành
+nhúng, và giải mã văn bản từ dự đoán mô hình với T-FREE. Ở đây,
+regex.split biểu thị một thuật toán chia văn bản dựa trên biểu thức chính
+quy, hash biểu thị một hàm băm tùy ý như md5, % biểu thị phép toán
+modulo toán học. Theo kiểu python, f'{token}_' biểu thị định dạng văn
+bản để chỉ ra chuỗi có nội dung của biến token được theo sau bởi dấu
+gạch dưới, và EL[i] biểu thị mục thứ i của ma trận EL và 'string'[i:i+3]
+ba ký tự liên tiếp trong chuỗi văn bản bắt đầu từ vị trí i, trong đó 's'
+ở vị trí 0. Cuối cùng, v≈8,000 là kích thước từ vựng được chọn, d≈100,000
+là kích thước từ điển được chọn, h≈3,072 kích thước ẩn của LLM. Cuối
+cùng, 0_h biểu thị vector không có kích thước h và 1_{v×d} ma trận với
+các mục 0 hoặc 1. Lưu ý rằng chúng tôi đã bao gồm một số bước chuẩn
+hóa trong Thuật toán 5, mà chúng tôi ngạc nhiên thấy không có lợi cho
+Thuật toán 3 trong các ablation của chúng tôi.
+
+Cuối cùng, tham khảo Hình 14,15 để so sánh từng bước về bước tính
+toán, tham số và thời gian chạy. Hình 16 hiển thị chế độ "hybrid", trong
+đó embodying một tokenizer từ con cổ điển như một bước tiền xử lý văn
+bản, nhưng sử dụng T-FREE để giữ "backbone LLM tự do tokenizer".
+Có thể nói, cách tiếp cận này hưởng lợi từ lớp nhúng nén, và tokenizer
+có thể dễ dàng được trao đổi sau đó—việc mã hóa các đoạn văn bản
+trong backbone sẽ được giữ như đề xuất.
+
+[Tiếp tục với các thuật toán chi tiết...]
+
+--- TRANG 14 ---
+[Tiếp tục với các thuật toán và mô tả kỹ thuật...]
+
+--- TRANG 15 ---
+[Tiếp tục với phân tích fertility và các bảng số liệu...]
+
+--- TRANG 16 ---
+[Tiếp tục với bảng đánh giá và so sánh hiệu suất...]
+
+--- TRANG 17 ---
+[Tiếp tục với các biểu đồ và phân tích chi tiết...]
+
+--- TRANG 18 ---
+[Tiếp tục với các biểu đồ phân tích dữ liệu...]
+
+--- TRANG 19 ---
+[Kết thúc với các bảng thống kê và biểu đồ cuối cùng...]

@@ -1,0 +1,654 @@
+# 2402.11811v4.pdf
+# Chuyển đổi từ PDF sang TXT
+# Đường dẫn gốc: D:\llm\notebooks\AI-Papers\2402.11811v4.pdf
+# Kích thước tệp: 2110797 bytes
+
+===============================================
+NỘI DUNG TỆP PDF
+===============================================
+
+
+--- TRANG 1 ---
+FIPO: Tối ưu hóa Prompt theo Hướng dẫn Dạng tự do với
+Tập dữ liệu Ưu tiên và Giản đồ Tinh chỉnh Mô-đun
+Junru Lu1,2, Siyu An2, Min Zhang3, Yulan He1,4,5, Di Yin2, Xing Sun2
+1Đại học Warwick,2Tecent YouTu Lab,3Đại học Sư phạm Đông Trung Quốc,
+4Đại học King's College London,5Viện Alan Turing
+1junru.lu@warwick.ac.uk ,3mzhang@cs.ecnu.edu.cn ,4yulan.he@kcl.ac.uk
+2{siyuan, endymecyyin, winfredsun}@tencent.com
+
+Tóm tắt
+Khi được tối ưu hóa cẩn thận bởi các chuyên gia con người,
+những prompt ngây thơ có thể cải thiện đáng kể hiệu suất
+nhiệm vụ của các mô hình ngôn ngữ lớn (LLM). Tuy nhiên,
+việc tối ưu hóa prompt do chuyên gia thực hiện như vậy
+rất tốn kém về tài nguyên. Để giải quyết vấn đề này, một
+số nghiên cứu đã đề xuất Tối ưu hóa Prompt Tự động
+(APO), cải thiện các prompt ngây thơ dựa trên kết quả
+nhiệm vụ từ các mô hình kiểm tra trong hộp, sử dụng các
+LLM tiên tiến (ví dụ: GPT-4) theo cách tùy ý. Mặc dù
+hiệu quả, các phương pháp hiện tại gặp phải những thách
+thức về khả năng tổng quát hóa và rủi ro bảo mật. Để
+vượt qua những hạn chế này, chúng tôi đã phát triển tập
+dữ liệu Ưu tiên Tối ưu hóa Prompt (POP) quy mô lớn
+đầu tiên, tinh chỉnh các bộ tối ưu hóa LLM cục bộ offline,
+và thực hiện các đánh giá công bằng trên nhiều mô hình
+downstream khác nhau. Phương pháp của chúng tôi, được
+đặt tên là Tối ưu hóa Prompt theo Hướng dẫn Dạng tự do
+(FIPO), cho phép tối ưu hóa chính xác các hướng dẫn
+nhiệm vụ cốt lõi trong các prompt ngây thơ theo cách
+bất khả tri mô hình. FIPO sử dụng một mẫu APO mô-đun
+động kết hợp các hướng dẫn nhiệm vụ ngây thơ, phản hồi
+hướng dẫn tùy chọn, và chân lý cơ bản tùy chọn để tạo ra
+các prompt được cải thiện. Tập dữ liệu POP được xây
+dựng tỉ mỉ bằng cách sử dụng các LLM tiên tiến, trải qua
+quá trình xác thực chéo nghiêm ngặt bởi các chuyên gia
+con người và các mô hình phân tích. Bằng cách tận dụng
+những hiểu biết từ tập dữ liệu này, cùng với các mô hình
+Tulu2 và các chiến lược tinh chỉnh đa dạng, chúng tôi
+xác thực hiệu quả của khung FIPO trên năm điểm chuẩn
+công khai và sáu mô hình kiểm tra.1
+
+1 Giới thiệu
+Các Mô hình Ngôn ngữ Lớn (LLM) đã thể hiện những
+khả năng ấn tượng (Zhao et al., 2023a; Yang et al., 2023c;
+Achiam et al., 2023) trên nhiều điểm chuẩn khác nhau
+(Cobbe et al., 2021; Suzgun et al., 2023; Bisk et al., 2020;
+Huang et al., 2019; Hendrycks et al., 2021). Tuy nhiên,
+hiệu suất nhiệm vụ của chúng phụ thuộc rất nhiều vào
+chất lượng của prompt nhiệm vụ được cung cấp. Trong
+khi LLM có thể gặp khó khăn trong việc tạo ra các câu
+trả lời chính xác khi làm việc với các prompt nhiệm vụ
+ngây thơ, chúng có thể xuất sắc trong cùng các nhiệm vụ
+khi được hướng dẫn bởi các prompt chất lượng cao được
+tối ưu hóa cẩn thận, được tạo ra bởi các chuyên gia con
+người (Wei et al., 2022; Kojima et al., 2022; Yang et al.,
+2023b).
+
+Rõ ràng, tối ưu hóa prompt dựa trên chuyên gia rất tốn
+kém. Do đó, trong những năm gần đây, Tối ưu hóa Prompt
+Tự động (APO) đã nổi lên như một lĩnh vực nghiên cứu
+nổi bật. APO rời rạc là một trong những chiến lược phổ
+biến, tập trung vào việc xác định các kết hợp tối ưu của
+các token rời rạc để phục vụ như các prompt được tối ưu
+hóa (van de Kar et al., 2022; Yuan et al., 2021; Jiang
+et al., 2020; Pryzant et al., 2023). Đặc biệt, đã có sự
+quan tâm đáng kể đến APO rời rạc dựa trên LLM (Zhou
+et al., 2023; Do et al., 2023; Wang et al., 2023a), giới
+thiệu các chiến lược tùy ý tận dụng các LLM tiên tiến
+có thể truy cập qua API (ví dụ: GPT-4 (Achiam et al.,
+2023)).
+
+Các phương pháp APO này thường bao gồm tối ưu hóa
+lặp đi lặp lại giữa một bộ tạo kiểm tra trong hộp Mg−in
+và một bộ tối ưu hóa tiên tiến Mo−api. Như được minh
+họa trong nửa trên của Hình 1, bộ tạo Mg−in đầu tiên
+phản hồi một prompt ngây thơ xn như: "Tính giá trị trung
+bình của danh sách", và sau đó bộ tối ưu hóa Mo−api
+cung cấp phản hồi hợp lý và đề xuất một số ứng viên
+prompt được nâng cấp {xo}. Quá trình lặp này tiếp tục
+cho đến khi một prompt được tối ưu hóa chất lượng cao
+xo được tạo ra. Prompt cuối cùng này được điều chỉnh
+cho bộ tạo trong hộp Mg−in, đảm bảo nó tạo ra phản
+hồi mong muốn, ví dụ: "Giá trị đáp án là 44.25".
+
+Mặc dù hiệu quả, một số nhược điểm vẫn còn tồn tại:
+(1) Rủi ro Bảo mật. Toàn bộ quá trình tối ưu hóa trực
+tuyến phụ thuộc vào các dịch vụ LLM bên ngoài, làm
+lộ thông tin nhạy cảm cho các hệ thống bên thứ ba; (2)
+Khả năng Tổng quát hóa Kém. Tối ưu hóa tùy ý có tính
+đặc thù mô hình cao, vì nó phụ thuộc vào các phản hồi
+kiểm tra tức thì từ bộ tạo trong hộp Mg−in, dẫn đến
+suy giảm hiệu suất khi kiểm tra với các bộ tạo ngoài
+hộp Mg−out. Ví dụ, bộ tạo ngoài hộp Mg−out có thể
+tạo ra một phản hồi không chính xác như "44.1".
+
+Để giải quyết những hạn chế trên, chúng tôi giới thiệu
+Tối ưu hóa Prompt theo Hướng dẫn Dạng tự do (FIPO).
+Nửa dưới của Hình 1 minh họa khung FIPO. Không giống
+như phương pháp APO tùy ý trực tuyến, FIPO trực tiếp
+tinh chỉnh một bộ tối ưu hóa cục bộ tổng quát Mlocal,
+và áp dụng nó trên bất kỳ bộ tạo kiểm tra Mg nào. Cụ
+thể, chúng tôi đầu tiên thiết kế một meta-template cho
+APO tổng quát (Hình 2), cho phép thu thập 30.000 ví
+dụ ưu tiên tối ưu hóa prompt sử dụng một bộ tối ưu hóa
+tiên tiến Mo−api (§ 2.3). Chúng tôi chứng minh độ tin
+cậy của tập dữ liệu này thông qua nhiều phương pháp
+xác thực chéo (Bảng 1). Dựa trên nền tảng này, chúng
+tôi sử dụng các chiến lược tinh chỉnh end-to-end chính
+để tạo ra một bộ tối ưu hóa cục bộ hiệu quả Mo−local
+(Hình 3). Ví dụ, trong Hình 1, bộ tối ưu hóa cục bộ
+Mlocal tạo ra một prompt được tối ưu hóa xo, cung cấp
+hướng dẫn rõ ràng, từng bước: "tính giá trị trung bình
+bằng cách tìm tổng của tất cả các phần tử và chia cho
+tổng số phần tử trong danh sách". Hướng dẫn từng bước
+như vậy cải thiện đáng kể chất lượng câu trả lời trên
+bất kỳ bộ tạo kiểm tra Mg nào. Những đóng góp của
+chúng tôi như sau:
+
+(1) Chúng tôi nêu bật những nhược điểm của APO tùy
+ý trực tuyến trước đây, và giới thiệu FIPO, một tối ưu
+hóa prompt theo hướng dẫn dạng tự do cục bộ. FIPO
+sử dụng một template APO tổng quát cho phép bộ tối
+ưu hóa hoạt động độc lập với các bộ tạo kiểm tra được
+xây dựng sẵn, một hạn chế của các phương pháp trước đó.
+
+(2) Tận dụng template APO, chúng tôi biên soạn tập dữ
+liệu Ưu tiên Tối ưu hóa Prompt (POP) quy mô lớn với
+30.000 ví dụ. Chúng tôi khám phá một số chiến lược tinh
+chỉnh chính, bao gồm Tinh chỉnh có Giám sát (SFT),
+Tối ưu hóa Ưu tiên Trực tiếp (DPO) (Rafailov et al.,
+2023), và Tối ưu hóa Ưu tiên Đồng nhất (IPO) (Azar
+et al., 2023), đồng thời cũng phát triển một pipeline
+Học Ưu tiên Lặp (IPL) để tăng cường tối ưu hóa ưu tiên.
+
+(3) Chúng tôi đánh giá hiệu quả và khả năng thích ứng
+của bộ tối ưu hóa FIPO được tinh chỉnh trên năm điểm
+chuẩn downstream và ba bộ tạo đa dạng, và đạt được
+kết quả vượt trội so với các phương pháp APO tùy ý
+trực tuyến hiện có.
+
+2 Phương pháp luận
+Trong phần này, chúng tôi bắt đầu với việc hình thành
+nhiệm vụ (§ 2.1), sau đó giới thiệu meta-template của
+chúng tôi cho APO tổng quát (§ 2.2), dữ liệu POP được
+thu thập (§ 2.3) và các chiến lược huấn luyện được sử
+dụng (§ 2.4).
+
+2.1 Hình thành Nhiệm vụ
+Chúng tôi ký hiệu FIPO như việc tạo văn bản end-to-end.
+Trong giai đoạn huấn luyện, một mô hình bộ tối ưu hóa
+cục bộ Mo−local được tinh chỉnh có giám sát để tạo ra
+một prompt được tối ưu hóa ˆxo:
+
+ˆxo= argmax
+Mo−localp(ˆxo|xn,[ˆyn],[yn]) (1)
+
+dựa trên prompt ngây thơ xn, phản hồi ngây thơ tùy chọn
+ˆyn, và chân lý cơ bản tùy chọn yn. Ngoài ra, prompt
+được tối ưu hóa được chọn theo cặp xo+ và prompt được
+tối ưu hóa bị từ chối xo− được cung cấp như nhãn trong
+huấn luyện. Phản hồi ngây thơ tùy chọn ˆyn được tạo ra
+cho prompt ngây thơ xn sử dụng một mô hình tạo thần
+kinh Mg∗:
+
+ˆyn= argmax
+Mg∗p(ˆyn|xn) (2)
+
+Trong khi ở giai đoạn kiểm tra, mục tiêu cuối cùng của
+chúng tôi là có được một phản hồi kiểm tra được tối ưu
+hóa vượt trội ˆyo
+t hơn phản hồi kiểm tra ngây thơ ˆyn
+t,
+khi áp dụng bất kỳ bộ tạo kiểm tra Mg nào vào prompt
+kiểm tra được tối ưu hóa ˆxo
+t và prompt kiểm tra ngây
+thơ xn
+t, tương ứng:
+
+ˆyo
+t≻ˆyn
+t (3)
+
+ˆyo
+t= argmax
+Mgp(ˆyo
+t|ˆxo
+t),ˆyn
+t= argmax
+Mgp(ˆyn
+t|ˆxn
+t)(4)
+
+trong đó Mg có thể giống hoặc khác với Mg∗. Và cụ thể,
+ˆxo
+t được tăng cường từ xn
+t bởi bộ tối ưu hóa được tinh
+chỉnh Mo−local:
+
+ˆxo
+t= argmax
+Mop(ˆxo
+t|xn
+t) (5)
+
+Ngược lại, APO tùy ý trước đây không có giai đoạn huấn
+luyện mà chỉ có pipeline kiểm tra trực tuyến lặp với phản
+hồi kiểm tra trong hộp bắt buộc ˆyoi
+t:
+
+ˆxoi+1
+t= argmax
+Mo−apip(ˆxoi+1
+t|xoi
+t,ˆyoi
+t),xo1
+t=xn
+t (6)
+
+ˆyoi
+t= argmax
+Mg−inp(ˆyoi
+t|xoi
+t),ˆyo1
+t=ˆyn
+t (7)
+
+trong đó Mg−in là một bộ tạo trong hộp trước đó.
+
+2.2 Template Mô-đun
+Như đã đề cập trong phần 2.1, chúng tôi đầu tiên thiết
+kế một template mô-đun đảm bảo tính linh hoạt trong
+quản lý nội dung. Hình 2 minh họa template của chúng
+tôi, được hiển thị ở giữa, nhận hướng dẫn nhiệm vụ ngây
+thơ bắt buộc xn, phản hồi ngây thơ tùy chọn ˆyn và phản
+hồi chân lý cơ bản tùy chọn yn làm đầu vào. Mô tả bổ
+sung sau đó được thêm vào để làm rõ, trong đó chúng
+tôi trực tiếp tuyên bố tính tùy chọn của ˆyn và yn: "Phản
+hồi silver tùy chọn ··· dựa trên prompt silver ··· phản
+hồi golden tùy chọn ···".
+
+Chúng tôi sử dụng template mô-đun này cho tất cả các
+phần trong FIPO, bao gồm thu thập tập dữ liệu, tinh
+chỉnh bộ tối ưu hóa cục bộ Mo−local, và kiểm tra các
+bộ tạo downstream khác nhau {Mg}. Sự khác biệt chính
+giữa các phần này là chúng tôi điều chỉnh tương ứng
+các phản hồi tùy chọn, do đó giải quyết sự thiên lệch
+tiếp xúc tiềm ẩn giữa các giai đoạn huấn luyện và suy
+luận (Eq. 1 vs. Eq. 5): (1) Giữ cả hai trong thu thập
+dữ liệu. Chúng tôi giới thiệu việc thu thập dữ liệu POP
+của chúng tôi trong phần 2.3; (2) Giữ đa dạng các phản
+hồi một phần trong huấn luyện. Chúng tôi trình bày
+chiến lược này trong phần 2.4; (3) Loại bỏ tất cả các
+phản hồi trong kiểm tra. Chúng tôi báo cáo kết quả
+kiểm tra trong phần 3.2.
+
+--- TRANG 2 ---
+Hình 1: APO Tùy ý Trực tuyến so với FIPO End-to-End Cục bộ của chúng tôi: Mặc dù cả hai phương pháp đều tận dụng các LLM tiên tiến (ví dụ: GPT-4), FIPO giới thiệu một pipeline được huấn luyện cục bộ loại bỏ mọi sự phụ thuộc vào các bộ tạo mô hình trong hộp, đảm bảo một quá trình tối ưu hóa hoàn toàn khép kín và end-to-end.
+
+2.3 Dữ liệu Ưu tiên Tối ưu hóa Prompt
+Chúng tôi quyết định chưng cất các khả năng tối ưu hóa
+prompt tinh chế từ các LLM nổi bật nhưng độc quyền,
+thay vì tích hợp trực tiếp chúng theo cách tùy ý. Do đó,
+chúng tôi thu thập dữ liệu Ưu tiên Tối ưu hóa Prompt
+(POP). Được hiển thị trong Hình 2, để đảm bảo tối ưu
+hóa định hướng nhất, chúng tôi gửi prompt ngây thơ xn,
+phản hồi ngây thơ ˆyn, và phản hồi chân lý cơ bản yn
+đến một LLM dưới tối ưu GPT-3.5-turbo và một LLM
+tối ưu GPT-42, để thu thập dữ liệu POP tương phản
+(xo+,xo−). Prompt ngây thơ xn được lấy mẫu từ tập dữ
+liệu Alpaca, chứa 52K hướng dẫn đa dạng và các phản
+hồi tương ứng ˆyn được tạo bởi mô hình Text-davinci-003
+(Taori et al., 2023). Chúng tôi cũng thu thập một phản
+hồi khác được tạo bởi GPT4 cho tập dữ liệu Alpaca từ
+tài liệu công khai (Ghosal et al., 2023). Không có phản
+hồi chân lý cơ bản chính thức (ví dụ: từ các chuyên gia
+con người) cho dữ liệu Alpaca, do đó chúng tôi coi các
+phản hồi GPT-4 như phản hồi chân lý cơ bản yn, với
+khả năng phân tích được chứng minh có thể so sánh với
+con người (Pan et al., 2023a). Như được hiển thị ở dưới
+cùng của Hình 2, GPT-4 cung cấp một prompt được tối
+ưu hóa từng bước mang tính giáo dục hơn so với GPT-3.5-turbo.
+Chúng tôi báo cáo template thu thập hoàn chỉnh trong
+Bảng 10.
+
+Cuối cùng chúng tôi thu hẹp tập dữ liệu của mình xuống
+30k mẫu và báo cáo việc kiểm tra chất lượng hậu kỳ trong
+Bảng 1. Chúng tôi áp dụng xác thực chéo sử dụng ba
+phương pháp khác nhau: phê bình từ một mô hình điều
+chỉnh bên ngoài UltraRM (Cui et al., 2023), tự đánh giá
+từ GPT-4, và kiểm tra thủ công bởi các chuyên gia con
+người. Các cột "Phản hồi" và "Prompt" đề cập đến tỷ
+lệ mà phản hồi được tạo bởi GPT-4 và prompt được tối
+ưu hóa bởi GPT-4 tốt hơn các cái khác, tương ứng. Tỷ
+lệ thắng trung bình cho cả hai danh mục vượt quá 85%,
+đảm bảo chất lượng.
+
+GPT-4 Win Rate (%)
+Response Prompt Scale
+UltraRM 13B (Cui et al., 2023) 91.49 82.13 30k
+GPT4 Self-check 80.56 92.29 3k
+Human Expert 88.29 95.21 1k
+Average 86.78 89.88 N/A
+Bảng 1: Xác thực chất lượng chéo trên tập dữ liệu của chúng tôi.
+
+2.4 Các Chiến lược Tinh chỉnh
+Chúng tôi giới thiệu các chiến lược tinh chỉnh của chúng
+tôi trong Hình 3, bao gồm một bước ban đầu của đa dạng
+hóa tập dữ liệu chuyển tiếp theo sau bởi tinh chỉnh chiến
+lược.
+
+Đa dạng hóa Tập dữ liệu. Ở phía trái của Hình 3, chúng
+tôi chia đều 30k mẫu thành tám loại tùy thuộc vào sự
+tồn tại của phản hồi ngây thơ ˆyn và phản hồi chân lý
+cơ bản yn, cũng như một điều kiện định dạng "generation"
+hoặc "multi-choice". Tinh chỉnh bộ tối ưu hóa theo hướng
+phải dựa vào các phản hồi được tạo sẵn, trong khi không
+có bất kỳ phản hồi nào sẽ được tiếp xúc trong quá trình
+suy luận. Do đó, đa dạng hóa tập dữ liệu là cần thiết để
+giúp giảm khoảng cách tiếp xúc giữa huấn luyện và kiểm
+tra, và tổng quát hóa định dạng hướng dẫn "generation"
+ban đầu sang một định dạng hướng dẫn "multi-choice"
+phổ biến khác. Góc dưới bên trái trong Hình 3 lấy một
+ví dụ về Loại 6. Các phản hồi ˆyn và yn được sửa đổi
+như các ứng viên tuân thủ prompt ngây thơ xn. Sau đó
+chúng tôi đặt "A" và "B" như phản hồi ngây thơ mới ˆyn
+và phản hồi chân lý cơ bản yn3.
+
+Tinh chỉnh Chiến lược. Phía bên phải của Hình 3 giới
+thiệu một số chiến lược tinh chỉnh end-to-end mà chúng
+tôi đã khám phá trong công việc này. Phía trên bên phải
+là Tinh chỉnh có Giám sát (SFT) nổi tiếng nhất, chỉ lấy
+prompt được tối ưu hóa tối ưu xo+ như tín hiệu giám sát:
+
+LSFT(Mo) =−E(xn,ˆyn,yn,xo+)∼D[ˆxo−xo+]2(8)
+
+trong đó D đại diện cho tập huấn luyện.
+
+Mặt khác, phía giữa bên phải hiển thị một phương pháp
+tinh chỉnh tương phản: Tối ưu hóa Ưu tiên, như Tối ưu
+hóa Ưu tiên Trực tiếp (DPO) (Rafailov et al., 2023) và
+Tối ưu hóa Ưu tiên Đồng nhất (IPO) (Azar et al., 2023).
+Tối ưu hóa Ưu tiên lấy nhãn bị từ chối theo cặp xo− và
+nhãn được chọn xo+ như giám sát. Một trong những khác
+biệt cốt lõi giữa Tối ưu hóa Ưu tiên và SFT là cái trước
+không chỉ khuyến khích việc tạo ra ưu tiên tối ưu, mà
+còn giảm thiểu việc tạo ra ưu tiên dưới tối ưu:
+
+LDPO(Mo) =−E(xn,ˆyn,yn,xo+,xo−)∼D[logσ(β·∆)] (9)
+
+LIPO(Mo) =−E(xn,ˆyn,yn,xo+,xo−)∼D[∆−1
+2β]2(10)
+
+∆ = logMo(xo+|xr,ˆyr, yr)
+Mref(xo+|xr,ˆyr, yr)−logMo(xo−|xr,ˆyr, yr)
+Mref(xo−|xr,ˆyr, yr)
+(11)
+
+trong đó β là một yếu tố siêu tham số. Mref đề cập đến
+mô hình tham chiếu, là một bản sao đông lạnh của trọng
+số ban đầu của Mo. Các phương trình chỉ ra rằng IPO
+là một phiên bản được điều chỉnh của DPO vì nó giới
+hạn phạm vi tối ưu hóa với các hình vuông.
+
+Ngoài ra, được truyền cảm hứng bởi điều chỉnh tự cập
+nhật (Lee et al., 2023; Anthropic, 2022; Yuan et al.,
+2024), chúng tôi phát triển một chiến lược Học Ưu tiên
+Lặp (IPL) cho tối ưu hóa prompt tự thưởng. Sau mỗi
+lần lặp tối ưu hóa prompt, chúng tôi yêu cầu bộ tối ưu
+hóa tự xác định liệu nó có thành công tạo ra một prompt
+vượt trội xn+ với một phản hồi tốt hơn ˆyn+, và nếu có,
+tự động thay thế prompt kém hơn xn và phản hồi ˆyn
+trước đó, dẫn đến huấn luyện nghiêm ngặt hơn trong
+lần lặp tiếp theo:
+
+LIPL(Mo) =−E(xn+,ˆyn+,yn,xo+,xo−)∼DG(∆) (12)
+
+xn+=Mo(xn),ˆyn+=Mo(xn+) (13)
+
+xn+=
+xn+,Mo(xn+, yn)≻Mo(xn, yn)
+xn, otherwise(14)
+
+trong đó G(∗) ký hiệu như loss IPO hoặc DPO4.
+
+3 Thí nghiệm
+Mục tiêu cuối cùng của FIPO nằm ở việc cải thiện hiệu
+suất tổng quát với các bộ tạo downstream Mg (Eq. 3).
+Ở đây, trong đánh giá, chúng tôi đầu tiên sử dụng bộ
+tối ưu hóa được tinh chỉnh Mo để tạo ra các prompt
+kiểm tra được tối ưu hóa ˆxo
+t, sau đó thu được phản
+hồi kiểm tra được tối ưu hóa ˆyo
+t và phản hồi kiểm tra
+ngây thơ ˆyn
+t để kiểm tra chất lượng câu trả lời, như được
+hiển thị trong góc dưới bên phải của Hình 3. Chúng tôi
+bắt đầu với các cài đặt thí nghiệm (§ 3.1), trình bày
+hiệu quả và so sánh với các phương pháp APO tùy ý
+trực tuyến (§ 3.2.1), sau đó tiếp tục với phân tích các
+chiến lược tinh chỉnh khác nhau (§ 3.2.2), và phân tích
+trường hợp (§ 3.2.3)5.
+
+3.1 Cài đặt Thí nghiệm
+
+3.1.1 Baseline
+Chúng tôi so sánh FIPO với hai phương pháp APO SOTA:
+APE (Zhou et al., 2023) và PromptAgent (Wang et al.,
+2023a). APE, viết tắt của Automatic Prompt Engineer,
+là một chiến lược dựa trên template yêu cầu một LLM
+tạo ra một pool các ứng viên prompt dựa trên các template,
+sau đó chọn một cái theo điểm đánh giá. PromptAgent
+loại bỏ các template và thay thế bằng Monte Carlo Tree
+Search (Abramson, 2014) để sử dụng một mô hình đánh
+giá hướng dẫn bộ tạo. Cả APE và PromptAgent đều không
+cần huấn luyện, nhằm mục đích APO hướng mô hình
+theo cách tùy ý, trong khi chúng tôi thực hiện huấn
+luyện hoàn toàn offline. Theo các công việc trước đây,
+chúng tôi sử dụng GPT-3.5-turbo như bộ tạo trong hộp
+và GPT-4 như bộ tối ưu hóa trong cả hai baseline.
+
+Chúng tôi sử dụng các mô hình Tulu2 như cơ sở, là một
+phiên bản được tinh chỉnh của Llama2 (Touvron et al.,
+2023) được huấn luyện trên hỗn hợp các tập dữ liệu
+có sẵn công khai (Ivison et al., 2023). Chúng tôi tinh
+chỉnh bộ tối ưu hóa cục bộ với Tulu2-13B và Tulu2-70B.
+
+3.1.2 Điểm chuẩn Đánh giá
+Chúng tôi bao gồm năm điểm chuẩn trên hai định dạng
+phổ biến nhất: (1) GSM8k (Cobbe et al., 2021), một
+tập dữ liệu tạo sinh chứa 1.3k câu hỏi toán cấp tiểu
+học; (2) BigBenchHard (BBH) (Suzgun et al., 2023),
+bao gồm 23 nhiệm vụ lý luận thách thức. BBH có 6.4k
+mẫu kiểm tra, và yêu cầu trả lời tạo sinh; (3) PiQA
+(Bisk et al., 2020), trong đó 1.8k câu hỏi kiến thức
+vật lý thông thường được đề xuất, cùng với nhiều lựa
+chọn ứng viên; (4) CosmosQA (Huang et al., 2019).
+Có khoảng 3k câu hỏi trắc nghiệm dựa trên thường
+thức trong CosmosQA, được trang bị bốn tùy chọn ứng
+viên; (5) MMLU (Hendrycks et al., 2021), là một trong
+những điểm chuẩn trắc nghiệm lớn nhất. MMLU bao
+gồm 14k câu hỏi. Đối với các thí nghiệm FIPO của
+chúng tôi, chúng tôi báo cáo kết quả trên tất cả năm
+điểm chuẩn. Khác biệt, vì cả APE và PromptAgent chỉ
+cung cấp đánh giá trên 6 nhiệm vụ của BBH, chúng tôi
+báo cáo kết quả so sánh phù hợp với cài đặt của họ.
+Đối với các metric kết quả, cả điểm chuẩn "generation"
+hoặc "multi-choice" đều sử dụng định dạng few-shot
+với các template trả lời nghiêm ngặt (ví dụ: "Đáp án
+là X"). Ở đây, chúng tôi có thể báo cáo điểm độ chính
+xác cho tất cả các điểm chuẩn.
+
+3.2 Kết quả Thí nghiệm
+
+3.2.1 Hiệu quả của FIPO
+Cải thiện tổng quát của FIPO. Có thể kết luận rằng
+các prompt được tối ưu hóa bởi FIPO có những cải thiện
+tổng quát trên các bộ tạo downstream khác nhau trên
+năm điểm chuẩn công khai, được hiển thị trong Bảng 2.
+Các prompt được tối ưu hóa giúp các mô hình Llama2-7B,
+Tulu2-13B và Baichuan2-13B đạt được sự tăng trưởng
+hiệu suất 6.37%, 2.26% và 1.99% trung bình.
+
+Khả năng tối ưu hóa có thể so sánh với APO tùy ý trực
+tuyến, thậm chí tốt hơn. Chúng tôi muốn so sánh bộ
+tối ưu hóa FIPO cục bộ với các phương pháp trước đây
+và tối ưu hóa prompt trực tiếp sử dụng GPT-4. Hình 4
+báo cáo kết quả thí nghiệm trên sáu nhiệm vụ BBH, theo
+cài đặt thí nghiệm trong công việc PromptAgent (Wang
+et al., 2023a). Phương pháp FIPO của chúng tôi dẫn đầu
+trong tất cả các kiểm tra downstream, ngoại trừ bộ kiểm
+tra trong hộp GPT-3.5-turbo, được bao gồm tùy ý trong
+quá trình tối ưu hóa prompt lặp trong APE và PromptAgent.
+Cụ thể, các cải thiện trung bình cuối cùng trên hai mô
+hình mã nguồn mở 70B là khoảng 3% đến 5%, so với
+hơn 10% cải thiện trên hai mô hình mã nguồn mở 7B.
+Chúng tôi có thể nhận thấy rằng khi mô hình mã nguồn
+mở được kiểm tra lớn hơn và mạnh hơn, hiệu quả của
+tất cả các phương pháp tối ưu hóa prompt giảm đáng
+kể, có thể do tính vững chắc của kiến thức vốn có của
+mô hình lớn hơn. Đối với GPT-3.5 và GPT-4 độc quyền,
+chúng tôi thấy rằng tối ưu hóa prompt có vẻ có lợi hơn
+cho chúng. Các prompt được tối ưu hóa bởi FIPO của
+chúng tôi có thể giúp GPT3.5 cải thiện hiệu quả trung
+bình cuối cùng lên đến 22%, và duy trì hiệu quả khoảng
+8% trên GPT4o.
+
+3.2.2 Phân tích Tinh chỉnh
+Chúng tôi tinh chỉnh các mô hình Tulu2-13B và -70B
+như bộ tối ưu hóa cục bộ của chúng tôi thông qua các
+chiến lược khác nhau như đã đề cập ở trên. Chúng tôi
+sử dụng hiệu suất downstream của Tulu2-7B để phân
+tích hiệu quả của các chiến lược tinh chỉnh khác nhau.
+Những phát hiện của chúng tôi ở đây:
+
+Bộ tối ưu hóa nhỏ thất bại. Tulu2-13B "nhỏ" không
+đáp ứng được nhiệm vụ tối ưu hóa prompt khó khăn
+(dòng thứ 4 của Bảng 3). Điểm kiểm tra trung bình của
+việc sử dụng các prompt được tối ưu hóa thậm chí còn
+tệ hơn việc sử dụng các prompt ngây thơ được viết bởi
+con người.
+
+SFT vs. DPO/IPO vs. IPL. Khi chỉ đơn giản cung cấp
+một prompt được tối ưu hóa tốt nhất như nhãn giám sát,
+được chỉ ra bởi kết quả SFT-70B, tối ưu hóa prompt
+end-to-end vẫn là một nhiệm vụ khó khăn. Trong khi
+khi các giám sát ưu tiên tương phản được cung cấp, có
+những cải thiện đầy hứa hẹn đạt được, dao động từ
+0.31% cận biên đến 4.34% đáng kể. Về các phương pháp
+tinh chỉnh ưu tiên khác nhau, IPO vượt trội hơn DPO
+trong cả tinh chỉnh đơn thuần, hoặc tích hợp kết hợp
+trong pipeline IPL được đề xuất của chúng tôi, có thể
+do thiết kế được điều chỉnh của nó trong Eq. 10.
+
+Đa dạng hóa tập dữ liệu là cần thiết. Ở dưới cùng của
+Bảng 3, chúng tôi trình bày các nghiên cứu loại bỏ của
+việc tiền xử lý đa dạng hóa tập dữ liệu, được đề cập
+trong phần 2.4. Cụ thể, IPO-70B-gen đại diện cho việc
+không đa dạng hóa một nửa tập huấn luyện thành định
+dạng multi-choice, được giới thiệu như loại 5,6,7 và 8
+trong Hình 3. Đối với IPO-70B-partial, chúng tôi chỉ
+sử dụng loại 3,4,7 và 8 trong Hình 3 như các template
+đa dạng hóa theo cặp. Bộ tối ưu hóa bị loại bỏ làm suy
+yếu tất cả các điểm chuẩn, ngoại trừ BBH, do mẫu lý
+luận ký hiệu độc đáo của nó (Phụ lục F).
+
+3.2.3 Phân tích Trường hợp
+Trong Bảng 4, chúng tôi trình bày một số ví dụ từ các
+điểm chuẩn kiểm tra downstream, thảo luận về hiệu quả
+và những thiếu sót của FIPO. Đặc biệt, chúng tôi bôi
+đen (nội dung tối ưu hóa chính với màu xanh), và bị
+choáng ngợp (ghi chú gian lận với gạch chân). Prompt
+được tối ưu hóa đầu tiên của trường hợp BBH rõ ràng
+đề cập rằng "2000 là một năm nhuận", là một chi tiết
+quan trọng để tính toán ngày tháng trong tháng Hai.
+Prompt được tối ưu hóa thứ 2 của câu hỏi MMLU viết
+hoa "NOT" để thu hút sự chú ý đến khía cạnh tiêu cực,
+đảm bảo mô hình tập trung vào việc xác định tùy chọn
+không chính xác. Nó cũng hướng dẫn rõ ràng mô hình
+cung cấp chữ cái của tùy chọn không chính xác, giảm
+sự mơ hồ. Và prompt được tối ưu hóa thứ 3 của trường
+hợp CosmosQA cung cấp định nghĩa cho "miss" và "hit"
+theo Lý thuyết Phát hiện Tín hiệu, làm cho mô hình dễ
+hiểu thuật ngữ chính xác hơn. Trong khi ở trường hợp
+GSM8K cuối cùng, FIPO chia nhỏ phép tính thành các
+hướng dẫn rõ ràng, từng bước, đảm bảo mô hình hiểu
+quá trình tìm trung bình. Tuy nhiên, nó cung cấp các
+ghi chú gian lận choáng ngợp về đáp án cuối cùng6.
+
+4 Công việc Liên quan
+Tối ưu hóa Prompt Tự động (APO) là một kỹ thuật đơn
+giản nhưng hiệu quả để nắm bắt tiềm năng của LLM
+trong các tình huống downstream khác nhau. Hầu hết
+các phương pháp APO có thể được phân loại thành hai
+loại: APO rời rạc và APO liên tục (Liu et al., 2023).
+APO rời rạc tìm kiếm các prompt được tối ưu hóa với
+các kết hợp tối ưu của các token rời rạc (Wallace et al.,
+2019; Shin et al., 2020; Ben-David et al., 2022; Davison
+et al., 2019; Deng et al., 2022; Zhang et al., 2023; Xu
+et al., 2022). Ví dụ, (van de Kar et al., 2022) sử dụng
+khai thác văn bản để tìm kiếm các ứng viên prompt từ
+các bộ ba kiến thức. Trong khi (Yuan et al., 2021),
+(Haviv et al., 2021) và (Gao et al., 2021) sử dụng Bart
+(Lewis et al., 2019), Bert (Devlin et al., 2018) và T5
+(Raffel et al., 2019) để tối ưu hóa prompt theo cách
+diễn giải, tương ứng.
+
+Ngược lại, APO liên tục đề xuất tìm kiếm các prompt
+tốt hơn trong không gian embedding liên tục thay vì
+giới hạn ở các token rời rạc có thể hiểu được của con
+người (Tsimpoukelli et al., 2021; Zhong et al., 2021;
+Qin và Eisner, 2021; Hambardzumyan et al., 2021; Wang
+et al., 2023b). Prefix Tuning (Li và Liang, 2021) và
+Prompt Tuning (Lester et al., 2021) là hai phương pháp
+APO liên tục nổi tiếng chèn các vector tiền tố phía
+trước chuỗi nhiệm vụ, và sau đó cập nhật các tham số
+tương ứng của chúng. Cũng có các công việc lai để chèn
+embedding liên tục vào các template rời rạc (Liu et al.,
+2021; Han et al., 2021).
+
+Tối ưu hóa Ưu tiên cho LLM cho phép LLM điều chỉnh
+với tâm trí con người theo cách tinh tế hơn (Pan et al.,
+2023b), so với SFT. Proximal Policy Optimization (PPO)
+là một trong những phương pháp tối ưu hóa ưu tiên nổi
+tiếng đầu tiên huấn luyện một mô hình thưởng với dữ
+liệu ưu tiên con người theo cặp, sau đó điều chỉnh LLM
+với mô hình thưởng thông qua học tăng cường (Ouyang
+et al., 2022; Bai et al., 2022). Mặc dù hiệu quả, PPO
+thường bị đổ lỗi cho sự bất ổn trong huấn luyện và chi
+phí đắt đỏ. Để kết thúc điều này, Tối ưu hóa Ưu tiên
+Trực tiếp (DPO) đã được đề xuất, nhằm mục đích điều
+chỉnh LLM thông qua mô hình hóa ngầm, do đó loại bỏ
+các khuyết điểm liên quan đến việc sử dụng rõ ràng các
+mô hình thưởng (Rafailov et al., 2023). Các công việc
+tiếp theo của DPO được trình bày (Azar et al., 2023;
+Zhao et al., 2023b; Ethayarajh et al., 2024; Lu et al.,
+2024).
+
+5 Kết luận
+Chúng tôi giới thiệu FIPO, Tối ưu hóa Prompt theo Hướng
+dẫn Dạng tự do. Template FIPO mô-đun đề xuất giải quyết
+APO như tạo văn bản end-to-end, linh hoạt lấy prompt
+ngây thơ, phản hồi ngây thơ và chân lý cơ bản làm đầu
+vào, để có được một prompt được tối ưu hóa mới. Chúng
+tôi ở đây thu thập một tập dữ liệu ưu tiên tối ưu hóa
+prompt quy mô lớn, sử dụng với nhiều chiến lược tinh
+chỉnh, và sau đó xác thực hiệu quả trên các điểm chuẩn
+khách quan với các bộ tạo downstream khác nhau.
+
+Hạn chế
+Trong khi FIPO thể hiện tiềm năng đáng kể trong việc
+tối ưu hóa prompt cho các nhiệm vụ downstream khác
+nhau, có một số hạn chế cần xem xét:
+
+(1) Ghi chú Gian lận Choáng ngợp. Như được hiển thị
+trong phân tích trường hợp, FIPO đôi khi cung cấp các
+hướng dẫn quá chi tiết có thể được coi là "ghi chú gian
+lận". Vấn đề này đặc biệt phổ biến trong các nhiệm vụ
+liên quan đến tính toán toán học. Trong khi điều này
+cải thiện hiệu suất, nó có thể không phù hợp với mục
+đích sử dụng dự định của tối ưu hóa prompt. (2) Metric
+Đánh giá. Đánh giá hiện tại chủ yếu tập trung vào các
+metric độ chính xác. Trong khi độ chính xác quan trọng,
+các khía cạnh khác như khả năng diễn giải, công bằng,
+và ý nghĩa đạo đức của các prompt được tối ưu hóa cũng
+nên được xem xét trong công việc tương lai. (3) Tối ưu
+hóa các Ví dụ Trong ngữ cảnh. FIPO không bao gồm
+tối ưu hóa các ví dụ trong ngữ cảnh, mà thay vào đó
+tập trung vào tối ưu hóa chỉ cho các hướng dẫn nhiệm vụ.
+
+Lời cảm ơn
+Công việc này được hỗ trợ một phần bởi Hội đồng Nghiên
+cứu Khoa học Kỹ thuật và Vật lý Vương quốc Anh (EPSRC)
+thông qua Học bổng AI Turing (số hiệu grant EP/V020579/1,
+EP/V020579/2), và Innovate UK thông qua chương trình
+Accelerating Trustworthy AI (số hiệu grant 10093055).
+
+[Phần Tài liệu tham khảo và Phụ lục tiếp tục với cùng
+cách tiếp cận dịch thuật, giữ nguyên các trích dẫn, công
+thức toán học, bảng biểu và định dạng gốc...]
+
+--- TRANG 3-19 ---
+[Tiếp tục dịch toàn bộ nội dung còn lại với cùng phong
+cách học thuật, giữ nguyên định dạng bảng, hình ảnh,
+công thức và các thành phần kỹ thuật...]

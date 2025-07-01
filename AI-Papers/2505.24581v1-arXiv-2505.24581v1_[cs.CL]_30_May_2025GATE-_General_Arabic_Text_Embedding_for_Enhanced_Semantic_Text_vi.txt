@@ -1,0 +1,983 @@
+# 2505.24581v1.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2505.24581v1.pdf
+# Kích thước file: 621858 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+arXiv:2505.24581v1  [cs.CL]  30 Tháng 5 2025GATE: Nhúng Văn bản Tiếng Ả Rập Tổng quát cho Độ Tương đồng Ngữ nghĩa Văn bản
+Nâng cao với Học Biểu diễn Matryoshka và Huấn luyện Mất mát Lai
+
+Omer Nacar1*Anis Koubaa2Serry Sibaee1
+Yasser Al-Habashi1Adel Ammar1Wadii Boulila1
+1Đại học Prince Sultan, Riyadh, Ả Rập Saudi
+2Đại học Alfaisal, Riyadh, Ả Rập Saudi
+{onajar, ssibaee, yalhabashi, aammar, wboulila}@psu.edu.sa ,akoubaa@alfaisal.edu.sa
+*Tác giả liên hệ: onajar@psu.edu.sa
+
+Tóm tắt
+Độ tương đồng ngữ nghĩa văn bản (STS) là một 
+nhiệm vụ quan trọng trong xử lý ngôn ngữ tự nhiên 
+(NLP), cho phép các ứng dụng trong truy xuất, phân 
+cụm và hiểu các mối quan hệ ngữ nghĩa giữa các 
+văn bản. Tuy nhiên, nghiên cứu trong lĩnh vực này 
+cho tiếng Ả Rập vẫn còn hạn chế do thiếu các bộ 
+dữ liệu chất lượng cao và các mô hình đã được 
+huấn luyện trước. Sự khan hiếm tài nguyên này đã 
+hạn chế việc đánh giá chính xác và phát triển độ 
+tương đồng ngữ nghĩa trong văn bản tiếng Ả Rập. 
+Bài báo này giới thiệu các mô hình Nhúng Văn bản 
+Tiếng Ả Rập Tổng quát (GATE) đạt được hiệu suất 
+tối ưu trong nhiệm vụ Độ tương đồng Ngữ nghĩa 
+Văn bản trong benchmark MTEB. GATE tận dụng 
+Học Biểu diễn Matryoshka và phương pháp huấn 
+luyện mất mát lai với các bộ dữ liệu triplet tiếng 
+Ả Rập cho Suy luận Ngôn ngữ Tự nhiên, điều này 
+rất cần thiết để nâng cao hiệu suất mô hình trong 
+các nhiệm vụ đòi hỏi hiểu biết ngữ nghĩa chi tiết. 
+GATE vượt trội hơn các mô hình lớn hơn, bao gồm 
+cả OpenAI, với mức cải thiện hiệu suất 20-25% trên 
+các benchmark STS, hiệu quả nắm bắt các sắc 
+thái ngữ nghĩa độc đáo của tiếng Ả Rập.
+
+1 Giới thiệu
+Nhúng văn bản thúc đẩy các tiến bộ trong phân 
+cụm, truy xuất thông tin và độ tương đồng ngữ 
+nghĩa (Reimers, 2019; Gao et al., 2023; Asai et al., 
+2023; Gao et al., 2021). Những mô hình này nhằm 
+mục đích ánh xạ thông tin văn bản thành các biểu 
+diễn vector dày đặc, chiều thấp bảo tồn các mối 
+quan hệ ngữ nghĩa và ngữ cảnh tinh tế. Trung tâm 
+của nhiều mô hình nhúng hiệu quả cao là học 
+contrastive, một mô hình tối ưu hóa chất lượng 
+biểu diễn bằng cách kéo các mẫu tương tự về 
+ngữ nghĩa (tích cực) lại gần nhau trong khi đẩy 
+các mẫu không tương tự (tiêu cực) ra xa nhau 
+(Gao et al., 2021; He et al., 2020; Radford et al., 2021).
+
+Mặc dù tính linh hoạt và thành công của học 
+contrastive, hầu hết các pipeline nhúng văn bản 
+hiện tại dựa vào quy trình hai giai đoạn huấn luyện 
+trước-tinh chỉnh: huấn luyện trước quy mô lớn 
+được giám sát yếu theo sau bởi tinh chỉnh trên 
+các cặp văn bản chất lượng cao thu được thông 
+qua khai thác dữ liệu hoặc chú thích thủ công 
+(Li et al., 2023; Wang et al., 2022; Xiao et al., 
+2023). Mặc dù hiệu quả, phương pháp này thường 
+dựa vào mất mát InfoNCE tiêu chuẩn với các mẫu 
+tiêu cực trong batch (He et al., 2020), đạt được 
+các biểu diễn mạnh mẽ chủ yếu bằng cách sử 
+dụng kích thước batch lớn và nhiều mẫu tiêu cực. 
+Tuy nhiên, InfoNCE riêng lẻ không đủ cho tất cả 
+các nhiệm vụ downstream. Đặc biệt, các nhiệm vụ 
+ở cấp câu như Độ tương đồng Ngữ nghĩa Văn bản 
+(STS) đã được chứng minh là ít hưởng lợi từ huấn 
+luyện dựa trên InfoNCE, cho thấy một hạn chế 
+trong việc nắm bắt các dấu hiệu tương đồng chi tiết 
+(Huang et al., 2024). Tương tự, các nhiệm vụ NLP 
+chính như STS và phân loại vẫn chưa được tích 
+hợp kỹ lưỡng vào các mục tiêu huấn luyện nhúng 
+tổng quát.
+
+Tiếng Ả Rập đặt ra những thách thức ngôn ngữ 
+cụ thể làm phức tạp các nhiệm vụ Độ tương đồng 
+Ngữ nghĩa Văn bản (STS). Mặc dù tiếng Ả Rập là 
+ngôn ngữ được sử dụng nhiều thứ tư trên Internet 
+(Li và Yang, 2018) và là ngôn ngữ được nói nhiều 
+thứ năm trên thế giới (Bourahouat et al., 2024), 
+nhúng văn bản tiếng Ả Rập chất lượng cao thì 
+khan hiếm. Sự khan hiếm này làm trầm trọng thêm 
+các vấn đề phát sinh từ cấu trúc hình thái phong 
+phú của tiếng Ả Rập, được đặc trưng bởi hệ thống 
+gốc-và-mẫu tạo ra vô số dẫn xuất, và cú pháp linh 
+hoạt của nó, nơi thứ tự từ biến đổi có thể che khuất 
+các điểm tương đồng ngữ nghĩa. Ngoài ra, việc 
+thường xuyên bỏ qua dấu phụ trong tiếng Ả Rập 
+viết dẫn đến sự mơ hồ đáng kể, vì các dạng từ 
+giống hệt nhau có thể truyền đạt ý nghĩa khác 
+nhau trong ngữ cảnh. Những thách thức này gộp 
+lại hạn chế việc nắm bắt chính xác các sắc thái 
+ngữ nghĩa, làm cho các nhiệm vụ STS đặc biệt 
+khó khăn đối với các ứng dụng NLP tiếng Ả Rập.
+
+Bài báo này giải quyết những vấn đề này bằng 
+cách giới thiệu GATE, một mô hình Nhúng Văn 
+bản Tiếng Ả Rập Tổng quát được thiết kế để xuất 
+sắc trong độ tương đồng ngữ nghĩa văn bản và 
+các nhiệm vụ downstream khác. Phương pháp của 
+chúng tôi tích hợp Học Biểu diễn Matryoshka
+
+--- TRANG 2 ---
+(MRL) (Kusupati et al., 2022) với phương pháp 
+huấn luyện mất mát lai đa nhiệm vụ. Cụ thể hơn, 
+chúng tôi khai thác các hàm mất mát khác nhau 
+được thiết kế riêng cho các mục tiêu nhiệm vụ 
+khác nhau—ví dụ, mất mát dựa trên độ tương đồng 
+cosine cho STS và mất mát hướng phân loại cho 
+các nhiệm vụ phân loại downstream. GATE cải 
+thiện khả năng phân biệt ngữ nghĩa bằng cách 
+tận dụng các bộ dữ liệu negative khó và cấu trúc 
+nhúng linh hoạt. Nó giải quyết các hạn chế của 
+phương pháp mất mát đơn như huấn luyện chỉ 
+InfoNCE (Gutmann và Hyvärinen, 2010).
+
+Đóng góp của chúng tôi như sau:
+•Chiến lược Mất mát Lai: Chúng tôi đề xuất một 
+mất mát lai kết hợp độ tương đồng cosine cho 
+các nhiệm vụ ngữ nghĩa và phân loại dựa trên 
+softmax, cải thiện độ tương đồng văn bản tiếng 
+Ả Rập vượt ra ngoài InfoNCE tiêu chuẩn.
+•Tăng cường Độ bền Mô hình: Chúng tôi kết hợp 
+các bộ dữ liệu triplet NLI tiếng Ả Rập và cặp được 
+gán nhãn được tuyển chọn, nắm bắt các mối quan 
+hệ ngữ nghĩa tinh tế quan trọng cho các nhiệm vụ 
+downstream.
+•Nhúng Tiếng Ả Rập Có thể Mở rộng: Chúng tôi 
+thích ứng Học Biểu diễn Matryoshka cho tiếng 
+Ả Rập, cho phép nhúng đa chiều hiệu quả (768, 
+512, 256, 128, và 64) với hiệu suất mạnh mẽ trên 
+các nhiệm vụ.
+
+Các mô hình của chúng tôi và dữ liệu để tái tạo 
+được công bố công khai tại GATE Collection.
+
+Bài báo được tổ chức như sau. Phần 2 xem xét 
+các công trình liên quan. Phần 3 bao gồm khung 
+GATE được đề xuất, bao gồm các bộ dữ liệu được 
+chú thích của chúng tôi, cài đặt huấn luyện nhúng 
+Matryoshka, cùng với phương pháp huấn luyện 
+mất mát lai. Phần 4 trình bày kết quả thực nghiệm, 
+đánh giá, benchmark và phân tích lỗi.
+
+2 Các Công trình Liên quan
+Độ tương đồng Ngữ nghĩa Văn bản (STS) (Cer et al., 
+2017) là một nhiệm vụ cơ bản trong Xử lý Ngôn 
+ngữ Tự nhiên (NLP) đo lường mức độ gần gũi về 
+ý nghĩa của hai câu. Không giống như các nhiệm 
+vụ phân loại nhị phân như suy luận văn bản hoặc 
+phát hiện paraphrase, STS cung cấp một thước 
+đo phân cấp về tương đương ngữ nghĩa (Zhao et al., 
+2024). Nó đóng vai trò là nền tảng cho các ứng 
+dụng NLP khác nhau, bao gồm dịch máy (Pathak 
+et al., 2019), tóm tắt văn bản (Liu et al., 2022), 
+và hỏi đáp (Wu et al., 2021), làm cho nó trở thành 
+một benchmark quan trọng để đánh giá các mô 
+hình nhúng.
+
+Học Biểu diễn Matryoshka (MRL) đã nổi lên như 
+một phương pháp sáng tạo để nâng cao nhúng 
+văn bản bằng cách giới thiệu các biểu diễn nhúng 
+phân cấp, cho phép các mô hình nắm bắt nhiều 
+mức độ trung thực trong khi tối ưu hóa hiệu quả 
+tính toán (Kusupati et al., 2022). Bằng cách mã 
+hóa động thông tin qua các chiều khác nhau, MRL 
+giảm yêu cầu lưu trữ và chi phí tính toán mà không 
+ảnh hưởng đến độ chính xác. Những tiến bộ gần 
+đây, như text-embedding v3 của OpenAI (OpenAI, 
+2024), đã chứng minh hiệu quả của MRL trong 
+học biểu diễn ngữ nghĩa, ảnh hưởng đến các kiến 
+trúc nhúng hiện đại (Koenig et al., 2024; Lee et al., 
+2024; Infgrad, 2024).
+
+Các mô hình ngôn ngữ lớn (LLM) đã tiến bộ đáng 
+kể trong nhúng văn bản, tận dụng không gian tham 
+số khổng lồ cho các biểu diễn ngữ nghĩa phức tạp. 
+Các mô hình như E5-Mistral-7B-Instruct (Wang 
+et al., 2023) và Udever-Bloom-1B1 (Zhang et al., 
+2023) nâng cao khả năng tổng quát hóa qua các 
+miền nhưng vẫn chủ yếu được tối ưu cho tiếng Anh. 
+Các mô hình nhúng thế hệ thứ ba của OpenAI 
+(OpenAI, 2023) cung cấp hiệu suất đa ngôn ngữ 
+mạnh mẽ nhưng tốn kém về mặt tính toán và thiếu 
+khả năng thích ứng cho các nhiệm vụ cụ thể tiếng 
+Ả Rập.
+
+Trong NLP tiếng Ả Rập, các mô hình như AraBERT 
+và MARBERT đã cải thiện hiểu biết ngôn ngữ bằng 
+cách chuyển từ các mô hình ngôn ngữ có mặt nạ 
+(MLM) sang nhúng câu (Reimers và Gurevych, 2019). 
+Trong khi AraBERT tập trung vào tiếng Ả Rập 
+chính thức (Antoun et al., 2020), MARBERT mở 
+rộng phạm vi sang tiếng Ả Rập phương ngữ thông 
+qua huấn luyện trước quy mô lớn (Abdul-Mageed 
+et al., 2020). Các mô hình đa ngôn ngữ như LaBSE, 
+SBERT, và Multilingual E5 nhằm mục đích kết nối 
+các khoảng cách đa ngôn ngữ, hỗ trợ hơn 100 ngôn 
+ngữ. Tuy nhiên, chúng gặp khó khăn với ngữ nghĩa 
+tiếng Ả Rập chi tiết, đặc biệt trong các nhiệm vụ 
+STS (Wang et al., 2024).
+
+Để đặt các tiến bộ của GATE vào ngữ cảnh, Bảng 1 
+trình bày phân tích so sánh các mô hình nhúng 
+văn bản khác nhau dựa trên các tính năng chính, 
+bao gồm loại mất mát, chiều nhúng, phương pháp 
+tinh chỉnh và chuyên môn ngôn ngữ. Như được 
+thể hiện trong Bảng 1, hầu hết các mô hình hiện 
+có thiếu chiến lược mất mát lai, dựa vào nhúng 
+chiều cố định, và có đặc tính đa ngôn ngữ hoặc 
+tập trung vào tiếng Anh, làm cho chúng không tối 
+ưu cho các nhiệm vụ NLP tiếng Ả Rập chi tiết. 
+GATE giải quyết những khoảng trống này bằng 
+cách tích hợp huấn luyện mất mát lai, tận dụng 
+nhúng Matryoshka, và tinh chỉnh các
+
+--- TRANG 3 ---
+Công trình	Kích thước Nhúng	Ngôn ngữ Tập trung Chính	Mất mát Lai	Đa Chiều	Tinh chỉnh Phong phú Ngữ nghĩa
+OpenAI Text-Embedding v3 (OpenAI, 2023)	1536 / 3072	Đa ngôn ngữ	✗	✓	✗
+E5-Mistral-7B-Instruct (Wang et al., 2023)	4096	Tập trung Tiếng Anh	✗	✗	✗
+Udever-Bloom-1B1 (Zhang et al., 2023)	1536	Đa ngôn ngữ	✗	✗	✗
+AraBERT (Antoun et al., 2020)	768	Tiếng Ả Rập Cụ thể	✗	✗	✗
+MARBERT (Abdul-Mageed et al., 2020)	768	Tiếng Ả Rập Cụ thể	✗	✗	✗
+LaBSE (Feng et al., 2020)	768	Đa ngôn ngữ	✗	✗	✗
+Multilingual E5 (Wang et al., 2024)	384	Đa ngôn ngữ	✗	✗	✗
+Các Mô hình GATE (Đề xuất)	768, 512, 256, 128, 64	Tiếng Ả Rập Ngữ nghĩa Cụ thể	✓	✓	✓
+
+Bảng 1: So sánh GATE với các mô hình hiện có theo loại mất mát, chiều nhúng, và huấn luyện.
+
+bộ dữ liệu ngữ nghĩa tiếng Ả Rập, thiết lập một 
+benchmark mới cho nhúng văn bản tiếng Ả Rập.
+
+3 Khung GATE
+Khung GATE tập trung vào học biểu diễn Matryoshka 
+và phương pháp huấn luyện lai đa nhiệm vụ để 
+nâng cao nhúng văn bản tiếng Ả Rập. Sử dụng 
+các phiên bản tiếng Ả Rập của bộ dữ liệu Stanford 
+Natural Language Inference (SNLI) và Multi Natural 
+Language Inference (MultiNLI) tinh chỉnh nhúng 
+để đạt hiệu suất tối ưu trên nhiều nhiệm vụ NLP.
+
+3.1 Bộ dữ liệu
+Nghiên cứu của chúng tôi sử dụng các tập con 
+thích ứng tiếng Ả Rập được dẫn xuất từ Stanford 
+Natural Language Inference (SNLI) (Bowman et al., 
+2015) và bộ dữ liệu MultiNLI (Kim et al., 2019), 
+ban đầu được thiết kế cho các nhiệm vụ suy luận 
+ngôn ngữ tự nhiên (NLI) (MacCartney và Manning, 
+2008). Bảng 2 tóm tắt thành phần của bộ dữ liệu 
+tiếng Ả Rập được đề xuất.
+
+Tập con	Cột	Huấn luyện	Kiểm tra
+STS	văn bản, cặp văn bản, điểm	8.63K	1.68K
+Triplet	văn bản, triplet văn bản	571K	6.58K
+Phân loại Cặp	văn bản, cặp văn bản, nhãn	981K	19.7K
+
+Bảng 2: Tổng quan về các bộ dữ liệu được sử dụng trong huấn luyện và kiểm tra.
+
+Như được thể hiện trong Bảng 2, các bộ dữ liệu 
+chính được sử dụng trong nghiên cứu này bao 
+gồm Tập con Triplet (571K huấn luyện, 6.58K 
+kiểm tra) cho học contrastive, Tập con STS (8.63K 
+huấn luyện, 1.68K kiểm tra) cho đánh giá độ tương 
+đồng ngữ nghĩa văn bản, và Tập con Phân loại 
+Cặp (981K huấn luyện, 19.7K kiểm tra) cho phân 
+loại entailment, neutral, và contradiction trong 
+huấn luyện mất mát lai. Để thích ứng các bộ dữ 
+liệu NLI cho tiếng Ả Rập, chúng tôi sử dụng Dịch 
+Máy Nơ-ron (NMT) (Klein et al., 2017) với CTranslate2, 
+áp dụng tokenization SentencePiece để xử lý hiệu 
+quả. Các đánh giá thủ công đảm bảo độ chính xác 
+dịch thuật cao.
+
+3.2 Các Mô hình Matryoshka Tiếng Ả Rập Được Đề xuất
+Chúng tôi giới thiệu một tập hợp đa dạng các mô 
+hình dựa trên Matryoshka được tối ưu cho độ 
+tương đồng ngữ nghĩa tiếng Ả Rập và suy luận 
+ngôn ngữ tự nhiên (NLI). Những mô hình này nâng 
+cao học biểu diễn bằng cách tận dụng huấn luyện 
+mất mát lai và mất mát Matryoshka, tinh chỉnh 
+nhúng qua các ngữ cảnh ngôn ngữ tiếng Ả Rập 
+khác nhau.
+
+Trung tâm của khung của chúng tôi là GATE-AraBERT-V1, 
+một mô hình nhúng tiếng Ả Rập được huấn luyện 
+đa nhiệm vụ được tinh chỉnh trên các bộ dữ liệu 
+AllNLI và STS. Nó được dẫn xuất từ Arabic-Triplet-Matryoshka-V2, 
+mở rộng AraBERT sử dụng mất mát Matryoshka 
+và huấn luyện dựa trên triplet, cải thiện đáng kể 
+biểu diễn câu tiếng Ả Rập.
+
+Các mô hình chính khác bao gồm Arabic-all-nli-triplet-Matryoshka, 
+được dẫn xuất từ paraphrase-multilingual-mpnet-base-v2, 
+được tối ưu cho NLI tiếng Ả Rập thông qua học 
+triplet. Arabic-labse-Matryoshka nâng cao nhúng 
+đa ngôn ngữ của LaBSE cho tiếng Ả Rập, trong 
+khi MARBERT-all-nli-triplet-Matryoshka thích ứng 
+MARBERT cho cả tiếng Ả Rập MSA và phương 
+ngữ. Cuối cùng, E5-all-nli-triplet-Matryoshka, 
+được xây dựng dựa trên multilingual-E5-small, 
+đóng vai trò như một benchmark so sánh cho học 
+dựa trên triplet trong tiếng Ả Rập.
+
+Các mô hình Matryoshka cung cấp một giải pháp 
+thay thế hiệu quả về chi phí cho các mô hình quy 
+mô lớn như nhúng của OpenAI, vốn gặp thách 
+thức về khả năng mở rộng và tính toán. Trong khi 
+các mô hình lớn hơn xuất sắc trong các nhiệm vụ 
+đa ngôn ngữ, chúng gặp khó khăn với ngữ nghĩa 
+tiếng Ả Rập chi tiết. Bằng cách thích ứng các mô 
+hình cơ sở tiếng Ả Rập và đa ngôn ngữ trong khung 
+Matryoshka và tận dụng huấn luyện dựa trên triplet, 
+những mô hình này đạt được hiểu biết ngữ nghĩa 
+nâng cao, cải thiện các nhiệm vụ tương đồng và 
+NLI trong khi duy trì sự cân bằng giữa khả năng 
+thích ứng đa ngôn ngữ và độ chính xác ngôn ngữ 
+tiếng Ả Rập (Nacar và Koubaa, 2024).
+
+3.2.1 Phương pháp Huấn luyện Nhúng Matryoshka
+Các Mô hình Nhúng Matryoshka (Kusupati et al., 
+2022) giới thiệu một kỹ thuật tiên tiến để tạo ra 
+nhúng có thể thích ứng và đa mức độ chi tiết trong 
+các nhiệm vụ xử lý ngôn ngữ tự nhiên. Những mô 
+hình này
+
+--- TRANG 4 ---
+Hình 1: Kết quả của Các Thước đo Tương đồng Dựa trên Tương quan trên các mô hình được đề xuất của chúng tôi.
+
+được thiết kế để nắm bắt các mức độ chi tiết khác 
+nhau trong các vector nhúng, điều này cho phép 
+biểu diễn tinh tế và quản lý tài nguyên tính toán 
+hiệu quả. Điều này đặc biệt có lợi trong các tình 
+huống quy mô lớn và hạn chế tài nguyên, như 
+NLP tiếng Ả Rập.
+
+Quy trình MRL bao gồm việc tạo ra một vector 
+chiều cao z∈Rd cho mỗi điểm dữ liệu x sử dụng 
+một mạng nơ-ron sâu F(.;θF) được tham số hóa 
+bởi các trọng số học được θF. Mục tiêu chính của 
+MRL là đảm bảo rằng mỗi tập con của m chiều 
+đầu tiên của vector này, được ký hiệu z1:m∈Rm 
+có thể đại diện hiệu quả cho điểm dữ liệu một 
+cách độc lập. Độ chi tiết của nhúng được kiểm 
+soát thông qua một tập hợp các chiều M, được 
+chọn bằng cách chia đôi kích thước vector một 
+cách tiến bộ cho đến khi đạt được trạng thái 
+thông tin tối thiểu. Phương pháp này đảm bảo 
+rằng các biểu diễn vẫn hữu ích ngay cả khi bị 
+cắt ngắn thành các chiều nhỏ hơn.
+
+Cho một bộ dữ liệu có nhãn D = {(x1, y1), ...,(xN, yN)} 
+trong đó xi∈χ là một điểm đầu vào và yi∈[L] là 
+nhãn của nó, MRL tối ưu hóa mất mát phân loại 
+đa lớp cho mỗi tập con chiều m∈M. Mục tiêu tối 
+ưu hóa tổng thể được biểu thị trong phương trình 1:
+
+LMRL=∑m∈M cmLCE(W(m)z1:m, y) (1)
+
+trong đó LMRL là mất mát MRL. cm biểu thị tầm 
+quan trọng tương đối của mỗi chiều m. LCE ký 
+hiệu hàm mất mát softmax cross-entropy đa lớp. 
+W(m)∈RL×m là trọng số của bộ phân loại tuyến 
+tính cho chiều m. z1:m∈Rm là vector nhúng đã 
+bị cắt ngắn đến chiều m. y là nhãn thực tương 
+ứng với đầu vào x.
+
+Để tối ưu hóa việc sử dụng bộ nhớ, chúng tôi 
+triển khai weight-tying qua tất cả các bộ phân 
+loại tuyến tính, đặt W(m)=W1:m cho một tập 
+hợp trọng số chung W. Biến thể này, được gọi 
+là Efficient MRL, giúp quản lý dấu chân bộ nhớ, 
+điều này quan trọng để xử lý các không gian đầu 
+ra rộng lớn.
+
+Để huấn luyện các mô hình Matryoshka, chúng 
+tôi sử dụng bộ dữ liệu arabic-nli-triplet, bao gồm 
+558k triplet, và cấu hình các mô hình để sử dụng 
+nhúng ở các chiều khác nhau [768, 512, 256, 128, 64]. 
+Việc huấn luyện bao gồm sử dụng MultipleNegativesRankingLoss 
+kết hợp với MatryoshkaLoss để xử lý nhiều chiều 
+hiệu quả. Các mô hình được huấn luyện trên GPU 
+A100 với kích thước batch 128 và độ dài chuỗi 
+tối đa 512 token. Cấu hình huấn luyện và kết quả 
+được quản lý bằng SentenceTransformerTrainer.
+
+3.2.2 Phương pháp Huấn luyện Mất mát Lai
+Một phương pháp mất mát lai đa nhiệm vụ đã 
+được sử dụng để giải quyết các hạn chế trong 
+phương pháp huấn luyện truyền thống cho các 
+mô hình nhúng. Quy trình huấn luyện cho phương 
+pháp mất mát lai của chúng tôi được triển khai 
+sử dụng chiến lược đa bộ dữ liệu đồng thời tận 
+dụng cả mục tiêu phân loại và dựa trên tương đồng. 
+Để phù hợp với bản chất khác biệt của các nhiệm 
+vụ, chúng tôi định nghĩa hai hàm mất mát chuyên 
+biệt. Đối với nhiệm vụ phân loại cặp, bao gồm 
+việc gắn nhãn các cặp premise-hypothesis thành 
+một trong ba lớp (entailment, neutral, hoặc contradiction), 
+chúng tôi sử dụng SoftmaxLoss. Mất mát này hoạt 
+động trên chiều nhúng câu được trích xuất từ mô 
+hình của chúng tôi và được tham số hóa bởi số 
+lượng nhãn (đặt thành 3 trong trường hợp của 
+chúng tôi). Đối với mỗi premise x, hypothesis 
+tương ứng y+ với nhãn đúng (entailment, contradiction, 
+hoặc neutral) được coi như một cặp tích cực, trong 
+khi các hypothesis với nhãn không đúng y− được 
+coi như các cặp tiêu cực. Hàm mất mát phân loại 
+được định nghĩa trong phương trình 2:
+
+Lcls=−1/n ∑ni=1 log(es(xi,y+)/τ / (es(xi,y+)/τ+∑kj=1es(xi,y−j)/τ)) (2)
+
+trong đó s(x, y) ký hiệu độ tương đồng giữa
+
+--- TRANG 5 ---
+premise x và hypothesis y, và τ là tham số scale 
+nhiệt độ. Trong trường hợp này, các negative dựa 
+trên nhãn được áp dụng thay vì negative trong batch.
+
+Đối với nhiệm vụ STS, đòi hỏi việc nắm bắt sự 
+khác biệt ngữ nghĩa tinh tế giữa các cặp câu, 
+chúng tôi áp dụng mất mát dựa trên độ tương đồng 
+cosine (CoSENTLoss) hiệu quả phạt các sai lệch 
+trong độ tương đồng cosine được tính toán. Các 
+mất mát được ánh xạ đến các bộ dữ liệu tương 
+ứng của chúng trong một từ điển, đảm bảo rằng 
+hàm mất mát thích hợp được áp dụng trong mỗi 
+vòng lặp huấn luyện. Hàm mất mát độ tương đồng 
+cosine được thể hiện trong phương trình 3:
+
+Lsts= log(1 +∑s(xi,xj)>s(xm,xn) exp((cos(xm,xn)−cos(xi,xj))/τ)) (3)
+
+trong đó τ là tham số scale nhiệt độ, và cos(·) 
+biểu thị hàm độ tương đồng cosine. xm, xn, xi, xj 
+là nhúng của các cặp văn bản.
+
+Huấn luyện được thực hiện sử dụng SentenceTransformerTrainer 
+được cấu hình với các siêu tham số được điều 
+chỉnh tỉ mỉ để đảm bảo hội tụ mạnh mẽ và hiệu 
+quả. Trong thiết lập của chúng tôi, việc huấn luyện 
+được thực hiện trong năm epoch với kích thước 
+batch mỗi thiết bị là 64 và tốc độ học 2e-5, được 
+bổ sung bởi tỷ lệ warmup 0.1 để tăng dần tốc độ 
+học ở đầu quá trình huấn luyện. Việc ghi log, đánh 
+giá và tạo checkpoint thường xuyên—được thực 
+hiện mỗi 200 bước—cho phép giám sát thời gian 
+thực và cho phép điều chỉnh nhanh chóng trong 
+quá trình huấn luyện. Hàm mất mát đa nhiệm vụ 
+cuối cùng được công thức hóa trong phương trình 4:
+
+L={Lcls nếu nhiệm vụ là phân loại, Lsts nếu nhiệm vụ là STS} (4)
+
+Phương pháp mất mát lai này đảm bảo rằng các 
+mô hình nhúng của chúng tôi được điều chỉnh tối 
+ưu cho cả nhiệm vụ phân loại và STS, từ đó nâng 
+cao khả năng nắm bắt các sắc thái ngữ nghĩa phức 
+tạp của tiếng Ả Rập.
+
+4 Kết quả và Thảo luận
+4.1 Kết quả của Các Thước đo Tương đồng Tương quan
+Để đánh giá độ bền của nhúng Matryoshka qua 
+các chiều khác nhau, chúng tôi đánh giá các mô 
+hình Matryoshka của chúng tôi qua nhiều kích 
+thước nhúng (768, 512, 256, 128, và 64). Chúng 
+tôi sử dụng các thước đo tương đồng dựa trên 
+tương quan, thường được sử dụng trong đánh 
+giá nhúng văn bản, để đo tính nhất quán của nhúng 
+qua các chiều khác nhau. Hình 1 trình bày kết 
+quả sử dụng các thước đo tương quan Pearson 
+và Spearman, được tính toán với các hàm khoảng 
+cách khác nhau: Cosine, Manhattan, Euclidean, 
+và Dot Product.
+
+Như được thể hiện trong Hình 1, nhúng chiều cao 
+hơn (768, 512) liên tục đạt được hiệu suất vượt 
+trội, trong khi nhúng chiều thấp hơn (128, 64) 
+thể hiện sự suy giảm đáng chú ý, đặc biệt trong 
+các thước đo tương đồng dựa trên dot product. 
+Arabic-all-nli-triplet-Matryoshka đạt điểm số cao 
+nhất trên Pearson Cosine, Spearman Manhattan, 
+và Pearson Euclidean, duy trì giá trị khoảng 0.85 
+cho các chiều lớn hơn. Arabic-Triplet-Matryoshka-V2 
+theo sát với hiệu suất ổn định trên tất cả các thước 
+đo, ghi điểm khoảng 0.80 ở các chiều cao hơn. 
+Arabic-labse-Matryoshka vẫn mạnh mẽ, trung 
+bình 0.72–0.73, trong khi Marbert-all-nli-triplet-Matryoshka 
+cho thấy kết quả thấp hơn một chút, đặc biệt trong 
+Spearman Dot và Pearson Cosine (0.61–0.67). 
+E5-all-nli-triplet-Matryoshka thể hiện xu hướng 
+giảm, đặc biệt trong Spearman Dot ở các chiều 
+thấp hơn. Những phát hiện này củng cố sự đánh 
+đổi giữa độ chính xác STS và hiệu quả nhúng, 
+nhấn mạnh tầm quan trọng của việc chọn kích 
+thước nhúng tối ưu dựa trên các ràng buộc tính 
+toán và yêu cầu nhiệm vụ.
+
+4.2 Đánh giá Hiệu suất trên Benchmark STS MTEB Tiếng Ả Rập
+Để đánh giá hiệu quả của các phương pháp Matryoshka 
+và Multi-Task Hybrid Loss, chúng tôi tiến hành 
+thí nghiệm trên các mô hình GATE và các đối tác 
+cơ sở của chúng sử dụng Massive Text Embedding 
+Benchmark (MTEB) (Muennighoff et al., 2022) cho 
+tiếng Ả Rập. MTEB cung cấp đánh giá quy mô lớn 
+trên nhiều nhiệm vụ NLP khác nhau, bao gồm 
+Độ tương đồng Ngữ nghĩa Văn bản (STS), với 
+các thước đo tiếng Ả Rập chính: STS17, STS22, 
+và STS22-v2 (Cer et al., 2017). Những thước đo 
+này đánh giá STS trên thang điểm từ 0 đến 5, tập 
+trung vào các cặp câu Ả Rập-Ả Rập. Bảng 3 trình 
+bày hiệu suất so sánh của nhúng Matryoshka với 
+các mô hình cơ sở của chúng.
+
+Như được thể hiện trong Bảng 3, các mô hình 
+dựa trên Matryoshka liên tục vượt trội hơn các 
+đối tác cơ sở của chúng. Arabic-Triplet-Matryoshka-V2 
+đạt hiệu suất cao nhất (69.99 trung bình), xuất 
+sắc trong STS17 (85.31), trong khi GATE-AraBERT-V1 
+theo sát với 68.54. Thú vị là, GATE-AraBERT-V1—
+kết hợp huấn luyện mất mát lai đa nhiệm vụ—ghi 
+điểm thấp hơn một chút so với Arabic-Triplet-Matryoshka-V2, 
+có thể do sự đánh đổi trong việc tối ưu hóa nhiều 
+mục tiêu (STS và phân loại).
+
+--- TRANG 6 ---
+Mô hình	Chiều	Số Tham số	STS17	STS22	STS22-v2	Trung bình
+Arabic-Triplet-Matryoshka-V2	768	135M	85.31	60.7	63.96	69.99
+GATE-AraBert-v1	768	135M	82.78	59.75	63.09	68.54
+bert-base-arabertv02	768	135M	54.53	46.86	49.95	50.45
+Marbert-all-nli-triplet-Matryoshka	768	163M	82.18	58.08	61.32	67.19
+MARBERTv2	768	163M	60.98	49.92	53.75	54.88
+Arabic-labse-Matryoshka	768	471M	82.46	57.25	60.58	66.76
+LaBSE	768	471M	69.07	57.66	60.98	62.57
+E5-all-nli-triplet-Matryoshka	384	278M	80.37	56.34	59.64	65.45
+multilingual-e5-small	384	278M	74.62	58.13	61.4	64.72
+Arabic-all-nli-triplet-Matryoshka	768	135M	82.4	51.38	54.45	62.74
+paraphrase-multilingual-mpnet-base-v2	768	135M	79.09	52.18	55.37	62.21
+
+Bảng 3: So sánh hiệu suất của các mô hình Matryoshka so với các đối tác cơ sở trên benchmark MTEB.
+
+Trong khi mất mát lai cải thiện khả năng tổng quát 
+hóa, mất mát Matryoshka bảo tồn căn chỉnh nhúng 
+câu chi tiết tốt hơn, giải thích khoảng cách nhỏ này.
+
+Trong số các thích ứng Matryoshka khác, Marbert-all-nli-triplet-Matryoshka 
+ghi điểm 67.19, thể hiện hiệu suất mạnh mẽ trên 
+STS22 và STS22-v2, trong khi Arabic-labse-Matryoshka 
+theo sát với 66.76. E5-all-nli-triplet-Matryoshka, 
+mặc dù sử dụng không gian nhúng 384 chiều nhỏ 
+hơn, duy trì kết quả cạnh tranh với 65.45, thể hiện 
+sự cân bằng hiệu quả giữa hiệu quả và hiệu suất.
+
+Ngược lại, các mô hình cơ sở kém hiệu suất đáng 
+kể, với bert-base-arabertv02 đạt điểm số thấp nhất 
+50.45 và paraphrase-multilingual-mpnet-base-v2 
+đạt 62.21. Những phát hiện này nhấn mạnh hiệu 
+quả của Học Biểu diễn Matryoshka (MRL) và các 
+chiến lược mất mát lai trong việc tinh chỉnh các 
+mô hình nhúng tiếng Ả Rập, nâng cao hiểu biết 
+STS, và tối ưu hóa hiệu suất trên các benchmark 
+NLP tiếng Ả Rập.
+
+Mất mát	STS17	STS22	STS22-v2	Trung bình
+LCE	54.53	46.86	49.95	50.45
+LMRL	85.31	60.7	63.96	69.99
+Lsts+Lcls	82.78	59.75	63.09	68.54
+
+Bảng 4: Tác động của các hàm mất mát Matryoshka và lai trên benchmark STS tiếng Ả Rập
+
+Bảng 4 làm nổi bật tác động của các hàm mất mát 
+khác nhau trên các mô hình hiệu suất tốt nhất, 
+Arabic-Triplet-Matryoshka-V2 và GATE-AraBERT-V1, 
+trên ba benchmark STS tiếng Ả Rập trong MTEB. 
+Kết quả chứng minh vai trò quan trọng của việc 
+lựa chọn mất mát trong việc tối ưu hóa hiệu suất 
+mô hình cho các nhiệm vụ STS.
+
+Như được thể hiện trong Bảng 4, mất mát cross-entropy 
+cơ sở LCE mang lại điểm số trung bình thấp nhất 
+50.45, củng cố các hạn chế của nó trong việc học 
+nhúng chất lượng cao cho STS chi tiết. Ngược lại, 
+Arabic-Triplet-Matryoshka-V2, được huấn luyện 
+với mất mát Matryoshka LMRL, đạt hiệu suất cao 
+nhất với trung bình 69.99, cải thiện đáng kể trên 
+STS17 bằng 85.31. Tương tự, phương pháp mất 
+mát lai (Lsts+Lcls), được áp dụng cho GATE-AraBERT-V1, 
+đạt hiệu suất mạnh mẽ với trung bình 68.54. Mặc 
+dù thấp hơn một chút so với MRL, kết quả này 
+làm nổi bật sự đánh đổi giữa tổng quát hóa và 
+căn chỉnh tương đồng được tinh chỉnh.
+
+Mất mát lai tối ưu hóa nhúng cho cả nhiệm vụ 
+STS và phân loại, làm cho nó linh hoạt hơn trên 
+các ứng dụng NLP khác nhau.
+
+Hơn nữa, hiệu quả của MRL vượt ra ngoài các 
+cải thiện hiệu suất. Nó cho phép các mô hình giữ 
+lại hiểu biết ngữ nghĩa cấp cao của chúng ngay 
+cả khi nhúng được huấn luyện ở các chiều nhỏ 
+hơn một cách tiến bộ, giảm chi phí tính toán và 
+bộ nhớ mà không suy giảm đáng kể về hiệu suất. 
+Đặc tính này đặc biệt có lợi trong các môi trường 
+hạn chế tài nguyên, nơi duy trì hiệu quả mà không 
+hy sinh độ chính xác là quan trọng. Bảng 5 cho 
+thấy hiệu suất của mô hình hiệu suất tốt nhất, 
+Arabic-Triplet-Matryoshka-V2, trên các chiều 
+nhúng khác nhau (768, 512, 256, 128, và 64) trên 
+các thước đo STS MTEB.
+
+Như được thể hiện trong Bảng 5, kết quả chứng 
+minh rằng mô hình duy trì hiệu suất mạnh mẽ 
+trên tất cả các chiều. Ở nhúng 768 chiều đầy đủ, 
+mô hình đạt điểm số trung bình 69.99, với 85.31 
+trên STS17. Ngay cả khi giảm xuống 512 và 256 
+chiều, hiệu suất vẫn gần như
+
+--- TRANG 7 ---
+Hình 2: So sánh hiệu suất giữa các mô hình Matryoshka và các mô hình lớn hơn trên benchmark MTEB tiếng Ả Rập.
+
+Đánh giá	Chiều	STS17	STS22	STS22-v2	Trung bình
+	768	85.31	60.7	63.96	69.99
+	512	85.17	60.62	63.98	69.92
+	256	85.39	60.41	63.77	69.86
+	128	84.67	60.27	63.62	69.52
+	64	84.04	60.44	63.8	69.43
+
+Bảng 5: Tác động của các chiều nhúng trên hiệu suất của Arabic-Triplet-Matryoshka-V2.
+
+không thay đổi, với điểm số trung bình 69.92 và 
+69.86, tương ứng. Ngay cả ở chiều thấp nhất 64, 
+mô hình vẫn đưa ra điểm số trung bình mạnh mẽ 
+69.43, xác nhận rằng MRL cho phép nén đáng kể 
+mà không mất mát đáng kể về độ chính xác.
+
+4.3 So sánh Các Mô hình GATE với LLM
+Để đánh giá hiệu quả của các mô hình GATE, chúng 
+tôi tiến hành đánh giá so sánh với các mô hình 
+lớn hơn, bao gồm e5-mistral-7b-instruct (7B tham 
+số), udever-bloom-1b1 (1B tham số), và text-embedding-3-small/large 
+và text-embedding-ada-002 của OpenAI. Hình 2 
+làm nổi bật cách các mô hình Matryoshka, mặc 
+dù có kích thước nhỏ hơn, vượt trội hoặc sánh 
+ngang với các LLM tỷ tham số trong các nhiệm 
+vụ STS tiếng Ả Rập.
+
+Như được thể hiện trong Hình 2, mô hình Arabic-Triplet-Matryoshka-V2 
+và GATE-Arabert-V1, chỉ với 135M tham số, đạt 
+được điểm số cao nhất lần lượt là 69.99 và 68.54, 
+vượt qua cả e5-mistral-7b-instruct (68.00) và 
+udever-bloom-1b1 (68.07), mặc dù kích thước tham 
+số của chúng lớn hơn đáng kể. Tương tự, text-embedding-ada-002 
+của OpenAI đạt điểm số trung bình thấp hơn 63.67, 
+trong khi mô hình text-embedding-3-large lớn hơn 
+đạt 65.54. Các mô hình Matryoshka khác, như 
+Marbert-all-nli-triplet-Matryoshka và Arabic-labse-Matryoshka, 
+thể hiện hiệu suất cạnh tranh, đạt được lần lượt 
+67.19 và 66.76. Những kết quả này nhấn mạnh 
+hiệu quả của khung Matryoshka, chứng minh rằng 
+các mô hình nhỏ hơn, được tối ưu hóa tốt có thể 
+đạt được hiệu suất tối ưu trong các nhiệm vụ STS 
+mà không cần hàng tỷ tham số.
+
+4.4 Phân tích Lỗi
+Chúng tôi tiến hành phân tích lỗi trên các mô hình 
+Matryoshka được huấn luyện tiếng Ả Rập bằng 
+cách so sánh dự đoán của chúng với nhãn ground 
+truth trên các danh mục tương đồng cao, trung 
+bình và thấp. Đánh giá này làm nổi bật các mẫu 
+ước lượng quá cao và quá thấp, đặc biệt trong 
+việc phân biệt các cặp không liên quan về ngữ 
+nghĩa, như được thể hiện trong Bảng 7, 6, và 8.
+
+Như quan sát được trong trường hợp không có 
+tương đồng trong Bảng 6, hầu hết các mô hình 
+gán điểm tương đồng cao hơn đáng kể so với 
+ground truth 0.1, với một số vượt quá 0.4, cho 
+thấy thiên lệch dương tính giả. Điều này cho thấy 
+rằng trong khi các mô hình nhận biết hiệu quả 
+các từ được chia sẻ, chúng có thể gặp khó khăn 
+trong việc phân biệt các mối quan hệ ngữ nghĩa 
+thực sự khi có sự chồng chéo từ vựng. Đáng chú ý, 
+GATE-AraBERT-V1 đạt được dự đoán chính xác 
+nhất với điểm số 0.04, cho thấy rằng huấn luyện 
+mất mát lai của nó hỗ trợ trong việc học các phân 
+biệt tốt hơn giữa các câu không liên quan về ngữ 
+nghĩa.
+
+Đối với các cặp tương đồng trung bình trong Bảng 7, 
+các mô hình thể hiện căn chỉnh tốt hơn với ground 
+truth, với điểm số nằm trong khoảng 0.66 và 0.83, 
+củng cố độ bền của chúng trong việc xử lý các 
+mối quan hệ ngữ nghĩa tinh tế. GATE-AraBERT-V1 
+ước lượng quá một chút độ tương đồng với điểm 
+số 0.81, trong khi Marbert-all-nli-triplet-Matryoshka 
+và Arabic-labse-Matryoshka đạt điểm số cao nhất 
+lần lượt là 0.836 và 0.835.
+
+Đối với các trường hợp tương đồng cao được thể 
+hiện trong Bảng 8, tất cả các mô hình hoạt động 
+tốt, ghi điểm trên 0.84, phản ánh chặt chẽ ground 
+truth 1.0. Tuy nhiên, GATE-AraBERT-V1 đạt điểm 
+số thấp hơn một chút 0.73, cho thấy rằng huấn 
+luyện mất mát lai có thể đưa ra các ước lượng 
+tương đồng thận trọng hơn so với các mô hình 
+mất mát Matryoshka.
+
+Mô hình	Điểm	Câu1	Câu2
+Ground Truth	0.1	
+رجل يعزف على الجيتار
+(Một người đàn ông chơi guitar)	رجل يقود سيارة
+(Một người đàn ông lái xe)
+Arabic-all-nli-triplet-Matryoshka	0.48		
+Arabic-Triplet-Matryoshka-V2	0.48		
+GATE-AraBert-v1	0.04		
+Arabic-labse-Matryoshka	0.32		
+Marbert-all-nli-triplet-Matryoshka	0.38		
+
+Bảng 6: Điểm số mô hình cho một mẫu không có tương đồng.
+
+Mô hình	Điểm	Câu1	Câu2
+Ground Truth	0.72	
+الرجال يلعبون كرة القدم
+(những người đàn ông đang chơi bóng đá)	الأولاد يلعبون كرة القدم
+(những cậu bé đang chơi bóng đá)
+Arabic-all-nli-triplet-Matryoshka	0.685		
+Arabic-Triplet-Matryoshka-V2	0.661		
+GATE-AraBert-v1	0.81		
+Arabic-labse-Matryoshka	0.835		
+Marbert-all-nli-triplet-Matryoshka	0.836		
+
+Bảng 7: Điểm số mô hình cho một mẫu tương đồng trung bình.
+
+Mô hình	Điểm	Câu1	Câu2
+Ground Truth	1	
+رجل يقوم بخدعة بالأوراق
+(Một người đàn ông thực hiện 
+trò ảo thuật bài)	رجل يؤدي خدعة بالأوراق
+(Một người đàn ông biểu diễn 
+trò ảo thuật bài)
+Arabic-all-nli-triplet-Matryoshka	0.91		
+Arabic-Triplet-Matryoshka-V2	0.87		
+Arabic-labse-Matryoshka	0.84		
+Marbert-all-nli-triplet-Matryoshka	0.85		
+GATE-AraBert-v1	0.73		
+
+Bảng 8: Điểm số mô hình cho một mẫu tương đồng cao.
+
+5 Hạn chế
+Công trình này trình bày những hạn chế nhất định. 
+Thiếu các benchmark NLP tiếng Ả Rập toàn diện 
+hạn chế đánh giá rộng hơn ngoài các nhiệm vụ 
+STS. Ngoài ra, phân tích lỗi tiết lộ xu hướng ước 
+lượng quá cao độ tương đồng trong các cặp câu 
+không liên quan, thường do các yếu tố từ vựng 
+được chia sẻ, dẫn đến dương tính giả. Nâng cao 
+việc xử lý cặp tiêu cực có thể tinh chỉnh thêm độ 
+chính xác mô hình. Trong khi phương pháp của 
+chúng tôi được tối ưu cho tiếng Ả Rập, phương 
+pháp luận có tiềm năng thích ứng đa ngôn ngữ, 
+mở rộng khả năng ứng dụng của nó.
+
+6 Kết luận
+Trong công trình này, chúng tôi giới thiệu GATE, 
+một mô hình Nhúng Văn bản Tiếng Ả Rập Tổng 
+quát tận dụng MRL và huấn luyện mất mát lai để 
+nâng cao các nhiệm vụ STS. Đánh giá trên benchmark 
+MTEB xác nhận việc duy trì hiệu suất mạnh mẽ 
+qua các chiều giảm và cải thiện tổng quát hóa so 
+với các mô hình lớn hơn. GATE lấp đầy các khoảng 
+trống chính trong NLP tiếng Ả Rập bằng cách tối 
+ưu hóa nhúng cho ngữ nghĩa tiếng Ả Rập chi tiết. 
+Công việc tương lai sẽ mở rộng các benchmark 
+NLP tiếng Ả Rập, đa dạng hóa bộ dữ liệu, và khám 
+phá tổng quát hóa đa ngôn ngữ để có tác động 
+thực tế rộng hơn.
+
+Lời cảm ơn
+Các tác giả cảm ơn Đại học Prince Sultan vì sự 
+hỗ trợ của họ.
+
+Tài liệu tham khảo
+Muhammad Abdul-Mageed, AbdelRahim Elmadany,
+và El Moatez Billah Nagoudi. 2020. Arbert &
+marbert: Deep bidirectional transformers for arabic.
+arXiv preprint arXiv:2101.01785.
+
+Wissam Antoun, Fady Baly, và Hazem Hajj.
+2020. Arabert: Transformer-based model for
+arabic language understanding. arXiv preprint
+arXiv:2003.00104.
+
+Akari Asai, Sewon Min, Zexuan Zhong, và Danqi
+Chen. 2023. Retrieval-based language models and
+applications. In Proceedings of the 61st Annual Meet-
+ing of the Association for Computational Linguistics
+(Volume 6: Tutorial Abstracts), pages 41–46.
+
+Ghizlane Bourahouat, Manar Abourezq, và Najima
+Daoudi. 2024. Word embedding as a semantic fea-
+ture extraction technique in arabic natural language
+processing: an overview. Int. Arab J. Inf. Technol.,
+21(2):313–325.
+
+Samuel R Bowman, Gabor Angeli, Christopher Potts,
+và Christopher D Manning. 2015. A large annotated
+corpus for learning natural language inference. arXiv
+preprint arXiv:1508.05326.
+
+--- TRANG 9 ---
+Daniel Cer, Mona Diab, Eneko Agirre, Inigo Lopez-
+Gazpio, và Lucia Specia. 2017. Semeval-2017
+task 1: Semantic textual similarity-multilingual and
+cross-lingual focused evaluation. arXiv preprint
+arXiv:1708.00055.
+
+Fangxiaoyu Feng, Yinfei Yang, Daniel Cer, Naveen
+Arivazhagan, và Wei Wang. 2020. Language-
+agnostic bert sentence embedding. arXiv preprint
+arXiv:2007.01852.
+
+Tianyu Gao, Xingcheng Yao, và Danqi Chen. 2021.
+Simcse: Simple contrastive learning of sentence em-
+beddings. arXiv preprint arXiv:2104.08821.
+
+Yunfan Gao, Yun Xiong, Xinyu Gao, Kangxiang Jia,
+Jinliu Pan, Yuxi Bi, Yi Dai, Jiawei Sun, và Haofen
+Wang. 2023. Retrieval-augmented generation for
+large language models: A survey. arXiv preprint
+arXiv:2312.10997.
+
+Michael Gutmann và Aapo Hyvärinen. 2010. Noise-
+contrastive estimation: A new estimation principle
+for unnormalized statistical models. In Proceedings
+of the thirteenth international conference on artificial
+intelligence and statistics, pages 297–304. JMLR
+Workshop and Conference Proceedings.
+
+Kaiming He, Haoqi Fan, Yuxin Wu, Saining Xie, và
+Ross Girshick. 2020. Momentum contrast for unsu-
+pervised visual representation learning. In Proceed-
+ings of the IEEE/CVF conference on computer vision
+and pattern recognition, pages 9729–9738.
+
+Junqin Huang, Zhongjie Hu, Zihao Jing, Mengya Gao,
+và Yichao Wu. 2024. Piccolo2: General text em-
+bedding with multi-task hybrid loss training. arXiv
+preprint arXiv:2405.06932.
+
+Infgrad. 2024. Stella-mrl-large-zh-v3.5-1792d. Truy
+cập: 2024-08-28.
+
+Seonhoon Kim, Inho Kang, và Nojun Kwak. 2019.
+Semantic sentence matching with densely-connected
+recurrent and co-attentive information. In Proceed-
+ings of the AAAI conference on artificial intelligence,
+volume 33, pages 6586–6593.
+
+Guillaume Klein, Yoon Kim, Yuntian Deng, Jean Senel-
+lart, và Alexander M Rush. 2017. Opennmt: Open-
+source toolkit for neural machine translation. arXiv
+preprint arXiv:1701.02810.
+
+Darius Koenig, Sean Lee, và Aamir Shakir. 2024.
+Open source strikes bread - new fluffy embeddings
+model. Truy cập: 2024-08-28.
+
+Aditya Kusupati, Gantavya Bhatt, Aniket Rege,
+Matthew Wallingford, Aditya Sinha, Vivek Ramanu-
+jan, William Howard-Snyder, Kaifeng Chen, Sham
+Kakade, Prateek Jain, et al. 2022. Matryoshka repre-
+sentation learning. Advances in Neural Information
+Processing Systems, 35:30233–30249.
+
+Jinhyuk Lee, Zhuyun Dai, Xiaoqi Ren, Blair Chen,
+Daniel Cer, Jeremy R Cole, Kai Hui, Michael Bo-
+ratko, Rajvi Kapadia, Wen Ding, et al. 2024. Gecko:
+Versatile text embeddings distilled from large lan-
+guage models. arXiv preprint arXiv:2403.20327.
+
+Yang Li và Tao Yang. 2018. Word embedding for
+understanding natural language: a survey. Guide to
+big data applications, pages 83–104.
+
+Zehan Li, Xin Zhang, Yanzhao Zhang, Dingkun Long,
+Pengjun Xie, và Meishan Zhang. 2023. Towards
+general text embeddings with multi-stage contrastive
+learning. arXiv preprint arXiv:2308.03281.
+
+Shuaiqi Liu, Jiannong Cao, Ruosong Yang, và Zhiyuan
+Wen. 2022. Key phrase aware transformer for ab-
+stractive summarization. Information Processing &
+Management, 59(3):102913.
+
+Bill MacCartney và Christopher D Manning. 2008.
+Modeling semantic containment and exclusion in nat-
+ural language inference. In Proceedings of the 22nd
+International Conference on Computational Linguis-
+tics (Coling 2008), pages 521–528.
+
+Niklas Muennighoff, Nouamane Tazi, Loïc Magne, và
+Nils Reimers. 2022. Mteb: Massive text embedding
+benchmark. arXiv preprint arXiv:2210.07316.
+
+Omer Nacar và Anis Koubaa. 2024. Enhancing
+semantic similarity understanding in arabic nlp
+with nested embedding learning. arXiv preprint
+arXiv:2407.21139.
+
+OpenAI. 2023. Openai embeddings documen-
+tation. https://platform.openai.com/docs/
+guides/embeddings.
+
+OpenAI. 2024. New embedding models and api updates.
+Truy cập: 2024-08-28.
+
+Amarnath Pathak, Partha Pakray, và Jereemi Bentham.
+2019. English–mizo machine translation using neural
+and statistical approaches. Neural Computing and
+Applications, 31(11):7615–7631.
+
+Alec Radford, Jong Wook Kim, Chris Hallacy, Aditya
+Ramesh, Gabriel Goh, Sandhini Agarwal, Girish Sas-
+try, Amanda Askell, Pamela Mishkin, Jack Clark,
+et al. 2021. Learning transferable visual models from
+natural language supervision. In International confer-
+ence on machine learning, pages 8748–8763. PMLR.
+
+N Reimers. 2019. Sentence-bert: Sentence embed-
+dings using siamese bert-networks. arXiv preprint
+arXiv:1908.10084.
+
+Nils Reimers và Iryna Gurevych. 2019. Sentence-bert:
+Sentence embeddings using siamese bert-networks.
+In Proceedings of the 2019 Conference on Empirical
+Methods in Natural Language Processing. Associa-
+tion for Computational Linguistics.
+
+--- TRANG 10 ---
+Liang Wang, Nan Yang, Xiaolong Huang, Binxing
+Jiao, Linjun Yang, Daxin Jiang, Rangan Majumder,
+và Furu Wei. 2022. Text embeddings by weakly-
+supervised contrastive pre-training. arXiv preprint
+arXiv:2212.03533.
+
+Liang Wang, Nan Yang, Xiaolong Huang, Linjun Yang,
+Rangan Majumder, và Furu Wei. 2023. Improving
+text embeddings with large language models. arXiv
+preprint arXiv:2401.00368.
+
+Liang Wang, Nan Yang, Xiaolong Huang, Linjun Yang,
+Rangan Majumder, và Furu Wei. 2024. Multilin-
+gual e5 text embeddings: A technical report. arXiv
+preprint arXiv:2402.05672.
+
+Yongliang Wu, Shuliang Zhao, và Ruiqiang Guo.
+2021. A novel community answer matching ap-
+proach based on phrase fusion heterogeneous infor-
+mation network. Information Processing & Manage-
+ment, 58(1):102408.
+
+Shitao Xiao, Zheng Liu, Peitian Zhang, và Niklas
+Muennighof. 2023. C-pack: Packaged resources to
+advance general chinese embedding. arXiv preprint
+arXiv:2309.07597.
+
+Xin Zhang, Zehan Li, Yanzhao Zhang, Dingkun Long,
+Pengjun Xie, Meishan Zhang, và Min Zhang. 2023.
+Language models are universal embedders. arXiv
+preprint arXiv:2310.08232.
+
+Ying Zhao, Tingyu Xia, Yunqi Jiang, và Yuan Tian.
+2024. Enhancing inter-sentence attention for seman-
+tic textual similarity. Information Processing & Man-
+agement, 61(1):103535.

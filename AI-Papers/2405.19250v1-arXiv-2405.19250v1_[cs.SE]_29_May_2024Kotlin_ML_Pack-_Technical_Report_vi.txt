@@ -1,0 +1,357 @@
+# 2405.19250v1.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2405.19250v1.pdf
+# Kích thước file: 193370 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+arXiv:2405.19250v1  [cs.SE]  29 Tháng 5 2024Kotlin ML Pack: Báo cáo Kỹ thuật
+Sergey Titov*
+JetBrains Research
+Paphos, Cyprus
+sergey.titov@jetbrains.comMikhail Evtikhiev*
+JetBrains Research
+Paphos, Cyprus
+mikhail.evtikhiev@jetbrains.comAnton Shapkin*
+JetBrains Research
+Paphos, Cyprus
+anton.shapkin@jetbrains.com
+Oleg Smirnov
+JetBrains Research
+Amsterdam, the Netherlands
+oleg.smirnov@jetbrains.comSergei Boytsov
+JetBrains Research
+Berlin, Germany
+sergey.boytsov@jetbrains.comDariia Karaeva
+JetBrains Research
+Limassol, Cyprus
+dariia.karaeva@jetbrains.com
+Maksim Sheptyakov
+JetBrains Research
+London, UK
+maksim.sheptyakov@jetbrains.comMikhail Arkhipov
+JetBrains Research
+Amsterdam, the Netherlands
+mikhail.arkhipov@jetbrains.comTimofey Bryksin
+JetBrains Research
+Limassol, Cyprus
+timofey.bryksin@jetbrains.com
+Egor Bogomolov
+JetBrains Research
+Amsterdam, the Netherlands
+egor.bogomolov@jetbrains.com
+
+Tóm tắt —Trong báo cáo kỹ thuật này, chúng tôi trình bày ba bộ dữ liệu Kotlin mới: KStack, KStack-clean, và KExercises. Chúng tôi cũng mô tả kết quả của việc tinh chỉnh các mô hình CodeLlama và DeepSeek trên dữ liệu này. Ngoài ra, chúng tôi trình bày một phiên bản của benchmark HumanEval được viết lại bởi các chuyên gia con người thành Kotlin — cả solutions và tests. Kết quả của chúng tôi cho thấy các bộ dữ liệu nhỏ, chất lượng cao (KStack-clean và KExercises) có thể cải thiện đáng kể hiệu suất mô hình trên các nhiệm vụ sinh mã, đạt được sự gia tăng lên đến 16 điểm trong tỷ lệ vượt qua trên benchmark HumanEval. Cuối cùng, chúng tôi thảo luận về các hướng nghiên cứu tương lai tiềm năng trong lĩnh vực cải thiện mô hình hóa ngôn ngữ cho Kotlin, bao gồm việc sử dụng các công cụ phân tích tĩnh trong quá trình học tập và đưa ra các benchmark phức tạp và thực tế hơn.
+
+I. GIỚI THIỆU
+Để giữ được sự phù hợp trong thế giới cách mạng AI, ngôn ngữ lập trình cần được đại diện tốt trong cộng đồng học máy. Ngôn ngữ càng ít được đại diện, càng ít nghiên cứu được thực hiện xung quanh nó. Điều này dẫn đến chất lượng mã được sinh ra thấp hơn, từ đó làm giảm việc sử dụng ngôn ngữ và thậm chí đại diện kém hơn nữa. Để tránh tình huống như vậy cho Kotlin, chúng tôi đề xuất Kotlin ML Pack. Mục tiêu của dự án là cung cấp tất cả các công cụ, dữ liệu và mô hình cần thiết để thúc đẩy các nhiệm vụ mô hình hóa mã cho Kotlin.
+
+Trong báo cáo này, chúng tôi trình bày ba bộ dữ liệu Kotlin:
+•KStack¹— bộ sưu tập lớn nhất các file Kotlin được cấp phép cho phép;
+•KStack-clean²— phiên bản được lọc cao của KStack chứa hai mười lăm nghìn ví dụ chất lượng cao;
+*Ba tác giả đầu tiên đóng góp bằng nhau cho công việc này.
+¹KStack: https://huggingface.co/datasets/JetBrains/KStack
+²KStack-clean: https://huggingface.co/datasets/JetBrains/KStack-clean•KExercises³— phiên bản được dịch và cải thiện của bộ dữ liệu bài tập Python [1].
+
+Thông tin chi tiết hơn về kích thước bộ dữ liệu, kỹ thuật lọc và so sánh với các bộ dữ liệu khác có thể tìm thấy trong Phần III. Chúng tôi cũng cung cấp một phiên bản HumanEval [2] được dịch sang Kotlin bởi các chuyên gia con người. Trong Phần IV, chúng tôi chứng minh các vấn đề với việc đánh giá hiện tại của sinh mã cho Kotlin và trình bày chi tiết quá trình dịch thuật.
+
+Cuối cùng, chúng tôi cung cấp nhiều checkpoint cho các mô hình được tinh chỉnh. Chúng tôi lấy hai mô hình cơ sở: CodeLlama [3] và Deepseek-coder [4], và với mỗi mô hình, thực hiện tinh chỉnh trên các biến thể của bộ dữ liệu KStack và KExercises. Thông tin chi tiết hơn về quá trình tinh chỉnh, các kỹ thuật được sử dụng trong quá trình đào tạo, và kết quả có thể tìm thấy trong Phần V.
+
+Chúng tôi tin rằng công việc này cung cấp nền tảng cho nghiên cứu tiếp theo về sinh mã Kotlin. Trong Phần VII, chúng tôi mô tả các hướng có thể cho nghiên cứu tương lai, bao gồm các ý tưởng triển vọng như sử dụng trình biên dịch trong quá trình đào tạo và thiết kế benchmark thực tế hơn cho Kotlin.
+
+II. TÌNH TRẠNG HIỆN TẠI CỦA NGHỆ THUẬT
+SINH MÃ KOTLIN
+
+Trước tiên, chúng tôi cần xác định mức độ tốt của thế hệ mô hình hiện tại có thể sinh mã Kotlin. Để đánh giá sinh mã Kotlin, chúng tôi sử dụng phiên bản được dịch bởi con người của benchmark HumanEval, được điều chỉnh đặc biệt cho Kotlin. Thông tin chi tiết hơn về thiết lập Kotlin HumanEval được cung cấp trong Phần IV. Ngoài ra, chúng tôi kiểm tra mỗi mô hình trên Python HumanEval để kiểm soát phương pháp được sử dụng
+³KExercises: https://huggingface.co/datasets/JetBrains/KExercises
+
+--- TRANG 2 ---
+0 10 20 30 40 50 60 70 80
+Điểm số GPT-4-turbo
+Deepseek-coder-33B-instruct
+Deepseek-coder-6.7B-instruct
+GPT-3.5-turbo
+CodeLlama-70B-Instruct-hf
+CodeQwen1.5-7B
+Meta-Llama-3-8B-Instruct
+Deepseek-coder-6.7B-base
+CodeLlama-13b-Instruct-hf
+Deepseek-coder-1.3B-instruct
+CodeLlama-7B-Instruct-hf
+Mistral-7B-Instruct-v0.2
+Mistral-7B-Instruct-v0.1
+Deepseek-coder-1.3B-base
+Codellama-7B-hf
+phi-2Ngôn ngữ
+Kotlin
+Python
+
+Hình 1. Điểm số Kotlin và Python HumanEval cho các mô hình khác nhau.
+
+và để so sánh hiệu suất mô hình giữa các ngôn ngữ lập trình khác nhau. Các phát hiện từ những benchmark này được thể hiện trong Hình 1.
+
+Thú vị là, khoảng cách hiệu suất giữa các mô hình lớn hơn, như CodeLlama-70B, DeepSeek-coder-33B, và họ GPT, không đáng kể như sự khác biệt về số lượng tham số của chúng. Điều này trái ngược với các mô hình nhỏ hơn, như các mô hình 7B, nơi khoảng cách hiệu suất rõ rệt hơn. Do đó, cải thiện hiệu suất không xuất hiện phụ thuộc tuyến tính vào số lượng tham số.
+
+Quan trọng, trong hầu hết các trường hợp, hiệu suất trên Kotlin tệ hơn hiệu suất của các mô hình này trên Python. Một trong những lý do cho điều này là sự phổ biến của Python trong cộng đồng nghiên cứu, điều này ảnh hưởng đến cả đào tạo mô hình và đánh giá. Nhiều mô hình được đánh giá trên các nhiệm vụ liên quan đến mã Python, và hiệu suất của chúng trên Kotlin không được xem xét. Để đạt được chất lượng tốt hơn trong các nhiệm vụ Python, các mô hình được điều chỉnh trên dữ liệu đặc biệt cho Python. Hơn nữa, chúng tôi quan sát thấy các mô hình được tinh chỉnh trên dữ liệu hướng dẫn cho Python thể hiện hiệu suất cải thiện trên benchmark HumanEval cho cả hai ngôn ngữ.
+
+Mặc dù phát triển các mô hình mã hóa chuyên biệt, các mô hình của OpenAI vẫn tiếp tục thiết lập tiêu chuẩn nghệ thuật hiện đại trong các nhiệm vụ mã hóa. Điều này có thể được quy cho không chỉ kích thước của các mô hình mà còn cho thực tế rằng hiểu biết ngôn ngữ tự nhiên có thể đóng vai trò quan trọng trong sinh mã từ ngôn ngữ tự nhiên. Đào tạo trên các văn bản ngôn ngữ tự nhiên cung cấp hiểu biết ngữ cảnh giúp tăng cường khả năng của mô hình trong việc giải thích và sinh mã hiệu quả hơn.
+
+Kết quả là, chúng tôi có thể kết luận rằng thế hệ mô hình hiện tại hoạt động kém khi giải quyết các nhiệm vụ mã hóa trong Kotlin. Trong khi các mô hình độc quyền lớn cung cấp điểm số tốt trên các nhiệm vụ, có không gian đáng kể để cải thiện cho các mô hình mã nguồn mở.
+
+III. DỮ LIỆU KOTLIN
+
+Dữ liệu là nền tảng của học máy trong mọi lĩnh vực. Python dường như là một trong những ngôn ngữ lập trình được đại diện nhiều nhất trong học máy — không chỉ Python là ngôn ngữ thứ ba theo độ phổ biến trong bộ dữ liệu mã lớn nhất — the Stack [5], — mà còn có nhiều bộ dữ liệu chất lượng cao và đặc biệt cho lĩnh vực có sẵn cho nó. Ví dụ, có các bộ dữ liệu như APPS [6] và Python exercises [1], chứa các nhiệm vụ Python chất lượng cao với giải pháp, cũng như bộ dữ liệu DS-1000 [7], tập trung vào các nhiệm vụ đặc biệt cho khoa học dữ liệu cho Python.
+
+Những bộ dữ liệu này được tạo ra để dạy và đo lường các khía cạnh khác nhau của mô hình hóa ngôn ngữ Python. Theo đó, chúng tôi tập trung vào hai bộ dữ liệu chính cho Kotlin: tập hợp ngôn ngữ và bộ dữ liệu hướng dẫn.
+
+A. KStack: Tập hợp ngôn ngữ Kotlin
+
+Một tập hợp ngôn ngữ lớn là cần thiết để tinh chỉnh các mô hình khác nhau trên Kotlin. Mặc dù một số bộ dữ liệu phổ biến, như the Stack [5], đã có mã Kotlin, chúng tôi trình bày bộ sưu tập hoàn chỉnh nhất được cấp phép cho phép và cập nhật của mã Kotlin mã nguồn mở.
+
+Chúng tôi thu thập các repository từ GitHub nơi ngôn ngữ chính là Kotlin, cũng như các repository chứa các file Kotlin có mười sao trở lên (tính đến tháng 2 năm 2024). Ngoài ra, chúng tôi thu thập các repository với các file Kotlin từ Stack v1.2 [5].
+
+--- TRANG 3 ---
+Chúng tôi nhận dạng các file Kotlin bằng go-enry [8], và bao gồm các file với các phần mở rộng như .kt, .kts, và .gradle.kts. Tiếp theo, chúng tôi sử dụng hash nội dung file để thực hiện khử trùng lặp hoàn toàn, cũng như khử trùng lặp gần sử dụng cùng phương pháp như trong Stack v1.2 [5]. Sau đó chúng tôi để lại một đại diện duy nhất từ mỗi cluster khử trùng lặp gần, chọn file từ repository có nhiều sao nhất. Chúng tôi cũng lọc bộ dữ liệu, chỉ để lại các repository với giấy phép cho phép. Chúng tôi sử dụng thông tin giấy phép được cung cấp bởi GitHub, và quay lại go-license-detector [9] nếu thông tin giấy phép không có sẵn trên GitHub. Danh sách các giấy phép cho phép được sử dụng trong KStack có thể tìm thấy tại trang HuggingFace của chúng tôi.⁴ Cuối cùng, chúng tôi lọc thông tin cá nhân và nhạy cảm bằng mô hình star-pii [10].
+
+B. KStack-clean: Học chất lượng mã
+
+Sau khi thu thập gần như toàn bộ tập hợp mã Kotlin trong KStack, chúng tôi tiếp tục tạo bộ dữ liệu mã Kotlin chất lượng cao đặc biệt. Sử dụng các bộ dữ liệu được tuyển chọn để tinh chỉnh mô hình có thể cung cấp cải thiện lớn hơn so với tinh chỉnh nó trên tập hợp lớn hơn của dữ liệu không được tuyển chọn [11].
+
+Để tìm dữ liệu chất lượng cao trong bộ dữ liệu của chúng tôi, chúng tôi xây dựng một bộ phân loại dự đoán chất lượng của mã. Chúng tôi bắt đầu bằng việc gắn nhãn một phần nhỏ của các tài liệu KStack (128K ví dụ) với LLMs (Mistral-7B-Instruct-v0.2 và GPT-3.5-Turbo [12]) trong thiết lập zero-shot. Chúng tôi sử dụng chiến lược so sánh cặp để gắn nhãn. Trong chiến lược này, chúng tôi chấm điểm một cặp file bằng cách hỏi file nào có "giá trị giáo dục lớn hơn để học thuật toán trong Kotlin". Chúng tôi thêm các token A và B trước mỗi file. Để lấy điểm số cho file, chúng tôi tính toán sự khác biệt giữa xác suất log của các token A và B. Để tránh hiệu ứng của thứ tự trong prompt, chúng tôi sử dụng công thức sau:
+
+s(f) = (s(f,c)A − s(f,c)B) + (s(c,f)B − s(c,f)A) / 2
+
+trong đó f là file mà chúng tôi đang ước tính chất lượng, c là mẫu được đánh giá cao nhất, s(f,c)A là xác suất chọn mã được gắn nhãn là A (đối số đầu tiên f) hơn mã được gắn nhãn là B (đối số thứ hai c).
+
+Trong khi chấm điểm từng cặp là một quá trình tính toán tốn kém, chúng tôi thiết kế một xấp xỉ dưới dạng quy trình ba lần. Chúng tôi bắt đầu bằng việc chấm điểm một mẫu ngẫu nhiên so với toàn bộ bộ dữ liệu để có điểm số chất lượng tương đối cho mỗi ví dụ. Tiếp theo, chúng tôi chọn ví dụ có điểm số cao nhất và lặp lại quá trình, chấm điểm nó so với toàn bộ bộ dữ liệu để có tập điểm số thứ hai. Cuối cùng, chúng tôi lặp lại quy trình với mẫu điểm số cao nhất từ lần thứ hai. Để có điểm số cuối cùng, chúng tôi lấy trung bình các điểm số từ lần thứ hai và thứ ba (bỏ qua điểm số mẫu ngẫu nhiên) cho 128 nghìn ví dụ.
+
+Sau khi chúng tôi có điểm số cho mẫu ban đầu 128K ví dụ, chúng tôi đào tạo một bộ phân loại nhị phân dựa trên 220M-CodeT5+ [13]. Sử dụng các điểm số thu được, chúng tôi đánh dấu 5% hàng đầu của các mẫu là ví dụ tích cực (ví dụ chất lượng cao), và phần còn lại chúng tôi đánh dấu là tiêu cực. Bộ phân loại được đào tạo để
+⁴Danh sách giấy phép trong KStack: https://huggingface.co/datasets/JetBrains/KStack/blob/main/licenses.json
+
+File    Repository    Dòng    Token
+The Stack v2    2M    109,547    162M    1.7B
+KStack    4M    163,310    293M    3.1B
+KStack-clean    25,000    3,366    2M    22M
+
+BẢNG I
+THỐNG KÊ MÔ TẢ CHO CÁC BỘ DỮ LIỆU ĐÃ THU THẬP. ĐỂ TÍNH SỐ LƯỢNG TOKEN CHÚNG TÔI SỬ DỤNG CODELLAMA TOKENIZER.
+
+phân biệt những ví dụ này trong ba epoch và sau đó áp dụng cho toàn bộ bộ dữ liệu KStack. Đối với mỗi mẫu trong bộ dữ liệu, xác suất log của lớp tích cực được sử dụng như một ước tính chất lượng. Cuối cùng, để có bộ dữ liệu KStack-clean, chúng tôi chọn 25,000 mẫu từ KStack với xác suất cao nhất của lớp tích cực.
+
+C. So sánh với các bộ dữ liệu khác
+
+Kết quả của quy trình thu thập dữ liệu của chúng tôi, chúng tôi có hai bộ dữ liệu: KStack và KStack-clean. Trong Bảng I, chúng tôi so sánh thống kê mô tả cho hai bộ dữ liệu này và the Stack v2 [10].
+
+D. KExercises: Bộ dữ liệu hướng dẫn Kotlin
+
+Mục tiêu tiếp theo của chúng tôi liên quan đến phát triển bộ dữ liệu là tạo bộ dữ liệu hướng dẫn Kotlin. Thông thường, các bộ dữ liệu như vậy bao gồm các tập hướng dẫn hoặc nhiệm vụ cùng với giải pháp của chúng. Đào tạo trên dữ liệu như vậy giúp các mô hình hiểu tốt hơn mối quan hệ giữa ngôn ngữ tự nhiên và lập trình.
+
+Có một số bộ dữ liệu như vậy có sẵn cho ngôn ngữ lập trình Python, như APPS [6] và Python Code Exercises [1]. Hơn nữa, cũng có các bộ dữ liệu đa ngôn ngữ, như CodeAlpaca [14] và CommitPackFT [15]. Tuy nhiên, những bộ dữ liệu này chỉ có đại diện tương đối khiêm tốn của mã Kotlin hoặc không chứa Kotlin.
+
+Kotlin có thể được coi là ngôn ngữ ít tài nguyên do sự khan hiếm dữ liệu có sẵn công khai và cơ hội hạn chế để cải thiện sử dụng dữ liệu thu thập từ các dự án mã nguồn mở. Điều này thúc đẩy chúng tôi sử dụng dữ liệu tổng hợp cho tinh chỉnh hướng dẫn. Tạo dữ liệu tổng hợp có thể đưa ra nhiều thách thức, và một trong những thách thức lớn nhất là đa dạng mẫu thấp. Theo Gunasekar và cộng sự [11], dữ liệu được tạo nên bao quát một phổ rộng các khái niệm, kỹ năng và tình huống mã hóa, thay đổi về độ khó, độ phức tạp và phong cách.
+
+Vì có nhiều bộ dữ liệu Python tổng hợp đã giải quyết những vấn đề tiềm năng này, chúng tôi quyết định điều chỉnh một trong những bộ dữ liệu này bằng cách dịch nó từ Python sang Kotlin, thay vì tạo toàn bộ bộ dữ liệu từ đầu.
+
+Với mục đích này, chúng tôi sử dụng bộ dữ liệu CodeExercises [1] nhân bản các bước được nêu trong công việc của Gunasekar và cộng sự [11], chứng minh chất lượng cao và hiệu quả của nó. Chúng tôi sử dụng GPT-3.5-turbo để dịch dữ liệu từ Python sang Kotlin (xem prompt dịch trong Hình 2). Chúng tôi dịch các phân đoạn dữ liệu một cách lặp lại và giám sát chất lượng sinh Kotlin downstream trong quá trình xác thực. Ngoài ra, sau khi dịch, chúng tôi xem xét thủ công một mẫu của
+
+--- TRANG 4 ---
+dữ liệu để đảm bảo độ chính xác của các bản dịch. Cuối cùng, chúng tôi biên soạn một bộ dữ liệu hướng dẫn bao gồm 15K nhiệm vụ Kotlin (khoảng 3.5 triệu token, 335K dòng mã). Một cuộc điều tra chi tiết hơn về tác động của kích thước mẫu tổng hợp đến chất lượng cuối cùng của các mô hình được tinh chỉnh được để lại cho công việc tương lai.
+
+System: Bạn là một trợ lý hữu ích.
+User: Viết lại thành Kotlin (đừng quên về docstring):\n\nPYTHON_CODE
+
+Hình 2. Prompt cho việc dịch Python sang Kotlin.
+
+IV. ĐÁNH GIÁ KOTLIN
+
+Một khía cạnh quan trọng của học máy là các quy trình đánh giá chính xác và hiệu quả, với HumanEval là tiêu chuẩn cho đánh giá LLM mã [16], [17], [18], [10]. Mặc dù ban đầu được thiết kế cho ngôn ngữ lập trình Python, kể từ khi ra mắt vào năm 2020, HumanEval đã được dịch sang nhiều ngôn ngữ lập trình. Nó cũng đã được điều chỉnh để sử dụng với các ngôn ngữ biên dịch và đã được mở rộng với các nhiệm vụ mới.
+
+A. HumanEval cho Kotlin
+
+Trong khi có một phiên bản HumanEval cho Kotlin [19], nó cần cải thiện đáng kể trước khi sử dụng. Hầu hết các vấn đề chúng tôi phát hiện liên quan đến prompt có lỗi. Vấn đề prompt phổ biến nhất là loại biến quá chung trong chữ ký hàm Kotlin. Trong những trường hợp như vậy, không thể áp dụng nhiều phương thức tích hợp Kotlin (ví dụ, không thể sử dụng phương thức sort trên mảng Kotlin của loại Any). Nguồn vấn đề khác là các test. Sự khác biệt trong quy trình làm tròn giữa Kotlin và Python khiến các test thất bại trên một chương trình Kotlin hoàn toàn hợp lý. Ví dụ, cho nhiệm vụ HumanEval #2, nhiệm vụ là:
+
+Cho một số điểm nổi dương,
+nó có thể được phân tách thành phần nguyên
+(số nguyên lớn nhất nhỏ hơn số đã cho)
+và phần thập phân (phần còn lại luôn
+nhỏ hơn 1).
+Trả về phần thập phân của số.
+
+Cho trường hợp này, giải pháp sau
+fun truncate(number : Double) : Double {
+    return number - Math.floor(number)
+}
+thất bại do lỗi làm tròn ít hơn 1e−8.
+
+Để giải quyết các vấn đề với Kotlin HumanEval hiện có, chúng tôi yêu cầu các chuyên gia con người viết lại HumanEval từ đầu. Tất cả các giải pháp và test HumanEval trong Kotlin do đó được viết bởi một lập trình viên thi đấu chuyên gia với sáu năm kinh nghiệm trong Kotlin, và được xem xét độc lập bởi một lập trình viên với bốn năm kinh nghiệm trong Kotlin. Các test chúng tôi thực hiện tương đương với các test HumanEval gốc cho Python, và chúng tôi sửa các chữ ký prompt để giải quyết chữ ký biến chung mà chúng tôi đã mô tả ở trên.
+
+B. Thiết lập đánh giá cho sinh mã
+
+Để đánh giá chất lượng sinh mã cho các mô hình được tinh chỉnh của chúng tôi, chúng tôi sử dụng phiên bản HumanEval của chúng tôi và chiến lược sinh greedy. Sinh hoạt động như sau.
+
+Để prompt mô hình, chúng tôi sử dụng prompt từ phiên bản Kotlin HumanEval của chúng tôi (Bạn là một lập trình viên Kotlin chuyên gia...). Chúng tôi sử dụng phương thức generate từ HuggingFace transformers, sinh greedy, và buộc mô hình sinh từ 128 đến 256 token mới. Để tăng tốc đánh giá và đơn giản hóa phân tích câu trả lời, chúng tôi sử dụng chuỗi token dừng sớm "\n}\n", tương ứng với kết thúc phương thức Kotlin theo các quy ước mã hóa Kotlin. Ngoài ra, chúng tôi loại bỏ tất cả các comment từ câu trả lời vì chúng không ảnh hưởng đến hiệu suất và có thể làm lộn xộn đầu ra khi người ta muốn đọc chúng. Vì một số mô hình lặp lại một phần của prompt trong câu trả lời (điều mà chúng tôi không coi là thất bại của mô hình), chúng tôi tìm định nghĩa đầu tiên của hàm trong câu trả lời (dòng bắt đầu với "fun"), và xóa dòng này và tất cả các dòng trước đó từ câu trả lời trước khi nối nó vào prompt.
+
+Sau đó chúng tôi chuyển mã kết quả cho MXEval [19] để chấm điểm biên dịch và tỷ lệ vượt qua. Chúng tôi báo cáo các metric sau cho mỗi mô hình:
+•Pass@1 — tỷ lệ phần trăm sinh thành công vượt qua các test;
+•Test Error Rate — tỷ lệ phần trăm sinh thất bại một hoặc nhiều test;
+•Compilation Error Rate — tỷ lệ phần trăm sinh thất bại ở bước biên dịch;
+•Out of Time Error Rate — tỷ lệ phần trăm phương thức thất bại vượt qua một hoặc nhiều test trong 15 giây.
+•Runtime Error rate — tỷ lệ phần trăm sinh thất bại trong runtime. Ngoài các lỗi runtime thông thường, chúng bao gồm các phương thức có TODO() trong body.
+
+Tỷ lệ vượt qua và lỗi như một thước đo. Việc sử dụng điển hình của benchmark dựa trên test liên quan đến báo cáo chỉ tỷ lệ vượt qua như một thước đo thành công của mô hình. Tỷ lệ vượt qua là một proxy hợp lý để đánh giá sinh mã từ mô tả trên các nhiệm vụ đơn giản. Ngoài tỷ lệ vượt qua, chúng tôi đề xuất sử dụng tỷ lệ lỗi cú pháp như một metric bổ sung theo dõi cách mô hình hiểu Kotlin. Tỷ lệ lỗi cú pháp là tổng của tỷ lệ lỗi runtime và tỷ lệ lỗi biên dịch. Cùng với tỷ lệ vượt qua, metric này giúp phân biệt giữa kiến thức ngôn ngữ của mô hình và mức độ hiểu biết nhiệm vụ của nó. Ở mức độ chi tiết hơn, người ta có thể cải thiện hiểu biết về hiệu suất mô hình bằng cách kiểm tra các lỗi được tạo bởi mã. Vì kích thước của benchmark HumanEval cho phép người ta xem qua đầu ra mô hình từng cái một, chúng tôi tin rằng kiểm tra thủ công có thể giúp tìm ra điểm yếu của mô hình. Phương pháp này cũng cho phép chúng tôi tìm ra các vấn đề với benchmark HumanEval gốc.
+
+C. Thiết lập đánh giá cho hoàn thành mã
+
+Ngoài đánh giá sinh mã, chúng tôi cũng cung cấp đánh giá hoàn thành mã dựa trên một tập holdout nhỏ được trích xuất từ KStack, bao gồm 630
+
+--- TRANG 5 ---
+ví dụ. Để chấm điểm hoàn thành, chúng tôi sử dụng tất cả các mô hình trong thiết lập FIM nếu có thể và sau đó tính toán tỷ lệ phần trăm khớp chính xác cho dòng đầu tiên được sinh.
+
+Chúng tôi tin rằng các metric hoàn thành giúp chúng tôi không chỉ đo hiệu suất của mô hình cho nhiệm vụ hoàn thành, mà còn kiểm soát mô hình cho overfitting trên các nhiệm vụ HumanEval. Vì các mô hình cơ sở chúng tôi sử dụng có một số khả năng Kotlin từ pre-training, tinh chỉnh có thể giảm hiệu suất của chúng trên các nhiệm vụ hoàn thành mã.
+
+V. HỌC KOTLIN
+
+Để giới thiệu bộ dữ liệu của chúng tôi, chúng tôi đào tạo một số mô hình sử dụng các thiết lập khác nhau. Phần dưới đây trình bày framework thực nghiệm và kết quả chính.
+
+A. Mô hình cơ sở
+
+Chúng tôi sử dụng Code Llama 7B [20], Deepseek-coder-6.7B [21] và Deepseek-coder-1.3B [22] làm mô hình cơ sở.
+
+Code Llama 7B [20] là một mô hình ngôn ngữ tự hồi quy sử dụng kiến trúc transformer được tối ưu hóa. Nó hỗ trợ sinh văn bản infilling, tinh chỉnh với kích thước ngữ cảnh lên đến 16K token, và hỗ trợ lên đến 100K token tại thời điểm suy luận.
+
+Mô hình cơ sở Deepseek-coder-6.7B, được thực hiện bởi Deepseek [4], là mô hình 6.7B tham số với Multi-Head Attention được đào tạo trên hai nghìn tỷ token văn bản ngôn ngữ tự nhiên bằng tiếng Anh và tiếng Trung. Nó cũng được pre-train trên tập hợp mã cấp dự án bằng cách sử dụng kích thước cửa sổ 16K token và một nhiệm vụ fill-in-the-blank bổ sung để hỗ trợ hoàn thành và infilling mã cấp dự án. Deepseek-coder-1.3B chia sẻ cùng kiến trúc và quy trình đào tạo, nhưng với ít tham số hơn.
+
+B. Bộ dữ liệu
+
+Như đã mô tả ở trên, chúng tôi sử dụng một số bộ dữ liệu của chúng tôi như một phần của thiết lập đào tạo.
+
+1) KStack: Để cải thiện bộ dữ liệu hơn nữa, chúng tôi phát triển một số kỹ thuật lọc. Trước tiên, chúng tôi bắt đầu với việc lọc các file mà chúng tôi coi là chất lượng thấp:
+•Chúng tôi lọc các file thuộc về repo ít phổ biến (tổng số sao và fork ít hơn 6).
+•Tiếp theo, chúng tôi lọc các file thuộc về repo có ít hơn năm file Kotlin.
+•Cuối cùng, chúng tôi loại bỏ các file có ít hơn 20 SLOC.
+
+Sau đó chúng tôi làm sạch các mục bộ dữ liệu còn lại bằng cách loại bỏ tất cả các mục không phải ASCII, loại bỏ tất cả các dòng package như package kotlinx.coroutines.channels, và loại bỏ một nửa số dòng import theo cách xác suất (dòng được loại bỏ với xác suất 0.5). Điều này được thực hiện vì chúng tôi phát hiện thực nghiệm rằng nhiều file Kotlin chứa nhiều dòng import. Khi người ta đào tạo mô hình trên chúng, mô hình có thể khóa trong việc sinh import sau import, khi được đưa phần đầu của file làm ngữ cảnh. Đối với thông tin package, nó đặc biệt cho mỗi dự án và, ngoài lĩnh vực điều chỉnh dự án, sẽ chỉ thêm nhiễu vào dữ liệu đào tạo.
+
+2) KStack-clean: Vì bộ dữ liệu này đã trình bày một phiên bản được tiền xử lý cao của KStack, không có tiền xử lý thêm nào được thực hiện. Tuy nhiên, chúng tôi nghiên cứu phiên bản thay thế của lọc sử dụng OpenAI GPT-3.5 làm bộ phân loại cơ sở.
+
+3) KExercises: Do tính chất tổng hợp của bộ dữ liệu này, kích thước của nó là một siêu tham số và chúng tôi chạy nhiều thí nghiệm với các bộ dữ liệu có kích thước khác nhau, dẫn đến kích thước tối ưu là mười lăm nghìn ví dụ.
+
+C. Thiết lập đào tạo
+
+Đối với tất cả các trường hợp, chúng tôi thực hiện tất cả tinh chỉnh trên GPU NVidia A100 với độ chính xác bf16, sử dụng tối ưu hóa AdamW [23]. Chúng tôi thực hiện validation trên phần holdout nhỏ của KStack bao gồm 630 ví dụ được chọn thủ công.
+
+Tất cả các siêu tham số khác được thay đổi giữa các thiết lập khác nhau. Để có dữ liệu chính xác về tốc độ học, kích thước batch, và lịch trình học, vui lòng tham khảo model card tương ứng trên Hugging Face.
+
+Ngoài ra, chúng tôi sử dụng một số kỹ thuật để ổn định quá trình đào tạo:
+•Z-loss: chúng tôi sử dụng z-loss [16] để kiểm soát khả năng phân kỳ của đầu ra logit. Gọi yj là các logit đầu ra, vậy xác suất lớp được tính như pj=yj/Z, trong đó Z=∑exp(yj). Sự bất ổn có thể xảy ra gần cuối đào tạo, khi các logit trở nên rất âm [24]. Thuật ngữ z-loss phụ trợ được đưa ra bởi log²Z, và nó buộc logZ phải gần bằng không.
+•Weight decay: tương tự như z-loss, weight decay có thể được sử dụng để kiểm soát phân kỳ logit đầu ra, vì nó ngăn trọng số tăng quá lớn. Vì chúng tôi sử dụng tối ưu hóa weight decay PyTorch tiêu chuẩn, chúng tôi đặt hệ số weight decay khá lớn, vì nó sau đó nhân với tốc độ học tối đa tương đối nhỏ [24].
+•Dynamic β: theo báo cáo kỹ thuật Palm [16], chúng tôi thử thay đổi tham số học β₂ AdamW như β₂ = 1 − k^(-0.8), trong đó k là số bước. Trong khi Chowdhery và cộng sự [16] khẳng định kỹ thuật này giúp ích vì các token embedding hiếm có thể có các moment thứ hai được ước tính kém qua các cửa sổ ngắn hơn, trong thiết lập của chúng tôi nó thất bại trong việc cải thiện kết quả tinh chỉnh mô hình.
+•Giảm ε cho AdamW: chúng tôi làm theo đề xuất của Wortsman và cộng sự [24] để giảm tham số ε của AdamW, vì giá trị mặc định của ε = 10^(-8) có thể làm giảm các cập nhật mô hình cho các mô hình lớn hơn. Chúng tôi thấy rằng trong trường hợp của chúng tôi, thiết lập ε = 10^(-16) cải thiện nhẹ cả loss đào tạo và điểm số benchmark downstream mà không tốn thêm chi phí.
+•Gradient norm clipping: để hạn chế tác động của các outlier dữ liệu đến quá trình đào tạo, chúng tôi sử dụng gradient norm clipping để đào tạo trên bộ dữ liệu KStack. Chúng tôi chọn gradient clipping sao cho rất ít gradient được clipped, tránh việc giảm hiệu quả tốc độ học gây ra bởi gradient clipping tích cực.
+•Warm-up: Chúng tôi sử dụng giai đoạn warm-up dài hơn để giảm độ nhạy cảm tốc độ học của mô hình. Trong khi sử dụng warm-up để đào tạo các mô hình Transformer với tối ưu hóa thích ứng
+
+--- TRANG 6 ---
+là tiêu chuẩn de-facto bây giờ, sử dụng độ dài giai đoạn warm-up lên đến 10% của bộ dữ liệu đào tạo cho phép đào tạo các mô hình ở tốc độ học cao hơn mà không gặp phải bất ổn [24]. Chúng tôi thấy kỹ thuật này đặc biệt hữu ích cho các bộ dữ liệu nhỏ hơn mà chúng tôi sử dụng.
+
+D. Phát hiện
+
+Kết quả cho tất cả các mô hình có thể tìm thấy trong Bảng II. Chúng tôi quan sát thấy cải thiện qua tất cả các phương pháp mà chúng tôi sử dụng. Chúng tôi đạt được sự tăng cường đáng kể nhất với sự kết hợp của Deepseek-coder-6.7B và tinh chỉnh trên bộ dữ liệu KExercises, dẫn đến tỷ lệ vượt qua 55.28%. Tinh chỉnh trên hướng dẫn cho thấy kết quả tuyệt vời trên hai mô hình cơ sở khác cũng vậy. Đồng thời, tinh chỉnh trên bộ dữ liệu đầy đủ cho thấy kết quả yếu, tăng tỷ lệ vượt qua cho CodeLLama chỉ 3 điểm phần trăm. Phiên bản sạch của KStack cho thấy kết quả tốt hơn nhiều trong quá trình tinh chỉnh, nhưng tỷ lệ vượt qua vẫn thấp hơn so với cái mà chúng tôi đạt được với bộ dữ liệu KExercises. Chúng tôi đề xuất rằng điều này có thể được gây ra bởi sự không khớp giữa bộ dữ liệu tinh chỉnh và đánh giá — bộ dữ liệu KExercises cho phép mô hình học theo hướng dẫn thay vì học Kotlin. Điều này được hỗ trợ bởi dữ liệu tỷ lệ hoàn thành, nơi các mô hình được tinh chỉnh trên bộ dữ liệu KExercises bị vượt qua bởi các mô hình khác mà chúng tôi tinh chỉnh. Tuy nhiên, dữ liệu tỷ lệ lỗi cú pháp cho mô hình được tinh chỉnh KExercises cho thấy rằng tinh chỉnh đã cải thiện hiểu biết Kotlin, và chỉ khả năng hoàn thành có thể bị ảnh hưởng. Do đó, trong khi chúng tôi đạt được cải thiện điểm số đáng kể nhất với bộ dữ liệu KExercises, chúng tôi tin rằng các bộ dữ liệu khác vẫn có giá trị để học các nhiệm vụ khác, như hoàn thành hoặc sinh documentation.
+
+Ngoài ra, chúng tôi thực hiện một thí nghiệm với các bộ phân loại cơ sở khác nhau cho quy trình làm sạch dữ liệu được sử dụng trong KStack-clean. Chúng tôi thấy rằng cùng bộ phân loại được xây dựng với OpenAI GPT-3.5 cung cấp chất lượng thấp hơn đáng kể của xếp hạng mẫu so với Mistral. Điều này có thể thấy rõ từ sự khác biệt trong động lực tỷ lệ vượt qua được trình bày trong Hình 3. Chúng tôi quy cho điều này cho nhiễu trong các xác suất log của phân phối hoàn thành trong OpenAI API. Chúng tôi quan sát thấy biến động cao của các xác suất log ngay cả khi truy vấn hoàn toàn giống nhau. Nhiễu này có thể được thêm một cách nhân tạo vào các phản hồi như một sự bảo vệ chống lại chưng cất.
+
+VI. THẢO LUẬN
+
+A. Học ngôn ngữ
+
+1) Mô hình cơ sở: Chúng tôi sử dụng CodeLlama-7B và Deepseek-coder-6.7B làm mô hình cơ sở để tinh chỉnh. Trong khi những mô hình này phù hợp hơn cho sinh mã trong Python (xem Bảng II), chúng vẫn sở hữu khả năng Kotlin không tầm thường và rõ ràng được đào tạo trên một lượng mã Kotlin nào đó. Do đó, đào tạo những mô hình này trong một thiết lập ngẫu nhiên nào đó trên bộ dữ liệu mã Kotlin chất lượng thấp có thể làm xấu hiệu suất của chúng. Tương ứng, các cải thiện trong các mô hình được tinh chỉnh gây ra bởi lựa chọn bộ dữ liệu không phải là trái cây treo thấp của việc làm cho mô hình học ít nhất một cái gì đó. Chúng tôi coi những cải thiện này là việc sử dụng một số
+
+0 200 400 600 800 1000 1200 1400
+Bước tối ưu hóa 26 28 30 32 34 36 38 40 Tỷ lệ vượt qua OpenAI GPT-3.5-based classifier
+Mistral-based classifier
+
+Hình 3. Tỷ lệ vượt qua trên HumanEval cho Kotlin cho các chiến lược lọc khác nhau của bộ dữ liệu KStack-clean, tinh chỉnh mô hình CodeLlama-7B.
+
+khả năng mô hình chưa được sử dụng với chi phí một đến 24 giờ GPU NVidia A100, tùy thuộc vào lựa chọn mô hình và bộ dữ liệu.
+
+2) Theo dõi hiệu suất mô hình: Để đánh giá các thay đổi trong hiệu suất mô hình, chúng tôi tập trung vào tỷ lệ vượt qua, và sử dụng tỷ lệ lỗi cú pháp và hoàn thành mã như các metric phụ trợ. Lý do cho điều này là hai mặt.
+
+Đầu tiên, tỷ lệ vượt qua là thước đo tiêu chuẩn cho benchmarking dựa trên test. Ngoài các lợi ích mà chúng tôi mô tả trong Phần IV, sử dụng tỷ lệ vượt qua như một metric chính cho phép so sánh đơn giản táo với táo của tác động bộ dữ liệu với các kỹ thuật cải thiện mô hình khác được sử dụng bởi các nhà nghiên cứu và thực hành. Thứ hai, benchmark HumanEval là benchmark được thiết lập tốt, phổ biến, mà chúng tôi đã làm sạch và cải thiện thêm. Tuy nhiên, benchmark hoàn thành của chúng tôi không được xác minh với cùng mức độ nghiêm ngặt.
+
+Tuy nhiên, chúng tôi tin mạnh rằng chỉ sử dụng tỷ lệ vượt qua để đánh giá mô hình là không đủ để đo hiệu suất của nó. Ví dụ, người ta có thể vô tình overfit mô hình trên bộ dữ liệu test benchmark [25] (điều này càng có thể xảy ra khi các benchmark trở nên công khai), làm tăng một cách nhân tạo tỷ lệ vượt qua. Trong trường hợp như vậy, bộ dữ liệu hoàn thành sẽ cho phép kiểm tra xem có overfit như vậy không, vì khả năng hoàn thành mã của mô hình có thể bị ảnh hưởng mạnh. Tỷ lệ lỗi cú pháp, mặt khác, cho phép ước tính khả năng ngôn ngữ của mô hình, và do đó bổ sung thông tin điểm số hoàn thành mã.
+
+B. Tác động của bộ dữ liệu đến hiệu suất mô hình
+
+1) KStack: Mặc dù KStack là bộ dữ liệu lớn nhất mà chúng tôi sử dụng, tinh chỉnh các mô hình trên nó chỉ cung cấp cải thiện khiêm tốn trong tỷ lệ vượt qua, cũng như thay đổi không kết luận trong tỷ lệ hoàn thành và tỷ lệ lỗi cú pháp. Chúng tôi phỏng đoán rằng những cải thiện ít này là do chất lượng tương đối thấp của bộ dữ liệu, không được sửa đổi bởi lọc. Giả thuyết này được hỗ trợ bởi cải thiện lớn hơn trên KStack-clean (mà chúng tôi thảo luận dưới đây).
+
+2) KStack-clean: Mặc dù bộ dữ liệu KStack-clean nhỏ hơn khoảng 100 lần so với bộ dữ liệu KStack đầy đủ, chúng tôi quan sát
+
+--- TRANG 7 ---
+Mô hình   Sửa đổi   Tỷ lệ vượt qua   Tỷ lệ thất bại test   Tỷ lệ lỗi biên dịch   Tỷ lệ lỗi runtime   Tỷ lệ hết thời gian   Tỷ lệ lỗi cú pháp   Hoàn thành (Khớp chính xác, dòng đầu tiên)
+CodeLlama-7B   Base   26.09   50.31   19.25   3.73   0.62   22.98   0.388
+    KStack   29.19   47.2   18.63   4.35   0.62   22.98   0.396
+    KStack-clean   37.89   42.86   15.53   3.11   0.62   18.64   0.403
+    Kexer   42.24   37.89   17.39   1.86   0.62   19.25   0.344
+Deepseek-7B   Base   40.99   37.27   11.8   9.32   0.62   21.12   0.403
+    Kexer   55.28   29.19   11.18   4.35   0   15.53   0.411
+Deepseek-coder-1.3B   Base   26.71   54.04   14.91   4.35   0   19.26   0.403
+    KStack   27.95   51.55   16.77   3.11   0.62   19.88   0.404
+    Kexer   36.65   44.72   16.15   2.48   0   18.63   0.388
+
+BẢNG II
+KẾT QUẢ TINH CHỈNH
+
+cải thiện tỷ lệ vượt qua đáng kể hơn 8 điểm phần trăm cho các mô hình được tinh chỉnh trên nó. Cải thiện hiệu suất này được đi kèm bởi sự giảm đáng kể trong tỷ lệ lỗi cú pháp (15%, hoặc hơn 3 điểm), và cải thiện nhỏ hơn của điểm số hoàn thành mã. Thành công này chứng minh tính khả thi của việc sử dụng bộ phân loại để tìm mẫu phụ tốt nhất của bộ dữ liệu cho lĩnh vực áp dụng rộng rãi như thuật toán, và tổng thể cho thấy cải thiện mô hình trong hiểu biết Kotlin, hoàn thành và sinh mã. Tuy nhiên, sẽ thú vị khi khám phá thêm khả năng của phương pháp dựa trên bộ phân loại. Ví dụ, thú vị là lựa chọn prompt ảnh hưởng đến hiệu suất mô hình như thế nào. Chúng tôi giả thuyết rằng lựa chọn prompt khác nhau có thể tạo ra các bộ dữ liệu phù hợp hơn để cải thiện các lĩnh vực cụ thể của hiệu suất mô hình (ví dụ, kiến thức về các package khác nhau, khả năng sinh test chất lượng cao, v.v.).
+
+3) KExercises: Kết quả trên bộ dữ liệu KExercises cho thấy sự gia tăng tỷ lệ vượt qua lớn, từ 35% đến 60% (hoặc mười đến 16 điểm) trên các mô hình chúng tôi tinh chỉnh. Cải thiện to lớn này đi kèm với cải thiện trong tỷ lệ lỗi cú pháp tương tự như KStack-clean. Tuy nhiên, các thay đổi trong điểm số hoàn thành không kết luận với cải thiện cho Deepseek-7B và xấu đi cho các mô hình khác. Điều này có thể biểu thị rằng tinh chỉnh trên KExercises phù hợp với mô hình cho sinh mã từ prompt, và sẽ thú vị khi thực hiện nghiên cứu ablation toàn diện để tìm ra các hạn chế của KExercises và các bộ dữ liệu khác thuộc loại này. Kinh nghiệm giai thoại của chúng tôi với các prompt khác nhau (như cái mà chúng tôi giới thiệu trên trang HuggingFace)⁵ cho thấy rằng tinh chỉnh tạo ra một mô hình hiểu các loại prompt khác nhau, ví dụ, docstring thô.
+
+VII. CÔNG VIỆC TƯƠNG LAI
+
+Công việc này chỉ bao quát những điều cơ bản thiết yếu cho pipeline học Kotlin, bao gồm dữ liệu và đánh giá. Tuy nhiên, chúng tôi tin rằng hệ sinh thái Kotlin có thể cung cấp nhiều hơn cho cộng đồng mô hình hóa ngôn ngữ — dữ liệu bổ sung, công cụ và benchmark.
+
+Chúng tôi thấy các hướng sau cho nghiên cứu tương lai:
+•Học từ công cụ. Một số bài báo chứng minh tiềm năng cải thiện các mô hình sử dụng phản hồi từ các công cụ khác nhau, như trình biên dịch [26]. Hệ sinh thái Kotlin cung cấp
+⁵CodeLlama-7B-Kexer: https://huggingface.co/JetBrains/CodeLlama-7B-Kexer
+
+một loạt công cụ rộng lớn có thể được sử dụng trong quá trình học, bao gồm trình biên dịch, linter và trình dịch. Ngoài ra, các IDE hiện đại sở hữu một bộ kiểm tra mạnh mẽ để kiểm tra tính đúng đắn của mã, có thể được tích hợp trực tiếp vào quá trình học.
+•Dữ liệu tổng hợp. Trong bài báo này, chúng tôi trình bày KStack, là đại diện toàn diện của mã Kotlin mã nguồn mở. Mặc dù kế hoạch của chúng tôi để giữ nó cập nhật, chúng tôi vẫn sẽ bỏ lỡ nhiều trường hợp sử dụng Kotlin do tính chất hướng sản xuất của nó — chúng tôi tin rằng một phần đáng kể của mã Kotlin được lưu trữ trong các repository riêng tư. Như một giải pháp thay thế, chúng tôi muốn tập trung vào sinh mã tổng hợp và chất lượng cao hơn để bao phủ không chỉ các bài tập mã hóa mà còn các nhiệm vụ sản xuất thực tế hơn.
+•Nhiều benchmark hơn. Trong khi trong công việc này chúng tôi đề xuất benchmark thiết yếu nhất — HumanEval, nó khó có thể đại diện cho các nhiệm vụ Kotlin thực tế. Trong những năm gần đây, đã có một thế hệ mới của benchmark dựa trên vấn đề như SWE-Bench [27]. Sản xuất một bộ dữ liệu tương tự bao gồm các dự án và vấn đề Kotlin thực tế sẽ mang lại lợi ích lớn cho việc đánh giá liệu thế hệ mô hình hiện tại có thể hữu ích trong quá trình phát triển hàng ngày hay không.
+
+Chúng tôi hy vọng rằng việc sản xuất nhiều artefact hơn cho việc học Kotlin sẽ không chỉ giúp cải thiện chất lượng sinh mã Kotlin, mà còn cung cấp cho các nhà nghiên cứu nhiều công cụ và ý tưởng hơn cho các ngôn ngữ khác.
+
+VIII. KẾT LUẬN
+
+Trong công việc này, chúng tôi nhằm đạt được hai mục tiêu chính: đầu tiên, sản xuất một tập hợp các artefact cho việc phát triển tiếp theo của các mô hình ngôn ngữ Kotlin, và thứ hai, trừu tượng hóa một tập hợp các kỹ thuật hỗ trợ phát triển các mô hình ngôn ngữ cho các ngôn ngữ ít tài nguyên. Chúng tôi tin rằng phương pháp mà chúng tôi sử dụng trong việc phát triển Kotlin ML Pack có thể được nhân bản cho bất kỳ ngôn ngữ lập trình nào khác, từ đó tăng cường các mô hình ngôn ngữ mã nguồn mở hiện tại cho chúng.
+
+--- TRANG 8 ---
+TÀI LIỆU THAM KHẢO
+[1] "Python exercises," URL: https://huggingface.co/datasets/jinaai/code_exercises, 2023.
+[2] M. Chen, J. Tworek, H. Jun, Q. Yuan, H. P. de Oliveira Pinto, J. Kaplan, H. Edwards, Y. Burda, N. Joseph, G. Brockman, A. Ray, R. Puri, G. Krueger, M. Petrov, H. Khlaaf, G. Sastry, P. Mishkin, B. Chan, S. Gray, N. Ryder, M. Pavlov, A. Power, L. Kaiser, M. Bavarian, C. Winter, P. Tillet, F. P. Such, D. Cummings, M. Plappert, F. Chantzis, E. Barnes, A. Herbert-Voss, W. H. Guss, A. Nichol, A. Paino, N. Tezak, J. Tang, I. Babuschkin, S. Balaji, S. Jain, W. Saunders, C. Hesse, A. N. Carr, J. Leike, J. Achiam, V. Misra, E. Morikawa, A. Radford, M. Knight, M. Brundage, M. Murati, K. Mayer, P. Welinder, B. McGrew, D. Amodei, S. McCandlish, I. Sutskever, và W. Zaremba, "Evaluating large language models trained on code," 2021.
+[3] B. Roziere, J. Gehring, F. Gloeckle, S. Sootla, I. Gat, X. E. Tan, Y. Adi, J. Liu, T. Remez, J. Rapin et al., "Code llama: Open foundation models for code," arXiv preprint arXiv:2308.12950, 2023.
+[4] D. Guo, Q. Zhu, D. Yang, Z. Xie, K. Dong, W. Zhang, G. Chen, X. Bi, Y. Wu, Y. Li et al., "Deepseek-coder: When the large language model meets programming–the rise of code intelligence," arXiv preprint arXiv:2401.14196, 2024.
+[5] D. Kocetkov, R. Li, L. Ben Allal, J. Li, C. Mou, C. Muñoz Ferrandis, Y. Jernite, M. Mitchell, S. Hughes, T. Wolf, D. Bahdanau, L. von Werra, và H. de Vries, "The stack: 3 tb of permissively licensed source code," Preprint, 2022.
+[6] D. Hendrycks, S. Basart, S. Kadavath, M. Mazeika, A. Arora, E. Guo, C. Burns, S. Puranik, H. He, D. Song, và J. Steinhardt, "Measuring coding challenge competence with apps," NeurIPS, 2021.
+[7] Y. Lai, C. Li, Y. Wang, T. Zhang, R. Zhong, L. Zettlemoyer, W.-t. Yih, D. Fried, S. Wang, và T. Yu, "Ds-1000: A natural and reliable benchmark for data science code generation," in International Conference on Machine Learning. PMLR, 2023, pp. 18 319–18 345.
+[8] "go-enry," URL: https://github.com/go-enry/go-enry, 2024.
+[9] "go-license-detector," URL: https://github.com/go-enry/go-license-detector, 2021.
+[10] A. Lozhkov, R. Li, L. B. Allal, F. Cassano, J. Lamy-Poirier, N. Tazi, A. Tang, D. Pykhtar, J. Liu, Y. Wei et al., "Starcoder 2 and the stack v2: The next generation," arXiv preprint arXiv:2402.19173, 2024.
+[11] S. Gunasekar, Y. Zhang, J. Aneja, C. C. T. Mendes, A. D. Giorno, S. Gopi, M. Javaheripi, P. Kauffmann, G. de Rosa, O. Saarikivi, A. Salim, S. Shah, H. S. Behl, X. Wang, S. Bubeck, R. Eldan, A. T. Kalai, Y. T. Lee, và Y. Li, "Textbooks are all you need," 2023.
+[12] "Openai. introducing chatgpt," https://openai.com/index/chatgpt/, accessed: 2024-04-01.
+[13] Y. Wang, H. Le, A. D. Gotmare, N. D. Bui, J. Li, và S. C. H. Hoi, "Codet5+: Open code large language models for code understanding and generation," arXiv preprint, 2023.
+[14] S. Chaudhary, "Code alpaca: An instruction-following llama model for code generation," https://github.com/sahil280114/codealpaca, 2023.
+[15] N. Muennighoff, Q. Liu, A. Zebaze, Q. Zheng, B. Hui, T. Y. Zhuo, S. Singh, X. Tang, L. von Werra, và S. Longpre, "Octopack: Instruction tuning code large language models," arXiv preprint arXiv:2308.07124, 2023.
+[16] A. Chowdhery, S. Narang, J. Devlin, M. Bosma, G. Mishra, A. Roberts, P. Barham, H. W. Chung, C. Sutton, S. Gehrmann et al., "Palm: Scaling language modeling with pathways," Journal of Machine Learning Research, vol. 24, no. 240, pp. 1–113, 2023.
+[17] J. Wei, X. Wang, D. Schuurmans, M. Bosma, F. Xia, E. Chi, Q. V. Le, D. Zhou et al., "Chain-of-thought prompting elicits reasoning in large language models," Advances in neural information processing systems, vol. 35, pp. 24 824–24 837, 2022.
+[18] R. Li, L. B. Allal, Y. Zi, N. Muennighoff, D. Kocetkov, C. Mou, M. Marone, C. Akiki, J. Li, J. Chim et al., "Starcoder: may the source be with you!" arXiv preprint arXiv:2305.06161, 2023.
+[19] B. Athiwaratkun, S. K. Gouda, Z. Wang, X. Li, Y. Tian, M. Tan, W. U. Ahmad, S. Wang, Q. Sun, M. Shang, S. K. Gonugondla, H. Ding, V. Kumar, N. Fulton, A. Farahani, S. Jain, R. Giaquinto, H. Qian, M. K. Ramanathan, R. Nallapati, B. Ray, P. Bhatia, S. Sengupta, D. Roth, và B. Xiang, "Multi-lingual evaluation of code generation models," 2022. [Online]. Available: https://arxiv.org/abs/2210.14868
+[20] "Code llama model card," URL: https://github.com/meta-llama/codellama/blob/main/MODEL_CARD.md, 2024.
+[21] "Deepseek-coder-6.7b model card," URL: https://huggingface.co/deepseek-ai/deepseek-coder-6.7b-base, 2024.
+[22] "Deepseek-coder-1.3b model card," URL: https://huggingface.co/deepseek-ai/deepseek-coder-1.3b-base, 2024.
+[23] I. Loshchilov và F. Hutter, "Decoupled weight decay regularization," in International Conference on Learning Representations, 2017. [Online]. Available: https://api.semanticscholar.org/CorpusID:53592270
+[24] M. Wortsman, P. J. Liu, L. Xiao, K. Everett, A. Alemi, B. Adlam, J. D. Co-Reyes, I. Gur, A. Kumar, R. Novak et al., "Small-scale proxies for large-scale transformer training instabilities," arXiv preprint arXiv:2309.14322, 2023.
+[25] R. Schaeffer, "Pretraining on the test set is all you need," arXiv preprint arXiv:2309.08632, 2023.
+[26] D. Zan, A. Yu, W. Liu, D. Chen, B. Shen, W. Li, Y. Yao, Y. Gong, X. Chen, B. Guan et al., "Codes: Natural language to code repository via multi-layer sketch," arXiv preprint arXiv:2403.16443, 2024.
+[27] C. E. Jimenez, J. Yang, A. Wettig, S. Yao, K. Pei, O. Press, và K. R. Narasimhan, "SWE-bench: Can language models resolve real-world github issues?" in The Twelfth International Conference on Learning Representations, 2024. [Online]. Available: https://openreview.net/forum?id=VTF8yNQM66

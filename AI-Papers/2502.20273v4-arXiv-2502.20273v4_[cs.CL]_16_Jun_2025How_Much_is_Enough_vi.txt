@@ -1,0 +1,401 @@
+# 2502.20273v4.pdf
+# Được chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2502.20273v4.pdf
+# Kích thước file: 10961386 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+arXiv:2502.20273v4  [cs.CL]  16 Jun 2025 Bao Nhiêu Là Đủ?
+Hiệu Quả Giảm Dần của Dữ Liệu Huấn Luyện Tokenization
+Varshini Reddy1Craig W. Schmidt1Yuval Pinter2Chris Tanner1 3
+
+Tóm tắt
+Tokenization, một bước đầu tiên quan trọng trong xử lý ngôn ngữ tự nhiên, được điều chỉnh bởi một số tham số quan trọng, chẳng hạn như thuật toán tokenization, kích thước từ vựng, chiến lược pre-tokenization, chiến lược suy luận, và corpus dữ liệu huấn luyện. Bài báo này điều tra tác động của một siêu tham số thường bị bỏ qua, đó là kích thước dữ liệu huấn luyện tokenizer. Chúng tôi huấn luyện các tokenizer BPE, UnigramLM, và WordPiece trên nhiều kích thước từ vựng khác nhau sử dụng dữ liệu huấn luyện tiếng Anh từ 1GB đến 900GB. Các phát hiện của chúng tôi cho thấy hiệu quả giảm dần khi kích thước dữ liệu huấn luyện tăng vượt quá khoảng 150GB, gợi ý một giới hạn thực tế cho việc cải thiện chất lượng tokenization có thể đạt được thông qua dữ liệu bổ sung. Chúng tôi phân tích hiện tượng này và cho rằng hiệu ứng bão hòa xuất phát từ các ràng buộc được đưa ra bởi giai đoạn pre-tokenization. Sau đó, chúng tôi chứng minh mức độ mà những phát hiện này có thể tổng quát hóa bằng cách thực nghiệm trên dữ liệu tiếng Nga, một ngôn ngữ có khoảng cách về mặt loại hình học với tiếng Anh. Đối với văn bản tiếng Nga, chúng tôi quan sát thấy hiệu quả giảm dần sau khi huấn luyện một tokenizer từ 200GB dữ liệu, tức là khoảng 33% nhiều hơn so với khi huấn luyện trên tiếng Anh. Những kết quả này cung cấp những hiểu biết có giá trị để tối ưu hóa quá trình tokenization bằng cách giảm khối lượng tính toán cần thiết cho việc huấn luyện trên các corpus lớn và gợi ý những hướng nghiên cứu đầy hứa hẹn trong tương lai về các thuật toán tokenization.
+
+1. Giới thiệu
+Tokenizer là một thành phần nền tảng của bất kỳ pipeline NLP nào, vì chúng chịu trách nhiệm chuyển đổi văn bản thô thành các chuỗi token được lập chỉ mục hữu ích. Các nhà thực hành thường mặc định sử dụng các thuật toán tokenization tiêu chuẩn như Byte-Pair Encoding (BPE; Sennrich et al., 2016), UnigramLM (Kudo, 2018) hoặc WordPiece (Schuster & Nakajima, 2012; Devlin et al., 2019), được lấy trực tiếp từ các thư viện như Hugging Face.1 Quá trình huấn luyện của một tokenizer bao gồm việc sử dụng một corpus dữ liệu huấn luyện và một thuật toán tokenization cụ thể để tạo ra một từ vựng có kích thước cố định, thường chứa từ 32.000 đến 128.000 token trong trường hợp đơn ngôn ngữ.
+
+Trong khi nghiên cứu rộng rãi khám phá ảnh hưởng của dữ liệu huấn luyện của một mô hình đối với hiệu suất LLM (Pearce et al., 2024; Zhang et al., 2024; Hoffmann et al., 2022; Kaplan et al., 2020), tác động của dữ liệu huấn luyện tokenizer vẫn còn tương đối ít được khám phá. Các nghiên cứu gần đây đã bắt đầu giải quyết tầm quan trọng của kích thước từ vựng của tokenizer và các miền dữ liệu huấn luyện (Dagan et al., 2024), liên kết với việc khám phá hiện có về các khía cạnh khác của tokenization, bao gồm ảnh hưởng của các thuật toán tokenization khác nhau (Schmidt et al., 2024; Ali et al., 2024; Mielke et al., 2021; Rai & Borah, 2021), tối ưu hóa kích thước từ vựng (Gowda & May, 2020), và mối tương tác giữa loại dữ liệu và chiến lược tokenization, đặc biệt trong các ứng dụng đa ngôn ngữ (Limisiewicz et al., 2023; Rust et al., 2021). Tuy nhiên, theo hiểu biết của chúng tôi, chúng tôi là những người đầu tiên điều tra cần bao nhiêu dữ liệu huấn luyện cho một tokenizer, và điều này ảnh hưởng đến hiệu suất như thế nào.
+
+Chúng tôi giải quyết vấn đề này bằng cách kiểm tra tác động của việc mở rộng dữ liệu huấn luyện tokenizer với kích thước từ 1GB đến 900GB. Chúng tôi huấn luyện các tokenizer BPE, UnigramLM, và WordPiece tiếng Anh với kích thước từ vựng 40.960, 64.000, 128.000, và 256.000. Đối với mỗi biến thể, chúng tôi kiểm tra tỷ lệ token từ vựng được chia sẻ với trường hợp tham chiếu 900GB, và sử dụng các chỉ số nội tại để đo lường chất lượng tokenization trên một corpus đánh giá được giữ lại 150GB. Các phát hiện của chúng tôi chỉ ra rằng việc tăng lượng dữ liệu huấn luyện tokenizer dẫn đến hiệu quả giảm dần trong sự đánh đổi tính toán-so-với-lợi ích, gợi ý một điểm bão hòa ở khoảng 150GB dữ liệu huấn luyện, vượt quá đó thì dữ liệu thêm vào cung cấp ít hoặc không có cải thiện nào trong chất lượng tokenization. Sau đó, chúng tôi kiểm tra tỷ lệ các đoạn pre-tokenization khớp chính xác với một token duy nhất trong từ vựng tokenizer, và đề xuất rằng tỷ lệ rất cao này là một lời giải thích có thể cho những hiệu quả giảm dần này.
+
+1https://github.com/huggingface/tokenizers
+1Kensho Technologies, Cambridge, MA2Ben-Gurion University of the Negev, Beer Sheva, Israel3Massachusetts Institute of Technology, Cambridge, MA. Liên hệ: Varshini Reddy <varshini.bogolu@kensho.com >.
+
+Kỷ yếu Hội nghị Quốc tế lần thứ 42 về Học máy, Vancouver, Canada. PMLR 267, 2025. Bản quyền 2025 thuộc về tác giả.
+
+--- TRANG 2 ---
+Bao Nhiêu Là Đủ?
+
+Tiếp theo các thí nghiệm tiếng Anh, chúng tôi chuyển sang tiếng Nga như một trường hợp thử nghiệm thứ hai để xem liệu các phát hiện chính có giữ vững trên một ngôn ngữ khác biệt với tiếng Anh cả về việc sử dụng bảng chữ cái khác lẫn các thuộc tính loại hình học khác nhau như tự do trong trật tự từ và sự phong phú về hình thái học. Chúng tôi tập trung vào từ vựng BPE kích thước 40.960 từ 30GB đến 600GB, xác định một điểm bão hòa muộn hơn so với tiếng Anh ở khoảng 200GB, gợi ý rằng sự phức tạp trong việc hình thành từ có thể ảnh hưởng đến sự khao khát dữ liệu của tokenizer, đòi hỏi chúng phải lấy nhiều mẫu hơn từ một từ vựng cấp từ lớn hơn và đặc biệt hơn.
+
+2. Ảnh hưởng của Kích thước Corpus Huấn luyện đối với Tokenization
+
+Corpus huấn luyện của chúng tôi cho các thí nghiệm chính bằng tiếng Anh kết hợp các bộ dữ liệu PILE đã được khử trùng (Gao et al., 2020) và RedPajama (Weber et al., 2024), tổng cộng 900GB văn bản.2 Ngoài ra, chúng tôi giữ lại một tập hợp đã khử trùng kích thước 150GB từ corpus PILE và RedPajama để đánh giá. Chúng tôi xây dựng từ vựng token sử dụng ba thuật toán: BPE,3 UnigramLM,4 và WordPiece.5 Đối với mỗi thuật toán, chúng tôi huấn luyện từ vựng với kích thước 40K, 64K, 128K, và 256K, trên các tập con lớn dần của corpus 900GB được xáo trộn ngẫu nhiên. Để đánh giá các ảnh hưởng của kích thước dữ liệu huấn luyện trên cả quy mô nhỏ và lớn, chúng tôi bắt đầu với các mức tăng tinh hơn là 1GB, 5GB, và 15GB, tiếp theo là tất cả các mức tăng 30GB giữa 30GB và corpus đầy đủ 900GB. Việc tăng kích thước là tích luỹ, có nghĩa là mỗi tập con corpus bao gồm đúng tất cả những tập con có kích thước nhỏ hơn. Tổng thể, chúng tôi đã huấn luyện 33 từ vựng riêng biệt cho mỗi trong số bốn kích thước từ vựng cho mỗi trong số ba thuật toán tokenizer, dẫn đến tổng cộng 396 từ vựng được huấn luyện cho tiếng Anh.
+
+Tiền xử lý Để tạo điều kiện cho việc huấn luyện từ vựng token trên các bộ dữ liệu có thể lên đến hàng trăm gigabyte, chúng tôi đã triển khai một bước pre-tokenization song song, sử dụng biểu thức chính quy để chia các tài liệu thành các đoạn. Sau đó, chúng tôi tập hợp số lượng của mỗi đoạn pre-tokenization trên tất cả các tài liệu. Corpus pre-tokenization này gồm các đoạn và số lượng đã phục vụ như đầu vào cho tất cả việc xây dựng từ vựng tiếp theo, giảm đáng kể chi phí tính toán của nó bằng cách tránh tokenization các đoạn phổ biến nhiều hơn một lần. Tất cả mã tokenizer đã được sửa đổi để hỗ trợ phương pháp tập hợp đoạn và đếm gia tăng này. Listing 1 hiển thị biểu thức chính quy được sử dụng bởi GPT-4 cho pre-tokenization, mà chúng tôi cũng đã sử dụng cho pre-tokenizer song song của chúng tôi. Một phân tích chi tiết của regex này, với lời giải thích cho mỗi nhánh, được trình bày trong Phụ lục A.
+
+2Vì công việc của chúng tôi là đầu tiên trong loại này trong không gian tokenization, không có baseline được xác định trước cho kích thước corpus để tham chiếu. Tuy nhiên, một nghiên cứu gần đây (Schmidt et al., 2024) đã sử dụng 200 tỷ token (khoảng 850GB của bộ dữ liệu PILE) để so sánh tokenizer, mà chúng tôi đã áp dụng làm giới hạn trên. Sự lựa chọn này phục vụ như một điểm tham chiếu thực tế hơn là một baseline tối ưu được giả định.
+3Chúng tôi sử dụng một tokenizer BPE tùy chỉnh dựa trên https://github.com/karpathy/minbpe làm điểm khởi đầu.
+4https://github.com/huggingface/tokenizers/blob/main/bindings/python/py src/tokenizers/implementations/sentencepiece unigram.py
+5https://github.com/huggingface/tokenizers/blob/main/bindings/python/py src/tokenizers/implementations/bert wordpiece.py
+
+r"(?i:[sdmt]|ll|ve|re)|[ˆ\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,3}|␣?[ˆ\s\p{L}\p{N}]++[\r\n]|\s[\r\n]|\s+(?!\S)|\s+"
+
+Listing 1: Biểu thức chính quy pre-tokenizer GPT-4.
+
+2.1. Phân tích từ vựng
+
+Hình 1 minh họa phần từ vựng được chia sẻ giữa các tokenizer được huấn luyện trên các lượng dữ liệu khác nhau và một tham chiếu của cùng thuật toán được huấn luyện trên corpus đầy đủ 900GB, cho kích thước từ vựng từ 40.960 đến 256.000. Phần này tăng một cách nhất quán với lượng dữ liệu huấn luyện. Đối với kích thước từ vựng 40.960, từ vựng được chia sẻ tăng từ khoảng 58% đến 97% cho BPE, từ 40% đến 97% cho UnigramLM, và từ 4% đến 92% cho WordPiece. Xu hướng tăng từ vựng được chia sẻ với các bộ dữ liệu huấn luyện lớn hơn được quan sát trên tất cả các kích thước từ vựng được thử nghiệm. Một so sánh chi tiết hơn được cung cấp trong Phụ lục B.
+
+Khi kích thước từ vựng tăng từ 40.960 đến 256.000, tỷ lệ từ vựng chung ổn định ở giá trị cao hơn cho các bộ dữ liệu lớn hơn. Các tokenizer BPE và UnigramLM thể hiện các mẫu hội tụ tương tự, với BPE duy trì nhất quán một tỷ lệ từ vựng chung cao hơn một chút trên tất cả các kích thước từ vựng. WordPiece thể hiện một sự tăng dần hơn trong từ vựng được chia sẻ, đặc biệt ở các kích thước từ vựng lớn hơn, cho thấy sự nhạy cảm lớn hơn với việc tăng khối lượng dữ liệu. Mặc dù những biến động ban đầu rõ rệt hơn ở kích thước từ vựng 256.000, tất cả tokenizer cuối cùng đều hội tụ khi dữ liệu mở rộng. Những kết quả này chung quy gợi ý rằng trong khi các bộ dữ liệu huấn luyện lớn hơn một cách nhất quán mang lại từ vựng tương tự hơn trên các thuật toán, BPE và UnigramLM thể hiện sự hội tụ nhanh hơn so với WordPiece, có lẽ do sự nhạy cảm được cung cấp trong tiêu chí lựa chọn hợp nhất của nó đối với các cặp token tương đối hiếm riêng lẻ nhưng đồng xuất hiện thường xuyên. Những cặp như vậy có khả năng thay đổi một cách thất thường khi dữ liệu được thêm vào, với nhiều đồng xuất hiện của những cặp như vậy nổi lên, tăng điểm khớp theo cặp của chúng với tốc độ không tỷ lệ thuận với tốc độ của dữ liệu tổng thể.
+
+Cuối cùng, chúng tôi nêu ra hàm ý thực tế từ các phát hiện của chúng tôi, rằng một phần đáng kể của từ vựng được học từ bộ dữ liệu đầy đủ 900GB có thể được có được hiệu quả từ các tokenizer được huấn luyện trên các phần nhỏ hơn đáng kể của dữ liệu. Tại thời điểm này, chúng tôi không thể xác định liệu những khác biệt còn lại trong từ vựng là những hiện tượng của việc underfitting từ vựng nhỏ hay overfitting từ vựng lớn. Hợp lý khi nói rằng, nếu từ vựng được dự định sử dụng trong các miền biến đổi hoặc không biết trước, nhỏ hơn có thể tốt hơn, trong khi một corpus lớn đáng tin cậy có thể có lợi cho các ứng dụng downstream được xác định rõ hơn. Do đó, chúng tôi chuyển sang đánh giá so sánh hành vi từ vựng token trong các cài đặt khác nhau và trên các corpus khác nhau. Trong §4, chúng tôi mở rộng thêm cuộc điều tra về tổng quát hóa này bằng cách lặp lại các phần chính của phân tích trên dữ liệu tiếng Nga.
+
+2.2. Phân tích nội tại
+
+Trong khi chúng ta đã thấy rằng có những khác biệt đáng kể trong từ vựng của các tokenizer được huấn luyện trên, ví dụ, 30GB so với 900GB dữ liệu, điều quan trọng là phải kiểm tra những khác biệt này để xác định liệu chúng có dẫn đến những cải thiện có ý nghĩa trong chất lượng tokenization hay không. Để đánh giá các tokenizer được huấn luyện mà không có chi phí tính toán bổ sung của việc huấn luyện hàng chục LLM đầy đủ, chúng tôi sử dụng các chỉ số tokenizer nội tại được thu thập bởi Uzan et al. (2024). Theo nghiên cứu trước đây (Schmidt et al., 2024; Zouhar et al., 2023), chúng tôi diễn giải những biện pháp nội tại độc lập được tóm tắt dưới đây như một đại diện cho hiệu suất giả định của một tokenizer trên các nhiệm vụ downstream.
+
+Sự căn chỉnh hình thái học: Đo lường mức độ phân đoạn từ của tokenizer khớp với các phân đoạn hình thái học tiêu chuẩn vàng. Điểm cao hơn cho thấy khả năng lớn hơn trong việc nắm bắt cấu trúc từ.
+
+Điểm nhận thức: Đánh giá sự tương quan giữa đầu ra của tokenizer và hiệu suất con người trong các nhiệm vụ quyết định từ vựng, đánh giá mức độ hành vi của tokenizer căn chỉnh với quá trình xử lý từ vựng của con người (Beinborn & Pinter, 2023). Cụ thể, bộ dữ liệu đánh giá này kiểm tra sự tương quan giữa mức độ mà các tokenizer phân đoạn các chuỗi ký tự và khả năng của con người nhận ra chúng như là từ.
+
+Hiệu quả Rényi: Khuyến khích mã hóa tối ưu bằng cách đánh giá tỷ lệ entropy Shannon với entropy tối đa có thể của phân phối token. Entropy cao hơn cho thấy một phân phối đa dạng và không thể dự đoán hơn, phạt các từ vựng nghiêng về các token rất thường xuyên và/hoặc rất hiếm. Chúng tôi sử dụng α = 2,5 cho phân tích của chúng tôi theo Zouhar et al. (2023).
+
+Hình 2 trình bày kết quả chỉ số nội tại cho BPE trên bốn kích thước từ vựng được bao gồm trong nghiên cứu của chúng tôi, được đánh giá trên một bộ dữ liệu giữ lại 150 GB được lấy mẫu từ corpus của chúng tôi. Trái với kỳ vọng của chúng tôi, những biện pháp nội tại này không tiết lộ những lợi ích hiệu suất đáng kể với việc tăng kích thước dữ liệu. Thực tế, đối với BPE, hiệu suất trên tất cả các chỉ số đạt đỉnh trong phạm vi 120GB đến 150GB. Mặc dù các thay đổi từ vựng được quan sát, các thuộc tính cốt lõi được phản ánh bởi những chỉ số này vẫn tương đối ổn định trên phạm vi khối lượng dữ liệu huấn luyện. Do đó, đơn giản việc tăng kích thước dữ liệu huấn luyện có thể không dẫn đến những cải thiện đáng kể trong hiệu quả của tokenizer.
+
+--- TRANG 3 ---
+Bao Nhiêu Là Đủ?
+
+(a) Kích thước từ vựng 40.960
+(b) Kích thước từ vựng 64.000
+(c) Kích thước từ vựng 128.000
+(d) Kích thước từ vựng 256.000
+
+Hình 1: Tỷ lệ từ vựng chung cho các tokenizer BPE, Unigram, và WordPiece, được huấn luyện với dữ liệu tăng tích lũy, so với từ vựng của tokenizer tương ứng được huấn luyện với 900GB dữ liệu.
+
+Hình 3 hiển thị kết quả benchmark cho các tokenizer UnigramLM được huấn luyện với kích thước dữ liệu và kích thước từ vựng khác nhau. Tương tự như các quan sát với BPE, các tokenizer UnigramLM không cho thấy một cải thiện đáng kể và nhất quán trong điểm nội tại với kích thước dữ liệu tăng. Trong khi điểm nhận thức thể hiện một xu hướng tăng nhẹ ban đầu, nó đạt đỉnh vượt quá khoảng 180GB, gợi ý rằng việc tăng thêm trong dữ liệu huấn luyện không nâng cao đáng kể sự căn chỉnh của tokenizer với các phân đoạn hình thái học. Điểm F1 trung bình được tính toán trên các benchmark hình thái học, trong khi cho thấy một số biến động, không thể hiện một cải thiện rõ ràng và bền vững với các bộ dữ liệu lớn hơn. Điểm entropy, tương tự như các chỉ số khác, đạt đỉnh tương đối sớm, cho thấy rằng sự cân bằng của tần suất token ổn định với kích thước dữ liệu tăng.
+
+Đối với WordPiece (Hình 4), một mẫu tương tự xuất hiện. Trong khi có những biến đổi cao hơn một chút, đặc biệt trong điểm nhận thức, các điểm nội tại không cải thiện đáng kể với kích thước dữ liệu tăng.
+
+2.3. Phân tích miền chéo
+
+Để hòa giải sự không nhất quán rõ ràng giữa các thay đổi từ vựng được quan sát và điểm nội tại ổn định, chúng tôi đã phân tích tác động của các tokenizer được huấn luyện của chúng tôi trên một bộ dữ liệu đánh giá đa miền, đa dạng. Dữ liệu này trải dài qua nhiều miền: sinh học, mã, tài chính, lịch sử, pháp lý, toán học, văn bản tổng quát. Thành phần đa dạng này giảm thiểu những thành kiến tokenizer tiềm năng phát sinh từ ảnh hưởng của sự phổ biến từ vựng cụ thể theo miền. Mỗi corpus cụ thể theo miền chứa 1,5 triệu ký tự. Trong khi các nguồn của các tập đánh giá được trình bày trong Phụ lục C, Hình 5 mô tả thành phần của các thuật ngữ trên các miền cụ thể. Mỗi điểm dữ liệu đại diện cho một tỷ lệ của các thuật ngữ tiếng Anh tổng quát, giá trị số, và các thuật ngữ cụ thể theo miền.
+
+Chúng tôi đã đánh giá tác động của việc mở rộng dữ liệu huấn luyện để xây dựng từ vựng trên tập đánh giá bằng cách tính toán Chỉ số Jaccard giữa các token thực tế được sử dụng trong văn bản đánh giá sử dụng mỗi tokenizer được huấn luyện và cùng văn bản được token hóa với tokenizer tham chiếu được huấn luyện 900GB:
+
+J(U, V) = |U∩V| / |U∪V|, (1)
+
+trong đó U và V là từ vựng của tokenizer tham chiếu và tokenizer hiện tại.
+
+Chúng tôi cũng tính toán một phiên bản có trọng số của Chỉ số Jaccard sử dụng số lượng token được chuẩn hóa trên dữ liệu đánh giá, để tính đến những khác biệt trong kích thước tập huấn luyện:
+
+Jw(U, V) = Σt∈U∩V min(wU(t), wV(t)) / Σt∈U∪V max(wU(t), wV(t)), (2)
+
+trong đó wU(t) và wV(t) là tần suất token được chuẩn hóa cho token t trong từ vựng U và V.
+
+Hình 6 trình bày Chỉ số Jaccard tiêu chuẩn (marker mở) và có trọng số (marker đầy) cho từ vựng token kích thước 40.960. Điểm có trọng số nhất quán vượt quá điểm không có trọng số, nổi bật ảnh hưởng đáng kể của tần suất token trên sự chồng chéo từ vựng. Điều này gợi ý rằng các token tần suất cao thể hiện sự nhất quán lớn hơn trên các kích thước dữ liệu khác nhau, và chúng chiếm một phần đáng kể của số lượng token huấn luyện. Một lần nữa hành vi độc đáo của WordPiece nổi lên, thể hiện sự ưa thích của nó đối với các token đồng xuất hiện mạnh nhưng ở tần suất tổng thể thấp, dẫn đến những khác biệt quan sát được lớn trong các tập từ vựng mà hầu như không dẫn đến hiệu ứng ở cấp độ corpus.
+
+Phân tích của chúng tôi tiết lộ rằng hơn 80% văn bản đánh giá của chúng tôi được đại diện bởi khoảng 20% từ vựng tokenizer (xem Phụ lục C để biết kết quả chi tiết trên các miền riêng lẻ của bộ dữ liệu đánh giá và kích thước từ vựng của chúng tôi) Phát hiện này gợi ý rằng phần lớn các token được thêm vào với việc tăng dữ liệu huấn luyện có tần suất thấp và do đó ít quan trọng hơn. Trong khi thành phần cụ thể của từ vựng phát triển với sự gia tăng trong dữ liệu huấn luyện, tập hợp cốt lõi của các token chịu trách nhiệm đại diện cho phần lớn văn bản vẫn tương đối ổn định. Quan sát này phù hợp với định luật Zipf (Zipf, 1949), giả định một mối quan hệ nghịch đảo giữa tần suất từ và thứ hạng trong corpus ngôn ngữ tự nhiên. Do đó, việc thêm vào dữ liệu huấn luyện của tokenizer vượt quá một điểm nhất định chủ yếu thêm các token tần suất thấp vào từ vựng, có tác động hạn chế đến các đặc tính tokenization tổng thể được nắm bắt bởi các chỉ số nội tại. Đây là một lời giải thích tại sao các chỉ số nội tại phần lớn không bị ảnh hưởng bởi việc tăng dữ liệu huấn luyện.
+
+--- TRANG 4 ---
+Bao Nhiêu Là Đủ?
+
+Hình 2: Các biện pháp nội tại trên tập giữ lại của chúng tôi cho các tokenizer BPE được huấn luyện cho mỗi trong số bốn kích thước từ vựng với kích thước corpus huấn luyện khác nhau.
+
+Hình 3: Các biện pháp nội tại của các tokenizer UnigramLM được huấn luyện cho mỗi trong số bốn kích thước từ vựng với dữ liệu huấn luyện được mở rộng.
+
+--- TRANG 5 ---
+Bao Nhiêu Là Đủ?
+
+Hình 4: Các biện pháp nội tại của các tokenizer WordPiece được huấn luyện cho mỗi trong số bốn kích thước từ vựng với dữ liệu huấn luyện được mở rộng
+
+Hình 5: Tỷ lệ các thuật ngữ tiếng Anh tổng quát, thuật ngữ cụ thể theo miền, và giá trị số trong mỗi tập đánh giá.
+
+Hình 6: Chỉ số Jaccard (marker mở) và Chỉ số Jaccard Có trọng số (WTD; marker đầy) cho các tokenizer BPE, UnigramLM, và WordPiece (kích thước từ vựng 40.960) trên các kích thước dữ liệu khác nhau, được tính trung bình trên tất cả các miền đánh giá.
+
+3. Vai trò Hạn chế của Pre-Tokenization
+
+Pre-tokenization là bước đầu tiên trong quá trình tokenization, nơi các biểu thức chính quy được sử dụng để chia một tài liệu thành các đoạn, đôi khi được gọi là pre-token, sau đó được token hóa riêng biệt. Velayuthan & Sarveswaran (2025) gần đây lưu ý rằng pre-tokenization có thể có ảnh hưởng lớn hơn đến tokenization kết quả so với việc lựa chọn thuật toán tokenization.
+
+Kết quả miền chéo của chúng tôi trong phần trước cho thấy rằng các tokenizer tạo ra một tập hợp token chung trên phạm vi dữ liệu huấn luyện tokenizer. Chúng tôi đưa ra giả thuyết rằng điều này là do pre-tokenization: các pre-token có tần suất cao nhất phổ biến đủ để tất cả các thuật toán tokenization có một xu hướng mạnh mẽ để tìm một token duy nhất khớp chính xác với pre-token. Để điều tra điều này, chúng tôi quay lại các pre-token tổng hợp được trích xuất từ corpus với số lượng liên quan của chúng. Chúng tôi tính toán tỷ lệ pre-token được đại diện như một token duy nhất trong từ vựng của mỗi tokenizer. Hình 7 hiển thị tỷ lệ này cho các tokenizer BPE, UnigramLM, và WordPiece, cho các kích thước từ vựng khác nhau.
+
+Sự phổ biến của những pre-token chung này trong từ vựng của các tokenizer là đáng kể cao trên tất cả các thuật toán, tăng với kích thước từ vựng. Tỷ lệ này vẫn tương đối ổn định với nhiều dữ liệu huấn luyện hơn ở các kích thước từ vựng nhỏ hơn và về cơ bản chồng chéo ở kích thước từ vựng 128.000 và 256.000. Các đường cong phẳng vì chúng đại diện cho các pre-token thường xuyên, được tìm thấy dễ dàng ngay cả với rất ít dữ liệu huấn luyện. Từ vựng lớn hơn một cách tự nhiên có nhiều dung lượng hơn để bao gồm một số lượng lớn hơn pre-token như các token đơn, giải thích cho các đường cong chồng chéo.
+
+Những quan sát này hỗ trợ giả thuyết của chúng tôi rằng các chỉ số nội tại đạt đỉnh (Hình 2) và chỉ số Jaccard có trọng số cao (Hình 6) được quan sát với dữ liệu huấn luyện khác nhau có thể ít nhất được phần nào quy cho các ràng buộc được áp đặt bởi pre-tokenization. Bước pre-tokenization ưu tiên việc bao gồm các pre-token xuất hiện thường xuyên như các token đơn trong quá trình huấn luyện. Các tokenizer bị hạn chế để tối ưu hóa phần nhỏ còn lại của corpus được token hóa. Điều này hạn chế khả năng của tokenizer để tận dụng đầy đủ các bộ dữ liệu huấn luyện lớn hơn, vì từ vựng cốt lõi phần lớn được xác định trước bởi quá trình pre-tokenization. Các token bổ sung được tạo ra từ các bộ dữ liệu lớn hơn chủ yếu là các mục tần suất thấp (tức là, từ hiếm), có tác động nhỏ hơn đến thành phần từ vựng tổng thể và chất lượng tokenization như được đo bằng các chỉ số nội tại của chúng tôi. Các kỹ thuật pre-tokenization tiêu chuẩn không thể vượt ra ngoài phân đoạn cấp từ, do đó hạn chế rất nhiều từ vựng.
+
+Hình 7: Tỷ lệ pre-token được đại diện như các token đơn trong từ vựng BPE, UnigramLM và WordPiece với kích thước khác nhau (40.960, 64.000, 128.000, và 256.000) với dữ liệu huấn luyện tăng.
+
+Nghiên cứu gần đây đã bắt đầu khám phá ảnh hưởng của pre-tokenization đối với động học từ vựng, cung cấp những góc nhìn mới về cách thiết kế pre-token ảnh hưởng đến hiệu suất downstream và hiệu quả tokenization (Salehi et al., 2015; Liu et al., 2025; Kumar & Thawani, 2022; Schmidt et al., 2025). Những nghiên cứu này nổi bật vai trò quan trọng của pre-tokenization trong việc định hình từ vựng được học và gợi ý rằng việc tái suy nghĩ hoặc nới lỏng các ràng buộc pre-tokenization có thể mở khóa những cải thiện thêm trong hiệu quả tokenizer.
+
+4. Tổng quát hóa cho Tiếng Nga
+
+Để hiểu rõ hơn liệu tác động của dữ liệu huấn luyện tokenizer đối với các đặc tính tokenizer được thảo luận trong công việc này có mạnh mẽ hay không, chúng tôi bổ sung phân tích dữ liệu tiếng Anh của chúng tôi với một nghiên cứu trường hợp tập trung về tiếng Nga. So với tiếng Anh, tiếng Nga là một ngôn ngữ phong phú về hình thái học hơn, được đặc trưng bởi hình thái học biến đổi và dẫn xuất rộng rãi. Điều này làm cho nó trở thành một trường hợp thử nghiệm hấp dẫn để đánh giá cách các tokenizer xử lý sự phức tạp ngôn ngữ học trong các điều kiện khác biệt rõ rệt so với tiếng Anh.
+
+Mục tiêu chính của chúng tôi là điều tra cần bao nhiêu dữ liệu huấn luyện để các tokenizer mô hình hóa hiệu quả một ngôn ngữ như vậy. Với việc các thí nghiệm của chúng tôi trên tiếng Anh chứng minh hiệu suất tương đối ổn định trên các loại tokenizer và kích thước từ vựng khác nhau, chúng tôi đơn giản hóa cuộc khám phá của chúng tôi bằng cách cố định thuật toán tokenizer thành BPE và sử dụng kích thước từ vựng 40.960. Chúng tôi sử dụng dữ liệu ngôn ngữ Nga được lấy từ bộ dữ liệu OSCAR (Nguyen et al., 2024), một corpus đa ngôn ngữ lớn được trích xuất từ Common Crawl.6 Theo chiến lược hình thành dữ liệu tích lũy được sử dụng trong các thí nghiệm trước đó, chúng tôi huấn luyện tokenizer trên các tập con lớn dần của dữ liệu. Cụ thể, chúng tôi sử dụng kích thước dữ liệu tích lũy 30GB, 60GB, 90GB, 120GB, 150GB, 180GB, 210GB, 240GB, 300GB, 450GB, và 600GB. Sự lựa chọn này được thúc đẩy bởi các quan sát từ các thí nghiệm ngôn ngữ tiếng Anh của chúng tôi, nơi cả các chỉ số nội tại (ví dụ, tỷ lệ nén, hiệu quả tokenization) và chỉ số Jaccard trên corpus downstream cụ thể theo miền của chúng tôi cho thấy sự bão hòa vượt quá thông thường 150GB và nhiều nhất 300GB dữ liệu huấn luyện. Bằng cách mở rộng giới hạn trên đến 600GB cho tiếng Nga, chúng tôi mong muốn xác định liệu một ngôn ngữ phong phú về hình thái học hơn thể hiện một điểm bão hòa tương tự hay đòi hỏi đáng kể nhiều dữ liệu hơn để đạt hiệu suất tối ưu. Do thiếu các tài nguyên đánh giá nhận thức và hình thái học phù hợp, chúng tôi sử dụng hiệu quả entropy như chỉ số hiệu suất chính trong phần này.
+
+6Phiên bản 23.01: https://oscar-project.github.io/documentation/versions/oscar-2301/
+
+4.1. Phân tích từ vựng
+
+Như được mô tả trong Hình 8, tỷ lệ từ vựng được chia sẻ giữa các tokenizer và một tokenizer tham chiếu được huấn luyện với 450GB dữ liệu tăng một cách nhất quán với các bộ dữ liệu huấn luyện tiếng Nga lớn hơn. Khi đối chiếu với tiếng Anh, chúng ta có thể suy ra một xu hướng nhất quán trên các ngôn ngữ. Tuy nhiên, một khác biệt đáng chú ý là trong tốc độ tăng giữa hai ngôn ngữ. Tốc độ mà phần từ vựng chung tăng thấp hơn tương đối đối với tiếng Nga. Điều này có thể được quy cho bản chất phức tạp hơn tương đối của hình thái học ngôn ngữ, nơi các loại riêng lẻ của (chủ yếu) danh từ, động từ, và tính từ xuất hiện ít thường xuyên hơn nhiều so với các tương đương tiếng Anh của chúng nơi một dạng bao gồm một số, hoặc thậm chí hàng chục, dạng biến đổi tiếng Nga.
+
+4.2. Phân tích entropy
+
+Hình 9 minh họa hiệu quả entropy của tập tokenizer của chúng tôi, được huấn luyện trên tiếng Nga và được đánh giá trên một tập đánh giá tiếng Nga được giữ lại. Hình cho thấy rằng các lợi ích trong hiệu quả entropy trở nên nhỏ dần khi dữ liệu huấn luyện tăng. Đối với tiếng Anh, chúng tôi quan sát cải thiện tối thiểu vượt quá 150GB dữ liệu huấn luyện. Ngược lại, đối với tiếng Nga, hiệu quả entropy tiếp tục cải thiện lên đến khoảng 200GB, sau đó nó ổn định.
+
+Chúng tôi tin rằng những xu hướng này có thể được quy cho những khác biệt trong cấu trúc ngôn ngữ học và sự phức tạp hình thái học giữa hai ngôn ngữ. Tiếng Anh, là tương đối phân tích, có một tập hợp các dạng từ hạn chế hơn và ít biến đổi từ tố hơn, cho phép các tokenizer đạt hiệu quả gần tối ưu với một lượng dữ liệu huấn luyện nhỏ hơn. Một khi các mẫu từ con phổ biến và đơn vị từ vựng được nắm bắt đủ, dữ liệu bổ sung cung cấp lợi ích giảm dần. Mặt khác, tiếng Nga là một ngôn ngữ phong phú về hình thái học với một số lượng lớn hơn các dạng biến đổi và biến thể dẫn xuất. Sự phức tạp này có nghĩa là một tokenizer cần nhiều dữ liệu hơn để nắm bắt đầy đủ các mẫu đa dạng của sự kết hợp hình vị và đơn vị từ con. Kết quả là, việc tăng kích thước dữ liệu huấn luyện tiếp tục mang lại cải thiện entropy trong một phạm vi lớn hơn. Vượt quá điểm này, tokenizer có khả năng đã gặp phần lớn các mẫu hình thái học liên quan, và dữ liệu bổ sung không còn cung cấp thông tin mới đáng kể, dẫn đến một đỉnh trong hiệu quả entropy.
+
+Nhìn chung, những phát hiện này nổi bật tầm quan trọng của các cân nhắc cụ thể theo ngôn ngữ khi thiết kế hoặc mở rộng các bộ dữ liệu huấn luyện tokenizer.
+
+--- TRANG 6 ---
+Bao Nhiêu Là Đủ?
+
+Hình 8: Tỷ lệ từ vựng chung cho tokenizer BPE (kích thước từ vựng 40.960) được huấn luyện với dữ liệu tăng tích lũy, so với từ vựng của tokenizer tương ứng được huấn luyện với 600GB dữ liệu.
+
+Hình 9: Hiệu quả entropy trên tập giữ lại của chúng tôi cho các tokenizer BPE (kích thước từ vựng 40.960) với kích thước corpus huấn luyện khác nhau.
+
+--- TRANG 7 ---
+Bao Nhiêu Là Đủ?
+
+5. Kết luận
+
+Trong công việc này, chúng tôi đã điều tra một cách có hệ thống tác động của kích thước dữ liệu huấn luyện tokenizer đối với các đặc tính của các tokenizer được huấn luyện. Các phát hiện của chúng tôi tiết lộ hiệu quả giảm dần khi dữ liệu huấn luyện tokenizer tăng vượt quá 150GB trong tiếng Anh, và dấu hiệu của một giới hạn gần hơn đến 200GB trong tiếng Nga, gợi ý một số phụ thuộc vào các thuộc tính hình thái học của ngôn ngữ đang được token hóa. Phân tích của chúng tôi chỉ ra rằng các thuật toán tokenization kết hợp pre-tokenization có thể bị hạn chế cơ bản trong khả năng tận dụng đầy đủ các bộ dữ liệu cực lớn. Do đó, thay vì tập trung duy nhất vào nhiều dữ liệu hơn, chúng tôi ủng hộ một sự chuyển dịch hướng tới phát triển và sử dụng các phương pháp huấn luyện từ vựng tốt hơn ít dễ bị ảnh hưởng bởi các hạn chế của pre-tokenization. Các phương pháp token hóa vượt ra ngoài ranh giới pre-token (Liu et al., 2025; Schmidt et al., 2025), và những phương pháp kết hợp tín hiệu ngữ cảnh (Yehezkel & Pinter, 2023), cung cấp những hướng nghiên cứu đầy hứa hẹn cho tương lai. Nhược điểm chính của chúng đã được xác định là sự phụ thuộc phi tuyến vào kích thước dữ liệu, mà chúng tôi hiện tin rằng ít là vấn đề hơn so với giả định cho đến nay.
+
+Hạn chế
+
+Trong nghiên cứu này, chúng tôi sử dụng các chỉ số tokenizer nội tại như một phương tiện đánh giá chính, trong khi cho phép phân tích hiệu quả, có thể không nắm bắt đầy đủ sự tương tác phức tạp giữa các đặc tính tokenizer và hiệu suất LLM downstream. Trong khi những chỉ số này cung cấp những hiểu biết có giá trị về chất lượng tokenizer, chúng phục vụ như một đại diện cho hiệu quả downstream thực sự. Nghiên cứu tương lai nên điều tra sự tương quan giữa các chỉ số nội tại và hiệu suất nhiệm vụ downstream trên một phạm vi rộng hơn các mô hình ngôn ngữ và nhiệm vụ để thiết lập một khung đánh giá toàn diện hơn.
+
+Tuyên bố Đạo đức
+
+Chúng tôi huấn luyện các tokenizer của chúng tôi trên các bộ dữ liệu công cộng được sử dụng phổ biến The Pile (Gao et al., 2020), RedPajama (Weber et al., 2024) và OSCAR (Nguyen et al., 2024), chưa trải qua một đánh giá đạo đức chính thức. Trong khi tập đánh giá của chúng tôi đã được ẩn danh thủ công và kiểm tra ngôn ngữ lạm dụng, nó vẫn có thể chứa ý kiến cá nhân phản ánh thành kiến văn hóa, chính trị, hoặc nhân khẩu học.
+
+Lời cảm ơn
+
+Chúng tôi cảm ơn Seth Ebner cho nhiều ghi chú và thảo luận. Nghiên cứu này được hỗ trợ một phần bởi Quỹ Khoa học Israel (tài trợ số 1166/23).
+
+Tài liệu tham khảo
+
+Ali, M., Fromm, M., Thellmann, K., Rutmann, R., Lübbering, M., Leveling, J., Klug, K., Ebert, J., Doll, N., Buschhoff, J., Jain, C., Weber, A., Jurkschat, L., Abdelwahab, H., John, C., Ortiz Suarez, P., Ostendorff, M., Weinbach, S., Sifa, R., Kesselheim, S., và Flores-Herr, N. Tokenizer choice for LLM training: Negligible or crucial? Trong Duh, K., Gomez, H., và Bethard, S. (eds.), Findings of the Association for Computational Linguistics: NAACL 2024, pp. 3907–3924, Mexico City, Mexico, Tháng 6 2024. Association for Computational Linguistics. doi: 10.18653/v1/2024.findings-naacl.247. URL https://aclanthology.org/2024.findings-naacl.247/.
+
+Beinborn, L. và Pinter, Y. Analyzing cognitive plausibility of subword tokenization. Trong Bouamor, H., Pino, J., và Bali, K. (eds.), Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing, pp. 4478–4486, Singapore, Tháng 12 2023. Association for Computational Linguistics. doi: 10.18653/v1/2023.emnlp-main.272. URL https://aclanthology.org/2023.emnlp-main.272/.
+
+Dagan, G., Synnaeve, G., và Rozière, B. Getting the most out of your tokenizer for pre-training and domain adaptation, 2024. URL https://arxiv.org/abs/2402.01035.
+
+Devlin, J., Chang, M.-W., Lee, K., và Toutanova, K. BERT: Pre-training of deep bidirectional transformers for language understanding. Trong Burstein, J., Doran, C., và Solorio, T. (eds.), Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long and Short Papers), pp. 4171–4186, Minneapolis, Minnesota, Tháng 6 2019. Association for Computational Linguistics. doi: 10.18653/v1/N19-1423. URL https://aclanthology.org/N19-1423/.
+
+Gao, L., Biderman, S., Black, S., Golding, L., Hoppe, T., Foster, C., Phang, J., He, H., Thite, A., Nabeshima, N., Presser, S., và Leahy, C. The pile: An 800gb dataset of diverse text for language modeling, 2020. URL https://arxiv.org/abs/2101.00027.
+
+Gowda, T. và May, J. Finding the optimal vocabulary size for neural machine translation. Trong Cohn, T., He, Y., và Liu, Y. (eds.), Findings of the Association for Computational Linguistics: EMNLP 2020, pp. 3955–3964, Online, Tháng 11 2020. Association for Computational Linguistics. doi: 10.18653/v1/2020.findings-emnlp.352. URL https://aclanthology.org/2020.findings-emnlp.352/.
+
+Hoffmann, J., Borgeaud, S., Mensch, A., Buchatskaya, E., Cai, T., Rutherford, E., de Las Casas, D., Hendricks, L. A., Welbl, J., Clark, A., Hennigan, T., Noland, E., Millican, K., van den Driessche, G., Damoc, B., Guy, A., Osindero, S., Simonyan, K., Elsen, E., Rae, J. W., Vinyals, O., và Sifre, L. Training compute-optimal large language models, 2022. URL https://arxiv.org/abs/2203.15556.
+
+Kaplan, J., McCandlish, S., Henighan, T., Brown, T. B., Chess, B., Child, R., Gray, S., Radford, A., Wu, J., và Amodei, D. Scaling laws for neural language models, 2020. URL https://arxiv.org/abs/2001.08361.
+
+Kudo, T. Subword regularization: Improving neural network translation models with multiple subword candidates. Trong Gurevych, I. và Miyao, Y. (eds.), Proceedings of the 56th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers), pp. 66–75, Melbourne, Australia, Tháng 7 2018. Association for Computational Linguistics. doi: 10.18653/v1/P18-1007. URL https://aclanthology.org/P18-1007/.
+
+Kumar, D. và Thawani, A. BPE beyond word boundary: How NOT to use multi word expressions in neural machine translation. Trong Tafreshi, S., Sedoc, J., Rogers, A., Drozd, A., Rumshisky, A., và Akula, A. (eds.), Proceedings of the Third Workshop on Insights from Negative Results in NLP, pp. 172–179, Dublin, Ireland, Tháng 5 2022. Association for Computational Linguistics. doi: 10.18653/v1/2022.insights-1.24. URL https://aclanthology.org/2022.insights-1.24/.
+
+Limisiewicz, T., Balhar, J., và Mareček, D. Tokenization impacts multilingual language modeling: Assessing vocabulary allocation and overlap across languages. Trong Rogers, A., Boyd-Graber, J., và Okazaki, N. (eds.), Findings of the Association for Computational Linguistics: ACL 2023, pp. 5661–5681, Toronto, Canada, Tháng 7 2023. Association for Computational Linguistics. doi: 10.18653/v1/2023.findings-acl.350. URL https://aclanthology.org/2023.findings-acl.350/.
+
+Liu, A., Hayase, J., Hofmann, V., Oh, S., Smith, N. A., và Choi, Y. Superbpe: Space travel for language models, 2025. URL https://arxiv.org/abs/2503.13423.
+
+Mielke, S. J., Alyafeai, Z., Salesky, E., Raffel, C., Dey, M., Gallé, M., Raja, A., Si, C., Lee, W. Y., Sagot, B., và Tan, S. Between words and characters: A brief history of open-vocabulary modeling and tokenization in nlp, 2021. URL https://arxiv.org/abs/2112.10508.
+
+Nguyen, N., Bi, J., Vosoughi, A., Tian, Y., Fazli, P., và Xu, C. OSCaR: Object state captioning and state change representation. Trong Duh, K., Gomez, H., và Bethard, S. (eds.), Findings of the Association for Computational Linguistics: NAACL 2024, pp. 3565–3576, Mexico City, Mexico, Tháng 6 2024. Association for Computational Linguistics. doi: 10.18653/v1/2024.findings-naacl.226. URL https://aclanthology.org/2024.findings-naacl.226/.
+
+Pearce, T., Rashid, T., Bignell, D., Georgescu, R., Devlin, S., và Hofmann, K. Scaling laws for pre-training agents and world models, 2024. URL https://arxiv.org/abs/2411.04434.
+
+Rai, A. và Borah, S. Study of various methods for tokenization. Trong Mandal, J. K., Mukhopadhyay, S., và Roy, A. (eds.), Applications of Internet of Things, pp. 193–200, Singapore, 2021. Springer Singapore.
+
+Rust, P., Pfeiffer, J., Vulić, I., Ruder, S., và Gurevych, I. How good is your tokenizer? on the monolingual performance of multilingual language models. Trong Zong, C., Xia, F., Li, W., và Navigli, R. (eds.), Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing (Volume 1: Long Papers), pp. 3118–3135, Online, Tháng 8 2021. Association for Computational Linguistics. doi: 10.18653/v1/2021.acl-long.243. URL https://aclanthology.org/2021.acl-long.243/.
+
+Salehi, B., Cook, P., và Baldwin, T. A word embedding approach to predicting the compositionality of multiword expressions. Trong Mihalcea, R., Chai, J., và Sarkar, A. (eds.), Proceedings of the 2015 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, pp. 977–983, Denver, Colorado, Tháng 5–Tháng 6 2015. Association for Computational Linguistics. doi: 10.3115/v1/N15-1099. URL https://aclanthology.org/N15-1099/.
+
+Schmidt, C. W., Reddy, V., Zhang, H., Alameddine, A., Uzan, O., Pinter, Y., và Tanner, C. Tokenization is more than compression. Trong Al-Onaizan, Y., Bansal, M., và Chen, Y.-N. (eds.), Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing, pp. 678–702, Miami, Florida, USA, Tháng 11 2024. Association for Computational Linguistics. doi: 10.18653/v1/2024.emnlp-main.40. URL https://aclanthology.org/2024.emnlp-main.40/.
+
+Schmidt, C. W., Reddy, V., Tanner, C., và Pinter, Y. Boundless byte pair encoding: Breaking the pre-tokenization barrier, 2025. URL https://arxiv.org/abs/2504.00178.
+
+Schuster, M. và Nakajima, K. Japanese and korean voice search. Trong 2012 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP), pp. 5149–5152, 2012. doi: 10.1109/ICASSP.2012.6289079.
+
+Sennrich, R., Haddow, B., và Birch, A. Neural machine translation of rare words with subword units. Trong Erk, K. và Smith, N. A. (eds.), Proceedings of the 54th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers), pp. 1715–1725, Berlin, Germany, Tháng 8 2016. Association for Computational Linguistics. doi: 10.18653/v1/P16-1162. URL https://aclanthology.org/P16-1162/.
+
+Uzan, O., Schmidt, C. W., Tanner, C., và Pinter, Y. Greed is all you need: An evaluation of tokenizer inference methods. Trong Ku, L.-W., Martins, A., và Srikumar, V. (eds.), Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 2: Short Papers), pp. 813–822, Bangkok, Thailand, Tháng 8 2024. Association for Computational Linguistics. doi: 10.18653/v1/2024.acl-short.73. URL https://aclanthology.org/2024.acl-short.73/.
+
+Velayuthan, M. và Sarveswaran, K. Egalitarian language representation in language models: It all begins with tokenizers. Trong Rambow, O., Wanner, L., Apidianaki, M., Al-Khalifa, H., Eugenio, B. D., và Schockaert, S. (eds.), Proceedings of the 31st International Conference on Computational Linguistics, pp. 5987–5996, Abu Dhabi, UAE, Tháng 1 2025. Association for Computational Linguistics. URL https://aclanthology.org/2025.coling-main.400/.
+
+Weber, M., Fu, D., Anthony, Q., Oren, Y., Adams, S., Alexandrov, A., Lyu, X., Nguyen, H., Yao, X., Adams, V., Athiwaratkun, B., Chalamala, R., Chen, K., Ryabinin, M., Dao, T., Liang, P., Ré, C., Rish, I., và Zhang, C. Redpajama: an open dataset for training large language models, 2024. URL https://arxiv.org/abs/2411.12372.
+
+Yehezkel, S. và Pinter, Y. Incorporating context into subword vocabularies. Trong Vlachos, A. và Augenstein, I. (eds.), Proceedings of the 17th Conference of the European Chapter of the Association for Computational Linguistics, pp. 623–635, Dubrovnik, Croatia, Tháng 5 2023. Association for Computational Linguistics. doi: 10.18653/v1/2023.eacl-main.45. URL https://aclanthology.org/2023.eacl-main.45/.
+
+Zhang, B., Liu, Z., Cherry, C., và Firat, O. When scaling meets LLM finetuning: The effect of data, model and finetuning method. Trong The Twelfth International Conference on Learning Representations, 2024. URL https://openreview.net/forum?id=5HCnKDeTws.
+
+Zipf, G. K. Human Behavior and the Principle of Least Effort. Addison-Wesley, Cambridge, MA, 1949.
+
+Zouhar, V., Meister, C., Gastaldi, J., Du, L., Sachan, M., và Cotterell, R. Tokenization and the noiseless channel. Trong Rogers, A., Boyd-Graber, J., và Okazaki, N. (eds.), Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers), pp. 5184–5207, Toronto, Canada, Tháng 7 2023. Association for Computational Linguistics. doi: 10.18653/v1/2023.acl-long.284. URL https://aclanthology.org/2023.acl-long.284/.
+
+--- TRANG 8 ---
+Bao Nhiêu Là Đủ?
+
+--- TRANG 9 ---
+Bao Nhiêu Là Đủ?
+
+--- TRANG 10 ---
+Bao Nhiêu Là Đủ?
+
+--- TRANG 11 ---
+Bao Nhiêu Là Đủ?
+
+A. Biểu thức chính quy pre-tokenization
+
+Chúng tôi lặp lại biểu thức chính quy pre-tokenization được sử dụng trong triển khai của chúng tôi, và giải thích từng nhánh của nó:
+
+r"(?i:[sdmt]|ll|ve|re)|[ˆ\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,3}|␣?[ˆ\s\p{L}\p{N}]++[\r\n]|\s[\r\n]|\s+(?!\S)|\s+"
+
+Listing 2: Biểu thức chính quy pre-tokenizer GPT-4 (lặp lại).
+
+• (?i:[sdmt]|ll|ve|re)
+Khớp với các từ rút gọn hoặc sở hữu cách tiếng Anh
+
+• [ˆ\r\n\p{L}\p{N}]?+\p{L}+
+Khớp với một hoặc nhiều chữ cái Unicode, tùy chọn được đi trước bởi một ký tự dấu câu hoặc ký hiệu
+
+• \p{N}{1,3}
+Khớp với một đến ba chữ số Unicode (một số ngôn ngữ như tiếng Thái và Tamil sử dụng các ký hiệu Unicode khác nhau cho chữ số)
+
+• ␣?[ˆ\s\p{L}\p{N}]++[\r\n]*
+Khớp với một hoặc nhiều ký tự dấu câu hoặc ký hiệu, tùy chọn được đi trước bởi một khoảng trắng, và được theo sau bởi không hoặc nhiều ký tự xuống dòng hoặc về đầu dòng
+
+• \s*[\r\n]
+Khớp với một ký tự xuống dòng hoặc về đầu dòng đơn, tùy chọn được đi trước bởi không hoặc nhiều ký tự khoảng trắng
+
+• \s+(?!\S)
+Khớp với một hoặc nhiều ký tự khoảng trắng không được theo ngay sau bởi ký tự không phải khoảng trắng, do đó khớp với khoảng trắng cuối dòng, cho đến ký tự ngắt dòng
+
+• \s+
+Cuối cùng, điều này khớp với một hoặc nhiều ký tự khoảng trắng
+
+Biểu thức chính quy này đòi hỏi gói regex linh hoạt hơn trong Python thay vì gói re mặc định, để hỗ trợ các nhóm ký tự Unicode và các bộ định lượng sở hữu ?+ và ++.
+
+Lưu ý rằng biểu thức này có thuộc tính cần thiết để khớp với tất cả các ký tự trong bất kỳ UTF-8 hợp lệ nào. Điều này là vì [ˆ\s\p{L}\p{N}] trong nhánh thứ tư sẽ khớp với bất kỳ ký tự nào không phải là chữ cái, số, hoặc khoảng trắng, tất cả đều được xử lý bởi các phần khác của regex. Dagan et al. (2024) có một lời giải thích tương tự về cùng regex này, cộng với các lựa chọn biểu thức chính quy khác có thể.7
+
+7Xem https://tokencontributions.substack.com/p/pre-tokenization-on-punctuation-in để biết các thảo luận khác về những đặc điểm của biểu thức chính quy cụ thể này.
+
+B. Phân tích Từ vựng Chung
+
+Hình 10, 11, và 12 trình bày các bản đồ nhiệt hình hóa tỷ lệ từ vựng được chia sẻ giữa tất cả các tokenizer được huấn luyện cho BPE, Unigram, và WordPiece, tương ứng. Trong mỗi hình, các biểu đồ con tương ứng với các kích thước từ vựng khác nhau: 40.960, 64.000, 128.000, và 256.000.
+
+Một quan sát chính cho cả BPE (Hình 10) và UnigramLM (Hình 11) là tỷ lệ từ vựng được chia sẻ giảm dần giữa các tokenizer được huấn luyện liên tiếp khi kích thước từ vựng tăng. Ví dụ, với BPE và từ vựng 40.960, sự chồng chéo từ vựng giữa các tokenizer được huấn luyện trên 30GB và 900GB dữ liệu là 0,57. Sự chồng chéo này giảm xuống 0,49, 0,41, và 0,23 cho kích thước từ vựng 64.000, 128.000, và 256.000, tương ứng. Các tokenizer UnigramLM thể hiện một xu hướng tương tự, với sự chồng chéo giảm từ 0,58 xuống 0,51, 0,34, và 0,2 trên cùng kích thước từ vựng.
+
+Xu hướng này gợi ý rằng khi kích thước từ vựng tăng cho một kích thước dữ liệu huấn luyện cố định (ví dụ, 30GB), các token được thêm vào trở nên ít thường xuyên và chuyên biệt hơn một cách tiến bộ. Những token ít thường xuyên hoặc thích hợp hơn này cũng dễ bị biến đổi hơn giữa các tokenizer được huấn luyện trên các tập con hơi khác nhau của dữ liệu được rút ra từ cùng phân phối tổng thể. Về cơ bản, với dữ liệu huấn luyện hạn chế, từ vựng lớn hơn được điền với các token ít quan trọng hơn một cách tiến bộ, dẫn đến thỏa thuận thấp hơn giữa các tokenizer được huấn luyện. Tuy nhiên, WordPiece (Hình 12) không thể hiện bất kỳ xu hướng nào với sự thay đổi trong kích thước từ vựng.
+
+C. Phân tích trên Dữ liệu Đánh giá
+
+C.1. Nguồn Dữ liệu
+
+Dữ liệu huấn luyện tokenizer của chúng tôi trải dài từ 2021 đến đầu 2023. Để ngăn ngừa rò rỉ dữ liệu vào tập đánh giá của chúng tôi, chúng tôi lấy nguồn tài liệu từ các miền khác nhau được ghi ngày cụ thể năm 2024. Chúng tôi đã ẩn danh thủ công và loại bỏ bất kỳ ngôn ngữ xúc phạm nào từ bộ dữ liệu này. Sau đây mô tả thành phần của dữ liệu đánh giá của chúng tôi cho mỗi miền:
+
+• Sinh học: Chúng tôi sử dụng các bài báo nghiên cứu và dữ liệu thử nghiệm lâm sàng từ Thư viện Y học Quốc gia.8
+
+• Mã: Mã được tạo ra bằng GPT-4 cho các vấn đề lập trình được chọn ngẫu nhiên được rút ra từ bài tập về nhà IIT9 và LeetCode.10 Corpus mã chứa một hỗn hợp các ngôn ngữ lập trình phổ biến bao gồm Python, Java, JavaScript, Ruby, và Go, nâng cao thêm sự đa dạng.
+
+8https://www.ncbi.nlm.nih.gov/
+9https://www.cse.iitk.ac.in/users/nitin/courses/CS681-2019-20-II/problemsets.html
+10https://leetcode.com/
+
+• Tài chính: Bộ dữ liệu này bao gồm các hồ sơ SEC11 từ các công ty khác nhau được nộp năm 2024, được tải xuống và trích xuất từ định dạng PDF sang văn bản.
+
+• Lịch sử: Chúng tôi sử dụng các bài báo từ Oxford Academic Historical Research.12
+
+• Pháp lý: Bộ dữ liệu này bao gồm 2024 - Ý kiến của Tòa án được phát hành bởi Tòa án Tối cao Hoa Kỳ.13
+
+• Toán học: Các bài báo toán học từ arXiv,14 tất cả được phát hành năm 2024, đã được sử dụng.
+
+• Cuộc trò chuyện Tổng quát: Chúng tôi sử dụng dữ liệu cuộc trò chuyện tổng quát từ cùng quần thể với dữ liệu huấn luyện tokenizer của chúng tôi, đảm bảo không có sự chồng chéo giữa các tập huấn luyện và đánh giá.
+
+11https://www.sec.gov/
+12https://academic.oup.com/histres/
+13https://www.supremecourt.gov/opinions/slipopinion/24
+14https://arxiv.org/archive/math
+
+C.2. Phân tích
+
+Như đã đề cập trong Phần 2.3, chúng tôi đánh giá tác động của việc mở rộng dữ liệu huấn luyện để huấn luyện tokenizer trên tập đánh giá bằng cách tính toán Chỉ số Jaccard và phiên bản có trọng số của Chỉ số Jaccard giữa các token thực tế được sử dụng trong văn bản đánh giá sử dụng mỗi tokenizer được huấn luyện và cùng văn bản được token hóa với tokenizer tham chiếu được huấn luyện 900GB.
+
+Trong kích thước từ vựng được đánh giá 40.960 (xem Hình 13), các xu hướng hơi khác nhau xuất hiện trên các nhiệm vụ khác nhau. Tuy nhiên, cả tokenizer BPE và Unigram LM đều thể hiện một đỉnh gần như ngay lập tức trong hiệu suất, khoảng 120GB đến 180GB. Điều này gợi ý rằng, ở kích thước từ vựng này, các token thường xuyên đóng góp đáng kể vào sự chồng chéo token tổng thể và rằng những tokenizer này nhanh chóng hội tụ đến một phân đoạn ổn định của những thuật ngữ thường xuyên này. Đỉnh sớm này cho thấy rằng việc tăng thêm trong dữ liệu huấn luyện cung cấp lợi ích giảm dần cho những thuật toán tokenization này.
+
+Mặc dù WordPiece thể hiện một xu hướng tương tự của Chỉ số Jaccard thấp hơn nhiều so với đối tác có trọng số của nó, nó thể hiện khoảng cách rộng nhất giữa hai giá trị Chỉ số Jaccard. Một khác biệt lớn giữa Chỉ số Jaccard và Chỉ số Jaccard Có trọng số cho thấy rằng sự chồng chéo giữa việc sử dụng từ vựng chủ yếu do các token ít thường xuyên hơn, trong khi các token thường xuyên hơn không được chia sẻ một cách nhất quán. Điều này có thể có nghĩa là sự thay đổi trong từ vựng có thể có hàm ý cao hơn cho tokenization của văn bản, so với BPE và Unigram LM. Những mẫu này vẫn nhất quán trên WordPiece cho các kích thước từ vựng còn lại, như được thấy trong Hình 13 đến 16.
+
+C.3. Tính toán Các Thuật ngữ Cụ thể theo Miền và Tiếng Anh Tổng quát
+
+Để xác định và định lượng các thuật ngữ cụ thể theo miền và tiếng Anh tổng quát trong một corpus, chúng tôi sử dụng một phương pháp dựa trên tần suất so sánh có nền tảng trong ngôn ngữ học corpus. Ý tưởng cốt lõi là đối chiếu phân phối thuật ngữ giữa một corpus cụ thể theo miền (D) và một corpus tiếng Anh tổng quát (G) để xác định những thuật ngữ nào đặc trưng cho miền.
+
+Chúng tôi tuyển chọn hai corpus văn bản: một corpus miền (D), là một tập hợp của tất cả dữ liệu đánh giá cụ thể theo miền downstream của chúng tôi, và một corpus tổng quát (G),15 đại diện cho việc sử dụng tiếng Anh tiêu chuẩn. Cả hai corpus đều được khớp về kích thước để đảm bảo so sánh công bằng.
+
+Đối với mỗi corpus, chúng tôi tính toán tần suất thuật ngữ tương đối của mỗi từ w:
+
+TFD(w) = count(w∈D) / Σw' count(w'∈D),
+
+TFG(w) = count(w∈G) / Σw' count(w'∈G)
+
+Để đo lường liên quan đến miền, chúng tôi tính toán một điểm cho mỗi thuật ngữ dựa trên tần suất tương đối của nó trong cả hai corpus:
+
+Score(w) = P(w|D) / (P(w|G) + ε)
+
+trong đó P(w|D) và P(w|G) là tần suất tương đối của w trong corpus miền và tổng quát, tương ứng, và ε là một hằng số làm mịn nhỏ để tránh phép chia cho không.
+
+Một điểm cao hơn cho thấy tính cụ thể miền mạnh hơn. Các thuật ngữ có số lượng cực thấp (ví dụ, ít hơn năm lần xuất hiện trên cả hai corpus) được lọc ra để giảm nhiễu. Dựa trên điểm này, chúng tôi phân loại các thuật ngữ như sau:
+
+• Thuật ngữ Cụ thể theo Miền: Score(w) ≥ θ
+• Thuật ngữ Tiếng Anh Tổng quát: Score(w) ≤ 1/θ
+• Thuật ngữ Trung tính: 1/θ < Score(w) < θ
+
+Đối với ngưỡng, chúng tôi sử dụng θ = 10. Phương pháp này cho phép chúng tôi định lượng số lượng thuật ngữ cụ thể theo miền và tiếng Anh tổng quát có mặt trong một từ vựng nhất định.
+
+Chúng tôi nhóm các thuật ngữ tiếng Anh tổng quát và trung tính lại với nhau. Sau phân loại, chúng tôi kiểm tra thủ công và thay đổi, khi cần thiết, các danh sách từ kết quả để đảm bảo rằng không có sự ô nhiễm giữa các thuật ngữ cụ thể theo miền và tổng quát.
+
+15https://huggingface.co/datasets/wikimedia/wikipedia
+
+--- TRANG 12 ---
+Bao Nhiêu Là Đủ?
+
+Hình 10: Bản đồ nhiệt hiển thị tỷ lệ từ vựng chung trên tất cả các tokenizer BPE như một hàm của dữ liệu huấn luyện tăng tích lũy. Mỗi bản đồ nhiệt, trong lưới từ trên cùng bên trái, đại diện cho một kích thước từ vựng khác nhau (40.960, 64.000, 128.000, 256.000).
+
+--- TRANG 13 ---
+Bao Nhiêu Là Đủ?
+
+(a) 256.000
+
+Hình 11: Bản đồ nhiệt hiển thị tỷ lệ từ vựng chung trên tất cả các tokenizer UnigramLM như một hàm của dữ liệu huấn luyện tăng tích lũy. Mỗi bản đồ nhiệt, trong lưới từ trên cùng bên trái, đại diện cho một kích thước từ vựng khác nhau (40.960, 64.000, 128.000, 256.000).
+
+--- TRANG 14 ---
+Bao Nhiêu Là Đủ?
+
+Hình 12: Bản đồ nhiệt hiển thị tỷ lệ từ vựng chung trên tất cả các tokenizer WordPiece như một hàm của dữ liệu huấn luyện tăng tích lũy. Mỗi bản đồ nhiệt, trong lưới từ trên cùng bên trái, đại diện cho một kích thước từ vựng khác nhau (40.960, 64.000, 128.000, 256.000).
+
+--- TRANG 15 ---
+Bao Nhiêu Là Đủ?
+
+--- TRANG 16 ---
+Bao Nhiêu Là Đủ?
+
+Hình 13: Chỉ số Jaccard (marker mở) và Chỉ số Jaccard Có trọng số (WTD; marker đầy) cho các tokenizer BPE, UnigramLM, và WordPiece (kích thước từ vựng 40.960) trên các kích thước dữ liệu khác nhau, cho các miền khác nhau.
+
+--- TRANG 17 ---
+Bao Nhiêu Là Đủ?
+
+Hình 14: Chỉ số Jaccard (marker mở) và Chỉ số Jaccard Có trọng số (WTD; marker đầy) cho các tokenizer BPE, UnigramLM, và WordPiece (kích thước từ vựng 64.000) trên các kích thước dữ liệu khác nhau, cho các miền khác nhau.
+
+--- TRANG 18 ---
+Bao Nhiêu Là Đữ?
+
+Hình 15: Chỉ số Jaccard (marker mở) và Chỉ số Jaccard Có trọng số (WTD; marker đầy) cho các tokenizer BPE, UnigramLM, và WordPiece (kích thước từ vựng 128.000) trên các kích thước dữ liệu khác nhau, cho các miền khác nhau.
+
+--- TRANG 19 ---
+Bao Nhiêu Là Đủ?
+
+Hình 16: Chỉ số Jaccard (marker mở) và Chỉ số Jaccard Có trọng số (WTD; marker đầy) cho các tokenizer BPE, UnigramLM, và WordPiece (kích thước từ vựng 256.000) trên các kích thước dữ liệu khác nhau, cho các miền khác nhau.

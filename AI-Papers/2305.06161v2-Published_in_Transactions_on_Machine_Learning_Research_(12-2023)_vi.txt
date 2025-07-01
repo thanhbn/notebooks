@@ -1,0 +1,263 @@
+# 2305.06161v2.pdf
+# Được chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2305.06161v2.pdf
+# Kích thước file: 1174499 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+Được xuất bản trên Transactions on Machine Learning Research (12/2023)
+StarCoder: mong rằng mã nguồn sẽ ở cùng bạn!
+Raymond Li2Loubna Ben Allal1Yangtian Zi4Niklas Muennighoff1Denis Kocetkov2
+Chenghao Mou5Marc Marone8Christopher Akiki9,10Jia Li5Jenny Chim11Qian Liu13
+Evgenii Zheltonozhskii14Terry Yue Zhuo15,16Thomas Wang1Olivier Dehaene1Mishig
+Davaadorj1Joel Lamy-Poirier2João Monteiro2Oleh Shliazhko2Nicolas Gontier2
+Nicholas Meade6,17Armel Zebaze1Ming-Ho Yee4Logesh Kumar Umapathi18Jian Zhu19
+Benjamin Lipkin20Muhtasham Oblokulov21Zhiruo Wang7Rudra Murthy22Jason
+Stillerman23Siva Sankalp Patel22Dmitry Abulkhanov5Marco Zocca24Manan Dey25
+Zhihan Zhang26Nour Fahmy27Urvashi Bhattacharyya28Wenhao Yu26Swayam Singh30
+Sasha Luccioni1Paulo Villegas31Maxim Kunakov32Fedor Zhdanov32Manuel Romero5
+Tony Lee33Nadav Timor34Jennifer Ding35Claire Schlesinger4
+Hailey Schoelkopf37Jan Ebert38Tri Dao33Mayank Mishra22Alex Gu20Jennifer
+Robinson3Carolyn Jane Anderson36Brendan Dolan-Gavitt29Danish Contractor5Siva
+Reddy2,6Daniel Fried7Dzmitry Bahdanau2Yacine Jernite1Carlos Muñoz Ferrandis1
+Sean Hughes3Thomas Wolf1Arjun Guha4,12
+Leandro von Werra1,⋆Harm de Vries2,⋆
+1Hugging Face2ServiceNow Research3ServiceNow4Northeastern University5Independent6Mila
+7Carnegie Mellon University8Johns Hopkins University9Leipzig University10ScaDS.AI11Queen Mary
+University of London12Roblox13Sea AI Lab14Technion – Israel Institute of Technology15Monash
+University16CSIRO's Data6117McGill University18Saama AI Research Lab19University of British
+Columbia20MIT21Technical University of Munich22IBM Research23University of Vermont
+24UnfoldML25SAP26University of Notre Dame27Columbia University28Discover Dollar Pvt Ltd
+29NYU30University of Allahabad31Telefonica I+D32Toloka33Stanford University34Weizmann
+Institute of Science35The Alan Turing Institute36Wellesley College37Eleuther AI
+38Forschungszentrum Jülich
+Các tác giả liên hệ (⋆) có thể được liên lạc qua contact@bigcode-project.org
+Được đánh giá trên OpenReview: https://openreview.net/forum?id=KoFOg41haE
+Tóm tắt
+Cộng đồng BigCode, một sự hợp tác khoa học mở làm việc về việc phát triển có trách nhiệm các Mô hình Ngôn ngữ Lớn cho Code (Code LLMs), giới thiệu StarCoder và StarCoderBase: các mô hình 15.5B tham số với độ dài ngữ cảnh 8K, khả năng điền vào (infilling) và suy luận batch lớn nhanh được kích hoạt bởi cơ chế chú ý đa truy vấn (multi-query attention). StarCoderBase được huấn luyện trên 1 nghìn tỷ token có nguồn gốc từ The Stack (Kocetkov et al., 2022), một bộ sưu tập lớn các kho lưu trữ GitHub được cấp phép một cách cho phép với các công cụ kiểm tra và quy trình từ chối tham gia. Chúng tôi đã tinh chỉnh StarCoderBase trên 35B token Python, dẫn đến việc tạo ra StarCoder. Chúng tôi thực hiện đánh giá toàn diện nhất về Code LLMs cho đến nay và cho thấy rằng StarCoderBase vượt trội hơn mọi Code LLM mở hỗ trợ nhiều ngôn ngữ lập trình và bằng hoặc vượt trội hơn mô hình OpenAI code-cushman-001. Hơn nữa, StarCoder vượt trội hơn mọi mô hình được tinh chỉnh trên Python và vẫn giữ được hiệu suất trên các ngôn ngữ lập trình khác. Chúng tôi thực hiện một số bước quan trọng hướng tới việc phát hành mô hình truy cập mở an toàn, bao gồm một pipeline biên tập thông tin nhận dạng cá nhân (PII) được cải thiện và một công cụ truy xuất nguồn gốc mới lạ, đồng thời công khai các mô hình StarCoder dưới một phiên bản khả thi thương mại hơn của giấy phép Open Responsible AI Model.
+1arXiv:2305.06161v2  [cs.CL]  13 Dec 2023
+
+--- TRANG 2 ---
+Được xuất bản trên Transactions on Machine Learning Research (12/2023)
+1 Giới thiệu
+AI tạo sinh và các mô hình ngôn ngữ lớn (LLMs; Brown et al., 2020; Chen et al., 2021; Chowdhery et al.,
+2022; Zhang et al., 2022; OpenAI, 2023a) được dự đoán sẽ tác động đáng kể đến lực lượng lao động trong
+những năm tới (Eloundou et al., 2023; Bommasani et al., 2021; World Economic Forum, 2023) bằng cách
+tăng cường năng suất của người lao động. LLMs được huấn luyện trên code (Code LLMs) đã thấy sự áp dụng
+đặc biệt nhanh chóng: Microsoft's Copilot đã thu hút hơn 1 triệu nhà phát triển chuyên nghiệp (Euronews, 2023)
+và GitHub báo cáo rằng người dùng Copilot dựa vào nó để tạo ra 35% code họ viết cho một số ngôn ngữ (Thompson, 2022).
+Tuy nhiên, việc phát triển và sử dụng LLMs đã làm dấy lên những lo ngại về bản quyền, quyền riêng tư và tính mở.
+
+Các lo ngại về bản quyền phát sinh ở nhiều khu vực pháp lý, bao gồm Hoa Kỳ và EU, liên quan đến quyền của
+những người tạo nội dung có dữ liệu công khai được sử dụng để huấn luyện các mô hình ngôn ngữ. Đã có câu hỏi
+về việc liệu các mô hình máy học được huấn luyện trên dữ liệu như vậy có thuộc về học thuyết sử dụng hợp lý
+ở Hoa Kỳ hay không (Kuhn, 2022; Butterick, 2022; Rothchild & Rothchild, 2022), với việc sử dụng hợp lý
+có khả năng cao nhất khi mô hình tạo ra nội dung mới không giống với bất kỳ dữ liệu huấn luyện có bản quyền nào
+(Lemley & Casey, 2020; Levendowski, 2018). Do đó, Henderson et al. (2023) đề xuất các nhà phát triển LLM
+nên cung cấp các công cụ bổ sung để đảm bảo các mô hình này tuân thủ luật bản quyền hiện tại. Điều quan trọng
+cần đề cập là những vấn đề pháp lý này không chỉ là chủ đề của các cuộc tranh luận học thuật: các vụ kiện đã được
+đệ trình chống lại GitHub Copilot (DOE 1 v. and GitHub, Inc., 2022) cũng như Stable Diffusion (Andersen et al v. Stability AI et al, 2023).
+
+Các lo ngại về thông tin cá nhân đã khiến Italy tạm thời cấm ChatGPT và phát động một cuộc điều tra đang diễn ra
+về việc tuân thủ Quy định Bảo vệ Dữ liệu Chung (GDPR) của EU của OpenAI (BBC, 2023). Theo các quy định này
+(European Council, 2018; Lomas, 2022), các tổ chức xử lý thông tin cá nhân phải có cơ sở pháp lý hợp lệ.
+Những luật này có thể ảnh hưởng đến các nhà phát triển LLM thu thập lượng lớn dữ liệu công khai từ internet,
+có thể bao gồm thông tin cá nhân. Việc có được sự đồng ý rõ ràng từ những người tạo dữ liệu là khó khăn ở quy mô này,
+và không chắc chắn liệu có tồn tại các cơ sở pháp lý khác để xử lý thông tin cá nhân này hay không. Hơn nữa,
+ngay cả với cơ sở pháp lý hợp lệ, GDPR yêu cầu các bộ xử lý dữ liệu thông báo cho cá nhân về cách dữ liệu của họ
+được xử lý và cung cấp các điều khiển truy cập dữ liệu, chẳng hạn như quyền xóa dữ liệu hoặc sửa đổi dữ liệu sai.
+Điều này sẽ yêu cầu các nhà cung cấp LLM phải minh bạch về dữ liệu họ đã thu thập và cung cấp công cụ để cá nhân
+kiểm tra dữ liệu của họ và có khả năng xóa nó.
+
+Việc thiếu minh bạch và tính mở xung quanh các quy trình phát triển của các mô hình AI tạo sinh cũng đã làm dấy lên
+lo ngại trong cộng đồng khoa học. Nhiều mô hình đóng với các mức độ khác nhau: từ việc chỉ có sẵn trong tổ chức
+đã phát triển chúng (Chowdhery et al., 2022; Hoffmann et al., 2022) đến việc có thể truy cập công khai thông qua
+API trả phí nhưng với nhiều chi tiết về quy trình phát triển của chúng bị ẩn (Brown et al., 2020; OpenAI, 2023a).
+Trong khi truy cập API cho phép các nhà nghiên cứu thử nghiệm với các mô hình này, nó hạn chế khả năng nghiên cứu
+an toàn LLM (Perez et al., 2022), kiểm tra hoạt động bên trong của các mô hình (Olsson et al., 2022), và đóng góp
+vào cải tiến mô hình (Togelius & Yannakakis, 2023).
+
+Chúng tôi sử dụng "truy cập mở" để đề cập đến các mô hình có trọng số công khai. Mặc dù các mô hình truy cập mở
+khác tồn tại, mức độ mở vẫn khác nhau giữa các dự án này; và một số mô hình với trọng số được phát hành có
+hạn chế về phân phối mô hình (Touvron et al., 2023), hoặc không phát hành bộ dữ liệu huấn luyện của họ (Nijkamp
+et al., 2023; Zhang et al., 2022; Fried et al., 2022). Ngay cả trong các trường hợp khi cả mô hình và dữ liệu huấn luyện
+đều được phát hành một cách cho phép (Raffel et al., 2020; Tay et al., 2022), các nhà nghiên cứu bên ngoài thường
+không có cơ hội tham gia vào việc hướng dẫn phát triển các mô hình do ngành công nghiệp sản xuất. Ngược lại, các
+dự án phát triển LLM khác đã có cách tiếp cận hoàn toàn mở nhằm cho phép đầu vào từ cộng đồng
+vào việc phát triển mô hình, phát hành dữ liệu huấn luyện, và cho phép kiểm toán bên ngoài trong suốt toàn bộ quy trình
+phát triển (Solaiman, 2023). Một ví dụ là hội thảo nghiên cứu BigScience (BigScience Workshop, 2022),
+một sự hợp tác khoa học mở (Akiki et al., 2022) bao gồm hàng trăm nhà nghiên cứu hợp tác để
+phát hành BLOOM, một LLM đa ngôn ngữ (Scao et al., 2022; Muennighoff et al., 2022). Tương tự, EleutherAI, một
+sáng kiến nghiên cứu từ cơ sở chuyển thành tổ chức phi lợi nhuận, đã phát hành các LLM truy cập mở bao gồm GPT-NeoX (Black
+et al., 2022), GPT-J (Wang & Komatsuzaki, 2021), và Pythia (Biderman et al., 2023), cũng như
+dữ liệu huấn luyện liên quan (Gao et al., 2021a).
+
+Trong bài báo này, chúng tôi mô tả StarCoder và StarCoderBase, các Code LLM truy cập mở được phát triển và phát hành bởi
+cộng đồng BigCode, với trọng tâm vào việc tôn trọng bản quyền, quyền riêng tư, minh bạch, và phát triển mô hình
+do cộng đồng thúc đẩy.
+2
+
+--- TRANG 3 ---
+Được xuất bản trên Transactions on Machine Learning Research (12/2023)
+Dự án này là một sự hợp tác khoa học mở tập trung vào việc phát triển có trách nhiệm
+các LLM cho code. Nó được đồng quản lý bởi hai phòng thí nghiệm nghiên cứu công nghiệp và bao gồm hơn 600 thành viên
+từ các viện học thuật đa dạng và các phòng thí nghiệm công nghiệp. The Stack (Kocetkov et al., 2022) là một
+bộ dữ liệu tiền huấn luyện có sẵn công khai cho Code LLMs với một khung quản trị dữ liệu minh bạch. The Stack bao gồm
+6.4 TB mã nguồn được cấp phép một cách cho phép trong 384 ngôn ngữ lập trình, và bao gồm 54 GB các vấn đề GitHub
+và metadata cấp kho lưu trữ trong phiên bản v1.2 của bộ dữ liệu. Bộ dữ liệu đi kèm với "Am I in The
+Stack", một công cụ quản trị cho các nhà phát triển kiểm tra xem mã nguồn của họ có phải là một phần của bộ dữ liệu không, và một
+quy trình từ chối tham gia cho những người muốn xóa code của họ khỏi bộ dữ liệu.
+
+StarCoder và StarCoderBase đều là các mô hình 15.5B tham số được huấn luyện trên dữ liệu được cấp phép một cách cho phép từ
+The Stack. Chúng tôi đã huấn luyện StarCoderBase trên 1 nghìn tỷ token có nguồn gốc từ 80+ ngôn ngữ lập trình, các vấn đề GitHub,
+Git commits, và Jupyter notebooks. Chúng tôi đã tinh chỉnh StarCoderBase trên thêm 35B token Python,
+dẫn đến mô hình StarCoder. Cả hai mô hình StarCoder đều đi kèm với một sự kết hợp mới lạ các đặc trưng kiến trúc,
+chẳng hạn như độ dài ngữ cảnh 8K token (Dao et al., 2022), khả năng điền vào thông qua Fill-in-the-
+Middle (FIM; Bavarian et al., 2022), và suy luận batch lớn nhanh thông qua Multi-Query-Attention (MQA;
+Shazeer, 2019). Chúng tôi trình bày một đánh giá mở rộng về các mô hình StarCoder và phát hành một demo cùng với
+một công cụ truy xuất nguồn gốc tích hợp có thể giúp người dùng xác định vị trí các sinh tạo mô hình có thể đã được sao chép từ
+tập huấn luyện. Nhìn chung, các đóng góp của chúng tôi có thể được tóm tắt như sau.
+
+• Chúng tôi phát hành StarCoderBase và StarCoder, các Code LLM truy cập mở được huấn luyện trên 80+ ngôn ngữ
+lập trình hỗ trợ một sự kết hợp mới lạ các khả năng và đặc trưng kiến trúc không có sẵn trong
+các Code LLM mở khác.
+
+• Chúng tôi thực hiện đánh giá toàn diện nhất về Code LLMs cho đến nay sử dụng một bộ đa dạng các
+benchmark (Lai et al., 2022; Cassano et al., 2023; Pearce et al., 2022; Fried et al., 2022; Yee & Guha,
+2023; Austin et al., 2021; Chen et al., 2021; Ben Allal et al., 2022; Hendrycks et al., 2020; Reddy
+et al., 2019; Cobbe et al., 2021; Nadeem et al., 2021; Gehman et al., 2020; Liang et al., 2022), và
+cho thấy rằng:
+  – StarCoder vượt trội hơn mọi LLM mở cho code hỗ trợ nhiều ngôn ngữ lập trình
+    (Nijkamp et al., 2023; Zheng et al., 2023);
+  – StarCoder bằng hoặc vượt trội hơn mô hình OpenAI code-cushman-001; và
+  – Khi được tinh chỉnh trên Python, StarCoder vượt trội đáng kể so với các LLM hiện có cũng
+    được tinh chỉnh trên Python.
+
+• Chúng tôi thực hiện các bước quan trọng hướng tới việc phát hành mô hình mở an toàn:
+  – Chúng tôi phát hành StarCoder dưới thỏa thuận giấy phép OpenRAIL-M, cho phép truy cập, sử dụng và phân phối
+    miễn phí bản quyền của mô hình trong khi nhúng một bộ hạn chế sử dụng trong các tình huống quan trọng đã xác định.
+    Chúng tôi đã làm việc trên một phiên bản của thỏa thuận giấy phép mà: (i) khả thi thương mại hơn cho các công ty
+    muốn sử dụng và phân phối mô hình và (ii) thúc đẩy minh bạch và hiểu biết thông qua việc chia sẻ tài liệu AI
+    như model cards (Mitchell et al., 2019);
+  – Chúng tôi tích hợp một công cụ truy xuất nguồn gốc mới vào demo VSCode có thể giúp người dùng phát hiện và
+    xác định vị trí các sinh tạo mô hình có thể đã được sao chép từ tập huấn luyện. Điều này được thực hiện
+    thông qua một quy trình hai bước bao gồm kiểm tra thành viên nhẹ tiếp theo bởi tìm kiếm trên chỉ mục BM25
+    (Phần 9); và
+  – Chúng tôi đã cải thiện đáng kể pipeline biên tập PII bằng cách thu thập một bộ dữ liệu PII chứa
+    12,000 file với 22,950 thực thể được chú thích. Chúng tôi đã tinh chỉnh mô hình encoder riêng của chúng tôi (StarEncoder)
+    trên bộ dữ liệu này, dẫn đến một mô hình phát hiện PII mạnh mẽ (Phần 4).
+
+2 Công trình liên quan
+Các mô hình ngôn ngữ Những nỗ lực ban đầu để xây dựng các mô hình ngôn ngữ quy mô lớn đã sử dụng n-gram và các kỹ thuật
+làm mượt đơn giản (Brants et al., 2007; Heafield et al., 2013; Buck et al., 2014). Các cách tiếp cận khác đã áp dụng nhiều
+loại kiến trúc mạng neural khác nhau, chẳng hạn như mạng feedforward (Bengio et al., 2000) và mạng
+hồi tiếp (Mikolov et al., 2010; Jozefowicz et al., 2016), cho tác vụ mô hình hóa ngôn ngữ. Kiến trúc Transformer
+(Vaswani et al., 2017) đã dẫn đến việc phát triển các mô hình ngôn ngữ có khả năng mở rộng cao (Radford et al.,
+2019; Brown et al., 2020), đã cho thấy mối quan hệ có thể dự đoán được giữa mất mát mô hình hóa ngôn ngữ và
+các yếu tố mở rộng như kích thước mô hình, số lượng token huấn luyện, và ngân sách tính toán (Kaplan et al., 2020;
+Hoffmann et al., 2022).
+
+Mô hình Ngôn ngữ cho Code Các mô hình ngôn ngữ ban đầu được áp dụng cho code bởi Hindle et al. (2012), nhưng
+dựa vào các mô hình n-gram được huấn luyện ở quy mô tương đối nhỏ. Nhiều kiến trúc neural được phát triển trong NLP
+cũng được áp dụng thành công cho code, bao gồm các mô hình chỉ-encoder để tạo ra các biểu diễn code (Feng
+et al., 2020; Kanade et al., 2020) và các mô hình encoder-decoder cho dịch thuật, chỉnh sửa, tóm tắt, và
+các tác vụ ngôn ngữ-sang-code (Wang et al., 2021; Ahmad et al., 2021; Li et al., 2022). Các kiến trúc Transformer
+chỉ-decoder đã tạo ra các mô hình tạo sinh mạnh mẽ cho code, thường bằng cách huấn luyện trên hỗn hợp văn bản
+và code từ GitHub (Chen et al., 2021; Austin et al., 2021; Fried et al., 2022; Zheng et al., 2023;
+Nijkamp et al., 2023). Hầu hết các mô hình này đều không hoàn toàn mở, nhưng PolyCoder (Xu et al., 2022) và
+SantaCoder (Ben Allal et al., 2023) là những ngoại lệ đáng chú ý và có cả mô hình mở và dữ liệu huấn luyện.
+Tuy nhiên, các mô hình này tương đối nhỏ (lần lượt 2.7B và 1.1B tham số) và được huấn luyện trên ít
+dữ liệu hơn (<300GB code) so với những gì chúng tôi khám phá trong công trình này.
+
+LLMs đóng Một số công ty công nghệ lớn đã phát triển các LLM hiệu suất cao mà không phát hành
+chúng. Các ví dụ bao gồm PaLM của Google (Chowdhery et al., 2022) và LaMDA (Thoppilan et al., 2022),
+Chinchilla của DeepMind (Hoffmann et al., 2022) và Gopher (Rae et al., 2021), và Megatron-Turing
+NLG của NVIDIA (Smith et al., 2022). OpenAI và các startup AI khác, bao gồm Cohere1, Anthropic2, và Aleph Alpha3,
+cung cấp LLMs như một dịch vụ API trả phí. Các công ty này đã không phát hành trọng số mô hình cũng không cung cấp thông tin
+toàn diện về phương pháp được sử dụng để tạo ra các mô hình này. OpenAI đã xuất bản một số báo cáo kỹ thuật
+của họ về họ mô hình GPT (Brown et al., 2020; Chen et al., 2021; OpenAI, 2023a), thể hiện
+khả năng của các mô hình của họ.
+
+LLMs truy cập mở Nhiều LLM truy cập mở đã được phát hành cho cộng đồng AI, mặc dù
+chúng thường không mạnh như các mô hình đóng. Trong bài báo này, chúng tôi sử dụng thuật ngữ "LLM truy cập mở"
+khi trọng số mô hình có sẵn công khai. Chúng tôi vẫn lưu ý rằng có sự khác biệt đáng kể giữa
+các mô hình truy cập mở về mức độ minh bạch của họ về dữ liệu huấn luyện và kỹ thuật lọc. Ví dụ,
+EleutherAI đã phát hành GPT-NeoX-20B (Black et al., 2022) và GPT-J-6B (Wang & Komatsuzaki,
+2021), cũng như bộ dữ liệu mà các mô hình này được huấn luyện trên (Gao et al., 2021a). Google phát hành UL2-20B (Tay
+et al., 2022), một mô hình encoder-decoder được huấn luyện trên C4 có sẵn công khai (Raffel et al., 2020). Đại học Thanh Hoa
+phát hành trọng số của GLM-130B (Zeng et al., 2022), một LLM Trung-Anh, và CodeGeeX-
+13B (Zheng et al., 2023), một LLM cho các ứng dụng coding, mà không phát hành bộ huấn luyện. Salesforce
+phát hành CodeGen-Mono-16B (Nijkamp et al., 2023) mà không tiết lộ bộ dữ liệu Python độc quyền. Meta
+phát hành các mô hình OPT (Zhang et al., 2022), LLaMA (Touvron et al., 2023), và InCoder (Fried et al.,
+2022) dưới giấy phép phi thương mại và chỉ cung cấp chi tiết cấp cao về quy trình thu thập và
+lọc dữ liệu.
+
+3 Curation và Làm sạch Dữ liệu
+Phần này mô tả cách chúng tôi xử lý dữ liệu huấn luyện của StarCoderBase. Chúng tôi hạn chế tập huấn luyện vào
+The Stack v1.2 (Kocetkov et al., 2022), chỉ chứa dữ liệu từ các kho lưu trữ GitHub được cấp phép một cách cho phép4.
+Tại thời điểm xử lý dữ liệu, 44 người đã từ chối tham gia The Stack. Dưới đây, chúng tôi mô tả cách
+chúng tôi làm sạch thêm dữ liệu bằng cách kết hợp lọc heuristic và kiểm tra thủ công.
+
+1https://cohere.com/
+2https://www.anthropic.com/
+3https://www.aleph-alpha.com/
+4Xem https://blueoakcouncil.org/để tìm hiểu thêm về giấy phép cho phép và truy cập bộ sưu tập toàn diện các
+giấy phép như vậy.
+4
+
+--- TRANG 5 ---
+Được xuất bản trên Transactions on Machine Learning Research (12/2023)
+3.1 Ngôn ngữ Lập trình
+Lựa chọn ngôn ngữ lập trình Từ 358 ngôn ngữ lập trình trong The Stack, chúng tôi đã chọn
+86 ngôn ngữ. Việc gán dữ liệu cho các ngôn ngữ lập trình được thực hiện dựa hoàn toàn trên phần mở rộng file
+(Kocetkov et al., 2022). Chúng tôi bao gồm tất cả các ngôn ngữ lập trình có hơn 500 MB dữ liệu, cũng như
+các ngôn ngữ được xếp hạng trong top 50 trên Githut 2.0 hoặc TIOBE Index tháng 12 năm 2022 về mức độ phổ biến
+ngôn ngữ lập trình. Ngoài ra, chúng tôi bao gồm các phương ngữ của các ngôn ngữ lập trình đã được chọn (ví dụ,
+Racket và Scheme cho Lisp). Chúng tôi loại trừ các ngôn ngữ cấu hình (Nix, Puppet, v.v.) và các ngôn ngữ
+không còn được hỗ trợ tích cực (ActionScript). Chúng tôi cũng bao gồm các định dạng dữ liệu như JSON và YAML nhưng
+giới hạn khối lượng dữ liệu của chúng (xem đoạn "JSON và YAML" để biết chi tiết). Danh sách đầy đủ các ngôn ngữ lập trình
+được chọn có thể được tìm thấy trong Bảng 1 và 2. Trong số các ngôn ngữ có mặt trong MultiPL-E (Cassano et al., 2023),
+chỉ D và Swift không được bao gồm trong tập huấn luyện. Đối với D, việc phân loại sai ngôn ngữ của các file dẫn đến ít hơn
+2MB dữ liệu trong The Stack (Kocetkov et al., 2022). Swift đã bị loại trừ khỏi danh sách cuối cùng các ngôn ngữ
+do lỗi của con người.
+
+Kiểm tra trực quan Chúng tôi thực hiện kiểm tra trực quan để đảm bảo rằng chúng tôi chỉ giữ lại dữ liệu chất lượng cao. Để
+đạt được điều này, chúng tôi chọn ngẫu nhiên 30,000 file từ The Stack cho mỗi ngôn ngữ lập trình, phân loại
+chúng theo phần mở rộng, và giữ tối đa 1,000 file cho mỗi phần mở rộng. Sau đó chúng tôi liên hệ với
+cộng đồng của chúng tôi để được hỗ trợ với việc kiểm tra dữ liệu. Chúng tôi hướng dẫn các người chú thích xem qua 50–100 file
+và xác nhận xem dữ liệu có vẻ là code bình thường được viết bởi con người, trái ngược với văn bản, dữ liệu, hoặc một
+dòng dài code được tự động tạo. Chúng tôi cũng yêu cầu các người chú thích xác định xem chúng tôi có nên sử dụng
+bộ lọc alpha-numeric mặc định (yêu cầu hơn 25% ký hiệu alpha-numeric) và bộ lọc dòng dài (yêu cầu
+dòng ít hơn 1,000 ký tự) cho một phần mở rộng file nhất định. Mười tám người chú thích cộng đồng
+đánh giá 300 phần mở rộng ngôn ngữ lập trình. Sau khi kiểm tra, chúng tôi loại trừ 36 phần mở rộng và loại bỏ
+bộ lọc dòng dài cho 27 phần mở rộng. Kết quả hoàn chỉnh của việc kiểm tra dữ liệu, bao gồm nhận xét
+của người chú thích, có thể được tìm thấy trong Google sheet này.
+
+Bộ lọc XML Khi chúng tôi kiểm tra dữ liệu, chúng tôi nhận thấy rằng một số phần mở rộng thường bao gồm các file XML. Ví dụ,
+phần mở rộng .sld có hơn 50% file của nó ở định dạng XML. Để giải quyết điều này, chúng tôi triển khai
+một bộ lọc XML đơn giản kiểm tra sự hiện diện của " <?xml version= " trong 100 ký tự đầu tiên của
+file. Bộ lọc này đã chứng minh là hiệu quả và tạo ra ít false positive. Do đó, chúng tôi áp dụng nó cho tất cả
+ngôn ngữ lập trình ngoại trừ XSLT, sử dụng cú pháp XML.
+
+Bộ lọc Alpha Trong quá trình điều tra, chúng tôi phát hiện rằng một số phần mở rộng, như MATLAB, chứa
+nhiều file dữ liệu thường lưu trữ các tensor lớn. Để xác định các file này, chúng tôi phát triển một bộ lọc alpha
+loại bỏ các file có ít hơn 25% ký tự alphabetic. Tuy nhiên, khi chúng tôi thử nghiệm bộ lọc này trên một
+tập con nhỏ dữ liệu, chúng tôi quan sát tỷ lệ false positive cao cho một số ngôn ngữ lập trình, như Assembly.
+Để giải quyết vấn đề này, chúng tôi tập trung vào 25 phần mở rộng có số lượng phát hiện cao nhất và thủ công
+xác minh xem bộ lọc alpha có nên được áp dụng hay không.
+
+HTML Chúng tôi thiết kế một bộ lọc HTML tùy chỉnh nhắm vào boilerplate HTML quá mức và links. Chúng tôi xem xét
+tỷ lệ văn bản hiển thị trong mỗi file và chỉ giữ những file mà văn bản hiển thị chiếm
+ít nhất 20% code HTML và có độ dài tối thiểu 100 ký tự.
+
+JSON và YAML Các file JSON và YAML tự nhiên nặng dữ liệu hơn các ngôn ngữ khác trong The
+Stack. Để loại bỏ hầu hết các file dữ liệu, chúng tôi áp dụng các bộ lọc sau. Đối với YAML, chúng tôi giữ các file có
+50–5000 ký tự, độ dài dòng trung bình nhỏ hơn 100, độ dài dòng tối đa nhỏ hơn 1000, và
+hơn 50% ký tự alphabetic. Các bộ lọc này loại bỏ khoảng 20% file và 90% khối lượng.
+Đối với JSON, chúng tôi giữ các file có 50–5000 ký tự và hơn 50% ký tự alphabetic, loại bỏ
+khoảng 70% file và 98% khối lượng.
+5

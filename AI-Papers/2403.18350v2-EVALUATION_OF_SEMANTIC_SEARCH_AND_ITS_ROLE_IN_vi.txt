@@ -1,0 +1,334 @@
+# 2403.18350v2.pdf
+# Chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2403.18350v2.pdf
+# Kích thước file: 240647 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+ĐÁNH GIÁ TÌM KIẾM NGỮ NGHĨA VÀ VAI TRÒ CỦA NÓ TRONG
+SINH AUGMENTED-RETRIEVAL (RAG) CHO TIẾNG Ả RẬP
+Ali Mahboub, Muhy Eddin Za'ter, Bashar Al-Rfooh, Yazan Estaitia, Adnan Jaljuli, Asma Hakouz
+Maqsam
+Amman, Jordan
+{ali.mahbob, muhyeddin, bashar.alrfooh, yazan.estaitia, adnan.jaljuli, asma}@maqsam.com
+TÓM TẮT
+Những tiến bộ mới nhất trong học máy và học sâu đã mang lại khái niệm về
+tương tự ngữ nghĩa, điều này đã được chứng minh là vô cùng có lợi trong nhiều ứng dụng và đã phần lớn
+thay thế tìm kiếm từ khóa. Tuy nhiên, việc đánh giá tương tự ngữ nghĩa và tiến hành tìm kiếm cho một
+truy vấn cụ thể trên các tài liệu khác nhau vẫn tiếp tục là một nhiệm vụ phức tạp. Sự phức tạp này là do
+bản chất đa diện của nhiệm vụ, việc thiếu các tiêu chuẩn đánh giá chuẩn, trong khi những thách thức này
+được khuếch đại thêm đối với tiếng Ả Rập. Bài báo này nỗ lực thiết lập một tiêu chuẩn đánh giá đơn giản nhưng
+mạnh mẽ cho tìm kiếm ngữ nghĩa trong tiếng Ả Rập. Hơn nữa, để đánh giá chính xác hiệu quả của
+các chỉ số này và bộ dữ liệu, chúng tôi tiến hành đánh giá tìm kiếm ngữ nghĩa trong khuôn khổ của
+sinh augmented retrieval (RAG).
+Từ khóa Tìm kiếm Ngữ nghĩa ·Sinh Augmented Retrieval (RAG) ·Xử lý Ngôn ngữ Tự nhiên Tiếng Ả Rập
+1 Giới thiệu
+Sự dồi dào của thông tin đã thúc đẩy sự phát triển của các công nghệ tìm kiếm ngữ nghĩa vượt qua các
+công cụ tìm kiếm truyền thống dựa trên từ khóa bằng cách hiểu ngữ cảnh và ý định của các truy vấn người dùng thông qua xử lý ngôn ngữ tự nhiên (NLP) và học máy [1]. Không giống như các phương pháp tìm kiếm truyền thống tập trung vào việc khớp từ khóa,
+tìm kiếm ngữ nghĩa diễn giải ý nghĩa và mối quan hệ giữa các từ, nhằm mô phỏng sự hiểu biết của con người. Tiến bộ này nâng cao trải nghiệm người dùng trên các ứng dụng khác nhau, bao gồm công cụ tìm kiếm web, khám phá tri thức, và hệ thống gợi ý nội dung cá nhân hóa, và gần đây nhất là Retriever-Augmented Generation (RAG) [2].
+RAG đại diện cho một cách tiếp cận sáng tạo tại ngã tư của truy xuất thông tin và sinh ngôn ngữ tự nhiên,
+tận dụng điểm mạnh của cả hai lĩnh vực để tinh chỉnh khả năng của các hệ thống dựa trên Trí tuệ Nhân tạo (AI) để hiểu và
+sinh văn bản giống con người [3, 4]. Bằng cách kết hợp một cơ chế truy xuất tinh vi với một mô hình sinh mạnh mẽ,
+các hệ thống RAG có thể tạo ra các phản hồi chi tiết, phù hợp về ngữ cảnh mà cải thiện đáng kể các hạn chế của các mô hình ngôn ngữ độc lập về mặt độ chính xác và sinh tương tự con người. Việc tích hợp tìm kiếm ngữ nghĩa vào các
+hệ thống RAG là rất quan trọng, đặc biệt là cho việc xử lý các truy vấn phức tạp hoặc những truy vấn yêu cầu hiểu biết ngữ cảnh sâu sắc, làm cho
+nó trở thành nền tảng để nâng cao độ chính xác truy xuất và chất lượng nội dung được sinh.
+Tương tự như đa số các nỗ lực nghiên cứu và nhiệm vụ NLP, tìm kiếm ngữ nghĩa và RAG tiếng Ả Rập tụt hậu
+so với các ngôn ngữ khác do những thách thức do tiếng Ả Rập đặt ra, bao gồm hình thái phức tạp của nó,
+tính đa dạng của các phương ngữ và sự thiếu hụt dữ liệu [5,6]. Các thách thức được đề cập ở trên nhấn mạnh nhu cầu về
+các kỹ thuật và nghiên cứu NLP được thiết kế riêng cho tiếng Ả Rập trong bối cảnh tìm kiếm ngữ nghĩa và hệ thống RAG. Bài báo này nhằm
+đánh giá hiệu quả của tìm kiếm ngữ nghĩa trong việc xử lý tiếng Ả Rập cùng với tác động của nó đối với hiệu suất của các hệ thống RAG
+được thiết kế đặc biệt cho trường hợp sử dụng Hỏi đáp tiếng Ả Rập. Bằng cách đánh giá tác động của các bộ mã hóa văn bản khác nhau đối với
+hiệu suất của hệ thống RAG, nghiên cứu tìm cách cung cấp những hiểu biết sâu sắc về việc tối ưu hóa các ứng dụng NLP cho người dùng
+nói tiếng Ả Rập và thúc đẩy sự phát triển của các hệ thống AI bao trùm về mặt ngôn ngữ.arXiv:2403.18350v2  [cs.CL]  30 May 2024
+
+--- TRANG 2 ---
+Phần còn lại của bài báo được trình bày như sau; phần 2 trình bày một tổng quan đơn giản về tài liệu trước đây, tiếp theo là
+phần 3 mô tả phương pháp và thí nghiệm được thiết kế để đánh giá tìm kiếm ngữ nghĩa trong bối cảnh của
+RAG, trong khi phần 4 trình bày kết quả và thảo luận cuối cùng được tiếp theo bởi kết luận.
+2 Tổng quan tài liệu
+Sự tiến hóa của tìm kiếm ngữ nghĩa có thể được truy nguồn về trước khi việc áp dụng rộng rãi học máy, ban đầu
+dựa vào các phương pháp dựa trên từ khóa và các kỹ thuật thống kê như chỉ mục ngữ nghĩa tiềm ẩn (LSI) vào cuối những năm 1990 [7].
+Những phương pháp sớm này nhằm hiểu sự tương tự tài liệu vượt ra ngoài việc khớp từ khóa chính xác, đặt nền tảng cho
+các cách tiếp cận tinh vi hơn.
+Trong những năm 2000, học máy đã biến đổi tìm kiếm ngữ nghĩa với các thuật toán như máy vector hỗ trợ (SVMs)[8],
+vượt ra ngoài việc khớp từ khóa đến sự hiểu biết sâu hơn về các truy vấn thông qua việc sử dụng các
+đặc trưng văn bản tiên tiến và tinh vi hơn. Tuy nhiên, những kỹ thuật này có những hạn chế của chúng về ý nghĩa ngữ cảnh mà chúng
+có khả năng nắm bắt, do đó các kỹ thuật tiên tiến hơn có khả năng tận dụng dòng dữ liệu ngày càng tăng
+là cần thiết.
+Do đó, học sâu đã được giới thiệu vào tìm kiếm ngữ nghĩa điều này đánh dấu một cột mốc quan trọng, với các kỹ thuật
+như Word2Vec [9] và GloVe [10] nâng cao sự hiểu biết về mối quan hệ từ thông qua học không giám sát
+của kho ngữ liệu lớn. Kỷ nguyên này cũng chứng kiến sự phát triển của kiến trúc mạng nơ-ron tiên tiến, như cơ chế chú ý [11] và transformers (ví dụ: BERT, GPT)[12], cách mạng hóa lĩnh vực này bằng cách cho phép hiểu biết sâu hơn về
+ý định truy vấn và mức độ liên quan ngữ cảnh, điều này đóng vai trò quan trọng trong những tiến bộ của học sâu.
+Song song với những tiến bộ của bộ mã hóa văn bản sử dụng học sâu, việc sử dụng các kỹ thuật hàng xóm gần nhất xấp xỉ (ANN)
+trở nên quan trọng đối với tìm kiếm ngữ nghĩa [13]. Các thuật toán ANN, xuất hiện vào đầu những năm 2010, đã tạo điều kiện cho
+tìm kiếm tương tự hiệu quả trong không gian nhiều chiều, thiết yếu để quản lý dữ liệu rộng lớn được xử lý bởi các mô hình học sâu,
+điều này cho phép người dùng thay thế các kỹ thuật chậm không mở rộng được như tương tự cosine. Việc tích hợp ANN với
+các mô hình ngôn ngữ hiện đại đã liên tục cải thiện tìm kiếm ngữ nghĩa, nâng cao khả năng mở rộng và hiệu quả của nó
+[14].
+Tiến bộ đáng kể đã được thực hiện trong tìm kiếm ngữ nghĩa tiếng Ả Rập nhờ vào công nghệ học sâu, đặc biệt là với việc
+tạo ra các bộ mã hóa tập trung vào tiếng Ả Rập sử dụng các framework khác nhau như Word2Vec và các mô hình dựa trên Transformer
+[15,16,17]. Ngoài ra, việc kết hợp tiếng Ả Rập vào các bộ mã hóa toàn cầu cũng đã được chứng minh là có lợi, sử dụng các mẫu
+từ các ngôn ngữ khác để cải thiện sự hiểu biết. Nghiên cứu này làm nổi bật hiệu quả của việc sử dụng các phương pháp học sâu tiên tiến
+để nắm bắt tốt hơn các sắc thái ngữ nghĩa của các truy vấn tiếng Ả Rập, dẫn đến độ chính xác cao trong việc nhận biết các
+câu hỏi tương tự trong môi trường hỗ trợ khách hàng.
+Ngược lại, RAG—Retrieved Augmented Generation—vẫn là một lĩnh vực mới nổi trong miền đang phát triển của
+trí tuệ nhân tạo sinh. Những thách thức đặc biệt liên quan đến tiếng Ả Rập, như hình thái phức tạp của nó
+và sự khan hiếm tương đối của các tài nguyên, đã cản trở sự chú ý và nghiên cứu mà nó đã nhận được. RAG tiếng Ả Rập chưa
+nổi lên như một trọng tâm của điều tra học thuật đến mức có lẽ nó xứng đáng [18, 19].
+Nghiên cứu này nỗ lực đánh giá bối cảnh hiện tại của khả năng tìm kiếm ngữ nghĩa trong tiếng Ả Rập,
+giải quyết sự thiếu hụt đáng chú ý về các tiêu chuẩn đánh giá và dữ liệu cơ sở. Ngoài ra, chúng tôi tìm cách khám phá tác động của tìm kiếm ngữ nghĩa
+đối với hiệu quả của retrieved augmented generation, đặt giả thuyết rằng các cơ chế tìm kiếm được cải thiện có thể
+tăng cường đáng kể quá trình sinh.
+3 Phương pháp Đánh giá
+Trong phần này, chúng tôi trình bày các thủ tục được sử dụng cho việc đánh giá các mô-đun tìm kiếm ngữ nghĩa khác nhau. Khung
+phương pháp của chúng tôi được cấu trúc xung quanh ba thành phần cốt lõi: sinh dữ liệu, các chỉ số đánh giá, và
+cấu hình của các mô-đun tìm kiếm ngữ nghĩa.
+3.1 Sinh Dữ liệu
+Cấu trúc của bộ dữ liệu cần thiết cho việc đánh giá hiệu quả của xếp hạng tìm kiếm ngữ nghĩa là then chốt. Bộ dữ liệu cần
+bao gồm:
+•Một tập hợp các tài liệu, mà trong nghiên cứu của chúng tôi, bao gồm các tóm tắt tiếng Ả Rập về các cuộc gọi hỗ trợ khách hàng cho
+các công ty thực tế.
+• Một tập hợp các truy vấn tìm kiếm của người dùng, trong đó mỗi truy vấn được liên kết với tất cả hoặc một tập con của các tài liệu.
+2
+
+--- TRANG 3 ---
+•Một điểm số hoặc nhãn mức độ liên quan cho mỗi cặp (truy vấn, tài liệu), cho biết mức độ liên quan của tài liệu đối với truy vấn.
+Đây có thể là một nhãn nhị phân (liên quan/không liên quan) hoặc một giá trị điểm với điểm số cao hơn cho biết mức độ liên quan cao hơn.
+Để tránh quá trình thu thập và gán nhãn dữ liệu tốn nhiều tài nguyên, chúng tôi tận dụng khả năng của các
+Mô hình Ngôn ngữ Lớn (LLMs), đặc biệt là GPT-4, để sinh các truy vấn tìm kiếm mà:
+• Mô phỏng các tìm kiếm thực tế như có thể được thực hiện bởi các nhân viên hỗ trợ khách hàng.
+• Gán mỗi truy vấn cho một tập hợp gồm năm tóm tắt.
+•Gán một nhãn/điểm mức độ liên quan cho mỗi cặp (truy vấn, tài liệu), với hệ thống chấm điểm (không liên quan, khá
+liên quan, rất liên quan) được chỉ định là (0, 1, 2) tương ứng.
+Một prompt đã được thiết kế để đáp ứng những yêu cầu này và để sinh một truy vấn tìm kiếm tiếng Ả Rập cho mỗi tập hợp gồm năm tóm tắt,
+đảm bảo rằng ít nhất một tóm tắt có tính liên quan cao.
+Bộ dữ liệu đánh giá bao gồm 2030 tóm tắt cuộc gọi hỗ trợ khách hàng và 406 truy vấn tìm kiếm. Một cuộc kiểm tra thủ công
+của 10% bộ dữ liệu (205 tóm tắt với 41 truy vấn) chỉ phát hiện 2 sai phân loại giữa các tóm tắt rất liên quan và
+không liên quan, cho thấy bộ dữ liệu ở trạng thái chính xác cao. Xác thực thêm trên một tập hợp các mẫu ngẫu nhiên khác
+đã xác nhận tính mạnh mẽ của bộ dữ liệu, đủ điều kiện cho việc đánh giá tìm kiếm ngữ nghĩa.
+3.2 Các Chỉ số Đánh giá
+Việc đánh giá sự thành thạo và hiệu quả của các phương pháp tìm kiếm ngữ nghĩa khác nhau đòi hỏi việc sử dụng các
+chỉ số đánh giá cụ thể. Sự chú ý của chúng tôi tập trung vào các chỉ số then chốt: Normalized Discounted Cumulative Gain (nDCG),
+Mean Reciprocal Rank (MRR), và Mean Average Precision (mAP). Mỗi chỉ số là không thể thiếu cho một đánh giá sâu sắc về
+khả năng của các phương pháp tìm kiếm ngữ nghĩa để truy xuất và xếp hạng tài liệu một cách chính xác. Các công thức để tính toán các
+chỉ số này được mô tả dưới đây:
+3.2.1 Normalized Discounted Cumulative Gain (nDCG)
+Chỉ số này định lượng hiệu quả xếp hạng trên các đầu ra tìm kiếm, xem xét các mức độ liên quan khác nhau mà mỗi
+tài liệu có. Nó tính đến mức độ liên quan có trọng số của các tài liệu, ưu tiên cho những tài liệu ở đầu
+danh sách. Một giá trị nDCG cao hơn biểu thị rằng các tài liệu có liên quan được ưu tiên phù hợp trong xếp hạng, do đó
+nhấn mạnh tầm quan trọng của thứ tự của chúng trong kết quả tìm kiếm. nDCG được tính bằng phương trình sau:
+nDCG @k=DCG @k
+IDCG @k(1)
+trong đó DCG @k(Discounted Cumulative Gain ở thứ hạng k) được định nghĩa là:
+DCG @k=kX
+i=12rel i−1
+log2(i+ 1)(2)
+vàIDCG @klà DCG lý tưởng ở k, đại diện cho xếp hạng tối ưu ánh xạ đến DCG tối đa có thể đạt được lên
+đến vị trí k, đảm bảo một so sánh công bằng bằng cách chuẩn hóa điểm số. reliđại diện cho mức độ liên quan có cấp độ của kết quả ở
+vị trí i.
+3.2.2 Mean Reciprocal Rank (MRR)
+MRR tập trung vào xếp hạng của tài liệu có liên quan cao đầu tiên cho một truy vấn tìm kiếm cụ thể, cung cấp hiểu biết về
+tốc độ mà hệ thống xếp hạng có thể định vị và hiển thị thông tin thích hợp nhất. Phép tính là như
+sau:
+MRR =1
+|Q||Q|X
+i=11
+rank i(3)
+Ở đây,|Q|là tổng số truy vấn, và rank ilà vị trí xếp hạng của tài liệu rất liên quan đầu tiên cho truy vấn
+thứ i.
+3
+
+--- TRANG 4 ---
+3.2.3 Mean Average Precision (mAP)
+mAP phục vụ như một chỉ báo toàn diện về độ chính xác cho tất cả các tài liệu thích hợp liên quan đến mỗi truy vấn, với
+một trung bình được lấy trên tất cả các truy vấn. Điểm mAP cao hơn biểu thị sự nhất quán được cải thiện của hệ thống trong việc xác định và
+truy xuất các tài liệu liên quan trên toàn bộ xếp hạng.
+Phương trình cho Average Precision (AP) cho một truy vấn đơn là:
+AP=Pn
+k=1(P(k)×relk
+# relevant_documents(4)
+trong đó: - nlà số tài liệu được truy xuất. - P(k)là độ chính xác ở điểm cắt ktrong danh sách các tài liệu được truy xuất. -
+relklà điểm mức độ liên quan của tài liệu ở thứ hạng kcho dù nó rất liên quan, khá liên quan hay không liên quan.
+Để tìm Mean Average Precision (MAP) chúng ta lấy trung bình điểm AP trên tất cả các truy vấn:
+MAP =PQ
+q=1APq
+Q(5)
+trong đó: - APqlà Average Precision cho truy vấn thứ q. - Qlà tổng số truy vấn.
+Việc sử dụng các chỉ số này cho phép đánh giá hiệu quả xếp hạng của các phương pháp khác nhau, tính đến các
+khía cạnh thiết yếu về độ chính xác và hiệu quả trong xếp hạng tài liệu phản ánh việc sử dụng thực tế của chúng trong các
+tình huống tìm kiếm ngữ nghĩa.
+3.3 Cách tiếp cận Tìm kiếm Ngữ nghĩa
+Như đã thảo luận trong phần Tổng quan Tài liệu, khung đánh giá của chúng tôi dựa trên ý tưởng sử dụng các bộ mã hóa để
+chuyển đổi tài liệu và truy vấn thành các vector nhúng bắt giữ nội dung của chúng. Sau đó chúng tôi xác định tương tự cosine
+giữa vector nhúng của một truy vấn và những vector của các tài liệu, sắp xếp các tài liệu dựa trên các
+điểm tương tự này.
+3.3.1 Đánh giá các Bộ mã hóa
+Sự thành công của xếp hạng tìm kiếm ngữ nghĩa phụ thuộc đáng kể vào chất lượng của các bộ mã hóa được sử dụng; các bộ mã hóa chất lượng cao hơn
+tạo ra các vector nhúng chi tiết hơn, điều này lần lượt cho phép các đánh giá chính xác hơn về tương tự giữa các
+truy vấn tìm kiếm và tài liệu. Trong nghiên cứu của chúng tôi, chúng tôi đã chọn các bộ mã hóa cho thấy hiệu suất tốt nhất cho tiếng Ả Rập bằng cách so sánh kết quả của chúng với những kết quả thu được từ xếp hạng tài liệu ngẫu nhiên cho mỗi truy vấn (tính toán điểm đánh giá trung bình
+từ 30 mẫu xếp hạng ngẫu nhiên) và so với xếp hạng tài liệu tệ nhất cho mỗi truy vấn (trong đó các tài liệu được
+sắp xếp theo mức độ liên quan giảm dần để đặt một tiêu chuẩn cho điểm số thấp nhất có thể đạt được).
+Các bộ mã hóa được đánh giá:
+•Bộ mã hóa #1: Paraphrase Mulitlingual MiniLM1:
+Đây là một mô hình nhúng đa ngôn ngữ được dạy trên 50+ ngôn ngữ bao gồm tiếng Ả Rập và xuất ra một
+vector nhúng 384 chiều của câu cho trước. Nó chủ yếu được triển khai cho phân cụm và tìm kiếm
+ngữ nghĩa.
+•Bộ mã hóa #2: Cmlm Multilingual2:
+Đây là một bộ mã hóa câu toàn cầu, được thiết kế để ánh xạ 109 ngôn ngữ vào một không gian vector chung. Tận dụng
+LaBSE làm mô hình cơ sở với vector nhúng có số chiều 768. Được huấn luyện cho nhiều nhiệm vụ
+downstream.
+•Bộ mã hóa #3: Paraphrase Mulitlingual Mpnet3:
+Mô hình nhúng này ánh xạ câu & đoạn văn vào một không gian vector dày đặc 768 chiều, và nó hoạt động trên
+50+ ngôn ngữ bao gồm tiếng Ả Rập. Được huấn luyện cho các nhiệm vụ như phân cụm và tương tự ngữ nghĩa.
+•Bộ mã hóa #4: Multilingual Distil Bert4:
+1https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+2https://huggingface.co/sentence-transformers/use-cmlm-multilingual
+3https://huggingface.co/sentence-transformers/paraphrase-multilingual-mpnet-base-v2
+4https://huggingface.co/sentence-transformers/distiluse-base-multilingual-cased-v1
+4
+
+--- TRANG 5 ---
+Đây là một mô hình nhúng hoạt động bằng cách ánh xạ câu vào một không gian vector dày đặc với số chiều
+512. Nó hiệu quả trên 15 ngôn ngữ, bao gồm tiếng Ả Rập. Có thể được sử dụng cho các nhiệm vụ như phân cụm hoặc tìm kiếm
+ngữ nghĩa.
+•Bộ mã hóa #5: Xlm Roberta5:
+Một mô hình nhúng chuyển đổi văn bản thành một vector dày đặc với 768 chiều, nó hoạt động tốt trong tiếng Ả Rập và
+12 ngôn ngữ khác, nó được huấn luyện trên các kho ngữ liệu SNLI, MNLI, ANLI và XNLI.
+3.4 Thiết lập Đánh giá RAG
+Retrieval-Augmented Generation cho tìm kiếm ngữ nghĩa tiếng Ả Rập tận dụng cả việc truy xuất các tài liệu liên quan và
+sinh văn bản để cung cấp các câu trả lời phù hợp về mặt ngữ nghĩa với truy vấn của người dùng. Đường ống RAG hoàn chỉnh được
+hiển thị trong hình 1.
+Hình 1: Đường ống Retrieved-Augmented-Generation với Tìm kiếm Ngữ nghĩa
+3.4.1 Tạo Bộ dữ liệu
+Trong việc xây dựng một bộ dữ liệu toàn diện cho Retrieval Augmented Generation (RAG), chúng tôi đã tuyển chọn một bộ sưu tập rộng lớn
+các Câu hỏi Thường gặp (FAQs)từ bốn lĩnh vực khác nhau. Bộ biên soạn này chứa tổng cộng 816 câu hỏi khác biệt
+kèm theo các câu trả lời có thể xác minh của chúng. Để xây dựng một tập kiểm tra và đảm bảo tính mạnh mẽ của nó, chúng tôi đã sử dụng các
+khả năng tiên tiến của GPT-4, sinh ba biến thể tinh tế cho mỗi câu hỏi gốc. Cách tiếp cận này tạo ra
+một bộ dữ liệu tổng hợp, được chuẩn bị tối ưu cho việc kiểm tra tiếp theo của khung
+Retrieval-Augmented Generation (RAG).
+3.4.2 Triển khai Đường ống RAG
+Khung RAG được thiết kế chính xác để thực hiện một quy trình nhiều bước, nhằm kiểm tra các
+khả năng tìm kiếm ngữ nghĩa trong lĩnh vực ngôn ngữ tiếng Ả Rập. Quy trình này được phác thảo như sau:
+1.Mã hóa Ngữ nghĩa: Mỗi truy vấn được sinh trải qua một quy trình mã hóa ngữ nghĩa cùng với tất cả các câu hỏi ground truth
+của cùng lĩnh vực. Bước này sử dụng một bộ mã hóa tìm kiếm ngữ nghĩa để xác định và truy xuất ba
+câu hỏi gần nhất về mặt ngữ nghĩa liên quan đến truy vấn đầu vào.
+2.Sinh Câu trả lời Dựa trên Tri thức: Các câu trả lời tương ứng với các câu hỏi được căn chỉnh ngữ nghĩa,
+cùng với truy vấn được sinh, được trình bày cho một Mô hình Ngôn ngữ Lớn (LLM). Với mục đích này, GPT-3.5-
+turbo đã được chọn để sinh phản hồi dựa trên tri thức được trích xuất từ các câu trả lời của các
+câu hỏi được xác định. Giai đoạn này nhấn mạnh khả năng của mô hình để tổng hợp và tái sử dụng tri thức hiện có để giải quyết
+các truy vấn chưa từng thấy trước đây.
+5https://huggingface.co/symanto/sn-xlm-roberta-base-snli-mnli-anli-xnli
+5
+
+--- TRANG 6 ---
+3.Giai đoạn Đánh giá: Để kiểm tra sự thật của các phản hồi được sinh, một LLM tiếp theo, cụ thể là GPT-4-turbo,
+đánh giá mỗi phản hồi. Bước này bao gồm việc so sánh câu trả lời được sinh, truy vấn gốc, và
+câu trả lời ground truth, từ đó đánh giá liệu phản hồi được sinh có giải quyết đúng truy vấn với cùng
+thông tin như câu trả lời ground truth hay không.
+4.Tính toán Độ chính xác: Giai đoạn cuối cùng trong khung đánh giá RAG là định lượng độ chính xác.
+Chỉ số này được rút ra bằng cách tính toán tỷ lệ các truy vấn mà các phản hồi được sinh bởi LLM
+là chính xác, dựa trên các tiêu chí được thiết lập trong giai đoạn đánh giá.
+Đánh giá có hệ thống này trình bày khả năng ứng dụng tiềm năng của các phương pháp tìm kiếm ngữ nghĩa và so sánh hiệu suất của chúng
+với đường ống RAG tiếng Ả Rập.
+4 Kết quả
+Phần này trình bày các kết quả cho việc đánh giá độc lập của tìm kiếm ngữ nghĩa, tiếp theo là đánh giá của RAG
+với các bộ mã hóa khác nhau.
+4.1 Kết quả Đánh giá Tìm kiếm Ngữ nghĩa
+Bảng 1: Kết quả Đánh giá Tìm kiếm Ngữ nghĩa
+Mô hình NDCG@3 MRR@3 mAP @3 Kích thước Emb.
+Bộ mã hóa #1 0.853 0.888 0.863 384
+Bộ mã hóa #2 0.789 0.798 0.793 768
+Bộ mã hóa #3 0.879 0.911 0.888 768
+Bộ mã hóa #4 0.868 0.89 0.876 512
+Bộ mã hóa #5 0.837 0.848 0.854 768
+Xếp hạng Ngẫu nhiên 0.669 0.623 0.703 —
+Xếp hạng Tệ nhất 0.32 0.138 0.401 —
+Từ kết quả được trình bày trong Bảng 1, có thể thấy rằng Bộ mã hóa #3 (paraphrase-multilingual-mpnet-base-v2) đang thực hiện
+tốt nhất cho tìm kiếm ngữ nghĩa tiếng Ả Rập, tuy nhiên nó có kích thước nhúng lớn nhất cho phép nó mang nhiều thông tin ngữ nghĩa hơn, nhưng yêu cầu nhiều chi phí tính toán & bộ nhớ hơn.
+4.2 Mối tương quan giữa độ chính xác Tìm kiếm ngữ nghĩa và RAG
+Bảng 2: Đánh giá RAG Sử dụng GPT-3.5
+Bộ mã hóa Độ chính xác Top 3 Độ chính xác Top 1
+Bộ mã hóa #1 59.31% 61.15%
+Bộ mã hóa #2 62.01% 63.23%
+Bộ mã hóa #3 63.11% 63.84%
+Bộ mã hóa #4 62.5% 63.24%
+Bộ mã hóa #5 57.84% N/A
+Xếp hạng Ngẫu nhiên 6.62% N/A
+Trong Bảng 2, một số phát hiện đã được quan sát. Ban đầu, một sự suy giảm nhỏ về độ chính xác từ top-1 sang top-3 được phát hiện,
+quy cho việc GPT-3.5 hợp nhất thông tin từ ba kết quả của tìm kiếm ngữ nghĩa và thất bại trong việc xác định
+câu trả lời đúng cho một tập con các câu hỏi.
+Hơn nữa, trong khi Bộ mã hóa #1 đã thể hiện hiệu suất đáng khen ngợi trong Đánh giá Tìm kiếm Ngữ nghĩa, hiệu quả của nó
+giảm sút trong bối cảnh đánh giá Retrieval Augmented Generation (RAG). Ngược lại, Bộ mã hóa #2
+thể hiện một mẫu hiệu suất ngược. Sự khác biệt này có thể được quy cho bản chất của đánh giá tìm kiếm ngữ nghĩa, mà gần giống với một tình huống Tìm kiếm Ngữ nghĩa Bất đối xứng, trong đó các nhúng của
+tóm tắt văn bản mở rộng và các truy vấn ngắn, trung bình bốn từ, được so sánh. Mặt khác, tình huống RAG phù hợp hơn
+với một Tìm kiếm Ngữ nghĩa Đối xứng, trong đó các truy vấn và các câu hỏi tham chiếu gần như bằng nhau về độ dài, do đó
+kiểm tra các khía cạnh và ràng buộc khác biệt của thành phần tìm kiếm ngữ nghĩa. Kích thước của vector nhúng cũng
+đóng một vai trò quan trọng, vì các vector lớn hơn có thể bao hàm nhiều thông tin hơn, có khả năng nâng cao hiệu suất tổng thể,
+đặc biệt là đối với tiếng Ả Rập. Ngôn ngữ này đặt ra những thách thức lớn hơn trong mô hình hóa ngôn ngữ so với tiếng Anh.
+6
+
+--- TRANG 7 ---
+5 Kết luận
+Phân tích được trình bày ở trên rõ ràng chứng minh tính khả thi và tầm quan trọng của việc kết hợp tìm kiếm ngữ nghĩa vào
+hệ thống Retrieval Augmented Generation (RAG). Việc tích hợp này đã nâng cao đáng kể chất lượng và độ chính xác của
+nội dung được sinh. Hơn nữa, việc sử dụng tìm kiếm ngữ nghĩa để truy xuất các tài liệu liên quan đến một truy vấn mang lại
+một số lợi thế, như việc sử dụng các prompt ngắn hơn về mặt token. Điều này không chỉ góp phần vào các
+kết quả chính xác hơn mà còn dẫn đến suy luận hiệu quả về chi phí và nhanh hơn. Tuy nhiên, các điều tra thêm vẫn được yêu cầu để
+kết luận rằng các bộ mã hóa vượt trội dẫn đến kết quả RAG vượt trội.
+Tài liệu tham khảo
+[1]Po-Sen Huang, Xiaodong He, Jianfeng Gao, Li Deng, Alex Acero, and Larry Heck. Learning deep structured
+semantic models for web search using clickthrough data. In Proceedings of the 22nd ACM international conference
+on Information & Knowledge Management , pages 2333–2338, 2013.
+[2]Chetana Gavankar, Taniya Bhosale, Dhanashree Gunda, Anindita Chavan, and Shafa Hassan. A comparative study
+of semantic search systems. In 2020 International Conference on Computer Communication and Informatics
+(ICCCI) , pages 1–7. IEEE, 2020.
+[3]Yunfan Gao, Yun Xiong, Xinyu Gao, Kangxiang Jia, Jinliu Pan, Yuxi Bi, Yi Dai, Jiawei Sun, and Haofen Wang.
+Retrieval-augmented generation for large language models: A survey. arXiv preprint arXiv:2312.10997 , 2023.
+[4]Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin, Naman Goyal, Heinrich
+Küttler, Mike Lewis, Wen-tau Yih, Tim Rocktäschel, et al. Retrieval-augmented generation for knowledge-
+intensive nlp tasks. Advances in Neural Information Processing Systems , 33:9459–9474, 2020.
+[5]Khaled Shaalan, Sanjeera Siddiqui, Manar Alkhatib, and Azza Abdel Monem. Challenges in arabic natural
+language processing. In Computational linguistics, speech and image processing for arabic language , pages
+59–83. World Scientific, 2019.
+[6]Imane Guellil, Houda Saâdane, Faical Azouaou, Billel Gueni, and Damien Nouvel. Arabic natural language
+processing: An overview. Journal of King Saud University-Computer and Information Sciences , 33(5):497–507,
+2021.
+[7]Thomas Hofmann. Probabilistic latent semantic indexing. In Proceedings of the 22nd annual international ACM
+SIGIR conference on Research and development in information retrieval , pages 50–57, 1999.
+[8]Chung-Hong Lee and Hsin-Chang Yang. A classifier-based text mining approach for evaluating semantic
+relatedness using support vector machines. In International Conference on Information Technology: Coding and
+Computing (ITCC'05)-Volume II , volume 1, pages 128–133. IEEE, 2005.
+[9]Tomas Mikolov, Kai Chen, Greg Corrado, and Jeffrey Dean. Efficient estimation of word representations in vector
+space. arXiv preprint arXiv:1301.3781 , 2013.
+[10] Jeffrey Pennington, Richard Socher, and Christopher D Manning. Glove: Global vectors for word representation.
+InProceedings of the 2014 conference on empirical methods in natural language processing (EMNLP) , pages
+1532–1543, 2014.
+[11] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and
+Illia Polosukhin. Attention is all you need. Advances in neural information processing systems , 30, 2017.
+[12] Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. Bert: Pre-training of deep bidirectional
+transformers for language understanding. arXiv preprint arXiv:1810.04805 , 2018.
+[13] Wen Li, Ying Zhang, Yifang Sun, Wei Wang, Mingjie Li, Wenjie Zhang, and Xuemin Lin. Approximate nearest
+neighbor search on high dimensional data—experiments, analyses, and improvement. IEEE Transactions on
+Knowledge and Data Engineering , 32(8):1475–1488, 2019.
+[14] Matthijs Douze, Alexandr Guzhva, Chengqi Deng, Jeff Johnson, Gergely Szilvasy, Pierre-Emmanuel Mazaré,
+Maria Lomeli, Lucas Hosseini, and Hervé Jégou. The faiss library. arXiv preprint arXiv:2401.08281 , 2024.
+[15] Mahmoud Al-Ayyoub, Aya Nuseir, Kholoud Alsmearat, Yaser Jararweh, and Brij Gupta. Deep learning for arabic
+nlp: A survey. Journal of computational science , 26:522–531, 2018.
+[16] Ons Meddeb, Mohsen Maraoui, and Mounir Zrigui. Deep learning based semantic approach for arabic textual
+documents recommendation. In 2021 International Conference on INnovations in Intelligent SysTems and
+Applications (INISTA) , pages 1–6. IEEE, 2021.
+7
+
+--- TRANG 8 ---
+[17] Aya M Al-Zoghby and Khaled Shaalan. Semantic search for arabic. In The Twenty-Eighth International Flairs
+Conference , 2015.
+[18] Hazem Abdelazim, Mohamed Tharwat, and Ammar Mohamed. Semantic embeddings for arabic retrieval
+augmented generation (arag).
+[19] Ori Ram, Yoav Levine, Itay Dalmedigos, Dor Muhlgay, Amnon Shashua, Kevin Leyton-Brown, and Yoav Shoham.
+In-context retrieval-augmented language models. Transactions of the Association for Computational Linguistics ,
+11:1316–1331, 2023.
+8

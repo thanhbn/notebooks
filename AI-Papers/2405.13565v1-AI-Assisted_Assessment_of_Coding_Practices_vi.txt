@@ -1,0 +1,952 @@
+# 2405.13565v1.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2405.13565v1.pdf
+# Kích thước file: 986515 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+Đánh Giá Thực Hành Lập Trình Hỗ Trợ Bởi AI
+trong Đánh Giá Mã Nguồn Hiện Đại
+Manushree Vijayvergiya
+manushree@google.com
+Google
+Zurich, SwitzerlandMałgorzata Salawa
+magorzata@google.com
+Google
+Zurich, SwitzerlandIvan Budiselić
+ibudiselic@google.com
+Google
+Zurich, SwitzerlandDan Zheng
+danielzheng@google.com
+Google
+Mountain View, USA
+Pascal Lamblin
+lamblinp@google.com
+Google
+Montreal, CanadaMarko Ivanković
+markoi@google.com
+Google
+Zurich, SwitzerlandJuanjo Carin
+juanjocarin@google.com
+Google
+Sunnyvale, USAMateusz Lewko
+mlewko@google.com
+Google
+Zurich, Switzerland
+Jovan Andonov
+jandonov@google.com
+Google
+Zurich, SwitzerlandGoran Petrović
+goranpetrovic@google.com
+Google
+Zurich, SwitzerlandDaniel Tarlow
+dtarlow@google.com
+Google
+Montreal, CanadaPetros Maniatis
+maniatis@google.com
+Google
+Mountain View, USA
+René Just∗
+rjust@cs.washington.edu
+University of Washington
+Seattle, USA
+TÓM TẮT
+Đánh giá mã nguồn hiện đại là một quy trình trong đó một đóng góp
+mã nguồn tăng dần được thực hiện bởi tác giả mã và được đánh giá
+bởi một hoặc nhiều đồng nghiệp trước khi được commit vào hệ thống
+quản lý phiên bản. Một yếu tố quan trọng của đánh giá mã nguồn
+hiện đại là xác minh rằng các đóng góp mã tuân thủ các thực hành
+tốt nhất. Trong khi một số thực hành tốt nhất này có thể được xác
+minh tự động, việc xác minh những thực hành khác thường được giao
+cho những người đánh giá con người. Bài báo này báo cáo về việc phát
+triển, triển khai và đánh giá AutoCommenter, một hệ thống được hỗ
+trợ bởi một mô hình ngôn ngữ lớn tự động học hỏi và thực thi các
+thực hành lập trình tốt nhất. Chúng tôi đã triển khai AutoCommenter
+cho bốn ngôn ngữ lập trình (C++, Java, Python và Go) và đánh giá
+hiệu suất cũng như mức độ chấp nhận của nó trong một môi trường
+công nghiệp lớn. Đánh giá của chúng tôi cho thấy rằng một hệ thống
+đầu cuối để học hỏi và thực thi các thực hành lập trình tốt nhất là
+khả thi và có tác động tích cực đến quy trình làm việc của nhà phát
+triển. Ngoài ra, bài báo này báo cáo về những thách thức liên quan
+đến việc triển khai một hệ thống như vậy cho hàng chục nghìn nhà
+phát triển và những bài học kinh nghiệm tương ứng.
+CÁC KHÁI NIỆM CCS
+•Phần mềm và kỹ thuật của nó →Xác minh và xác thực phần mềm.
+∗Công việc được thực hiện tại Google.
+Quyền tạo bản sao kỹ thuật số hoặc bản cứng của toàn bộ hoặc một phần tác phẩm này
+cho mục đích sử dụng cá nhân hoặc lớp học được cấp miễn phí với điều kiện các bản sao
+không được tạo hoặc phân phối để kiếm lợi nhuận hoặc lợi thế thương mại và các bản sao
+phải ghi rõ thông báo này và trích dẫn đầy đủ trên trang đầu tiên. Bản quyền cho các
+thành phần của bên thứ ba trong tác phẩm này phải được tôn trọng. Đối với tất cả các
+mục đích sử dụng khác, liên hệ với chủ sở hữu/tác giả.
+AIware '24, July 15–16, 2024, Porto de Galinhas, Brazil
+©2024 Bản quyền thuộc về chủ sở hữu/tác giả.
+ACM ISBN 979-8-4007-0685-1/24/07
+https://doi.org/10.1145/3664646.3665664TỪ KHÓA
+Trí Tuệ Nhân Tạo, Đánh Giá Mã Nguồn, Thực Hành Lập Trình Tốt Nhất
+Định Dạng Tham Khảo ACM:
+Manushree Vijayvergiya , Małgorzata Salawa, Ivan Budiselić, Dan Zheng,
+Pascal Lamblin, Marko Ivanković, Juanjo Carin, Mateusz Lewko, Jovan An-
+donov, Goran Petrović, Daniel Tarlow, Petros Maniatis, và René Just. 2024.
+Đánh Giá Thực Hành Lập Trình Hỗ Trợ Bởi AI trong Đánh Giá Mã Nguồn
+Hiện Đại. Trong Proceedings of the 1st ACM International Conference on AI-
+Powered Software (AIware '24), July 15–16, 2024, Porto de Galinhas, Brazil.
+ACM, New York, NY, USA, 9 pages. https://doi.org/10.1145/3664646.3665664
+1 GIỚI THIỆU
+Đánh giá mã nguồn hiện đại [21,23] (so với đánh giá mã nguồn toàn
+diện [8]) đã phát triển một cách tự nhiên qua nhiều năm trong các
+môi trường mã nguồn mở và công nghiệp. Một tập hợp các tiêu chí
+đánh giá đồng nghiệp chung đã xuất hiện [5,20,21], bao gồm các thực
+hành lập trình tốt nhất. Nhiều công ty, dự án và thậm chí các ngôn
+ngữ lập trình đã định nghĩa chính thức chúng dưới dạng "hướng dẫn
+phong cách" [1–4] thường bao gồm các khía cạnh sau:
+•Định dạng: giới hạn dòng, sử dụng khoảng trắng và thụt lề,
+vị trí đặt dấu ngoặc đơn và dấu ngoặc vuông, v.v.;
+•Đặt tên: viết hoa, ngắn gọn, mô tả, v.v.;
+•Tài liệu: vị trí và nội dung mong đợi của các bình luận cấp file,
+cấp hàm và các bình luận khác;
+•Các tính năng ngôn ngữ: sử dụng các tính năng ngôn ngữ cụ
+thể trong các ngữ cảnh (mã) khác nhau;
+•Các thành ngữ mã: sử dụng các thành ngữ mã để cải thiện độ
+rõ ràng, tính mô-đun và khả năng bảo trì của mã.
+Các nhà phát triển thường báo cáo mức độ hài lòng cao với các quy
+trình đánh giá mã nguồn hiện đại [23,28]. Một trong những lợi ích
+chính của chúng là trải nghiệm học tập cho các tác giả mã không
+quen thuộc với codebase, các tính năng ngôn ngữ cụ thể hoặc các
+thành ngữ mã phổ biến. Trong quá trình đánh giá, một nhà phát triển
+chuyên gia giáo dục tác giả mã về các thực hành tốt nhất, ngoàiarXiv:2405.13565v1  [cs.SE]  22 May 2024
+
+--- TRANG 2 ---
+AIware '24, July 15–16, 2024, Porto de Galinhas, Brazil Manushree Vijayvergiya et al.
+việc đánh giá (và học hỏi về) các đóng góp mã và tác động của chúng.
+Các công cụ phân tích tĩnh như linters [15] có thể tự động xác minh
+rằng mã tuân thủ một số thực hành tốt nhất (ví dụ: quy tắc định dạng),
+và một số công cụ thậm chí có thể tự động sửa các vi phạm. Tuy nhiên,
+các hướng dẫn tinh tế hoặc những hướng dẫn có ngoại lệ rất khó để
+tự động xác minh hoàn toàn (ví dụ: quy ước đặt tên và các sai lệch
+có lý do trong mã legacy), và một số hướng dẫn không thể được nắm
+bắt bằng các quy tắc chính xác (ví dụ: độ rõ ràng và tính cụ thể của
+các bình luận mã) và dựa vào phán đoán của con người và kiến thức
+tập thể của nhà phát triển.
+Kết quả là, thường được mong đợi rằng những người đánh giá con
+người kiểm tra các thay đổi mã để tìm vi phạm thực hành tốt nhất.
+Chi phí lớn nhất của quy trình đánh giá mã là thời gian cần thiết,
+đặc biệt là từ các nhà phát triển chuyên gia. Ngay cả với sự tự động
+hóa đáng kể đã có sẵn và giữ cho quy trình nhẹ nhàng nhất có thể,
+một nhà phát triển có thể dễ dàng dành vài giờ hàng ngày cho nhiệm
+vụ này [23].
+Những tiến bộ gần đây trong machine learning, đặc biệt là khả năng
+của các mô hình ngôn ngữ lớn (LLM), gợi ý rằng LLM phù hợp cho
+việc tự động hóa đánh giá mã (ví dụ: [11,16,17,24–26]). Tuy nhiên,
+các thách thức kỹ thuật phần mềm xung quanh việc triển khai một
+hệ thống đầu cuối ở quy mô lớn vẫn chưa được khám phá. Tương tự,
+các đánh giá bên ngoài của các hệ thống như vậy về hiệu quả tổng
+thể và sự chấp nhận của người dùng vẫn còn thiếu.
+Bài báo này điều tra xem liệu có thể tự động hóa một phần quy trình
+đánh giá mã, cụ thể là việc phát hiện vi phạm thực hành tốt nhất,
+từ đó cung cấp phản hồi kịp thời cho tác giả mã và cho phép người
+đánh giá tập trung vào chức năng tổng thể.
+Cụ thể, bài báo này báo cáo về kinh nghiệm của chúng tôi trong việc
+phát triển, triển khai và đánh giá AutoCommenter—một trợ lý đánh
+giá mã tự động—trong một môi trường công nghiệp tại Google, nơi
+nó hiện đang được sử dụng bởi hàng chục nghìn nhà phát triển mỗi ngày.
+Tóm lại, các đóng góp của bài báo này là:
+•Một kiến trúc tổng quát của hệ thống trợ lý đánh giá mã dựa
+trên LLM (phần 3).
+•Mô tả về hiệu chỉnh công cụ và triển khai cho hàng chục nghìn
+nhà phát triển (phần 4).
+•Đánh giá hệ thống (phần 5).
+•Tóm tắt và thảo luận các bài học kinh nghiệm (phần 6).
+2 BỐI CẢNH
+AutoCommenter được phát triển trong một môi trường công nghiệp
+lớn tại Google. Các thực hành đánh giá mã nguồn hiện đại tại Google
+tương tự với những thực hành của các dự án công nghiệp và mã
+nguồn mở khác [23].
+2.1 Quy Trình Đánh Giá Mã
+Quy trình đánh giá mã tại Google đã được thiết lập tốt, dựa trên
+thay đổi và được hỗ trợ bởi công cụ. Ivanković et al. [12] và Petrović
+et al. [18] cung cấp một tóm tắt chi tiết về quy trình. Mỗi thay đổi
+đối với codebase phải được đánh giá bởi ít nhất một nhà phát triển
+khác. Mỗi ngày, hàng chục nghìn thay đổi đối với codebase trải qua
+quy trình đánh giá và hàng chục nghìn nhà phát triển tham gia vào
+quy trình, với tư cách là cả tác giả mã và người đánh giá.
+Tác giả và người đánh giá trao đổi bình luận thông qua hệ thống
+đánh giá mã, và một đánh giá tiến triển qua các snapshot của các
+file bị ảnh hưởng bởi thay đổi. Mỗi bình luận của người đánh giá
+được gắn vào một dòng và phạm vi cột cụ thể trong một snapshot
+file cụ thể. Để giải quyết một bình luận, tác giả thường sửa đổi file
+trong bản sao cục bộ của họ
+Hình 1: Ví dụ bình luận được đăng bởi một người đánh giá con người.
+và xuất một snapshot mới cho vòng đánh giá mã tiếp theo.
+Khi tác giả và tất cả người đánh giá đều hài lòng và không có phân
+tích tự động nào chặn việc merge, mã được merge vào codebase.
+Phần tốn kém nhất của quy trình đánh giá mã là thời gian
+được tác giả mã và người đánh giá dành để "hướng dẫn" một thay
+đổi (từ việc viết mã ban đầu, qua việc giải quyết các bình luận của
+người đánh giá và đảm bảo tất cả các phân tích tự động đều vượt
+qua, đến cuối cùng merge thay đổi vào codebase). Trong khi quy
+trình được tối ưu hóa với các hệ thống tự động phân tích mã trước
+khi đánh giá (đặc biệt là định dạng mã tự động mà không cần can
+thiệp của con người), việc đánh giá mã vẫn tốn hàng nghìn năm-nhà
+phát triển mỗi năm. Do đó, ngay cả việc tiết kiệm vài phần trăm cũng
+chuyển thành tác động kinh doanh đáng kể.
+2.2 Thực Hành Tốt Nhất
+Một thực hành tốt nhất là một cách sử dụng cụ thể của ngôn ngữ
+lập trình được coi là vượt trội, và một tài liệu thực hành tốt nhất
+mô tả cách nó nên được áp dụng và những lợi ích mà nó mang lại.
+URL thực hành tốt nhất đề cập đến một tài liệu thực hành tốt nhất
+hoặc phần cụ thể trong đó, và vi phạm thực hành tốt nhất đề cập
+đến một đoạn mã cụ thể không tuân thủ thực hành tốt nhất, nhưng
+có thể được thay đổi để tuân thủ. Nếu rõ ràng từ ngữ cảnh, chúng
+tôi sử dụng các thuật ngữ URL và vi phạm để đề cập đến URL thực
+hành tốt nhất và vi phạm thực hành tốt nhất, tương ứng.
+Kho mã trung tâm của Google chứa mã trong nhiều ngôn ngữ, với
+C++, Java, Python và Go vượt quá 100 triệu dòng mỗi ngôn ngữ [19].
+Đối với 15 ngôn ngữ khác nhau, có các hướng dẫn phong cách chính
+thức có sẵn cho tất cả nhà phát triển. Nhiều ngôn ngữ trong số này
+có thêm các primer ngôn ngữ, tài liệu cho các thư viện cốt lõi và
+các bản tin theo phong cách mẹo tuần. Mặc dù các tài liệu này không
+được thực thi nghiêm ngặt như hướng dẫn phong cách, chúng được
+tham khảo thường xuyên trong việc đánh giá mã. Một số ngôn ngữ
+tự hào có hàng trăm trang tài liệu như vậy. Cả tác giả mã và người
+đánh giá đều được mong đợi xác minh rằng mã tuân theo tất cả các
+thực hành tốt nhất.
+Một cơ chế chính thức gọi là "khả năng đọc", được giới thiệu hơn
+một thập kỷ trước, đảm bảo rằng các thực hành tốt nhất được tuân
+theo một cách nhất quán. Các chuyên gia phong cách chuyên dụng
+trong một ngôn ngữ nhất định, được gọi là "cố vấn khả năng đọc",
+hướng dẫn các nhà phát triển thiếu kinh nghiệm hướng tới sự thành
+thạo trong ngôn ngữ [23]. Các cố vấn khả năng đọc thường tóm tắt
+một thực hành tốt nhất trong vài câu và ở cuối bình luận bao gồm
+một URL cho tác giả thay đổi như một tham khảo. Hình 1 cho thấy
+một ví dụ về bình luận được đăng bởi một cố vấn khả năng đọc.
+
+--- TRANG 3 ---
+Đánh Giá Thực Hành Lập Trình Hỗ Trợ Bởi AI trong Đánh Giá Mã Nguồn Hiện Đại AIware '24, July 15–16, 2024, Porto de Galinhas, Brazil
+Huấn luyện và tinh chỉnh (theo yêu cầu) 
+Worker Worker Workers Source 
+repository Comment 
+storage 
+Scheduler Relevant 
+code 
+comments Worker Worker Workers Examples 
+(temporal 
+splits) Worker Worker TPU pods Tensorboard 
+Model 
+checkpoints Input/target 
+format Tiền xử lý quy mô lớn (định kỳ) Dataset curation (theo yêu cầu) 
+Hình 2: Kiến trúc của pipeline huấn luyện mô hình.
+Quy trình khả năng đọc có một số nhược điểm. Đối với tác giả, nó
+tăng thời gian phát triển do các vòng đánh giá bổ sung. Đối với các
+cố vấn khả năng đọc, nó có thể trở thành một nhiệm vụ đơn điệu
+và tốn thời gian. Nó đòi hỏi phải thành thạo hàng trăm thực hành
+tốt nhất đang phát triển, bao gồm việc xác định và loại bỏ các quy
+tắc lỗi thời, và ghi chép chúng (với các liên kết liên quan) trong hệ
+thống đánh giá mã. Ngoài ra, nó đòi hỏi theo dõi, đôi khi qua nhiều
+lần lặp lại, đảm bảo rằng tất cả các vi phạm đã được khắc phục.
+3 PHƯƠNG PHÁP TIẾP CẬN
+Để đáp ứng những thách thức được mô tả trong các phần 2.1 và 2.2,
+chúng tôi đã phát triển AutoCommenter, một công cụ phân tích mã
+tự động phát hiện vi phạm thực hành tốt nhất. Nó nhằm mục đích
+cung cấp phản hồi kịp thời cho tác giả mã và giảm bớt nhu cầu đánh
+giá thực hành tốt nhất thủ công, từ đó cho phép người đánh giá tập
+trung vào chức năng mã.
+3.1 Mô hình và Định nghĩa Nhiệm vụ
+Tự động hóa phân tích thực hành tốt nhất đòi hỏi một mô hình có
+thể biểu diễn mã nguồn, xác định vị trí vi phạm và nhận dạng thực
+hành tốt nhất bị vi phạm. Chúng tôi nhắm đến một biến đổi text-to-text
+sử dụng phương pháp transformer truyền thống dựa trên T5, sử dụng T5X [22].
+Phân tích thực hành tốt nhất là một nhiệm vụ trong một mô hình
+sequence lớn đa nhiệm vụ. Ngoài nhiệm vụ pretraining tiêu chuẩn
+cho T5, span denoising (dự đoán các token bị che), các nhiệm vụ
+khác được sử dụng để huấn luyện mô hình này bao gồm giải quyết
+bình luận đánh giá mã, dự đoán chỉnh sửa tiếp theo, đổi tên biến
+và sửa lỗi build [9]. Corpus huấn luyện bao gồm hơn 3 tỷ ví dụ, trong
+đó dataset phân tích thực hành tốt nhất đóng góp khoảng 800k ví dụ.
+Mô hình được huấn luyện bằng cross-entropy loss tiêu chuẩn, điển
+hình cho các mô hình như vậy, và được điều chỉnh để tối đa hóa
+metric độ chính xác sequence, dự đoán văn bản đích chính xác cho
+mỗi ví dụ.
+Đối với phân tích thực hành tốt nhất, đầu vào cho mô hình là một
+task prompt và mã nguồn, và đích là một vị trí mã nguồn và một
+URL cho vi phạm thực hành tốt nhất. Task prompt được định dạng
+như một bình luận mã văn bản cố định, sử dụng phong cách bình
+luận phù hợp của ngôn ngữ lập trình. Nó mô tả nhiệm vụ bằng ngôn
+ngữ tự nhiên và đi trước mã nguồn, là một biểu diễn văn bản trực
+tiếp của một file. Nếu đầu vào vượt quá cửa sổ ngữ cảnh của mô hình,
+nó sẽ bị cắt ngắn. Vị trí là một byte offset trong mã nguồn, và URL
+tham chiếu đến thực hành tốt nhất bị vi phạm. Một ngôn ngữ cụ
+thể miền định nghĩa định dạng đích, và một trường hợp đặc biệt
+là đích "rỗng", nếu không có vi phạm nào. Ngoài đích, mô hình
+xuất ra một điểm tin cậy từ 0 đến 1.Hãy xem xét ví dụ đầu vào/đích sau cho ngôn ngữ Go.
+Đầu vào
+/ / [ ∗] Nhiệm vụ : Kiểm tra các thực hành tốt nhất của ngôn ngữ .
+/ / Package a d d i t i o n cung cấp Add
+package a d d i t i o n
+/ / Trả về tổng
+func Add ( value1 , v a l u e 2 int)int {
+return v a l u e 1 + v a l u e 2
+}
+Đích
+INSERT 153 COMMENT h t t p s : / / go . dev / doc / comment # f u n c
+Dòng đầu tiên của đầu vào là task prompt văn bản cố định; phần còn
+lại là mã nguồn. Đích cung cấp vị trí (byte offset 153 tương ứng với
+đầu hàm Add) và một URL go.dev, trỏ đến phần chính xác của hướng
+dẫn phong cách ngôn ngữ Go mà bình luận hàm vi phạm (trong trường
+hợp này, thực hành thông thường là bắt đầu bình luận bằng tên hàm).
+Lưu ý rằng đích có thể chứa không, một hoặc nhiều cặp vị trí-URL
+(được nối), tùy thuộc vào số lượng vi phạm trong mã nguồn.
+3.2 Huấn Luyện Mô hình
+Hình 2 cho thấy kiến trúc của pipeline huấn luyện mô hình, bao gồm
+ba phần. Chúng tôi chia việc tạo dataset thành hai bước (tiền xử lý
+và curation) bởi vì bước đầu tiên tốn kém hơn đáng kể khi hoạt động
+trên một lượng dữ liệu lớn hơn nhiều. Đầu ra của bước tiền xử lý
+là agnostic đối với biểu diễn đầu vào/đích của mô hình. Sự tách biệt
+này cải thiện tốc độ tính năng bằng cách cho phép lặp lại nhanh
+trên các biểu diễn ví dụ và các điều chỉnh cấp ví dụ khác. Bước tiền
+xử lý sử dụng một hệ thống lập lịch chịu lỗi và định kỳ trích xuất
+các bình luận mã có liên quan để đảm bảo rằng dữ liệu mới sẵn sàng.
+3.2.1 Tiền xử lý quy mô lớn. Các ví dụ huấn luyện được tạo từ
+dữ liệu đánh giá mã thực tế, nhưng không phải tất cả bình luận mã
+đều phù hợp cho việc huấn luyện mô hình. Do đó, bước tiền xử lý
+xác định các bình luận mã có liên quan—bình luận do con người tạo
+chứa URL trỏ đến tài liệu thực hành tốt nhất. Đối với mỗi bình luận,
+bước tiền xử lý sau đó thu thập mã nguồn tương ứng và metadata
+có liên quan, bao gồm vị trí của bình luận trong mã nguồn và thời
+gian tạo của nó. Đầu ra của bước này là một tập hợp các bình luận
+mã có liên quan, mỗi bình luận có tất cả dữ liệu cần thiết để curation
+các ví dụ cho việc huấn luyện mô hình.
+
+--- TRANG 4 ---
+AIware '24, July 15–16, 2024, Porto de Galinhas, Brazil Manushree Vijayvergiya et al.
+3.2.2 Dataset curation. Dataset curation là một bước xử lý đơn lẻ,
+theo yêu cầu, được triển khai như một pipeline Beam¹. Nó chuyển
+đổi mỗi bình luận mã có liên quan, dựa trên định dạng đầu vào/đích
+được mô tả trong phần 3.1, thành cấu trúc dữ liệu TensorFlow Example
+tiêu chuẩn.
+3.2.3 Huấn luyện và tinh chỉnh. Các ví dụ được curation được sử
+dụng trực tiếp cho việc huấn luyện và đánh giá mô hình. Chúng tôi
+sử dụng framework T5X [22] trên một đội TPU, lưu trữ các checkpoint
+mô hình mỗi 1000 bước và sử dụng Tensorboard để giám sát việc
+huấn luyện.
+3.3 Lựa chọn Mô hình
+Hai đánh giá nội tại trên dữ liệu lịch sử thông báo cho việc lựa chọn
+checkpoint mô hình, ngưỡng tin cậy và chiến lược giải mã của chúng tôi.
+Đầu tiên, một đánh giá trên các dataset validation và test cung cấp
+ước tính độ chính xác và recall trên cơ sở từng file. Thứ hai, một
+đánh giá trên các đánh giá mã lịch sử đầy đủ cung cấp ước tính tổng
+số bình luận mỗi đánh giá mã, chỉ ra tần suất nhà phát triển sẽ tương
+tác với AutoCommenter.
+3.3.1 Đánh giá trên Datasets Validation và Test. Chúng tôi chia
+dataset theo thời gian để đảm bảo rằng mô hình chưa được huấn luyện
+trên các snapshot đánh giá mã tương lai của các bình luận mã trong
+datasets validation và test. Trong dataset của chúng tôi, 85% file có
+chính xác một bình luận mã có liên quan, 11% có hai và 4% có ba
+hoặc nhiều hơn.
+Chúng tôi định nghĩa một dự đoán là chính xác nếu (các) vị trí mã
+và (các) URL được dự đoán khớp với các giá trị mong đợi, bất kể
+thứ tự.
+Nhớ lại rằng mô hình cung cấp một điểm tin cậy cho mỗi dự đoán,
+điều này giới thiệu một tham số khác: một dự đoán có thể bị ép buộc
+nếu điểm tin cậy của nó dưới ngưỡng t nào đó. Chúng tôi định nghĩa
+Precision_t là số dự đoán chính xác có điểm tin cậy lớn hơn t chia
+cho số tất cả dự đoán có điểm tin cậy lớn hơn t; chúng tôi định nghĩa
+Recall_t tương tự. Các định nghĩa này cho phép chúng tôi ước tính
+có bao nhiêu kết quả (không) chính xác sẽ được hiển thị cho người
+dùng, như một hàm của t. Precision_t và Recall_t được sử dụng để
+so sánh checkpoint mô hình trong quá trình huấn luyện.
+Mặc dù đánh giá này tránh rò rỉ dữ liệu và cho phép chúng tôi tự
+động đánh giá hiệu suất mô hình, nó có một hạn chế: mặc dù có lý
+khi giả định rằng các bình luận con người cho một snapshot đánh
+giá mã nhất định là chính xác, chúng không toàn diện. Nói cách khác,
+có thể mã trong một snapshot đánh giá mã nhất định có thể được
+cải thiện theo nhiều thực hành tốt nhất, nhưng người đánh giá con
+người đã không đăng bình luận (với URL) cho tất cả chúng.
+Điều này có thể xảy ra vì một số lý do:
+•Thiếu tham khảo: Người đánh giá có thể bình luận về một vấn
+đề, nhưng không bao gồm URL làm tham khảo.
+•Bình luận có chọn lọc: Người đánh giá có thể bình luận về một
+vấn đề một lần, mong đợi tác giả áp dụng sửa chữa trong toàn bộ.
+•Chuyên môn hoặc tập trung khác nhau: Người đánh giá có thể
+không quen thuộc với tất cả thực hành tốt nhất, hoặc đơn giản
+chọn không bình luận về một vấn đề trong ngữ cảnh của một
+đánh giá mã nhất định (ví dụ: chỉ tập trung vào mã đã thay đổi).
+Mặc dù hầu hết các file trong dataset của chúng tôi chỉ có một bình
+luận có liên quan, bằng chứng giai thoại dựa trên việc kiểm tra thủ
+công các dự đoán "không chính xác" gợi ý rằng nhiều bình luận thực
+hành tốt nhất thường có thể do các lý do nêu trên. Do dữ liệu ground-
+truth của chúng tôi không đầy đủ, các thước đo độ chính xác và recall
+của chúng tôi có nhiễu.
+¹https://beam.apache.org/Do đó, chúng tôi sử dụng một đánh giá bổ sung, được mô tả tiếp theo,
+để tăng tin cậy vào hiệu suất mô hình tổng thể.
+3.3.2 Đánh giá trên Đánh giá Mã Lịch sử Đầy đủ. Để đánh giá
+chính xác khối lượng bình luận tiềm năng trong môi trường thực tế,
+chúng tôi đánh giá AutoCommenter trên một tập hợp các đánh giá
+mã lịch sử, sử dụng một checkpoint mô hình và ngưỡng cụ thể. Các
+bình luận được dự đoán không được đăng ngược trong hệ thống
+đánh giá mã, mà được ghi lại trong cơ sở dữ liệu để phân tích. Điều
+này cho phép chúng tôi ước tính tần suất đăng mong đợi—cả ở mức
+độ chi tiết từng file và từng đánh giá mã.
+Bởi vì các nhà phát triển tương tác với AutoCommenter cho toàn
+bộ tập hợp các thay đổi mã chịu đánh giá mã, đánh giá này là một
+bước quan trọng trước khi triển khai sản xuất. Như một lợi ích bổ
+sung, bước này cho phép tối ưu hóa thêm và đánh giá tần suất đăng
+cho các nhóm người dùng khác nhau, ngôn ngữ lập trình, v.v.
+3.4 Cơ sở hạ tầng Suy luận
+Cốt lõi của AutoCommenter là một dịch vụ phân tích thực hành tốt
+nhất trung tâm. Dịch vụ này nhận đầu vào là một hoặc nhiều file
+nguồn để phân tích. Đối với mỗi file, nó xây dựng một đầu vào mô
+hình (phần 3.1), mã hóa nó trong cấu trúc dữ liệu TensorFlow Example
+tiêu chuẩn và truy vấn mô hình. Chính mô hình được phục vụ bởi
+một dịch vụ mô hình sử dụng cấu trúc dữ liệu TensorFlow Example
+như một định dạng đầu vào-đầu ra không phụ thuộc miền. Cuối
+cùng, dịch vụ phân tích thực hành tốt nhất thực hiện một loạt các
+bước lọc (phần 4), ép buộc các dự đoán chất lượng thấp và trả về
+các dự đoán còn lại.
+3.5 Tích hợp IDE và Đánh giá Mã
+Các nhà phát triển tương tác với dịch vụ phân tích của AutoCommenter
+theo hai cách—trực tiếp thông qua plugin IDE hoặc gián tiếp thông
+qua hệ thống đánh giá mã. Hệ thống đánh giá mã được sử dụng bởi
+tất cả nhà phát triển tại Google, và IDE bởi hầu hết tất cả họ.
+Các bình luận của AutoCommenter xuất hiện trong IDE như chẩn
+đoán được đánh dấu bằng gạch dưới xanh lam cong, trải rộng đoạn
+mã có liên quan. Di chuột qua mã được gạch dưới tiết lộ bình luận
+đầy đủ với một tóm tắt ngắn gọn về thực hành tốt nhất, bao gồm
+một liên kết có thể nhấp đến tài liệu thực hành tốt nhất có liên quan.
+Thông tin nhúng này làm mượt quy trình làm việc cho các nhà phát
+triển bằng cách loại bỏ nhu cầu chuyển đổi giữa IDE và trình duyệt
+web cho các thực hành tốt nhất không quen thuộc. Vì các bình luận
+trong IDE cần được tạo trong thời gian thực, chúng tôi nhắm đến
+việc tạo bình luận với độ trễ dưới giây.
+Trong hệ thống đánh giá mã, AutoCommenter chạy sau mỗi cập
+nhật (tức là trên mỗi snapshot đánh giá mã mới), tự động đăng bình
+luận nếu phát hiện bất kỳ vi phạm nào. Các bình luận được tạo bởi
+các công cụ tự động tương tự về mặt thị giác với các bình luận được
+tạo bởi con người, nhưng có nền màu khác.
+Hình 3 cho thấy một ví dụ bình luận được tạo và đăng bởi AutoCommenter
+trong hệ thống đánh giá mã. Lưu ý các nút thumbs up và thumbs
+down (bên phải), mà tác giả và người đánh giá có thể nhấp nếu họ
+thấy bình luận đặc biệt hữu ích hoặc không. Cũng lưu ý nút "Please fix"
+(bên trái), có thể nhìn thấy đối với người đánh giá. Nếu được nhấp,
+một bình luận mới được tạo chỉ ra rằng người đánh giá tin rằng bình
+luận là quan trọng và phải được giải quyết trước khi mã được merge
+vào codebase. Các nút phản hồi này là tiêu chuẩn trong hệ thống
+đánh giá mã, có mặt trên tất cả bình luận được tạo bởi các công cụ
+tự động (ví dụ: [7,13]), và cung cấp tín hiệu cho sự chấp nhận của
+người dùng đối với công cụ. IDE cung cấp một cơ chế phản hồi
+tương tự.
+
+--- TRANG 5 ---
+Đánh Giá Thực Hành Lập Trình Hỗ Trợ Bởi AI trong Đánh Giá Mã Nguồn Hiện Đại AIware '24, July 15–16, 2024, Porto de Galinhas, Brazil
+Hình 3: Ví dụ bình luận được đăng bởi AutoCommenter.
+4 TRIỂN KHAI
+Chúng tôi đã triển khai AutoCommenter cho tất cả nhà phát triển
+tại Google trong một khoảng thời gian từ tháng 7 năm 2022 đến
+tháng 10 năm 2023:
+•đến tháng 7 năm 2022—teamfooding: các tác giả của bài báo này.
+•tháng 7 năm 2022—early adopters: khoảng 3 nghìn tình nguyện viên.
+•tháng 7 năm 2023—thí nghiệm A/B: khoảng một nửa tất cả nhà phát triển.
+•từ tháng 10 năm 2023—khả dụng chung: tất cả nhà phát triển.
+Lưu ý rằng do lý do bảo mật công nghiệp, chúng tôi không thể tiết
+lộ số tuyệt đối của đánh giá mã, nhà phát triển, file, bình luận hoặc
+phân phối thời lượng đánh giá mã. Chúng tôi báo cáo về các thước
+đo tương đối, khi thích hợp, và các xu hướng có liên quan.
+Chúng tôi liên tục đánh giá và cải thiện hiệu suất của AutoCommenter,
+sử dụng phương pháp tinh chỉnh lặp đi lặp lại:
+•Đánh giá trên dữ liệu lịch sử (phần 3.3) để có cái nhìn định
+hướng về mức độ hoạt động tốt của mô hình trong nhiệm vụ
+và để định nghĩa ngưỡng và chọn chiến lược giải mã.
+•Giám sát và phân tích tương tác người dùng và phản hồi trực
+tiếp thông qua các nút phản hồi và báo cáo vấn đề.
+•Đánh giá con người có mục tiêu dựa trên các mẫu quan sát
+trong các bước đánh giá khác.
+Hình 4 cho thấy tỷ lệ phản hồi tích cực so với tiêu cực của nhà phát
+triển về các bình luận đánh giá mã được đăng và chẩn đoán IDE
+theo thời gian. Đường đứt nét cho thấy tổng số lượt nhấp phản hồi
+mà nhà phát triển cung cấp mỗi tháng. Như mong đợi, số lượng này
+thấp hơn nhiều trong giai đoạn early-adopter. Ngoài ra, tính biến
+động cao hơn trong giai đoạn này vì chúng tôi tích cực tinh chỉnh
+AutoCommenter.
+Nhớ lại ba nút phản hồi trong hệ thống đánh giá mã (hình 3), cho
+phép nhà phát triển thể hiện tình cảm tích cực và tiêu cực về một
+bình luận được đăng. Chúng tôi coi các bình luận có thumbs up hoặc
+"Please fix" là tích cực, và các bình luận có thumbs down là tiêu cực;
+chúng tôi định nghĩa tỷ lệ hữu ích là tỷ lệ bình luận tích cực so với
+tất cả bình luận có phản hồi.
+Phần còn lại của phần này mô tả các quan sát cụ thể và các tinh
+chỉnh tương ứng mà chúng tôi đã thực hiện trong quá trình triển khai.
+4.1 Lựa chọn Ngưỡng và Chiến lược Giải mã
+4.1.1 Ngưỡng. Trong quá trình triển khai ban đầu, chúng tôi muốn
+quản lý cẩn thận niềm tin mà nhà phát triển có đối với AutoCommenter
+và bắt đầu với ngưỡng tin cậy cao là t=0.98. Chúng tôi lấy mẫu thủ
+công vài trăm kết quả và quan sát rằng khoảng 80% dự đoán dưới
+ngưỡng vẫn chính xác—nghĩa là tỷ lệ false-negative rất cao ở t=0.98.
+Ngoài ra, chúng tôi quan sát rằng các dự đoán trong Python cho
+thấy phân phối điểm tin cậy khác biệt đáng kể, bị ảnh hưởng không
+tương xứng bởi ngưỡng. Chúng tôi phỏng đoán rằng thành phần
+dataset huấn luyện (số URL riêng biệt và tần suất URL) và tính cụ
+thể của các tài liệu thực hành tốt nhất là lý do, nhưng để lại một
+cuộc điều tra sâu hơn cho công việc tương lai. Một nỗ lực triển khai
+ngưỡng cho từng ngôn ngữ đã chứng minh không hiệu quả vì một
+ngưỡng duy nhất cho mỗi ngôn ngữ vẫn không nắm bắt đầy đủ khả
+năng của mô hình để dự đoán chính xác hàng trăm thực hành tốt
+nhất đa dạng. Điều này dẫn đến thiếu đa dạng trong các URL được
+dự đoán khi mô hình có xu hướng tạo điểm cao hơn cho một số URL
+so với những URL khác, bất kể tính chính xác. Những quan sát này
+dẫn đến thay đổi lớn đầu tiên đối với AutoCommenter: ngưỡng cho
+từng URL được tính toán dựa trên đánh giá nội tại trên dataset validation.
+Hình 4: Phản hồi của nhà phát triển trong suốt quá trình triển khai.
+4.1.2 Giải mã. Một đánh giá sử dụng ngưỡng cho từng URL với
+giải mã greedy trên các đánh giá mã lịch sử đầy đủ tiết lộ rằng AutoCommenter
+phát hiện vi phạm trong 6% tất cả file đã thay đổi. Tuy nhiên, 80%
+bình luận sẽ được đăng trên các dòng mã không được tác giả sửa
+đổi. Các nhà phát triển thường không hành động trên mã không
+thay đổi. Do đó, AutoCommenter lọc các bình luận được tạo trên
+các dòng mã không thay đổi, giảm tỷ lệ bình luận trong file đã thay
+đổi xuống 1.3%. Để tăng tỷ lệ này, chúng tôi thử nghiệm với các
+chiến lược giải mã khác nhau: greedy (mặc định), beam search, top-k
+và top-p sampling. Chúng tôi quyết định sử dụng beam search (tạo
+n=4 phản hồi tiềm năng), làm tăng gấp ba tần suất đăng lên 3.9%.
+Nó cũng mang lại sự đa dạng URL cao hơn đáng kể: 10 URL được
+đăng thường xuyên nhất chiếm 41% tất cả bình luận, so với 80%
+cho greedy search.
+Độ trễ là một khía cạnh quan trọng khác khi chọn chiến lược giải
+mã để triển khai. Mặc dù beam search tăng tần suất đăng và tính
+đa dạng, suy luận trở nên chậm hơn đáng kể (độ trễ trung vị 2 giây).
+Do độ trễ này cấm đối với việc sử dụng tương tác trong IDE, cuối
+cùng chúng tôi quyết định sử dụng beam search cho hệ thống đánh
+giá mã và greedy search cho IDE.
+
+--- TRANG 6 ---
+AIware '24, July 15–16, 2024, Porto de Galinhas, Brazil Manushree Vijayvergiya et al.
+4.2 Ép buộc Thực hành Tốt nhất Lỗi thời
+Sau khi khởi chạy AutoCommenter cho khoảng 3 nghìn first-adopter
+tình nguyện, chúng tôi nhận thấy một số lượng lớn vấn đề được báo
+cáo bởi người dùng trong vài ngày. Nhiều vấn đề trong số này tương
+ứng với một URL² duy nhất, mô tả các thực hành tốt nhất liên quan
+đến import Python. Tuy nhiên, nguồn chính tắc cho một số tên type
+đã thay đổi trong Python 3.9, và thực hành tốt nhất cũng đã thay
+đổi vào đầu năm 2022. Vì dữ liệu huấn luyện của chúng tôi kéo dài
+trước năm 2022, nó chứa một số bình luận thực hành tốt nhất không
+còn áp dụng được nữa. Chúng tôi nhận ra rằng đây là một mẫu lặp
+lại: khi ngôn ngữ phát triển, hoặc thư viện mới được giới thiệu, các
+thực hành tốt nhất cũng phát triển. Một cách để giảm thiểu vấn đề
+là lọc ra dữ liệu như vậy (bất cứ khi nào quy tắc thay đổi) và huấn
+luyện lại mô hình. Tuy nhiên điều này tốn thời gian và tài nguyên:
+nó đòi hỏi tái tạo dữ liệu đầy đủ, huấn luyện mô hình, đánh giá và
+rollout. Trong khi đó, mô hình "lỗi thời" cần được tắt, gây ra thời
+gian ngừng hoạt động của hệ thống, hoặc các dự đoán bị ảnh hưởng
+cần được ép buộc. Nếu không, hệ thống có thể nhanh chóng mất
+niềm tin của nhà phát triển. Chúng tôi chọn ép buộc các dự đoán
+thực hành tốt nhất cụ thể, sử dụng lọc có điều kiện (khớp biểu thức
+chính quy trên mã nguồn) vì hai lý do. Đầu tiên, nó có thể được triển
+khai động và áp dụng ngay lập tức. Thứ hai, nó cho phép lọc chi tiết
+các dự đoán.
+4.3 Đánh giá Độc lập của Các Bình luận Được chọn
+Sau vài tháng sử dụng sớm, chúng tôi quan sát rằng tỷ lệ hữu ích
+đã ổn định ở khoảng 54%. Để hiểu lý do, xác định các khu vực để
+cải thiện và chuẩn bị cho việc triển khai rộng hơn, chúng tôi đã tiến
+hành một nghiên cứu đánh giá con người độc lập vào tháng 4 năm
+2023, phân tích một mẫu khoảng 370 bình luận được đăng nhận
+được phản hồi của nhà phát triển trong quá trình triển khai first-
+adopter của chúng tôi.
+Để thu thập các quan điểm đa dạng về tính hữu ích của bình luận,
+chúng tôi tuyển dụng 15 người đánh giá—nhà phát triển từ các đội
+đối tác. Chúng tôi yêu cầu họ đánh giá các bình luận của AutoCommenter
+nhận được phản hồi rõ ràng từ người dùng. Chúng tôi không hiển
+thị phản hồi người dùng gốc cho người đánh giá, để tránh thiên vị
+trong đánh giá của họ. Các người đánh giá đánh giá tính hữu ích
+của mỗi bình luận dựa trên thực hành tốt nhất được liên kết và mã
+xung quanh. Chúng tôi hướng dẫn họ tập trung vào tính chính xác
+của bình luận, nhưng cũng xem liệu bình luận có thể hành động
+được đối với họ như một tác giả (ví dụ: họ có giải quyết một bình
+luận về mặt kỹ thuật chính xác nhưng dường như không đáng giải
+quyết trong một trường hợp cụ thể). Họ được khuyến khích cung
+cấp phản hồi tự do về mỗi bình luận.
+Tỷ lệ hữu ích từ đánh giá của người đánh giá là 60%, cao hơn một
+chút so với 54% từ phản hồi của nhà phát triển trên cùng các bình
+luận, nhưng thấp hơn nhiều so với mục tiêu 80% của chúng tôi cho
+việc triển khai rộng hơn.
+Phát hiện thú vị nhất từ nghiên cứu này là có các mẫu rõ ràng của
+các bình luận không hữu ích. Dưới đây là một số ví dụ:
+Một số chủ đề hoặc chủ đề phức tạp: Ví dụ, một URL trỏ đến
+một phần mô tả nhiều hướng dẫn để tương tác với Python linter,
+bao gồm các trường hợp mà nó thường kích hoạt và cách ép buộc
+nó. Một tác giả có thể gặp khó khăn trong việc hiểu hướng dẫn cụ
+thể nào mà một bình luận được đăng đang đề cập đến và cách giải
+quyết nó. Tương tự, hướng dẫn về viết tài liệu hàm tốt trong C++
+là một trang đầy đủ văn bản dày đặc. Người đánh giá thường xuyên
+lưu ý sự ngắt kết nối giữa một thực hành tốt nhất (và tóm tắt ngắn
+gọn của AutoCommenter) và mã thực tế, ngay cả khi nó chứa vi
+phạm có liên quan.
+²https://github.com/google/styleguide/blob/gh-pages/pyguide.md#22-importsĐộ quan trọng của tóm tắt chất lượng cao: Người đánh giá thường
+thấy rằng tóm tắt của AutoCommenter, được tạo bằng cách scraping
+nguồn tài liệu và đôi khi bị thiếu, không giải thích đầy đủ sự liên
+quan của hướng dẫn được trích dẫn đến bình luận/mã.
+Chủ đề chủ quan và có thể gây tranh cãi: Một ví dụ là tránh các
+flag trong mã thư viện. Các flag có thể gây ra vấn đề khi được sử
+dụng trong thư viện, nhưng một số thư viện được thiết kế đặc biệt
+để có nhiều tính năng có thể cấu hình qua flag. Ngoài ra, mã legacy
+có thể không tuân thủ hướng dẫn này và người đánh giá sẽ không
+thực thi nó. Mô hình không học được những sắc thái này và đôi
+khi dự đoán vi phạm khi tác giả thêm flag mới vào thư viện hiện có.
+Lỗi mô hình có hệ thống cho một số hướng dẫn: Một ví dụ thú
+vị là một hướng dẫn thúc đẩy việc sử dụng hàm thành viên push_back
+thay vì emplace_back cho vector C++ khi cả hai hàm có thể được
+sử dụng với cùng đối số để đạt được hiệu ứng tương tự. Mô hình
+đã học để dự đoán điều này, nhưng nó cũng sẽ dự đoán nó trong
+các trường hợp mà emplace_back được bảo đảm, và cũng khi một
+type không liên quan có hàm thành viên gọi là push_back.
+Bình luận chính xác nhưng giá trị thấp: Thiếu dấu chấm ở cuối
+câu trong bình luận mã thường được cho phép bởi người đánh giá
+con người. Mặc dù về mặt kỹ thuật chính xác, yêu cầu tác giả quay
+lại IDE của họ và sửa vấn đề có thể cung cấp giá trị âm ròng.
+Những hiểu biết từ nghiên cứu của người đánh giá đã thông báo
+hai thay đổi đối với AutoCommenter. Đầu tiên, nghiên cứu của người
+đánh giá xác định 17 URL không thể hành động, việc ép buộc chúng
+đã tăng tỷ lệ hữu ích lịch sử từ 54% lên 66% về phản hồi của nhà
+phát triển, và từ 60% lên 74% về phản hồi của người đánh giá. Chúng
+tôi phân tích thêm các bình luận liên kết đến các URL tương tự,
+chưa được đánh giá và ép buộc thêm 5 URL. Thứ hai, chúng tôi xem
+xét và cập nhật thủ công tóm tắt cho tất cả URL được đăng thường
+xuyên. Cùng nhau, những thay đổi này đủ để đạt được tỷ lệ hữu ích
+mục tiêu 80% của chúng tôi cho giai đoạn triển khai tiếp theo.
+4.4 Thí nghiệm A/B
+Vào tháng 7 năm 2023, chúng tôi triển khai AutoCommenter cho
+khoảng một nửa tất cả nhà phát triển trong ngữ cảnh của một thí
+nghiệm A/B. Chúng tôi phân bổ ngẫu nhiên nhà phát triển vào một
+nhóm thí nghiệm (AutoCommenter được bật) và một nhóm kiểm
+soát (AutoCommenter bị tắt). Chúng tôi ngẫu nhiên hóa dựa trên
+vài chữ số cuối của hash SHA256 của địa chỉ email nhà phát triển,
+và chúng tôi xác minh rằng cả hai nhóm không khác biệt về kích
+thước và thành phần, bao gồm phân phối nhiệm kỳ, thâm niên, ngôn
+ngữ lập trình và đơn vị kinh doanh. Chúng tôi cũng xác nhận rằng
+không có biến nào được đo trong thí nghiệm khác biệt giữa nhóm
+kiểm soát và nhóm thí nghiệm trước khi thí nghiệm bắt đầu. Tần
+suất đăng bình luận trong thí nghiệm phù hợp với mong đợi (phần 4.1).
+Chúng tôi không phát hiện bất kỳ thay đổi có ý nghĩa thống kê nào
+trong bất kỳ điều nào sau đây: tổng thời lượng đánh giá mã, thời
+gian nhà phát triển tích cực dành cho đánh giá mã, số lần lặp bình
+luận-phản hồi giữa tác giả và người đánh giá. Tuy nhiên, chúng tôi
+phát hiện một cải thiện nhẹ trong tốc độ lập trình. Chúng tôi phỏng
+đoán rằng việc giảm chuyển đổi ngữ cảnh sang tài liệu dẫn đến hiệu
+ứng tích cực này. Chúng tôi để lại một cuộc điều tra sâu hơn cho
+công việc tương lai.
+Dựa trên kết quả, chúng tôi kết luận rằng không có tác động bất
+lợi nào, và triển khai AutoCommenter cho tất cả nhà phát triển vào
+tháng 10 năm 2023.
+
+--- TRANG 7 ---
+Đánh Giá Thực Hành Lập Trình Hỗ Trợ Bởi AI trong Đánh Giá Mã Nguồn Hiện Đại AIware '24, July 15–16, 2024, Porto de Galinhas, Brazil
+Hình 5: Phân phối tích lũy của bình luận mỗi URL cho các bình
+luận tự động được tạo bởi AutoCommenter trong sản xuất và
+bình luận con người trong dữ liệu huấn luyện.
+5 ĐÁNH GIÁ
+Dựa trên tỷ lệ hữu ích và phản hồi người dùng thu thập được từ tháng
+3 năm 2023, chúng tôi kết luận rằng các nhà phát triển thường hài
+lòng với các bình luận được tạo bởi AutoCommenter. Chúng tôi liên
+tục tinh chỉnh việc chuẩn bị dataset, ngưỡng, ép buộc URL và tóm
+tắt bằng cách phân tích phản hồi người dùng, để đảm bảo rằng AutoCommenter
+mang lại tác động tích cực cao đến quy trình làm việc của nhà phát triển.
+Ngoài sự hài lòng của nhà phát triển, với vài tháng phát hành rộng
+rãi cho tất cả Google, chúng tôi đã đánh giá ba khía cạnh bổ sung
+của hiệu suất AutoCommenter:
+(1) Giải quyết bình luận: Tần suất nhà phát triển sửa đổi mã của
+họ để giải quyết các bình luận được đăng của AutoCommenter?
+(2) AutoCommenter so với bình luận con người: AutoCommenter's
+bình luận bao phủ tốt như thế nào các tài liệu thực hành tốt nhất
+mà người đánh giá con người tham khảo trong bình luận của họ?
+(3) AutoCommenter so với linters: Đầu ra của AutoCommenter
+vượt ra ngoài khả năng của các công cụ phân tích tĩnh truyền
+thống đến mức nào?
+5.1 Giải quyết Bình luận
+Các nhà phát triển hiếm khi đưa ra phản hồi rõ ràng về các bình
+luận của AutoCommenter bằng cách nhấp các nút thumbs up/thumbs
+down trong hệ thống đánh giá mã và IDE, và nút "Please fix" trong
+hệ thống đánh giá mã (hình 3): khoảng 10% bình luận tự động trong
+hệ thống đánh giá mã và 2% chẩn đoán trong IDE nhận được phản
+hồi rõ ràng, có thể so sánh với các phân tích tự động khác tại Google.
+Đồng thời, nhà phát triển di chuột qua khoảng 50% chẩn đoán IDE
+của AutoCommenter, và công việc trước đó cho thấy nhà phát triển
+thường giải quyết bình luận tự động mà không có phản hồi rõ ràng
+[18]. Để đánh giá tần suất nhà phát triển giải quyết bình luận của
+AutoCommenter, chúng tôi đã tiến hành phân tích offline, ước tính
+tỷ lệ bình luận được giải quyết bởi các thay đổi mã sau đó.
+Để phân tích giải quyết bình luận, chúng tôi trích xuất các thay
+đổi lịch sử tập trung vào các file có bình luận tự động từ AutoCommenter.
+Đối với mỗi thay đổi, chúng tôi trích xuất snapshot ban đầu nơi bình
+luận được đăng và snapshot mà nhà phát triển cuối cùng merge vào
+codebase. Mỗi bình luận trải rộng một phạm vi dòng cụ thể. Chúng
+tôi sử dụng phương pháp ánh xạ dòng dựa trên AST tự động [18]
+giữa các snapshot này, để xác định các bình luận mà mô hình ban
+đầu
+Thành ngữ mãTài liệuĐịnh dạngNgôn ngữĐặt tên
+0 5 10
+Số URL riêng biệtLinter Có Không/Một phần
+Hình 6: Top-50 URL được dự đoán thường xuyên nhất được phân
+loại thành các loại. Linter chỉ ra liệu có tồn tại linter phát hiện
+vi phạm hay có thể dễ dàng xây dựng.
+đã dự đoán trên snapshot đầu tiên, nhưng không dự đoán trên snapshot
+được merge. Các cặp snapshot như vậy chỉ ra rằng một bình luận
+có thể đã được giải quyết, nhưng có thể các thay đổi mã không liên
+quan có thể dẫn đến một bình luận cụ thể không còn được dự đoán.
+Một phân tích tự động của 6000 cặp snapshot tiết lộ rằng trong 50%
+trường hợp, bình luận không có mặt từ snapshot được gửi trên các
+dòng mà nó ban đầu được đăng. Chúng tôi kiểm tra thủ công một
+mẫu ngẫu nhiên của 40 cặp như vậy. Chúng tôi thấy rằng trong 80%
+trường hợp, một thay đổi được thực hiện bởi tác giả đã giải quyết
+trực tiếp vấn đề được mô tả bởi bình luận được đăng. Do đó, chúng
+tôi ước tính rằng tỷ lệ giải quyết bình luận là khoảng 40%, lớn hơn
+đáng kể so với tỷ lệ bình luận có phản hồi tích cực rõ ràng so với
+tất cả bình luận.
+5.2 AutoCommenter so với Bình luận Con người
+Hình 5 so sánh phân phối tích lũy của bình luận (mỗi URL duy nhất
+đến tài liệu thực hành tốt nhất) cho các bình luận tự động được tạo
+bởi AutoCommenter trong sản xuất và bình luận con người trong
+dữ liệu huấn luyện. Trục x là thứ hạng của URL khi tất cả URL từng
+được sử dụng trong bình luận tự động được sắp xếp theo tần suất.
+Ví dụ, URL được sử dụng thường xuyên nhất có thứ hạng 1, và nó
+chiếm 9.9% tất cả bình luận tự động. Cùng URL này xuất hiện trong
+4.3% bình luận do con người tạo trong dữ liệu huấn luyện. Tổng cộng,
+AutoCommenter đã tạo bình luận cho 330 URL riêng biệt. Tập hợp
+URL được sử dụng bởi AutoCommenter bao phủ 68% bình luận con
+người lịch sử có URL thực hành tốt nhất. Đây là một kết quả tốt:
+nó chứng minh rằng AutoCommenter không tập trung vào các thực
+hành tốt nhất mơ hồ hiếm khi được người đánh giá tham khảo.
+Mặt khác, mặc dù sử dụng beam search, tính đa dạng URL vẫn tương
+đối thấp. Top-85 URL chiếm 90% bình luận được tạo bởi AutoCommenter.
+Cùng tập hợp URL bao phủ 35% bình luận con người có URL thực
+hành tốt nhất. Cải thiện tính đa dạng URL và bao phủ các thực hành
+tốt nhất trong bình luận tự động trong khi duy trì độ chính xác và
+độ trễ thấp là một trong những ưu tiên hàng đầu của chúng tôi.
+5.3 AutoCommenter so với Linters
+Để hiểu mức độ AutoCommenter cung cấp giá trị vượt ra ngoài linters
+có thể kiểm tra hiệu quả và chính xác một số thực hành tốt nhất,
+chúng tôi lấy mẫu top-50 vi phạm được dự đoán thường xuyên nhất—
+nghĩa là top-50 URL trong hình 5. Đối với mỗi URL được lấy mẫu,
+
+--- TRANG 8 ---
+AIware '24, July 15–16, 2024, Porto de Galinhas, Brazil Manushree Vijayvergiya et al.
+chúng tôi kiểm tra tài liệu thực hành tốt nhất của nó và xác định
+(1) loại thực hành tốt nhất (phần 1) và (2) liệu có tồn tại linter phát
+hiện vi phạm tương ứng hay có thể dễ dàng xây dựng. Cụ thể, ba
+tác giả, mỗi người có hơn 10 năm kinh nghiệm xây dựng các công
+cụ phân tích tĩnh, đọc tài liệu và độc lập phân loại các URL. Không
+có bất đồng về loại thực hành tốt nhất, nhưng có bất đồng về việc
+liệu có thể dễ dàng xây dựng linter cho khoảng 15% URL. Ba tác
+giả giải quyết những bất đồng này thông qua bỏ phiếu đa số và thảo luận.
+Bất đồng xuất phát từ các thực hành tốt nhất mơ hồ và những thực
+hành có nhiều hướng dẫn. Ví dụ, trong khi kiểm tra sự hiện diện
+của tài liệu mã tương đối đơn giản, lập luận về các ngoại lệ có lý
+do và độ rõ ràng của nội dung có thể không.
+Hình 6 cho thấy phân phối của 50 URL được lấy mẫu, chia theo
+loại và liệu vi phạm có thể được phát hiện bởi linter. Đối với 33/50
+(66%) thực hành tốt nhất này, phát hiện vi phạm vượt ra ngoài phạm
+vi của phân tích tĩnh truyền thống.
+6 BÀI HỌC KINH NGHIỆM
+Dựa trên kinh nghiệm phát triển và triển khai AutoCommenter của
+chúng tôi, chúng tôi tóm tắt một vài bài học kinh nghiệm quan trọng:
+•Bổ sung các phân tích truyền thống: Phương pháp hỗ trợ LLM
+của AutoCommenter tạo bình luận cho 68% thực hành tốt nhất
+thường được người đánh giá con người tham khảo. Nhiều trong
+số này nằm ngoài phạm vi của các phân tích tĩnh truyền thống.
+•Đánh giá nội tại so với hiệu suất thế giới thực: Đánh giá nội
+tại và hiệu suất thế giới thực có thể khác biệt đáng kể: đánh
+giá nội tại của chúng tôi, sử dụng dataset bình luận con người
+thế giới thực cùng với kiến trúc mô hình và quy trình huấn
+luyện tối tân, chỉ ra một mô hình đầy hứa hẹn, nhưng các đánh
+giá bên ngoài và cải thiện hệ thống của chúng tôi đã chứng
+minh là cần thiết cho một triển khai thành công.
+•Giám sát sự chấp nhận của người dùng là quan trọng: Ngay
+cả một vài trải nghiệm người dùng tiêu cực cũng có thể xói
+mòn niềm tin vào hệ thống tự động. Liên tục giám sát và phân
+tích phản hồi thế giới thực là quan trọng trong việc phát hiện
+các trường hợp như vậy và xác định biện pháp khắc phục. Trong
+trường hợp của AutoCommenter, một cơ chế ép buộc đơn giản
+đã đủ để cải thiện mạnh mẽ sự chấp nhận của người dùng lên
+hơn 80% mà không hy sinh lớn về hiệu quả.
+7 CÔNG VIỆC LIÊN QUAN
+Johnson [15] đã giới thiệu C linter gần 50 năm trước vào năm 1977.
+Trong 50 năm đó, một khối lượng nghiên cứu đáng kể về phân tích
+tĩnh tự động đã được sản xuất: một đánh giá tài liệu gần đây của
+Heckman và Williams [10] đã xác định 17,571 bài báo. Nhiều nghiên
+cứu khám phá cách các nhà phát triển tương tác với phân tích tĩnh.
+Johnson et al. [14] khám phá những thách thức mà nhà phát triển
+đối mặt khi cố gắng sử dụng phân tích tĩnh. Kết quả nghiên cứu
+của họ làm nổi bật tầm quan trọng của việc tích hợp tốt vào quy
+trình làm việc hiện tại của nhà phát triển và tầm quan trọng của việc
+phát triển và duy trì niềm tin vào công cụ. Vassallo et al. [27] khám
+phá cách nhà phát triển tương tác với phân tích tĩnh trong các ngữ
+cảnh khác nhau, bao gồm lập trình và đánh giá mã. Họ cũng thấy
+rằng tích hợp vào quy trình làm việc hiện tại đóng vai trò quan trọng
+trong sự sẵn lòng của nhà phát triển sử dụng các công cụ và chất
+lượng kết quả cao là cực kỳ quan trọng. Beller et al. [6] nghiên cứu
+việc sử dụng phân tích mã tĩnh trong một số lượng lớn dự án mã
+nguồn mở. Trong số những phát hiện khác, họ làm nổi bật rằng cách thức phân tích tự động được và nên được sử dụng khác
+nhau dựa trên ngôn ngữ lập trình.
+Ngược lại, việc sử dụng machine learning cho phân tích mã là một
+lĩnh vực tương đối mới và ít được hiểu. Một số ấn phẩm gần đây
+(ví dụ: Hong et al. [11], Li et al. [16], Li et al. [17], Thongtanunam
+et al. [24], Tufano et al. [25] và Tufano et al. [26]) báo cáo về đánh
+giá mô hình và đề xuất các công cụ cho đánh giá mã tự động. Mặc
+dù các mô hình này và nhiệm vụ tạo bình luận đánh giá rất tương
+tự với mô hình được trình bày trong bài báo này, các đánh giá chủ
+yếu tập trung vào datasets lịch sử. Như đã thảo luận trong phần 3.3.1,
+một đánh giá nội tại chỉ trên bình luận lịch sử có phần hạn chế và
+đôi khi có thể không dự đoán được hiệu suất thế giới thực. Một ấn
+phẩm gần đây khác của Frömmgen et al. [9] trình bày đánh giá của
+một hệ thống sống, nhưng cho nhiệm vụ ngược lại: tạo mã từ bình
+luận thay vì bình luận từ mã.
+8 KẾT LUẬN
+Xác minh rằng mã tuân thủ các thực hành tốt nhất là một nhiệm vụ
+phổ biến trong các quy trình đánh giá mã hiện đại. Mặc dù một số
+thực hành tốt nhất có thể được tự động xác minh với các công cụ
+truyền thống như linters, nhiều thực hành đòi hỏi kiến thức và phán
+đoán của các nhà phát triển có kinh nghiệm, điều này đòi hỏi thời
+gian và nỗ lực.
+Bài báo này báo cáo về kinh nghiệm của chúng tôi trong việc phát
+triển, triển khai và đánh giá AutoCommenter, một hệ thống trợ lý
+đánh giá mã hỗ trợ LLM. Cụ thể, nó trình bày toàn bộ quy trình từ
+thiết kế nhiệm vụ và mô hình, qua các đánh giá nội tại và hiệu chỉnh
+hệ thống, đến rollout theo giai đoạn và đánh giá người dùng cuối.
+Kết quả đánh giá cho thấy rằng có thể phát triển một hệ thống đầu
+cuối với khả năng vượt xa các công cụ truyền thống trong khi đạt
+được mức độ chấp nhận cao của người dùng cuối. Những kết quả
+này là một bước đầu đầy hứa hẹn hướng tới việc triển khai các trợ
+lý đánh giá mã tinh vi và đánh giá mã tự động.
+Ưu tiên của chúng tôi là đảm bảo trải nghiệm nhà phát triển tích
+cực bằng cách thiết kế AutoCommenter có độ chính xác rất cao. Mặc
+dù recall không phải là trọng tâm chính, chúng tôi nhận ra tầm quan
+trọng của nó và dự định khám phá những thay đổi nào trong kiến
+trúc mô hình và hệ thống có thể cải thiện recall. Ví dụ, mô hình mà
+chúng tôi sử dụng năm 2022 là tối tân vào thời điểm đó. Tuy nhiên,
+nó có cửa sổ ngữ cảnh hạn chế 2048 token chỉ đủ cho khoảng 200
+dòng mã. Các mô hình tối tân hiện tại có cửa sổ ngữ cảnh hàng chục
+nghìn token trong quá trình huấn luyện và hơn một triệu token trong
+quá trình suy luận. Bước nhảy này mở ra cơ hội cho các tính năng
+mới và cải thiện đáng kể trong những tính năng hiện có.
+9 LỜI CẢM ƠN
+Công việc này là kết quả của nhiều năm hợp tác giữa các đội trong
+Google Core Systems và Google DeepMind. Chúng tôi biết ơn sự
+hỗ trợ và lời khuyên của tất cả các thành viên đội và lãnh đạo, bao
+gồm Alberto Elizondo, Alexander Frömmgen, Ballie Sandhu, Chandu
+Thekkath, Chris Gorgolewski, David Tattersall, Ilya Cherny, Jacob
+Austin, Katja Grünwedel, Kristóf Molnár, Lera Kharatyan, Luka Ri-
+manić, Madhura Dudhgaonkar, Marc Brockschmidt, Marcus Revaj,
+Maxim Tabachnyk, Nina Chen, Niranjan Tulpule, Nitya Ramani,
+Paige Bailey, Pavel Sychev, Pierre-Antoine Manzagol, Quinn Madi-
+son, Roger Fleig, Satish Chandra, Savinee Dancs, Stoyan Nikolov,
+Subhodeep Moitra, và Vaibhav Tulsyan.
+
+--- TRANG 9 ---
+Đánh Giá Thực Hành Lập Trình Hỗ Trợ Bởi AI trong Đánh Giá Mã Nguồn Hiện Đại AIware '24, July 15–16, 2024, Porto de Galinhas, Brazil
+TÀI LIỆU THAM KHẢO
+[1]2024. Google Style Guides. https://google.github.io/styleguide/. Truy cập:
+2024-03-15.
+[2]2024. Linux kernel coding style. https://www.kernel.org/doc/html/v4.10/process/
+coding-style.html. Truy cập: 2024-03-15.
+[3]2024. PEP 8 – Style Guide for Python Code. https://peps.python.org/pep-0008/.
+Truy cập: 2024-03-15.
+[4]2024. Rust Style Guide. https://doc.rust-lang.org/nightly/style-guide/. Truy cập:
+2024-03-15.
+[5]Alberto Bacchelli and Christian Bird. 2013. Expectations, outcomes, and chal-
+lenges of modern code review. In 2013 35th International Conference on Software
+Engineering (ICSE) . 712–721. https://doi.org/10.1109/ICSE.2013.6606617
+[6]Moritz Beller, Radjino Bholanath, Shane McIntosh, and Andy Zaidman. 2016.
+Analyzing the state of static analysis: A large-scale evaluation in open source soft-
+ware. In 2016 IEEE 23rd International Conference on Software Analysis, Evolution,
+and Reengineering (SANER) , Vol. 1. IEEE, 470–481.
+[7]Zimin Chen, Małgorzata Salawa, Manushree Vijayvergiya, Goran Petrović, Marko
+Ivanković, and René Just. 2023. MuRS: Mutant Ranking and Suppression using
+Identifier Templates. In Proceedings of the Symposium on the Foundations of
+Software Engineering (FSE) . 1798–1808.
+[8]M. E. Fagan. 1976. Design and code inspections to reduce errors in program
+development. IBM Systems Journal 15, 3 (1976), 182–211. https://doi.org/10.1147/
+sj.153.0182
+[9]Alexander Frömmgen, Jacob Austin, Peter Choy, Nimesh Ghelani, Lera Kharatyan,
+Gabriela Surita, Elena Khrapko, Pascal Lamblin, Pierre-Antoine Manzagol, Marcus
+Revaj, Maxim Tabachnyk, Daniel Tarlow, Kevin Villela, Daniel Zheng, Satish
+Chandra, and Petros Maniatis. 2024. Resolving Code Review Comments with
+Machine Learning. In International Conference on Software Engineering: Software
+Engineering in Practice (ICSE-SEIP) .
+[10] Sarah Heckman and Laurie Williams. 2011. A systematic literature review of
+actionable alert identification techniques for automated static code analysis.
+Information and Software Technology 53, 4 (2011), 363–387. https://doi.org/10.
+1016/j.infsof.2010.12.007 Special section: Software Engineering track of the 24th
+Annual Symposium on Applied Computing.
+[11] Yang Hong, Chakkrit Tantithamthavorn, Patanamon Thongtanunam, and Aldeida
+Aleti. 2022. Commentfinder: a simpler, faster, more accurate code review com-
+ments recommendation. In Proceedings of the Joint Meeting of the European Soft-
+ware Engineering Conference and the Symposium on the Foundations of Software
+Engineering (ESEC/FSE) . 507–519.
+[12] Marko Ivanković, Goran Petrović, René Just, and Gordon Fraser. 2019. Code
+Coverage at Google. In Proceedings of the Joint Meeting of the European Soft-
+ware Engineering Conference and the Symposium on the Foundations of Software
+Engineering (ESEC/FSE) . 955–963.
+[13] Marko Ivanković, Goran Petrović, Yana Kulizhskaya, Mateusz Lewko, Luka Kali-
+novčić, René Just, and Gordon Fraser. 2024. Productive Coverage: Improving
+the Actionability of Code Coverage. In International Conference on Software
+Engineering: Software Engineering in Practice (ICSE-SEIP) .
+[14] Brittany Johnson, Yoonki Song, Emerson Murphy-Hill, and Robert Bowdidge.
+2013. Why don't software developers use static analysis tools to find bugs?. In
+2013 35th International Conference on Software Engineering (ICSE) . IEEE, 672–681.
+[15] Stephen C Johnson. 1977. Lint, a C program checker . Bell Telephone Laboratories
+Murray Hill.
+[16] Lingwei Li, Li Yang, Huaxi Jiang, Jun Yan, Tiejian Luo, Zihan Hua, Geng Liang,
+and Chun Zuo. 2022. Auger: Automatically generating review comments with pre-training models. In Proceedings of the Joint Meeting of the European Soft-
+ware Engineering Conference and the Symposium on the Foundations of Software
+Engineering (ESEC/FSE) . 1009–1021.
+[17] Zhiyu Li, Shuai Lu, Daya Guo, Nan Duan, Shailesh Jannu, Grant Jenks, Deep
+Majumder, Jared Green, Alexey Svyatkovskiy, Shengyu Fu, and Neel Sundaresan.
+2022. Automating code review activities by large-scale pre-training. In Proceedings
+of the 30th ACM Joint European Software Engineering Conference and Symposium
+on the Foundations of Software Engineering (<conf-loc>, <city>Singapore</city>,
+<country>Singapore</country>, </conf-loc>) (ESEC/FSE 2022) . Association for
+Computing Machinery, New York, NY, USA, 1035–1047. https://doi.org/10.1145/
+3540250.3549081
+[18] Goran Petrović, Marko Ivanković, Gordon Fraser, and René Just. 2023. Please fix
+this mutant: How do developers resolve mutants surfaced during code review?. In
+International Conference on Software Engineering: Software Engineering in Practice
+(ICSE-SEIP) . 150–161.
+[19] Rachel Potvin and Josh Levenberg. 2016. Why Google Stores Billions of Lines
+of Code in a Single Repository. Communications of the ACM (CACM) 59 (2016),
+78–87. http://dl.acm.org/citation.cfm?id=2854146
+[20] Peter Rigby, Brendan Cleary, Frederic Painchaud, Margaret-Anne Storey, and
+Daniel German. 2012. Contemporary Peer Review in Action: Lessons from Open
+Source Development. IEEE Software 29, 6 (2012), 56–61. https://doi.org/10.1109/
+MS.2012.24
+[21] Peter C. Rigby and Christian Bird. 2013. Convergent contemporary software peer
+review practices. In Proceedings of the 2013 9th Joint Meeting on Foundations of
+Software Engineering (Saint Petersburg, Russia) (ESEC/FSE 2013) . Association for
+Computing Machinery, New York, NY, USA, 202–212. https://doi.org/10.1145/
+2491411.2491444
+[22] Adam Roberts, Hyung Won Chung, Gaurav Mishra, Anselm Levskaya, James
+Bradbury, Daniel Andor, Sharan Narang, Brian Lester, Colin Gaffney, Afroz
+Mohiuddin, et al .2023. Scaling up models and data with t5x and seqio. Journal
+of Machine Learning Research 24, 377 (2023), 1–8.
+[23] Caitlin Sadowski, Emma Söderberg, Luke Church, Michal Sipko, and Alberto
+Bacchelli. 2018. Modern Code Review: A Case Study at Google. In International
+Conference on Software Engineering: Software Engineering in Practice (ICSE-SEIP) .
+181–190.
+[24] Patanamon Thongtanunam, Chanathip Pornprasit, and Chakkrit Tantithamtha-
+vorn. 2022. Autotransform: Automated code transformation to support modern
+code review process. In Proceedings of the International Conference on Software
+Engineering (ICSE) . 237–248.
+[25] Rosalia Tufano, Ozren Dabić, Antonio Mastropaolo, Matteo Ciniselli, and Gabriele
+Bavota. 2024. Code Review Automation: Strengths and Weaknesses of the State
+of the Art. IEEE Transactions on Software Engineering (TSE) (2024).
+[26] Rosalia Tufano, Simone Masiero, Antonio Mastropaolo, Luca Pascarella, Denys
+Poshyvanyk, and Gabriele Bavota. 2022. Using pre-trained models to boost code
+review automation. In Proceedings of the International Conference on Software
+Engineering (ICSE) . 2291–2302.
+[27] Carmine Vassallo, Sebastiano Panichella, Fabio Palomba, Sebastian Proksch, Har-
+ald C Gall, and Andy Zaidman. 2020. How developers engage with static analysis
+tools in different contexts. Empirical Software Engineering 25 (2020), 1419–1457.
+[28] T. Winters, T. Manshreck, and H. Wright. 2020. Software Engineering at Google:
+Lessons Learned from Programming Over Time . O'Reilly Media. https://books.
+google.ch/books?id=TyIrywEACAAJ
+Nhận ngày 2024-04-05; chấp nhận ngày 2024-05-04

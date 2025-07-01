@@ -1,0 +1,247 @@
+# 2407.04803v1.pdf
+# Chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2407.04803v1.pdf
+# Kích thước file: 6456274 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+Tác Động của Lượng Hóa và Tỉa Thưa Lên Các Mô Hình Học Tăng Cường Sâu
+Heng Lu1, Mehdi Alemi2,3, và Reza Rawassizadeh1
+1Khoa Khoa Học Máy Tính tại Metropolitan College, Đại học Boston, Boston, MA, USA
+2Khoa Phẫu thuật Chỉnh hình, Trường Y Harvard, Boston, MA, USA.
+3Dịch vụ Đào tạo, MathWorks, Natick, MA, USA.
+
+Tóm tắt
+Học tăng cường sâu (DRL) đã đạt được thành công đáng kể trong nhiều lĩnh vực khác nhau, như trò chơi điện tử, robot học, và gần đây là các mô hình ngôn ngữ lớn. Tuy nhiên, chi phí tính toán và yêu cầu bộ nhớ của các mô hình DRL thường hạn chế việc triển khai chúng trong các môi trường có tài nguyên hạn chế. Thách thức này nhấn mạnh nhu cầu cấp thiết cần khám phá các phương pháp nén mạng neural để làm cho các mô hình RDL trở nên thực tế hơn và có thể áp dụng rộng rãi hơn. Nghiên cứu của chúng tôi điều tra tác động của hai phương pháp nén nổi bật, lượng hóa và tỉa thưa lên các mô hình DRL. Chúng tôi xem xét cách những kỹ thuật này ảnh hưởng đến bốn yếu tố hiệu suất: lợi nhuận trung bình, bộ nhớ, thời gian suy luận, và sử dụng pin qua các thuật toán DRL và môi trường khác nhau. Mặc dù kích thước mô hình giảm, chúng tôi xác định rằng những kỹ thuật nén này nói chung không cải thiện hiệu quả năng lượng của các mô hình DRL, nhưng kích thước mô hình vẫn giảm. Chúng tôi cung cấp những hiểu biết về sự cân bằng giữa nén mô hình và hiệu suất DRL, đưa ra các hướng dẫn để triển khai các mô hình DRL hiệu quả trong các cài đặt có tài nguyên hạn chế.
+
+1 Giới thiệu và Bối cảnh
+Học tăng cường đã được áp dụng trong nhiều lĩnh vực, bao gồm robot học, trò chơi điện tử, và gần đây Học Tăng cường với Phản hồi của Con người (RLHF) [1, 2, 3, 4, 5], đã trở nên phổ biến trong các mô hình ngôn ngữ lớn. Các phương pháp RLHF giảm thiểu các thiên lệch vốn có trong chính các mô hình ngôn ngữ [4, 6, 7]. Các mô hình học tăng cường giải quyết các vấn đề thực tế chủ yếu sử dụng các mô hình liên tục dựa trên kiến trúc mạng neural, được gọi là Học Tăng cường Sâu (DRL).
+
+Các phương pháp DRL thường bao gồm một mô hình thế giới, các agent tương tác với thế giới, và một hàm phần thưởng đánh giá hiệu quả của các hành động dựa trên chính sách của agent hướng tới các mục tiêu định trước [8]. Tùy thuộc vào việc thuật toán có học một mô hình thế giới cụ thể hay không, các thuật toán DRL được phân loại thành thuật toán DRL dựa trên mô hình và thuật toán DRL không dựa trên mô hình [9]. Các phương pháp DRL không dựa trên mô hình thường thuộc ba danh mục chính: phương pháp deep Q-learning [10, 11, 12], phương pháp gradient chính sách [13, 14, 15], và phương pháp actor-critic [16, 17, 18, 19]. Không giống như các thuật toán dựa trên mô hình, các phương pháp không dựa trên mô hình tránh được thiên lệch mô hình và cung cấp khả năng tổng quát hóa lớn hơn, điều này góp phần vào sự phổ biến của chúng trong các ứng dụng RLHF [4, 20].
+
+Mạng neural, là xương sống của các phương pháp DRL, được liên kết với chi phí tính toán cao và do đó tốn nhiều tài nguyên. Gần đây, đã có sự gia tăng đáng kể trong việc tiêu thụ năng lượng và nước của các trung tâm dữ liệu trí tuệ nhân tạo (AI)1234. Xu hướng này đã dẫn đến nhiều nghiên cứu [21, 22, 23] điều tra chi phí tài nguyên của những tiến bộ gần đây trong AI. Việc giảm sử dụng năng lượng của DRL đã trở thành một nhu cầu quan trọng.
+
+Ngoài ra, nhiều hệ thống hưởng lợi từ học tăng cường hoạt động trên các thiết bị chạy bằng pin, như thiết bị thực tế mở rộng và robot di động. Khi kích thước của những thiết bị này giảm, khả năng tính toán của chúng cũng giảm [24]. Một cách tiếp cận phổ biến để giảm chi phí tính toán của các mô hình mạng neural là nén chúng thông qua tỉa thưa và lượng hóa [25, 26]. Các phương pháp nén mạng đã được áp dụng rộng rãi trong thị giác máy tính [27, 28] và các mô hình ngôn ngữ lớn [29, 30, 31] để cải thiện thời gian suy luận và giảm yêu cầu bộ nhớ với sự ảnh hưởng tối thiểu đến độ chính xác. Nén cho phép các mô hình DRL tiên tiến được triển khai trong robot với độ trễ thấp và hiệu quả năng lượng cao dưới tài nguyên bị ràng buộc. Mặc dù có tiềm năng, nén mạng neural trong các mô hình DRL đã nhận được ít sự chú ý nghiên cứu [32, 33] so với các lĩnh vực khác, như thị giác máy tính và xử lý ngôn ngữ tự nhiên.
+
+1https://www.theatlantic.com/technology/archive/2024/03/ai-water-climate-microsoft/677602
+2https://www.oregonlive.com/silicon-forest/2022/12/googles-water-use-is-soaring-in-the-dalles-records-show-with-two-more-data-centers-to-come.html
+3https://www.bloomberg.com/news/articles/2023-07-26/thames-water-considers-restricting-flow-to-london-data-centers
+4https://www.washingtonpost.com/business/2024/03/07/ai-data-centers-power
+1arXiv:2407.04803v1  [cs.LG]  5 Jul 2024
+
+--- TRANG 2 ---
+Một số phương pháp chung đã được đề xuất cho phương pháp nén mạng neural lượng hóa và tỉa thưa [34, 35]. Đối với lượng hóa, các nhà nghiên cứu DRL có thể quen thuộc hơn với lượng hóa vector, nhằm rời rạc hóa không gian liên tục thành một tập vector rời rạc để giảm chiều [36, 37, 38, 39]. Tuy nhiên, trong công việc này, chúng tôi áp dụng cụ thể lượng hóa mạng neural, tập trung vào việc chuyển đổi trọng số và bias định dạng float32 thành số có quy mô nhỏ hơn như int8 hoặc 4-bit thay vì lượng hóa vector. Mặt khác, các phương pháp tỉa thưa bao gồm việc loại bỏ các neuron được coi là ít quan trọng nhất dựa trên các tiêu chí như giá trị trọng số hoặc kích hoạt [40, 41, 42, 43, 44].
+
+Ngoài các phương pháp nén thông thường [35, 25, 26], có những phương pháp nén cụ thể cho DRL đầy hứa hẹn [32, 36, 40, 43]. AQuaDem [39] rời rạc hóa không gian hành động và học một tập các hành động rời rạc cho mỗi trạng thái s sử dụng sao chép hành vi từ các minh chứng chuyên gia [45]. Thuật toán tập hợp trạng thái thích ứng [36] rời rạc hóa thích ứng không gian trạng thái dựa trên phân kỳ Bregman, cho phép các phân vùng riêng biệt của không gian trạng thái. Một nhóm phương pháp khác tập trung vào lượng hóa vô hướng giảm độ chính xác số của các giá trị [46, 40, 33, 32]. NNC-DRL [46] tăng tốc quá trình huấn luyện DRL bằng cách tăng tốc dự đoán dựa trên GA3C [47] và sử dụng chưng cất chính sách để nén dự đoán mạng chính sách hành vi với sự suy giảm hiệu suất tối thiểu. FIXAR [33] đề xuất huấn luyện nhận biết lượng hóa trong điểm cố định để giảm kích thước mô hình mà không mất độ chính xác đáng kể. ActorQ [32] giới thiệu một khối chính sách lượng hóa int8 cho rollout trong vòng lặp huấn luyện RL phân tán truyền thống. PoPS [41] tăng tốc tốc độ mô hình bằng cách ban đầu huấn luyện một mạng thưa từ một mạng giáo viên quy mô lớn thông qua tỉa thưa chính sách lặp, sau đó nén nó thành một mạng dày đặc với mất hiệu suất tối thiểu. UVNQ [40] tích hợp dropout biến thiên thưa [48] với lượng hóa, điều chỉnh tỷ lệ dropout để tăng cường nhận thức lượng hóa. Tỉa thưa có cấu trúc động [43] tăng cường huấn luyện DRL bằng cách áp dụng bộ điều chỉnh thưa nhóm quan trọng neuron và tỉa thưa động các neuron không quan trọng dựa trên ngưỡng. Học Tăng cường Sâu Thưa Kép [44] sử dụng mạng cấu trúc mã hóa thưa đa lớp với bộ điều chỉnh log không lồi để thực thi tính thưa trong khi duy trì hiệu suất.
+
+Trong công việc này, chúng tôi áp dụng các phương pháp nén mạng neural phổ biến, bao gồm lượng hóa và tỉa thưa thông thường, cho năm mô hình học tăng cường sâu phổ biến (TRPO[14], PPO[15], DDPG[17], TD3[18], và SAC[19]). Sau đó chúng tôi đo hiệu suất của những thuật toán này sau nén sử dụng các chỉ số như lợi nhuận trung bình, thời gian suy luận, và sử dụng năng lượng. Cụ thể, chúng tôi áp dụng các kỹ thuật tỉa thưa L1 và L2 cho những mô hình này. Đối với lượng hóa, chúng tôi sử dụng lượng hóa int8 và áp dụng (i) lượng hóa động sau huấn luyện, (ii) lượng hóa tĩnh sau huấn luyện, và (iii) huấn luyện nhận biết lượng hóa qua các mô hình được liệt kê.
+
+Theo hiểu biết của chúng tôi, nghiên cứu này đại diện cho đánh giá toàn diện đầu tiên về tác động của tỉa thưa và lượng hóa qua một loạt các mô hình học tăng cường sâu. Các thí nghiệm và phát hiện của chúng tôi cung cấp những hiểu biết quý giá cho các nhà nghiên cứu và nhà phát triển, hỗ trợ họ đưa ra quyết định có thông tin khi lựa chọn giữa các phương pháp lượng hóa hoặc tỉa thưa cho các mô hình DRL. Một phương pháp phổ biến khác để nén mạng neural là chưng cất kiến thức [49], nhưng do tính chất cụ thể cho mô hình hoặc ứng dụng (ví dụ: phân loại hình ảnh), chúng tôi đã không bao gồm chưng cất kiến thức trong thiết lập thí nghiệm của mình.
+
+2 Phương pháp
+Chúng tôi đã áp dụng hai loại kỹ thuật nén mạng neural —tỉa thưa và lượng hóa— qua năm mô hình DRL nổi bật: TRPO[14], PPO[15], DDPG[17], TD3[18], và SAC[19]. Phần này phác thảo các phương pháp lượng hóa của chúng tôi, tiếp theo là các phương pháp tỉa thưa.
+
+2.1 Lượng hóa
+Chúng tôi áp dụng lượng hóa tuyến tính qua tất cả các mô hình, trong đó mối quan hệ giữa đầu vào gốc r và phiên bản lượng hóa q của nó được định nghĩa là r=S(q+Z). Ở đây, Z đại diện cho điểm zero trong không gian lượng hóa, và hệ số tỷ lệ S ánh xạ các số dấu phẩy động đến không gian lượng hóa. Đối với Lượng hóa Động Sau Huấn luyện (PTDQ) và Lượng hóa Tĩnh Sau Huấn luyện (PTSQ), chúng tôi tính toán S và Z cho các kích hoạt độc quyền. Trong PTSQ, đầu tiên, các mô hình cơ sở trải qua một quá trình hiệu chuẩn để tính toán các tham số lượng hóa này và sau đó các mô hình thực hiện suy luận dựa trên các tham số lượng hóa cố định. Trong PTDQ, các tham số lượng hóa được tính toán động. Trong Huấn luyện Nhận biết Lượng hóa (QAT), các mô hình cơ sở được pseudo-lượng hóa trong quá trình huấn luyện, có nghĩa là các tính toán được thực hiện trong độ chính xác dấu phẩy động nhưng được làm tròn thành giá trị nguyên để mô phỏng lượng hóa. Sau đó, các mô hình gốc được chuyển đổi thành các phiên bản lượng hóa, và các tham số lượng hóa được ổn định.
+
+2.2 Tỉa thưa
+Tỉa thưa mạng neural thường bao gồm việc loại bỏ neuron trong các lớp, và có thể tồn tại các phụ thuộc trong đó tỉa thưa trong một lớp ảnh hưởng đến các lớp liên quan tiếp theo. Phương pháp DepGraph mà chúng tôi sử dụng [50], giải quyết những phụ thuộc này bằng cách nhóm các lớp dựa trên sự phụ thuộc lẫn nhau của chúng thay vì giải quyết thủ công các phụ thuộc.
+
+--- TRANG 3 ---
+Về mặt khái niệm, người ta có thể xem xét việc xây dựng ma trận nhóm G∈RL×L, trong đó Gij= 1 biểu thị sự phụ thuộc giữa lớp i và lớp j. Tuy nhiên, do sự phức tạp phát sinh từ các mối quan hệ không cục bộ, G không thể được xây dựng dễ dàng. Do đó, đồ thị phụ thuộc D được đề xuất, chỉ chứa phụ thuộc cục bộ giữa các lớp liền kề và từ đó ma trận nhóm có thể được rút gọn. Những phụ thuộc này được phân loại thành hai loại: phụ thuộc giữa các lớp, trong đó đầu ra của một lớp i kết nối với đầu vào của lớp khác j, và phụ thuộc trong lớp, như trong các lớp BatchNorm, trong đó đầu vào và đầu ra chia sẻ cùng một sơ đồ tỉa thưa.
+
+Sau khi xây dựng đồ thị phụ thuộc và xác định các tham số nhóm dựa trên đồ thị này, chúng tôi sử dụng điểm quan trọng dựa trên chuẩn. Tuy nhiên, việc tổng trực tiếp điểm quan trọng qua các lớp khác nhau có thể dẫn đến kết quả vô nghĩa và phân kỳ tiềm năng. Do đó, đối với một tham số w trong nhóm g với K chiều có thể tỉa thưa, một thuật ngữ điều chỉnh R(g, k) được sử dụng trong huấn luyện thưa để chọn các biến đầu vào tối ưu, R(g, k) =PK k=1γk·Ig,k, trong đó Ig,k=P w∈g||w[k]||2 2 là tầm quan trọng cho chiều k trong tỉa thưa L2 và γk= 2α(Imax g−Ig,k)/(Imax g−Imin g ).
+
+3 Thí nghiệm
+3.1 Cài đặt Thí nghiệm
+Các thí nghiệm của chúng tôi được cấu trúc thành hai thành phần chính: lượng hóa và tỉa thưa của các thuật toán DRL. Chúng tôi đánh giá hiệu suất của TRPO[14], PPO[15], DDPG[17], TD3[18], và SAC[19] qua năm môi trường Gymnasium[51] (trước đây là OpenAI Gym[52]) Mujoco bao gồm: HalfCheetah, HumanoidStandup, Ant, Humanoid, và Hopper. Những mô hình này được huấn luyện sử dụng các môi trường Gymnasium (trước đây là OpenAI Gym).
+
+Để đảm bảo tính nhất quán giữa các kết quả được báo cáo của chúng tôi, mỗi thí nghiệm đã được lặp lại ít nhất 10 lần trong cùng một cấu hình.
+
+Thư viện Lượng hóa và Tỉa thưa: Việc triển khai lượng hóa và tỉa thưa trong các thư viện mạng neural không hoàn thiện như các chức năng khác. Ví dụ, trong pyTorch tỉa thưa không loại bỏ neuron mà chỉ che chúng. Để đảm bảo độ tin cậy của các thí nghiệm, chúng tôi đã đánh giá các thư viện lượng hóa và tỉa thưa khác nhau và chọn những thư viện cung cấp độ chính xác và hiệu quả tài nguyên cao nhất.
+
+Do đó, để triển khai tỉa thưa, chúng tôi khám phá PyTorch5 và Torch-pruning. Trong thí nghiệm của chúng tôi, Torch-pruning6, được tích hợp với DepGraph [50], hoạt động cực kỳ tốt, và do đó, chúng tôi sử dụng nó cho mục đích tỉa thưa. Về lượng hóa, chúng tôi thí nghiệm với Pytroch, TensorFlow, và ONNX Runtime7. Cuối cùng, chúng tôi chọn PyTorch cho QAT, và ONNX Runtime cho PTDQ và PTSQ.
+
+Cài đặt Phần cứng: Cơ sở hạ tầng phần cứng của chúng tôi bao gồm hai GPU NVidia RTX 4090 với 24GB VRAM, 256GB RAM, và CPU Intel Core i9 chạy ở 3.30 GHz. Hệ điều hành là Ubuntu 20.04 LTS, và chúng tôi sử dụng CUDA Phiên bản 12.0 cho các hoạt động GPU.
+
+3.2 Lượng hóa
+Để triển khai lượng hóa, chúng tôi thí nghiệm với ba phương pháp: PTDQ, PTSQ và QAT. Huấn luyện nhận biết lượng hóa (QAT) bao gồm việc ban đầu huấn luyện các mô hình lượng hóa với kích thước tập dữ liệu tương đương như các mô hình cơ sở, tiếp theo là xuất chúng vào runtime ONNX để phân tích so sánh.
+
+3.2.1 Lợi nhuận Trung bình
+Tác động của lượng hóa lên lợi nhuận trung bình được báo cáo trong Bảng 1. Bảng nhấn mạnh sự biến thiên của kết quả lượng hóa qua các môi trường và mô hình DRL khác nhau. Ví dụ, QAT thể hiện hiệu quả cao nhất trong môi trường HumanoidStandup, dẫn đến cải thiện lợi nhuận trung bình qua các mô hình ngoại trừ PPO. Thuật toán SAC nói chung hưởng lợi nhiều hơn từ QAT, ngoại trừ trong môi trường Hopper, nơi hiệu quả của nó bị hạn chế. Nhìn chung, PTDQ thể hiện hiệu suất vượt trội, trong khi PTSQ liên tục cho thấy kết quả thấp nhất. Các khác biệt hiệu suất quan sát được có thể bắt nguồn từ sự thay đổi phân phối giữa dữ liệu được sử dụng cho tính toán đường đi tối ưu và dữ liệu được sử dụng trong giai đoạn hiệu chuẩn, điều này khó khắc phục do tính chất ngẫu nhiên của môi trường.
+
+5https://pyTorch.org
+6https://github.com/VainF/Torch-Pruning
+7https://onnxruntime.ai
+
+--- TRANG 4 ---
+Cơ sở PTDQ PTSQ QAT
+TRPO HalfCheetah 978.48 1004.65 909.52 287.94
+HumanoidStandup 39444.51 37002.02 35779.53 52252.48
+Ant 851.33 799.46 1055.39 970.59
+Humanoid 74.49 75.09 74.98 178.36
+Hopper 164.06 163.84 162.93 7.49
+PPO HalfCheetah 1542.98 1508.82 1482.4 432.21
+HumanoidStandup 117138.8 126509.58 128155.96 28270.98
+Ant 1335.55 1493.93 1528.36 963.21
+Humanoid 453.56 430.5 495.0 295.75
+Hopper 8.33 9.41 19.28 92.32
+DDPG HalfCheetah 4475.62 4656.76 3801.11 937.53
+HumanoidStandup 82747.99 82747.99 87346.75 115325.59
+Ant 589.46 630.37 896.44 540.7
+Humanoid 1544.76 314.51 433.15 411.92
+Hopper 1419.69 1260.39 349.31 996.61
+TD3 HalfCheetah 8333.37 5204.59 3915.44 4169.07
+HumanoidStandup 77140.94 77140.94 78492.56 82211.28
+Ant 3423.51 2789.51 2728.76 1833.74
+Humanoid 5035.79 441.34 287.35 80.67
+Hopper 3596.54 3532.45 2842.55 1826.21
+SAC HalfCheetah 10460.06 3104.33 1805.41 6163.8
+HumanoidStandup 151015.38 109714.88 83898.23 151213.82
+Ant 4021.96 2474.88 1144.59 3119.85
+Humanoid 4287.29 -84.51 23.4 311.68
+Hopper 2539.05 3621.34 2525.01 2998.79
+
+Bảng 1: Lợi nhuận trung bình của lượng hóa cho TRPO, PPO, DDPG, TD3, và SAC. Phiên bản lượng hóa tốt nhất cho mỗi mô hình DRL trong các môi trường cụ thể được hiển thị in đậm.
+
+3.2.2 Sử dụng Tài nguyên
+Để đánh giá tác động của lượng hóa lên sử dụng tài nguyên, chúng tôi đã thực hiện đo lường và so sánh sử dụng bộ nhớ, thời gian suy luận, và tiêu thụ năng lượng giữa các mô hình cơ sở và các đối tác lượng hóa của chúng. Hình 1 minh họa các khác biệt quan sát được trong thời gian suy luận và sử dụng năng lượng giữa các mô hình cơ sở và lượng hóa.
+
+Hình 1: Thời gian suy luận (tính bằng giây), sử dụng năng lượng (tính bằng Joule) và sử dụng bộ nhớ (tính bằng MegaByte) của các mô hình lượng hóa.
+
+--- TRANG 5 ---
+3.3 Tỉa thưa
+Để triển khai tỉa thưa, chúng tôi sử dụng gói torch-pruning8 cho tất cả các thí nghiệm của mình. Mỗi mô hình cơ sở trải qua tỉa thưa L1 và L2, với các tỷ lệ phần trăm tỉa thưa khác nhau từ 5% đến 70%. Cụ thể, các tỷ lệ phần trăm tỉa thưa thí nghiệm như sau: {5%,10%,15%,20%,25%,30%,35%,40%,45%,50%,55%,60%,65%,70% }.
+
+Cơ sở Tỉa thưa L1 Tỷ lệ Tỉa thưa L2 Tỷ lệ Tỉa thưa
+TRPO HalfCheetah 1003.37 905.94 0.05 0.05
+HumanoidStandup 35281.42 42314.62 0.55 0.6
+Ant 768.97 979.42 0.7 0.7
+Humanoid 74.49 79.81 0.25 0.35
+Hopper 164.06 163.33 0.15 0.45
+PPO HalfCheetah 1529.18 1453.9 0.1 0.05
+HumanoidStandup 128722.71 117239.65 0.1 0.1
+Ant 1563.54 263.37 0.05 0.05
+Humanoid 474.86 417.99 0.1 0.15
+Hopper 21.06 7.6 0.3 0.3
+DDPG HalfCheetah 5104.06 4026.46 0.05 0.05
+HumanoidStandup 82747.99 83513.05 0.7 0.7
+Ant 935.72 761.55 0.1 0.05
+Humanoid 1659.59 1059.68 0.05 0.05
+Hopper 1574.66 1423.7 0.05 0.05
+TD3 HalfCheetah 8298.95 6535.42 0.05 0.05
+HumanoidStandup 77140.94 97061.37 0.7 0.7
+Ant 3381.72 2564.85 0.05 0.05
+Humanoid 5040.01 5046.25 0.1 0.1
+Hopper 3593.0 3589.47 0.05 0.05
+SAC HalfCheetah 10467.97 10531.88 0.05 0.05
+HumanoidStandup 136900.13 137574.71 0.7 0.7
+Ant 3499.52 282.28 0.05 0.05
+Humanoid 4251.2 3549.46 0.25 0.35
+Hopper 2549.96 2412.92 0.05 0.2
+
+Bảng 2: Lợi nhuận trung bình của kết quả tỉa thưa cho TRPO, PPO, DDPG, TD3, và SAC
+
+Phương pháp tỉa thưa tối ưu cho mỗi mô hình cơ sở được xác định dựa trên việc đạt được ít nhất 90% lợi nhuận trung bình của mô hình cơ sở tương ứng trong khi đạt được tỷ lệ phần trăm tỉa thưa cao nhất có thể. Kết quả của các thí nghiệm tỉa thưa được trình bày trong Bảng 2 và tóm tắt toàn diện trong Bảng 3. Trong Hình 2 và Hình 3, chúng tôi trình bày tác động của tỉa thưa L1 và L2 lên tốc độ suy luận, sử dụng năng lượng, và sử dụng bộ nhớ. Trong những hình này, chúng tôi đã chia tỷ lệ dữ liệu theo cơ sở.
+
+TRPO PPO DDPG TD3 SAC
+HalfCheetah L1 5% L1 10% L2 5% L2 5% L1 5%
+HumanoidStandup L2 55% L1 5% L1 70% L1 70% L2 70%
+Ant L2 70% L2 5% L1 10% L2 5% L2 25%
+Humanoid L2 30% L1 5% L2 5% L1 10% L2 25%
+Hopper L2 40% L2 30% L1 5% L2 5% L2 20%
+
+Bảng 3: Phương pháp tỉa thưa tốt nhất cho mỗi môi trường và mỗi mô hình.
+
+8https://github.com/VainF/Torch-Pruning
+
+--- TRANG 6 ---
+Hình 2: Thời gian suy luận, sử dụng năng lượng và RAM của các mô hình L1, được chia tỷ lệ theo các mô hình cơ sở
+
+--- TRANG 7 ---
+Hình 3: Thời gian suy luận (tính bằng giây), sử dụng năng lượng (tính bằng Joule) và sử dụng bộ nhớ (tính bằng Megabytes) của các mô hình L2, được chia tỷ lệ theo các mô hình cơ sở.
+
+--- TRANG 8 ---
+4 Thảo luận và Phát hiện
+Trong công việc này, chúng tôi nghiên cứu hai phương pháp tỉa thưa và ba phương pháp lượng hóa trên năm nền tảng (HalfCheetah-v4, HumanoidStandup-v4, Ant-v4, Hopper-v4, và Humanoid-v4) được sử dụng để thí nghiệm các phương pháp học tăng cường và năm phương pháp DRL phổ biến (TRPO, PPO, DDPG, TD3). Theo hiểu biết của chúng tôi, đây là nghiên cứu lớn nhất được thực hiện về nén các phương pháp DRL, và chúng tôi liệt kê các phát hiện của mình trong phần này. Những phát hiện này có thể được sử dụng làm hướng dẫn cho các nghiên cứu tiếp theo cố gắng nén các phương pháp DRL.
+
+Tỉa thưa và lượng hóa không cải thiện hiệu quả năng lượng và sử dụng bộ nhớ của các mô hình DRL. Trong khi tỉa thưa và lượng hóa giảm kích thước mô hình (xem Bảng 3), chúng không nhất thiết tăng cường hiệu quả năng lượng của các mô hình DRL do lợi nhuận trung bình được duy trì hoặc tăng. Tiêu thụ năng lượng có xu hướng giảm chỉ khi có sự giảm đáng kể trong lợi nhuận trung bình, khiến agent kết thúc sớm và yêu cầu ít tính toán hơn.
+
+Mặc dù giảm kích thước mô hình, lượng hóa không cải thiện sử dụng bộ nhớ, và tỉa thưa chỉ mang lại 1% giảm không đáng kể trong sử dụng bộ nhớ. Kết quả trong Hình 1 không trình bày thay đổi trong sử dụng bộ nhớ trong bất kỳ nền tảng nào khi áp dụng lượng hóa. Thậm chí PTDQ và PTSQ gây ra sử dụng bộ nhớ nhiều hơn so với phương pháp cơ sở. Điều này có thể do chi phí phụ của thư viện lượng hóa, và cách thức triển khai không được tối ưu hóa.
+
+Tỉa thưa L2 được ưa chuộng hơn tỉa thưa L1 cho hầu hết các mô hình DRL. Bảng 2-3 minh họa rằng phương pháp tỉa thưa tối ưu thay đổi dựa trên thuật toán DRL và độ phức tạp môi trường. Hầu hết các môi trường, ngoại trừ những môi trường được huấn luyện với SAC trên HalfCheetah, cho phép tỉa thưa đáng kể mà không có sự giảm đáng chú ý trong lợi nhuận trung bình, trong khi các mô hình PPO thể hiện ngưỡng tỉa thưa thấp hơn. Trong các trường hợp mà tỉa thưa L1 vượt trội hơn L2, các giá trị lợi nhuận trung bình vẫn liên kết chặt chẽ. Nói chung, giảm 10% kích thước mô hình DRL thông qua tỉa thưa L2 là có lợi, mặc dù có các ngoại lệ bao gồm các mô hình PPO được áp dụng cho môi trường HalfCheetah.
+
+PTDQ nổi lên như phương pháp lượng hóa vượt trội cho các thuật toán DRL, trong khi PTSQ không được khuyến nghị. Như được hiển thị trong Bảng 1, 40% các mô hình lượng hóa của chúng tôi hưởng lợi từ PTDQ, 36% từ QAT, và chỉ 24% từ PTSQ. Các phát hiện của chúng tôi tiết lộ rằng lượng hóa động sau huấn luyện về mặt thống kê vượt trội hơn các phương pháp khác, trong khi lượng hóa tĩnh sau huấn luyện hoạt động tồi tệ nhất, có thể do sự thay đổi phân phối giữa dữ liệu hiệu chuẩn và tính ngẫu nhiên tồn tại trong môi trường RL.
+
+Giả thuyết vé số [53] không áp dụng cho các mô hình DRL. Giả thuyết Vé số (LTH) trong bối cảnh mạng neural gợi ý rằng trong một mạng lớn được khởi tạo ngẫu nhiên, tồn tại một mạng con nhỏ hơn, thường khoảng 10-20% kích thước gốc, khi được huấn luyện riêng biệt, có thể đạt được hiệu suất tương đương với mạng lớn gốc. Ý tưởng này có ý nghĩa đáng kể đối với lượng hóa và tỉa thưa mô hình, hai kỹ thuật được sử dụng để giảm kích thước và yêu cầu tính toán của mạng neural. Tuy nhiên, dựa trên kết quả được chứng minh trong Bảng 2 cho thấy sự giảm hiệu suất đáng kể trong hầu hết các mô hình sau khi tỉa thưa 50%, mâu thuẫn với khẳng định của giả thuyết rằng hiệu suất mạng gốc có thể tồn tại ngay cả khi được tỉa thưa xuống dưới 10%-20% kích thước gốc. Cụ thể, khoảng 40% các mô hình không tồn tại sau khi tỉa thưa hơn 5%, nhưng 80% các mô hình không tồn tại sau 50%.
+
+Công việc của chúng tôi có hai hạn chế. Thứ nhất, bằng cách tập trung vào các môi trường Mujoco cổ điển với không gian hành động liên tục, công việc của chúng tôi loại trừ không gian hành động rời rạc, phổ biến trong trò chơi điện tử hoặc một số kịch bản ra quyết định. Tuy nhiên, trong những tình huống này, các phương pháp cụ thể cho nhiệm vụ có thể được sử dụng để có hiệu suất thỏa mãn, điều này thêm vào sự phức tạp bổ sung, và chúng tôi có thể khám phá điều đó trong công việc tương lai của mình. Hơn nữa, chúng tôi bị hạn chế trong sáu môi trường mô phỏng, điều này để lại một khía cạnh quan trọng của khả năng áp dụng thực tế chưa được khám phá. Một kịch bản lý tưởng là thí nghiệm với phương pháp nén này trên robot hoặc drone trong nhiệm vụ thực tế và đo các khác biệt trong hiệu suất của chúng.
+
+5 Kết luận
+Trong bài báo này, chúng tôi đã xem xét tác động của các phương pháp lượng hóa và tỉa thưa lên các thuật toán học tăng cường sâu. Trong khi tác động phụ thuộc vào thuật toán DRL cụ thể được sử dụng và môi trường mà agent được huấn luyện, kết quả chia sẻ một số mẫu chung. Lượng hóa chuyển đổi điểm dấu phẩy động với 32 bit thành mô hình số nguyên 8 bit và hiệu quả thu nhỏ kích thước mô hình trong khi duy trì hiệu suất chấp nhận được. Chúng tôi thấy rằng các mô hình PTDQ nói chung có lợi nhuận trung bình tốt nhất, trong khi các mô hình PTSQ có thể chịu thiệt hại từ sự thay đổi phân phối và có kết quả kém hơn. DepGraph tỉa thưa các mô hình cơ sở bằng cách xây dựng một đồ thị phụ thuộc, và chúng tôi thí nghiệm với tỉa thưa L1 và L2. Các thí nghiệm phác thảo rằng tỉa thưa L2 được ưa chuộng cho các thuật toán DRL trên không gian hành động liên tục, và nói chung, các mô hình hưởng lợi từ tỉa thưa L2 10% với một số ngoại lệ. Tuy nhiên, trong khi tỉa thưa thực sự loại bỏ một số neuron, nó không luôn dẫn đến tăng tốc suy luận hoặc tiết kiệm năng lượng.
+
+Tài liệu tham khảo
+[1] David Silver, Thomas Hubert, Julian Schrittwieser, Ioannis Antonoglou, Matthew Lai, Arthur Guez, Marc Lanctot, L. Sifre, Dharshan Kumaran, Thore Graepel, Timothy P. Lillicrap, Karen Simonyan, và Demis Hassabis. Mastering chess and shogi
+
+--- TRANG 9 ---
+by self-play with a general reinforcement learning algorithm. ArXiv , abs/1712.01815, 2017.
+[2] Peng Peng, Quan Yuan, Ying Wen, Yaodong Yang, Zhenkun Tang, Haitao Long, và Jun Wang. Multiagent bidirectionally-coordinated nets for learning to play starcraft combat games. CoRR , abs/1703.10069, 2017.
+[3] Danijar Hafner, Timothy P. Lillicrap, Mohammad Norouzi, và Jimmy Ba. Mastering atari with discrete world models. CoRR , abs/2010.02193, 2020.
+[4] Long Ouyang, Jeff Wu, Xu Jiang, Diogo Almeida, Carroll L. Wainwright, Pamela Mishkin, Chong Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, John Schulman, Jacob Hilton, Fraser Kelton, Luke E. Miller, Maddie Simens, Amanda Askell, Peter Welinder, Paul Francis Christiano, Jan Leike, và Ryan J. Lowe. Training language models to follow instructions with human feedback. ArXiv , abs/2203.02155, 2022.
+[5] Jacky Liang, Wenlong Huang, Fei Xia, Peng Xu, Karol Hausman, Brian Ichter, Pete Florence, và Andy Zeng. Code as policies: Language model programs for embodied control. In 2023 IEEE International Conference on Robotics and Automation (ICRA) , pages 9493–9500, 2023.
+[6] Hugo Touvron, Louis Martin, Kevin Stone, Peter Albert, Amjad Almahairi, Yasmine Babaei, Nikolay Bashlykov, Soumya Batra, Prajjwal Bhargava, Shruti Bhosale, Dan Bikel, Lukas Blecher, Cristian Canton Ferrer, Moya Chen, Guillem Cucurull, David Esiobu, Jude Fernandes, Jeremy Fu, Wenyin Fu, Brian Fuller, Cynthia Gao, Vedanuj Goswami, Naman Goyal, Anthony Hartshorn, Saghar Hosseini, Rui Hou, Hakan Inan, Marcin Kardas, Viktor Kerkez, Madian Khabsa, Isabel Kloumann, Artem Korenev, Punit Singh Koura, Marie-Anne Lachaux, Thibaut Lavril, Jenya Lee, Diana Liskovich, Yinghai Lu, Yuning Mao, Xavier Martinet, Todor Mihaylov, Pushkar Mishra, Igor Molybog, Yixin Nie, Andrew Poulton, Jeremy Reizenstein, Rashi Rungta, Kalyan Saladi, Alan Schelten, Ruan Silva, Eric Michael Smith, Ranjan Subramanian, Xiaoqing Ellen Tan, Binh Tang, Ross Taylor, Adina Williams, Jian Xiang Kuan, Puxin Xu, Zheng Yan, Iliyan Zarov, Yuchen Zhang, Angela Fan, Melanie Kambadur, Sharan Narang, Aurelien Rodriguez, Robert Stojnic, Sergey Edunov, và Thomas Scialom. Llama 2: Open foundation and fine-tuned chat models, 2023.
+[7] Baptiste Rozière, Jonas Gehring, Fabian Gloeckle, Sten Sootla, Itai Gat, Xiaoqing Ellen Tan, Yossi Adi, Jingyu Liu, Romain Sauvestre, Tal Remez, Jérémy Rapin, Artyom Kozhevnikov, Ivan Evtimov, Joanna Bitton, Manish Bhatt, Cristian Canton Ferrer, Aaron Grattafiori, Wenhan Xiong, Alexandre Défossez, Jade Copet, Faisal Azhar, Hugo Touvron, Louis Martin, Nicolas Usunier, Thomas Scialom, và Gabriel Synnaeve. Code llama: Open foundation models for code, 2024.
+[8] Kai Arulkumaran, Marc Peter Deisenroth, Miles Brundage, và Anil Anthony Bharath. Deep reinforcement learning: A brief survey. IEEE Signal Processing Magazine , 34(6):26–38, 2017.
+[9] Marvin Zhang, Sharad Vikram, Laura M. Smith, P. Abbeel, Matthew J. Johnson, và Sergey Levine. Solar: Deep structured representations for model-based reinforcement learning. In International Conference on Machine Learning , 2018.
+[10] Volodymyr Mnih, Koray Kavukcuoglu, David Silver, Alex Graves, Ioannis Antonoglou, Daan Wierstra, và Martin A. Riedmiller. Playing atari with deep reinforcement learning. CoRR , abs/1312.5602, 2013.
+[11] Aviral Kumar, Aurick Zhou, George Tucker, và Sergey Levine. Conservative q-learning for offline reinforcement learning. In Proceedings of the 34th International Conference on Neural Information Processing Systems , NIPS'20, Red Hook, NY, USA, 2020. Curran Associates Inc.
+[12] Tuomas Haarnoja, Haoran Tang, Pieter Abbeel, và Sergey Levine. Reinforcement learning with deep energy-based policies. In Proceedings of the 34th International Conference on Machine Learning - Volume 70 , ICML'17, page 1352–1361. JMLR.org, 2017.
+[13] Richard S. Sutton, David A. McAllester, Satinder Singh, và Y. Mansour. Policy gradient methods for reinforcement learning with function approximation. In Neural Information Processing Systems , 1999.
+[14] John Schulman, Sergey Levine, Pieter Abbeel, Michael Jordan, và Philipp Moritz. Trust region policy optimization. In Francis Bach và David Blei, editors, Proceedings of the 32nd International Conference on Machine Learning , volume 37 of Proceedings of Machine Learning Research , pages 1889–1897, Lille, France, 07–09 Jul 2015. PMLR.
+[15] John Schulman, Filip Wolski, Prafulla Dhariwal, Alec Radford, và Oleg Klimov. Proximal policy optimization algorithms. ArXiv , abs/1707.06347, 2017.
+[16] Volodymyr Mnih, Adrià Puigdomènech Badia, Mehdi Mirza, Alex Graves, Tim Harley, Timothy P. Lillicrap, David Silver, và Koray Kavukcuoglu. Asynchronous methods for deep reinforcement learning. In Proceedings of the 33rd International Conference on International Conference on Machine Learning - Volume 48 , ICML'16, page 1928–1937. JMLR.org, 2016.
+
+--- TRANG 10 ---
+[17] Timothy P. Lillicrap, Jonathan J. Hunt, Alexander Pritzel, Nicolas Heess, Tom Erez, Yuval Tassa, David Silver, và Daan Wierstra. Continuous control with deep reinforcement learning. In Yoshua Bengio và Yann LeCun, editors, 4th International Conference on Learning Representations, ICLR 2016, San Juan, Puerto Rico, May 2-4, 2016, Conference Track Proceedings , 2016.
+[18] Scott Fujimoto, Herke van Hoof, và David Meger. Addressing function approximation error in actor-critic methods. In Jennifer G. Dy và Andreas Krause, editors, Proceedings of the 35th International Conference on Machine Learning, ICML 2018, Stockholmsmässan, Stockholm, Sweden, July 10-15, 2018 , volume 80 of Proceedings of Machine Learning Research , pages 1582–1591. PMLR, 2018.
+[19] Tuomas Haarnoja, Aurick Zhou, Pieter Abbeel, và Sergey Levine. Soft actor-critic: Off-policy maximum entropy deep reinforcement learning with a stochastic actor. In Jennifer G. Dy và Andreas Krause, editors, Proceedings of the 35th International Conference on Machine Learning, ICML 2018, Stockholmsmässan, Stockholm, Sweden, July 10-15, 2018 , volume 80 of Proceedings of Machine Learning Research , pages 1856–1865. PMLR, 2018.
+[20] Paul Francis Christiano, Jan Leike, Tom B. Brown, Miljan Martic, Shane Legg, và Dario Amodei. Deep reinforcement learning from human preferences. ArXiv , abs/1706.03741, 2017.
+[21] Alexandra Sasha Luccioni, Yacine Jernite, và Emma Strubell. Power hungry processing: Watts driving the cost of ai deployment? arXiv preprint arXiv:2311.16863 , 2023.
+[22] Alex de Vries. The growing energy footprint of artificial intelligence. Joule , 7(10):2191–2194, 2023.
+[23] Peifeng Li, Jie Yang, Md Amirul Islam, và Suzhen Ren. Making ai less" thirsty": Uncovering and addressing the secret water footprint of ai models. arXiv preprint arXiv:2304.03271 , 2023.
+[24] Reza Rawassizadeh, Blaine Price, và Marian Petre. Wearables: Has the age of smartwatches finally arrived? Communications of the ACM , 58:45–47, 01 2015.
+[25] Song Han, Huizi Mao, và William J. Dally. Deep compression: Compressing deep neural network with pruning, trained quantization and huffman coding. In Yoshua Bengio và Yann LeCun, editors, 4th International Conference on Learning Representations, ICLR 2016, San Juan, Puerto Rico, May 2-4, 2016, Conference Track Proceedings , 2016.
+[26] Zhuang Liu, Mingjie Sun, Tinghui Zhou, Gao Huang, và Trevor Darrell. Rethinking the value of network pruning. In International Conference on Learning Representations , 2018.
+[27] Zhenhua Liu, Yunhe Wang, Kai Han, Wei Zhang, Siwei Ma, và Wen Gao. Post-training quantization for vision transformer. In M. Ranzato, A. Beygelzimer, Y. Dauphin, P.S. Liang, và J. Wortman Vaughan, editors, Advances in Neural Information Processing Systems , volume 34, pages 28092–28103. Curran Associates, Inc., 2021.
+[28] Benoit Jacob, Skirmantas Kligys, Bo Chen, Menglong Zhu, Matthew Tang, Andrew Howard, Hartwig Adam, và Dmitry Kalenichenko. Quantization and training of neural networks for efficient integer-arithmetic-only inference. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR) , June 2018.
+[29] Elias Frantar, Saleh Ashkboos, Torsten Hoefler, và Dan Alistarh. Gptq: Accurate post-training quantization for generative pre-trained transformers. arXiv preprint arXiv:2210.17323 , 2022.
+[30] Guangxuan Xiao, Ji Lin, Mickael Seznec, Hao Wu, Julien Demouth, và Song Han. SmoothQuant: Accurate and efficient post-training quantization for large language models. In Andreas Krause, Emma Brunskill, Kyunghyun Cho, Barbara Engelhardt, Sivan Sabato, và Jonathan Scarlett, editors, Proceedings of the 40th International Conference on Machine Learning , volume 202 of Proceedings of Machine Learning Research , pages 38087–38099. PMLR, 23–29 Jul 2023.
+[31] Tim Dettmers, Artidoro Pagnoni, Ari Holtzman, và Luke Zettlemoyer. Qlora: Efficient finetuning of quantized llms. In A. Oh, T. Neumann, A. Globerson, K. Saenko, M. Hardt, và S. Levine, editors, Advances in Neural Information Processing Systems , volume 36, pages 10088–10115. Curran Associates, Inc., 2023.
+[32] Srivatsan Krishnan, Maximilian Lam, Sharad Chitlangia, Zishen Wan, Gabriel Barth-Maron, Aleksandra Faust, và Vijay Janapa Reddi. Quarl: Quantization for fast and environmentally sustainable reinforcement learning. Trans. Mach. Learn. Res. , 2022, 2019.
+[33] Je Yang, Seongmin Hong, và Joo-Young Kim. Fixar: A fixed-point deep reinforcement learning platform with quantization-aware training and adaptive parallelism. In 2021 58th ACM/IEEE Design Automation Conference (DAC) , pages 259–264, 2021.
+
+--- TRANG 11 ---
+[34] Peng Hu, Xi Peng, Hongyuan Zhu, Mohamed M. Sabry Aly, và Jie Lin. Opq: Compressing deep neural networks with one-shot pruning-quantization. ArXiv , abs/2205.11141, 2021.
+[35] Tailin Liang, John Glossner, Lei Wang, Shaobo Shi, và Xiaotong Zhang. Pruning and quantization for deep neural network acceleration: A survey. Neurocomputing , 461:370–403, 2021.
+[36] Christos N. Mavridis và John S. Baras. Vector quantization for adaptive state aggregation in reinforcement learning. In 2021 American Control Conference (ACC) , pages 2187–2192, 2021.
+[37] Evans Miriti và Andrew Mwaura. Dynamic vector quantization for reinforcement learning (dvqrl). In 2018 5th International Conference on Soft Computing & Machine Intelligence (ISCMI) , pages 38–42, 2018.
+[38] Sherjil Ozair, Yazhe Li, Ali Razavi, Ioannis Antonoglou, Aaron Van Den Oord, và Oriol Vinyals. Vector quantized models for planning. In Marina Meila và Tong Zhang, editors, Proceedings of the 38th International Conference on Machine Learning , volume 139 of Proceedings of Machine Learning Research , pages 8302–8313. PMLR, 18–24 Jul 2021.
+[39] Robert Dadashi, Léonard Hussenot, Damien Vincent, Sertan Girgin, Anton Raichuk, Matthieu Geist, và Olivier Pietquin. Continuous control with action quantization from demonstrations. In Kamalika Chaudhuri, Stefanie Jegelka, Le Song, Csaba Szepesvari, Gang Niu, và Sivan Sabato, editors, Proceedings of the 39th International Conference on Machine Learning , volume 162 of Proceedings of Machine Learning Research , pages 4537–4557. PMLR, 17–23 Jul 2022.
+[40] Yoonhee Gil, Jong-Hyeok Park, Jongchan Baek, và Soohee Han. Quantization-aware pruning criterion for industrial applications. IEEE Transactions on Industrial Electronics , 69(3):3203–3213, 2022.
+[41] Dor Livne và Kobi Cohen. Pops: Policy pruning and shrinking for deep reinforcement learning. IEEE Journal of Selected Topics in Signal Processing , 14(4):789–801, 2020.
+[42] Weiwei Zhang, Ming Ji, Haoran Yu, và Chenghui Zhen. Relp: Reinforcement learning pruning method based on prior knowledge. Neural Processing Letters , 55(4):4661–4678, 2023.
+[43] Wensheng Su, Zhenni Li, Minrui Xu, Jiawen Kang, Dusit Tao Niyato, và Shengli Xie. Compressing deep reinforcement learning networks with a dynamic structured pruning method for autonomous driving. ArXiv , abs/2402.05146, 2024.
+[44] Haoli Zhao, Jiqiang Wu, Zhenni Li, Wuhui Chen, và Zibin Zheng. Double sparse deep reinforcement learning via multilayer sparse coding and nonconvex regularized pruning. IEEE Transactions on Cybernetics , 53(2):765–778, 2023.
+[45] Stephane Ross, Geoffrey Gordon, và Drew Bagnell. A reduction of imitation learning and structured prediction to no-regret online learning. In Geoffrey Gordon, David Dunson, và Miroslav Dudík, editors, Proceedings of the Fourteenth International Conference on Artificial Intelligence and Statistics , volume 15 of Proceedings of Machine Learning Research , pages 627–635, Fort Lauderdale, FL, USA, 11–13 Apr 2011. PMLR.
+[46] Hongjie Zhang, Zhuocheng He, và Jing Li. Accelerating the deep reinforcement learning with neural network compression. In 2019 International Joint Conference on Neural Networks (IJCNN) , pages 1–8, 2019.
+[47] Mohammad Babaeizadeh, Iuri Frosio, Stephen Tyree, Jason Clemons, và Jan Kautz. GA3C: GPU-based A3C for deep reinforcement learning. NIPS Workshop , 2016.
+[48] Dmitry Molchanov, Arsenii Ashukha, và Dmitry Vetrov. Variational dropout sparsifies deep neural networks. In Proceedings of the 34th International Conference on Machine Learning , 2017.
+[49] Jianping Gou, Baosheng Yu, Stephen Maybank, và Dacheng Tao. Knowledge distillation: A survey. International Journal of Computer Vision , 129, 06 2021.
+[50] Gongfan Fang, Xinyin Ma, Mingli Song, Michael Bi Mi, và Xinchao Wang. Depgraph: Towards any structural pruning. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pages 16091–16101, June 2023.
+[51] Mark Towers, Jordan K. Terry, Ariel Kwiatkowski, John U. Balis, Gianluca de Cola, Tristan Deleu, Manuel Goulão, Andreas Kallinteris, Arjun KG, Markus Krimmel, Rodrigo Perez-Vicente, Andrea Pierré, Sander Schulhoff, Jun Jet Tai, Andrew Tan Jin Shen, và Omar G. Younis. Gymnasium, March 2023.
+[52] Greg Brockman, Vicki Cheung, Ludwig Pettersson, Jonas Schneider, John Schulman, Jie Tang, và Wojciech Zaremba. Openai gym, 2016.
+[53] Jonathan Frankle và Michael Carbin. The lottery ticket hypothesis: Finding sparse, trainable neural networks. In International Conference on Learning Representations , 2018.
