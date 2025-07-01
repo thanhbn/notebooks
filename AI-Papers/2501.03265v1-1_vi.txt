@@ -1,0 +1,2043 @@
+# 2501.03265v1.pdf
+# Chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2501.03265v1.pdf
+# Kích thước file: 1910259 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+1
+Tối ưu hóa AI Biên: Khảo sát Toàn diện về 
+Chiến lược Dữ liệu, Mô hình và Hệ thống
+Xubin Wang1,2,3, Weijia Jia2,3∗,Fellow, IEEE
+Hong Kong Baptist University1,BNU-HKBU United International College2,Beijing Normal University3
+wangxubin@ieee.org, jiawj@bnu.edu.cn
+
+Tóm tắt — Sự xuất hiện của 5G và phần cứng điện toán biên
+đã mang lại một sự chuyển đổi đáng kể trong trí tuệ nhân tạo, với
+AI biên trở thành công nghệ quan trọng để cho phép các ứng 
+dụng thông minh. Với lượng dữ liệu ngày càng tăng được tạo ra và
+lưu trữ trên các thiết bị biên, việc triển khai các mô hình AI cho xử lý
+và suy luận cục bộ đã trở nên ngày càng cần thiết. Tuy nhiên, việc
+triển khai các mô hình AI tiên tiến trên các thiết bị biên có hạn chế
+về tài nguyên phải đối mặt với những thách thức đáng kể cần được 
+giải quyết. Bài báo này trình bày một bộ ba tối ưu hóa để triển khai
+AI biên hiệu quả và đáng tin cậy, bao gồm tối ưu hóa dữ liệu, mô hình
+và hệ thống. Đầu tiên, chúng tôi thảo luận về tối ưu hóa dữ liệu thông qua
+làm sạch dữ liệu, nén và tăng cường để làm cho nó phù hợp hơn cho
+triển khai biên. Thứ hai, chúng tôi khám phá thiết kế mô hình và các
+phương pháp nén ở cấp độ mô hình, như cắt tỉa, lượng tử hóa và
+chưng cất kiến thức. Cuối cùng, chúng tôi giới thiệu các kỹ thuật tối ưu hóa
+hệ thống như hỗ trợ framework và tăng tốc phần cứng để gia tốc
+quy trình làm việc AI biên. Dựa trên phân tích sâu về các tình huống
+ứng dụng khác nhau và thách thức triển khai của AI biên, bài báo này
+đề xuất một mô hình tối ưu hóa dựa trên bộ ba dữ liệu-mô hình-hệ thống
+để tạo ra một bộ giải pháp hoàn chỉnh nhằm chuyển giao hiệu quả các
+mô hình ML, ban đầu được huấn luyện trong cloud, đến các thiết bị biên
+khác nhau để hỗ trợ nhiều tình huống.
+
+Từ khóa chỉ mục — AI Biên, Tối ưu hóa Dữ liệu, Tối ưu hóa Mô hình,
+Tối ưu hóa Hệ thống.
+
+I. GIỚI THIỆU
+TỪ AlphaGo đến ChatGPT, sự tiến bộ nhanh chóng của công nghệ
+AI trong những năm gần đây khiến chúng ta ngạc nhiên trước tiềm
+năng to lớn của nó. Đồng thời, việc truyền thông về mối đe dọa của
+trí tuệ nhân tạo thách thức trí tuệ con người đang ngày càng tăng.
+Trên thực tế, trong khi tiềm năng của AI đã được thể hiện, vẫn còn
+một số khoảng cách giữa các ứng dụng AI và thế giới thực. Để đạt
+được hiệu suất tốt hơn, các tập dữ liệu lớn hơn và nhiều tham số
+hơn thường được sử dụng để huấn luyện các mô hình AI, điều này
+thường đòi hỏi một lượng lớn tiêu thụ huấn luyện và cũng làm cho
+mô hình phức tạp. Một ví dụ điển hình là mô hình ngôn ngữ quy mô
+lớn GPT-3, có 175 tỷ tham số và yêu cầu khoảng 800GB lưu trữ [1].
+Thật không may, chi phí cao của việc huấn luyện làm cho nó nằm
+ngoài tầm với của người bình thường, và chỉ tồn tại trong các phòng
+thí nghiệm như OpenAI với sự tích lũy sâu sắc. Trong khi đó, những
+mô hình cồng kềnh này khó triển khai đến các mô hình nhỏ, có hạn
+chế về tài nguyên như các thiết bị biên, được phân phối rộng rãi trong
+cuộc sống. Do đó, có nhu cầu cấp thiết để thiết kế các mô hình và
+framework AI hiệu quả để sử dụng trên các thiết bị nhỏ.
+
+Với sự phát triển của các công nghệ truyền thông như 5G và Internet
+of Things, biên của mạng có thể tiếp cận nhiều thiết bị trong nhiều
+cài đặt, bao gồm trường học, bệnh viện, nhà máy, cửa hàng và nhà ở [2].
+Những thiết bị biên được phân phối rộng rãi này tạo ra lượng dữ liệu
+khổng lồ. Theo Gartner, đến năm 2025, khoảng 75% dữ liệu do doanh
+nghiệp tạo ra sẽ không đến từ các trung tâm dữ liệu truyền thống hoặc
+cloud, mà từ các thiết bị biên [3]. Lưu trữ và xử lý những lượng dữ
+liệu lớn này trong cloud truyền thống sẽ mang lại chi phí hệ thống
+lớn và yêu cầu băng thông truyền tải. Trong khi đó, xử lý dữ liệu ở
+biên là một yêu cầu quan trọng đối với một số ứng dụng (ví dụ: Thành
+phố Thông minh [4], Lái xe Tự động [5]), ngay cả khi những tiến bộ
+nhanh chóng trong các công nghệ mạng như 5G mang lại khả năng
+truyền thông tăng cường. Điện toán biên là một loại chế độ tính toán
+gần với nguồn dữ liệu và cố gắng giảm độ trễ truyền tải thông qua
+tính toán cục bộ [6]. Bằng cách đặt tính toán ở biên, nó giảm bớt
+các yêu cầu thời gian thực mà điện toán cloud không thể đáp ứng
+trong một số tình huống [7].
+
+AI biên đề cập đến các thuật toán AI được triển khai trên các thiết
+bị biên để xử lý cục bộ, có thể xử lý dữ liệu mà không cần kết nối
+mạng. Khi ngày càng nhiều thiết bị không thể dựa vào cloud để xử
+lý dữ liệu, sự xuất hiện và phát triển của AI biên có thể giúp giảm
+bớt những vấn đề như vậy [8]. Đặc biệt với sự ra đời của kỷ nguyên
+big data, việc sử dụng công nghệ trí tuệ nhân tạo để cải thiện mức
+độ xử lý tự động của thiết bị đặc biệt quan trọng. Ví dụ, một đặc
+điểm nổi bật của Công nghiệp 4.0 là tự động hóa thông minh, nơi
+robot công nghiệp cần xử lý dữ liệu với tốc độ cao và độ trễ tối thiểu
+[9]. Với sự giúp đỡ của AI, robot công nghiệp có thể xử lý và suy
+luận một lượng lớn dữ liệu đa phương thức từ các thiết bị di động,
+cảm biến và nền tảng Internet of Things với hiệu quả vượt xa tầm
+với của con người, để tìm ra những rủi ro tiềm ẩn và xử lý chúng
+một cách kịp thời và hiệu quả, từ đó cải thiện tính thông minh của
+nhà máy [10]. Trong những năm gần đây, deep learning đã mang
+lại những đột phá trong công nghệ trí tuệ nhân tạo [11]. Tuy nhiên,
+những mô hình này thường cần xem xét một số lượng lớn tham số
+trong quá trình huấn luyện và dựa vào các thiết bị xử lý đa lõi hiệu
+   101→suất cao để có thể triển khai. Để giải quyết những thách thức này,
+   102→các kỹ thuật tối ưu hóa khác nhau đã được đề xuất để làm cho các
+   103→mô hình AI phù hợp hơn cho triển khai biên.
+   104→
+   105→Trong bài nghiên cứu này, chúng tôi đề xuất một paradigm tối ưu hóa
+   106→toàn diện cho AI biên dựa trên bộ ba dữ liệu-mô hình-hệ thống để
+   107→giải quyết các thách thức triển khai AI biên một cách hiệu quả.
+   108→Đầu tiên, chúng tôi khám phá tối ưu hóa dữ liệu bao gồm làm sạch
+   109→dữ liệu, nén dữ liệu và tăng cường dữ liệu để cải thiện chất lượng
+   110→và hiệu quả của dữ liệu để triển khai biên. Thứ hai, chúng tôi thảo
+   111→luận về tối ưu hóa mô hình bao gồm thiết kế kiến trúc nhỏ gọn và
+   112→nén mô hình để giảm kích thước mô hình và yêu cầu tính toán. Cuối
+   113→cùng, chúng tôi giới thiệu tối ưu hóa hệ thống bao gồm tối ưu hóa
+   114→phần mềm và phần cứng để tăng tốc suy luận mô hình và cải thiện
+   115→hiệu quả tổng thể của hệ thống. Hình 1 minh họa paradigm tối ưu
+   116→hóa được đề xuất.
+   117→
+   118→Các đóng góp chính của bài báo này như sau:
+   119→• Chúng tôi đề xuất một paradigm tối ưu hóa toàn diện cho AI biên
+   120→dựa trên bộ ba dữ liệu-mô hình-hệ thống.
+   121→• Chúng tôi cung cấp một khảo sát chi tiết về các kỹ thuật tối ưu hóa
+   122→dữ liệu, mô hình và hệ thống cho triển khai AI biên.
+   123→• Chúng tôi thảo luận về các ứng dụng và thách thức của AI biên
+   124→trong nhiều lĩnh vực khác nhau.
+   125→• Chúng tôi xác định các hướng nghiên cứu trong tương lai và cơ hội
+   126→cho AI biên.
+   127→
+   128→Phần còn lại của bài báo được tổ chức như sau. Phần II cung cấp
+   129→một cái nhìn tổng quan về AI biên và các thách thức triển khai của nó.
+   130→Phần III thảo luận về tối ưu hóa dữ liệu cho AI biên. Phần IV khám
+   131→phá tối ưu hóa mô hình cho AI biên. Phần V giới thiệu tối ưu hóa
+   132→hệ thống cho triển khai AI biên. Phần VI thảo luận về các ứng dụng
+   133→và thách thức của AI biên. Phần VII kết luận bài báo và đề xuất các
+   134→hướng nghiên cứu trong tương lai.
+   135→
+   136→II. TỔN G QUAN VỀ AI BIÊN
+   137→Trong phần này, chúng tôi cung cấp một cái nhìn tổng quan toàn
+   138→diện về AI biên, bao gồm định nghĩa, kiến trúc, và các thách thức
+   139→triển khai chính.
+   140→
+   141→A. Định nghĩa AI Biên
+   142→AI biên đề cập đến việc triển khai các thuật toán trí tuệ nhân tạo
+   143→trực tiếp trên các thiết bị biên hoặc gần nguồn dữ liệu, cho phép xử
+   144→lý và suy luận thời gian thực mà không cần kết nối mạng liên tục
+   145→với cloud trung tâm. Khác với AI cloud truyền thống, nơi dữ liệu
+   146→được gửi đến các máy chủ xa xôi để xử lý, AI biên mang tính toán
+   147→gần hơn với nguồn dữ liệu, giảm độ trễ và băng thông mạng đồng
+   148→thời tăng cường quyền riêng tư và bảo mật dữ liệu.
+   149→
+   150→--- TRANG 2 ---
+   151→Các đặc điểm chính của AI biên bao gồm:
+   152→1) Xử lý cục bộ: Dữ liệu được xử lý trực tiếp tại hoặc gần thiết
+   153→bị thu thập, giảm thiểu nhu cầu truyền dữ liệu đến cloud.
+   154→2) Độ trễ thấp: Bằng cách loại bỏ nhu cầu truyền thông mạng với
+   155→các máy chủ xa, AI biên có thể đạt được thời gian phản hồi gần như
+   156→tức thì.
+   157→3) Quyền riêng tư dữ liệu được tăng cường: Dữ liệu nhạy cảm có
+   158→thể được xử lý cục bộ mà không cần rời khỏi thiết bị, giảm rủi ro
+   159→vi phạm quyền riêng tư.
+   160→4) Hiệu quả băng thông: Chỉ các kết quả xử lý hoặc thông tin được
+   161→tóm tắt cần được truyền qua mạng, giảm đáng kể yêu cầu băng thông.
+   162→5) Hoạt động ngoại tuyến: AI biên có thể tiếp tục hoạt động ngay
+   163→cả khi kết nối mạng bị gián đoạn hoặc không có sẵn.
+   164→
+   165→B. Kiến trúc AI Biên
+   166→Kiến trúc AI biên thường bao gồm ba lớp chính: lớp thiết bị, lớp
+   167→biên, và lớp cloud. Lớp thiết bị bao gồm các cảm biến, thiết bị IoT,
+   168→và các thiết bị đầu cuối tạo ra dữ liệu. Lớp biên bao gồm các máy
+   169→chủ biên, gateway và các thiết bị tính toán gần các thiết bị đầu cuối
+   170→để cung cấp khả năng xử lý và lưu trữ cục bộ. Lớp cloud cung cấp
+   171→các dịch vụ tính toán tập trung, lưu trữ và quản lý cho các tác vụ
+   172→phức tạp và huấn luyện mô hình quy mô lớn.
+   173→
+   174→Trong kiến trúc này, lớp biên đóng vai trò là cầu nối giữa các thiết
+   175→bị đầu cuối và cloud, cho phép xử lý dữ liệu hiệu quả và suy luận
+   176→thời gian thực. Lớp biên có thể bao gồm nhiều loại thiết bị khác
+   177→nhau, từ các bộ vi xử lý nhúng đơn giản đến các máy chủ biên mạnh
+   178→mẽ, tùy thuộc vào yêu cầu tính toán cụ thể của ứng dụng.
+   179→
+   180→C. Thách thức Triển khai AI Biên
+   181→Việc triển khai AI trên các thiết bị biên phải đối mặt với một số
+   182→thách thức đáng kể:
+   183→
+   184→1) Hạn chế tài nguyên: Các thiết bị biên thường có sức mạnh tính
+   185→toán, bộ nhớ và khả năng lưu trữ hạn chế so với các máy chủ cloud.
+   186→Điều này yêu cầu các mô hình AI phải được tối ưu hóa để hoạt động
+   187→hiệu quả trong môi trường có hạn chế tài nguyên.
+   188→
+   189→2) Hiệu quả năng lượng: Nhiều thiết bị biên hoạt động bằng pin
+   190→hoặc có nguồn điện hạn chế, làm cho việc tiêu thụ năng lượng trở
+   191→thành mối quan tâm quan trọng. Các mô hình AI phải được thiết kế
+   192→để tối thiểu hóa tiêu thụ năng lượng trong khi vẫn duy trì hiệu suất
+   193→chấp nhận được.
+   194→
+   195→3) Tính không đồng nhất: Hệ sinh thái thiết bị biên rất đa dạng,
+   196→với các kiến trúc phần cứng, hệ điều hành và khả năng khác nhau.
+   197→Điều này tạo ra thách thức trong việc phát triển các giải pháp AI
+   198→có thể hoạt động trên nhiều nền tảng khác nhau.
+   199→
+   200→4) Xử lý dữ liệu thời gian thực: Nhiều ứng dụng AI biên yêu cầu
+   201→xử lý dữ liệu thời gian thực với độ trễ tối thiểu. Điều này đặt ra
+   202→những hạn chế nghiêm ngặt về hiệu suất và thiết kế thuật toán.
+   203→
+   204→5) Bảo trì và cập nhật: Việc cập nhật và bảo trì các mô hình AI
+   205→triển khai trên nhiều thiết bị biên phân tán có thể phức tạp và tốn
+   206→kém, đặc biệt là khi các thiết bị có kết nối mạng hạn chế hoặc không
+   207→ổn định.
+   208→
+   209→Để giải quyết những thách thức này, cần có một cách tiếp cận tối
+   210→ưu hóa toàn diện bao gồm dữ liệu, mô hình và tối ưu hóa hệ thống.
+   211→Trong các phần tiếp theo, chúng tôi sẽ khám phá từng khía cạnh
+   212→của paradigm tối ưu hóa này một cách chi tiết.
+   213→
+   214→III. TỐI ƯU HÓA DỮ LIỆU CHO AI BIÊN
+   215→Dữ liệu là nền tảng của bất kỳ hệ thống AI nào, và chất lượng cũng
+   216→như hiệu quả của dữ liệu có tác động trực tiếp đến hiệu suất của
+   217→các mô hình AI triển khai trên thiết bị biên. Trong bối cảnh triển
+   218→khai AI biên, tối ưu hóa dữ liệu trở nên đặc biệt quan trọng do các
+   219→hạn chế về tài nguyên và nhu cầu xử lý thời gian thực. Phần này
+   220→khám phá các kỹ thuật tối ưu hóa dữ liệu khác nhau có thể được áp
+   221→dụng để cải thiện hiệu suất và hiệu quả của các hệ thống AI biên.
+   222→
+   223→A. Làm sạch Dữ liệu
+   224→Làm sạch dữ liệu là quá trình xác định và sửa chữa hoặc loại bỏ
+   225→các lỗi, sự không nhất quán, và thiếu sót trong tập dữ liệu. Trong
+   226→bối cảnh AI biên, làm sạch dữ liệu hiệu quả đặc biệt quan trọng vì
+   227→các thiết bị biên thường hoạt động với dữ liệu thô, chưa được xử lý
+   228→từ các cảm biến và thiết bị IoT khác nhau. Dữ liệu này có thể chứa
+   229→nhiễu, các giá trị ngoại lai, và sự không nhất quán có thể ảnh hưởng
+   230→tiêu cực đến hiệu suất mô hình.
+   231→
+   232→Các kỹ thuật làm sạch dữ liệu cho AI biên bao gồm:
+   233→
+   234→1) Phát hiện và loại bỏ nhiễu: Điều này liên quan đến việc xác
+   235→định và loại bỏ hoặc sửa chữa các điểm dữ liệu bị nhiễu có thể
+   236→xuất phát từ lỗi cảm biến, nhiễu môi trường, hoặc lỗi truyền dẫn.
+   237→Các kỹ thuật như lọc thống kê, phương pháp dựa trên ngưỡng, và
+   238→thuật toán học máy có thể được sử dụng để phát hiện và loại bỏ
+   239→nhiễu.
+   240→
+   241→2) Xử lý giá trị ngoại lai: Các giá trị ngoại lai là những điểm dữ
+   242→liệu khác biệt đáng kể so với phần còn lại của tập dữ liệu. Trong
+   243→AI biên, các giá trị ngoại lai có thể xuất phát từ sự cố cảm biến,
+   244→điều kiện môi trường bất thường, hoặc các sự kiện hiếm gặp. Các
+   245→kỹ thuật như Z-score, Interquartile Range (IQR), và thuật toán
+   246→dựa trên mật độ có thể được sử dụng để phát hiện và xử lý các
+   247→giá trị ngoại lai.
+   248→
+   249→3) Xử lý dữ liệu thiếu: Dữ liệu thiếu là một vấn đề phổ biến trong
+   250→AI biên, đặc biệt là khi các cảm biến gặp sự cố hoặc kết nối mạng
+   251→bị gián đoạn. Các kỹ thuật như interpolation, imputation, và mô
+   252→hình dự đoán có thể được sử dụng để ước tính và điền vào các giá
+   253→trị thiếu.
+   254→
+   255→4) Chuẩn hóa và tiêu chuẩn hóa dữ liệu: Điều này liên quan đến
+   256→việc chuyển đổi dữ liệu để đảm bảo tính nhất quán trong định dạng,
+   257→đơn vị đo lường, và phạm vi giá trị. Chuẩn hóa dữ liệu đặc biệt
+   258→quan trọng khi làm việc với dữ liệu từ nhiều cảm biến hoặc nguồn
+   259→khác nhau.
+   260→
+   261→B. Nén Dữ liệu
+   262→Nén dữ liệu là kỹ thuật giảm kích thước dữ liệu mà không làm mất
+   263→thông tin quan trọng hoặc với mức độ mất mát thông tin có thể chấp
+   264→nhận được. Trong bối cảnh AI biên, nén dữ liệu rất quan trọng vì nó
+   265→giúp giảm yêu cầu lưu trữ, giảm thời gian truyền dữ liệu, và cải
+   266→thiện hiệu quả tính toán tổng thể của hệ thống.
+   267→
+   268→Các kỹ thuật nén dữ liệu cho AI biên bao gồm:
+   269→
+   270→1) Nén không mất dữ liệu: Đây là các kỹ thuật nén cho phép phục
+   271→hồi hoàn toàn dữ liệu gốc từ dữ liệu đã nén. Các thuật toán như
+   272→Huffman coding, LZ77, và LZW được sử dụng rộng rãi cho nén không
+   273→mất dữ liệu. Mặc dù các kỹ thuật này đảm bảo không mất thông tin,
+   274→tỷ lệ nén có thể bị hạn chế tùy thuộc vào bản chất của dữ liệu.
+   275→
+   276→2) Nén có mất dữ liệu: Đây là các kỹ thuật nén cho phép một mức
+   277→độ mất thông tin nhất định để đạt được tỷ lệ nén cao hơn. Trong AI
+   278→biên, nén có mất dữ liệu có thể chấp nhận được nếu việc mất thông
+   279→tin không ảnh hưởng đáng kể đến hiệu suất mô hình. Các kỹ thuật
+   280→như lượng tử hóa, lấy mẫu con, và biến đổi dựa trên frequency có
+   281→thể được sử dụng cho nén có mất dữ liệu.
+   282→
+   283→3) Nén thích ứng: Đây là các kỹ thuật nén điều chỉnh tham số nén
+   284→dựa trên đặc điểm của dữ liệu và yêu cầu của ứng dụng. Nén thích
+   285→ứng đặc biệt hữu ích trong AI biên nơi dữ liệu có thể thay đổi đáng
+   286→kể theo thời gian và không gian.
+   287→
+   288→4) Nén cấu trúc dữ liệu: Điều này liên quan đến việc tận dụng cấu
+   289→trúc và mẫu dữ liệu để đạt được nén hiệu quả. Ví dụ, dữ liệu chuỗi
+   290→thời gian có thể được nén bằng cách tận dụng các mẫu tạm thời, trong
+   291→khi dữ liệu hình ảnh có thể được nén bằng cách tận dụng sự tương
+   292→quan không gian.
+   293→
+   294→C. Tăng cường Dữ liệu
+   295→Tăng cường dữ liệu là kỹ thuật tạo ra các mẫu dữ liệu huấn luyện
+   296→bổ sung từ dữ liệu hiện có bằng cách áp dụng các biến đổi khác nhau
+   297→mà không thay đổi nhãn hoặc ý nghĩa cơ bản của dữ liệu. Trong bối
+   298→cảnh AI biên, tăng cường dữ liệu đặc biệt quan trọng vì các thiết bị
+   299→biên thường có quyền truy cập hạn chế vào dữ liệu huấn luyện quy
+   300→mô lớn.
+   301→
+   302→Các kỹ thuật tăng cường dữ liệu cho AI biên bao gồm:
+   303→
+   304→1) Tăng cường dữ liệu hình ảnh: Điều này bao gồm các kỹ thuật
+   305→như xoay, lật, cắt, thay đổi độ sáng và độ tương phản, và thêm
+   306→nhiễu để tạo ra các biến thể của hình ảnh gốc. Những kỹ thuật này
+   307→giúp cải thiện khả năng khái quát hóa của mô hình và giảm overfitting.
+   308→
+   309→2) Tăng cường dữ liệu âm thanh: Điều này bao gồm các kỹ thuật
+   310→như time stretching, pitch shifting, thêm nhiễu nền, và thay đổi
+   311→tốc độ để tạo ra các biến thể của tín hiệu âm thanh gốc.
+   312→
+   313→3) Tăng cường dữ liệu văn bản: Điều này bao gồm các kỹ thuật
+   314→như thay thế từ đồng nghĩa, paraphrasing, back-translation, và
+   315→insertion hoặc deletion ngẫu nhiên từ để tạo ra các biến thể của
+   316→văn bản gốc.
+   317→
+   318→4) Tăng cường dữ liệu chuỗi thời gian: Điều này bao gồm các kỹ
+   319→thuật như time warping, magnitude warping, thêm nhiễu, và window
+   320→slicing để tạo ra các biến thể của dữ liệu chuỗi thời gian gốc.
+   321→
+   322→Thảo luận: Tối ưu hóa dữ liệu đóng vai trò quan trọng trong việc
+   323→cải thiện hiệu suất và hiệu quả của các hệ thống AI biên. Bằng cách
+   324→làm sạch, nén, và tăng cường dữ liệu một cách hiệu quả, các thiết
+   325→bị biên có thể đạt được hiệu suất mô hình tốt hơn trong khi giảm
+   326→thiểu yêu cầu tài nguyên. Tuy nhiên, việc triển khai các kỹ thuật
+   327→tối ưu hóa dữ liệu trên thiết bị biên có thể phức tạp do hạn chế
+   328→tính toán và nhu cầu xử lý thời gian thực. Do đó, việc lựa chọn
+   329→và điều chỉnh các kỹ thuật tối ưu hóa dữ liệu phù hợp cho từng
+   330→ứng dụng cụ thể là rất quan trọng.
+   331→
+   332→IV. TỐI ƯU HÓA MÔ HÌNH CHO AI BIÊN
+   333→Tối ưu hóa mô hình là một khía cạnh quan trọng của triển khai AI
+   334→biên, tập trung vào việc giảm kích thước mô hình, độ phức tạp tính
+   335→toán, và yêu cầu bộ nhớ trong khi vẫn duy trì hiệu suất chấp nhận
+   336→được. Phần này khám phá hai cách tiếp cận chính để tối ưu hóa mô
+   337→hình: thiết kế kiến trúc nhỏ gọn và nén mô hình.
+   338→
+   339→A. Thiết kế Kiến trúc Nhỏ gọn
+   340→Thiết kế kiến trúc nhỏ gọn liên quan đến việc tạo ra các kiến trúc
+   341→mạng nơ-ron hiệu quả từ đầu, được tối ưu hóa đặc biệt cho triển
+   342→khai trên các thiết bị có hạn chế tài nguyên. Cách tiếp cận này tập
+   343→trung vào việc thiết kế các mô hình vốn đã nhẹ và hiệu quả, thay
+   344→vì thu gọn các mô hình lớn hiện có.
+   345→
+   346→1) Thiết kế Kiến trúc Nhỏ gọn Thủ công: Phương pháp này liên
+   347→quan đến việc thiết kế thủ công các kiến trúc mạng nơ-ron với các
+   348→đặc điểm cụ thể được tối ưu hóa cho hiệu quả. Các kỹ thuật phổ
+   349→biến bao gồm:
+   350→
+   351→Convolution Depth-wise Separable: Kỹ thuật này tách một convolution
+   352→chuẩn thành convolution depth-wise và convolution point-wise, giảm
+   353→đáng kể số lượng tham số và hoạt động tính toán. Các mạng như
+   354→MobileNet đã áp dụng thành công kỹ thuật này.
+   355→
+   356→Thiết kế Bottleneck: Kiến trúc bottleneck sử dụng convolution 1x1
+   357→để giảm số lượng channel trước khi áp dụng convolution tốn kém hơn,
+   358→sau đó mở rộng lại số lượng channel. Cách tiếp cận này được sử dụng
+   359→trong các mạng như ResNet và MobileNetV2.
+   360→
+   361→Group Convolution: Kỹ thuật này chia các channel đầu vào thành
+   362→nhiều nhóm và thực hiện convolution riêng biệt trên mỗi nhóm, giảm
+   363→số lượng tham số và yêu cầu tính toán.
+   364→
+   365→Để giúp độc giả hiểu rõ hơn về các mạng nhẹ này, chúng tôi đã tóm
+   366→tắt các đặc điểm của chúng trong Bảng 1. Bảng này cung cấp cái
+   367→nhìn tổng quan về các kiến trúc mạng nhẹ khác nhau và các kỹ thuật
+   368→tối ưu hóa chính mà chúng sử dụng.
+   369→
+   370→Trong số những cố gắng đầu tiên để thiết kế các mạng hiệu quả,
+   371→SqueezeNet đã đưa ra các fire modules bao gồm một lớp squeeze sử
+   372→dụng filter 1x1 để giảm số lượng channel, theo sau là một lớp expand
+   373→sử dụng hỗn hợp filter 1x1 và 3x3. Thiết kế này cho phép SqueezeNet
+   374→đạt được độ chính xác tương đương AlexNet với ít tham số hơn 50 lần.
+   375→
+   376→Loạt MobileNet, bao gồm MobileNetV1, MobileNetV2, và MobileNetV3,
+   377→là một trong những kiến trúc mạng nhẹ được sử dụng rộng rãi nhất.
+   378→MobileNetV1 giới thiệu depth-wise separable convolution, một kỹ
+   379→thuật factorization giảm đáng kể số lượng tham số và tính toán.
+   380→MobileNetV2 cải thiện thiết kế bằng cách giới thiệu inverted residual
+   381→blocks và linear bottlenecks, trong khi MobileNetV3 tích hợp neural
+   382→architecture search (NAS) và các hàm kích hoạt được tối ưu hóa
+   383→như h-swish.
+   384→
+   385→ShuffleNet là một kiến trúc khác tập trung vào group convolution
+   386→và channel shuffle operations để giảm độ phức tạp tính toán. ShuffleNetV2
+   387→cải thiện thiết kế ban đầu bằng cách tuân theo các nguyên tắc thiết
+   388→kế hiệu quả như giảm thiểu truy cập bộ nhớ và tối đa hóa độ song
+   389→song.
+   390→
+   391→EfficientNet đề xuất một phương pháp scaling hợp chất cân bằng
+   392→độ sâu mạng, chiều rộng, và độ phân giải để đạt được hiệu suất tốt
+   393→hơn với ít tham số hơn. Loạt EfficientNet cho thấy rằng việc scaling
+   394→có hệ thống các chiều của mạng có thể dẫn đến cải thiện hiệu suất
+   395→đáng kể.
+   396→
+   397→Các mạng gần đây như GhostNet giới thiệu ghost convolutions, một
+   398→kỹ thuật tạo ra nhiều feature maps từ ít feature maps gốc bằng cách
+   399→sử dụng các linear transformations đơn giản. Cách tiếp cận này giảm
+   400→đáng kể yêu cầu tính toán trong khi duy trì hiệu suất.
+   401→
+   402→--- TRANG 3 ---
+   403→Bảng 1: Đặc điểm của các kiến trúc mạng nhẹ
+   404→
+   405→Kiến trúc | Kỹ thuật chính | Ưu điểm | Hạn chế
+   406→SqueezeNet | Fire modules | Giảm 50x tham số | Độ chính xác hạn chế
+   407→MobileNetV1 | Depth-wise separable conv | Hiệu quả tính toán cao | Thiếu residual connections
+   408→MobileNetV2 | Inverted residuals | Cải thiện gradient flow | Phức tạp hơn V1
+   409→MobileNetV3 | NAS + h-swish | Tối ưu tự động | Yêu cầu tài nguyên tìm kiếm
+   410→ShuffleNet | Group conv + channel shuffle | Hiệu quả với ít channels | Phức tạp implementation
+   411→ShuffleNetV2 | Guidelines thiết kế hiệu quả | Tốc độ inference nhanh | Giới hạn flexibility
+   412→EfficientNet | Compound scaling | Scaling hệ thống | Phức tạp điều chỉnh
+   413→GhostNet | Ghost convolutions | Giảm redundancy | Yêu cầu fine-tuning cẩn thận
+   414→
+   415→Mạng densely-connected (DenseNet) tăng cường luồng thông tin và
+   416→gradient giữa các lớp bằng cách kết nối mỗi lớp với tất cả các lớp
+   417→tiếp theo. Mặc dù DenseNet có thể không nhẹ như các kiến trúc khác,
+   418→nó đạt được hiệu suất cao với số lượng tham số tương đối ít.
+   419→
+   420→CondenseNet là sự cải tiến của DenseNet được thiết kế đặc biệt
+   421→cho các ứng dụng di động. Nó sử dụng learned group convolution
+   422→để loại bỏ các kết nối không quan trọng trong quá trình huấn luyện,
+   423→dẫn đến kiến trúc nhỏ gọn hơn và hiệu quả hơn. CondenseNetV2
+   424→cải thiện thêm bằng cách đề xuất sparse feature reactivation để
+   425→cải thiện việc tái sử dụng feature.
+   426→
+   427→ESPNet đề xuất efficient spatial pyramid (ESP) module kết hợp
+   428→point-wise convolutions và spatial pyramid của dilated convolutions
+   429→để giảm tính toán và học các đại diện với receptive fields lớn.
+   430→ESPNetV2 là phần mở rộng của ESPNet sử dụng depth-wise separable
+   431→convolutions và vượt trội hơn ESPNet 4-5%.
+   432→
+   433→FBNets (Facebook-Berkeley-Nets) là loạt mạng nhẹ được tạo ra bởi
+   434→Facebook và UC Berkeley. FBNet sử dụng framework NAS có thể vi
+   435→phân để tối ưu kiến trúc mạng nơ-ron bằng phương pháp dựa trên
+   436→gradient, trong khi FBNetV2 tập trung vào không gian tìm kiếm DNAS
+   437→nhỏ. FBNetV3 tính đến việc các phương pháp khác bỏ qua sự kết
+   438→hợp kiến trúc-recipe tốt hơn.
+   439→
+   440→PeleeNet, khác với các mạng nhẹ gần đây phụ thuộc nhiều vào depth-wise
+   441→separable convolutions, sử dụng convolutions thông thường và được
+   442→thiết kế chủ yếu để triển khai trên thiết bị di động.
+   443→
+   444→Loạt Inception cũng là mạng cổ điển được đề xuất bởi Google. Ý
+   445→tưởng là sử dụng nhiều convolution kernels có kích thước khác nhau
+   446→để xử lý dữ liệu đầu vào song song và sau đó nối các đầu ra của
+   447→chúng theo chiều channel để tạo thành đầu ra mạng. InceptionV2 sử
+   448→dụng batch normalization và thay thế convolution kernels lớn bằng
+   449→convolution kernels nhỏ. Trong InceptionV3, việc factorization thành
+   450→các convolutions nhỏ hơn được giới thiệu, convolution hai chiều lớn
+   451→hơn được chia thành các convolutions một chiều nhỏ hơn, và cấu trúc
+   452→Inception module được tối ưu hóa. InceptionV4 giới thiệu stem modules
+   453→và reduction blocks. Xception chủ yếu đạt được sự tách biệt hoàn
+   454→toàn của việc học tương quan không gian và học tương quan giữa các
+   455→channels thông qua việc giới thiệu depth-wise separable convolutions.
+   456→
+   457→Mehta et al. đề xuất MobileViT để học đại diện toàn cục của mạng,
+   458→kết hợp ưu điểm của CNNs và ViTs và vượt trội hơn cả hai. Wu et
+   459→al. thiết kế kiến trúc NLP nhẹ, Lite-Transformer, trong đó điểm
+   460→chính là Long Short Range of Attention, với một bộ heads tập trung
+   461→vào mô hình hóa ngữ cảnh cục bộ và bộ khác vào mô hình hóa mối
+   462→quan hệ đường dài.
+   463→
+   464→Gần đây, các mạng nhẹ dựa trên attention đã được đề xuất. Ví dụ,
+   465→Hou et al. tính đến rằng một số nghiên cứu channel attention bỏ
+   466→qua thông tin vị trí và nhúng nó vào channel attention để tăng cường
+   467→hiệu suất mạng. Để tránh độ phức tạp của mô hình gây ra bởi attention
+   468→module phức tạp, Wang et al. thiết kế Efficient Channel Attention
+   469→(ECA) module có thể mang lại cải thiện hiệu suất rõ ràng với chỉ
+   470→một số ít tham số tham gia.
+   471→
+   472→Trong các cơ chế attention, có hai loại: spatial attention và channel
+   473→attention. Kết hợp hai loại có thể cải thiện hiệu suất, nhưng không
+   474→tránh khỏi dẫn đến tăng độ phức tạp mô hình. Để giải quyết điều
+   475→này, Zhang et al. thiết kế Shuffle Attention (SA) module, kết hợp
+   476→ưu điểm của cả hai loại attention trong khi tránh độ phức tạp mô
+   477→hình quá mức.
+   478→
+   479→Misra et al. đề xuất triplet attention, một phương pháp mới để
+   480→tính toán trọng số attention hiệu quả bằng cách sử dụng cấu trúc
+   481→ba nhánh để nắm bắt các tương tác đa chiều. Trong nghiên cứu của
+   482→Zhang et al., họ thiết kế Split-Attention block để sử dụng trong
+   483→ResNet, cho phép attention trải dài các nhóm feature trong khi đảm
+   484→bảo tính đơn giản và dễ sử dụng của ResNet.
+   485→
+   486→Ngoài ra, để giúp độc giả hiểu rõ hơn về các mạng nhẹ này, chúng
+   487→tôi đã tóm tắt đặc điểm của chúng trong Bảng 3.
+   488→
+   489→--- TRANG 4 ---
+   490→Bảng 3: Tóm tắt đặc điểm của các kiến trúc mạng nhẹ khác
+   491→
+   492→Loại | Mạng | Đặc điểm chính
+   493→---|---|---
+   494→MobileNets | MobileNetV1 | Depth-wise separable convolutions
+   495→ | MobileNetV2 | Inverted residual blocks
+   496→ | MobileNetV3 | Neural architecture search, h-swish activation
+   497→ShuffleNets | ShuffleNet | Group convolutions, channel shuffle
+   498→ | ShuffleNetV2 | Efficient design guidelines
+   499→ SqueezeNets | SqueezeNet | Fire modules với squeeze và expand layers
+   500→EfficientNets | EfficientNet | Compound scaling method
+   501→ | EfficientNetV2 | Progressive learning, fused convolutions
+   502→DenseNets | DenseNet | Dense connectivity giữa layers
+   503→CondenseNets | CondenseNet | Feature reuse, learned group convolutions
+   504→ | CondensenetV2 | Sparse feature reactivation
+   505→ESPNets | ESPNet | Efficient spatial pyramid (ESP) module
+   506→ | ESPNetV2 | Depth-wise separable convolutions extension
+   507→FBNets | FBNet | Gradient-based architecture optimization
+   508→ | FBNetV2 | DMaskingNAS cho search space nhỏ
+   509→ | FBNetV3 | Architecture-recipe combinations
+   510→PeleeNet | PeleeNet | Variation của DenseNet cho mobile devices
+   511→Inception | InceptionV1 | Improved computing resource utilization
+   512→ | InceptionV2 | Batch normalization method
+   513→ | InceptionV3 | Convolution decomposition, efficient feature maps
+   514→ | InceptionV4 | Stem modules và reduction blocks
+   515→ | Xception | Depthwise separable convolutions
+   516→Transformer | MobileViT | Kết hợp ưu điểm CNNs và ViTs
+   517→ | Lite-Transformer | Long-Short Range Attention architecture
+   518→Attention Based | CANet | Channel attention với positional information
+   519→ | ECANet | Efficient Channel Attention module
+   520→ | SANet | Feature grouping, channel attention replacement
+   521→ | Triplet attention | Cross-dimensional interaction attention
+   522→ | ResNeSt | Split-Attention block cho feature groups
+   523→
+   524→mechanism, cũng như các hàm loss được tối ưu hóa.
+   525→layer trong khi đồng thời cập nhật một tập các features trước đó để
+   526→tăng cường mức độ liên quan của chúng với các layers tiếp theo. Mehta et
+   527→al. đề xuất ESPNet và ESPNetV2, trong đó ESPNet giảm tính toán và
+   528→học đại diện với receptive fields lớn bằng cách sử dụng point-wise
+   529→convolutions và spatial pyramid của dilated convolutions. ESPNetV2
+   530→là phần mở rộng của ESPNet sử dụng depth-separable convolution và
+   531→vượt trội hơn ESPNet 4-5%. FBNets (Facebook-Berkeley-Nets), loạt
+   532→mạng nhẹ được tạo ra bởi Facebook và UC Berkeley, FBNet sử dụng
+   533→framework NAS có thể vi phân để tối ưu kiến trúc mạng nơ-ron bằng
+   534→phương pháp dựa trên gradient, trong khi phiên bản thứ hai FBNetV2
+   535→tập trung vào không gian tìm kiếm DNAS nhỏ. Phiên bản thứ ba FBNetV3,
+   536→tính đến việc các phương pháp khác bỏ qua sự kết hợp kiến trúc-recipe
+   537→tốt hơn. PeleeNet, khác với các mạng nhẹ gần đây phụ thuộc nhiều
+   538→vào depth-wise separable convolutions, sử dụng convolutions thông
+   539→thường và được thiết kế chủ yếu để triển khai trên thiết bị di động.
+   540→
+   541→Loạt Inception cũng là mạng cổ điển được đề xuất bởi Google. Ý
+   542→tưởng là sử dụng nhiều convolution kernels có kích thước khác nhau
+   543→để xử lý dữ liệu đầu vào song song và sau đó nối các đầu ra của
+   544→chúng theo chiều channel để tạo thành đầu ra mạng. InceptionV2 sử
+   545→dụng batch normalization và thay thế convolution kernels lớn bằng
+   546→convolution kernels nhỏ. Trong InceptionV3, việc factorization thành
+   547→các convolutions nhỏ hơn được giới thiệu, convolution hai chiều lớn
+   548→hơn được chia thành các convolutions một chiều nhỏ hơn, và cấu trúc
+   549→Inception module được tối ưu hóa. InceptionV4 giới thiệu stem modules
+   550→và reduction Blocks. Xception chủ yếu đạt được sự tách biệt hoàn
+   551→toàn của việc học tương quan không gian và học tương quan giữa các
+   552→channels thông qua việc giới thiệu depth-wise separable convolutions.
+   553→
+   554→Mehta et al. đề xuất MobileViT để học đại diện toàn cục của mạng,
+   555→kết hợp ưu điểm của CNNs và ViTs và vượt trội hơn cả hai. Wu et
+   556→al. thiết kế kiến trúc NLP nhẹ, Lite-Transformer, trong đó điểm
+   557→chính là Long Short Range of Attention, với một bộ heads tập trung
+   558→vào mô hình hóa ngữ cảnh cục bộ và bộ khác vào mô hình hóa mối
+   559→quan hệ đường dài. Gần đây, các mạng nhẹ
+   560→
+   561→--- TRANG 11 ---
+   562→11
+   563→dựa trên attention đã được đề xuất. Ví dụ, Hou et al. tính đến rằng
+   564→một số nghiên cứu channel attention bỏ qua thông tin vị trí và nhúng
+   565→nó vào channel attention để tăng cường hiệu suất mạng. Để tránh độ
+   566→phức tạp của mô hình gây ra bởi attention module phức tạp, Wang et
+   567→al. thiết kế Efficient Channel Attention (ECA) module có thể mang
+   568→lại cải thiện hiệu suất rõ ràng với chỉ một số ít tham số tham gia.
+   569→Trong các cơ chế attention, có hai loại: spatial attention và channel
+   570→attention. Kết hợp hai loại có thể cải thiện hiệu suất, nhưng không
+   571→tránh khỏi dẫn đến tăng độ phức tạp mô hình. Để giải quyết điều này,
+   572→Zhang et al. thiết kế Shuffle Attention (SA) module, kết hợp ưu điểm
+   573→của cả hai loại attention trong khi tránh độ phức tạp mô hình quá mức.
+   574→Misra et al. đề xuất triplet attention, một phương pháp mới để tính
+   575→toán trọng số attention hiệu quả bằng cách sử dụng cấu trúc ba nhánh
+   576→để nắm bắt các tương tác đa chiều. Trong nghiên cứu của Zhang et al.,
+   577→họ thiết kế Split-Attention block để sử dụng trong ResNet, cho phép
+   578→attention trải dài các nhóm feature trong khi đảm bảo tính đơn giản
+   579→và dễ sử dụng của ResNet. Ngoài ra, để giúp độc giả hiểu rõ hơn về
+   580→các mạng nhẹ này, chúng tôi đã tóm tắt đặc điểm của chúng trong Bảng 3.
+   581→
+   582→Thảo luận: Ưu điểm của thiết kế kiến trúc nhỏ gọn là tạo ra các mô
+   583→hình mạng nơ-ron hiệu quả và compact với hiệu quả tính toán cao hơn,
+   584→tiêu thụ bộ nhớ thấp hơn, và độ chính xác được cải thiện. Những mô
+   585→hình này phù hợp để triển khai trên các thiết bị biên có tài nguyên
+   586→hạn chế, làm cho chúng lý tưởng cho các ứng dụng IoT và edge computing.
+   587→Tuy nhiên, việc thiết kế kiến trúc mô hình tối ưu có thể là một quá
+   588→trình tốn thời gian và tài nguyên. Ngoài ra, một số kỹ thuật thiết kế
+   589→mô hình, như depth-wise separable convolutions và pointwise convolutions,
+   590→có thể kém hiệu quả trong việc nắm bắt các features phức tạp so với
+   591→các lớp convolutional truyền thống, điều này có thể ảnh hưởng tiêu
+   592→cực đến độ chính xác của mô hình.
+   593→
+   594→2) Neural Architecture Search: NAS nhằm tự động hóa quá trình thiết
+   595→kế kiến trúc mạng nơ-ron, có thể là một quá trình tốn thời gian và
+   596→tài nguyên khi thực hiện thủ công. NAS thường sử dụng các phương
+   597→pháp tối ưu hóa khác nhau như thuật toán tiến hóa, reinforcement
+   598→learning, hoặc tối ưu hóa dựa trên gradient để tìm kiếm không gian
+   599→kiến trúc mạng nơ-ron và xác định kiến trúc hoạt động tốt nhất trên
+   600→một nhiệm vụ cụ thể trong khi thỏa mãn các ràng buộc tính toán nhất
+   601→định.
+   602→
+   603→Gần đây, với sự phát triển của IoT và AI of Things (AIoT), đã có
+   604→nhu cầu ngày càng tăng cho các thiết bị thông minh với tiêu thụ năng
+   605→lượng thấp, hiệu quả tính toán cao, và sử dụng tài nguyên thấp. NAS
+   606→đã nổi lên như một phương pháp đầy hứa hẹn để thiết kế các mạng
+   607→nơ-ron hiệu quả và nhẹ có thể được triển khai trên các thiết bị biên.
+   608→Trong phần này, chúng tôi sẽ thảo luận về các nghiên cứu gần đây
+   609→khác nhau đã sử dụng NAS để thiết kế các mạng nơ-ron hiệu quả cho
+   610→edge computing.
+   611→
+   612→Một lĩnh vực đáng chú ý trong các nghiên cứu hiện tại là việc sử
+   613→dụng các thuật toán tìm kiếm tiên tiến và phương pháp tối ưu hóa
+   614→đa mục tiêu để xác định các kiến trúc mạng nơ-ron tối ưu hóa các
+   615→chỉ số hiệu suất khác nhau như độ chính xác, tiêu thụ tài nguyên,
+   616→và hiệu quả năng lượng. Công việc này đã trở nên ngày càng quan
+   617→trọng trong những năm gần đây vì các ứng dụng edge computing yêu
+   618→cầu các mô hình hiệu quả nhưng chính xác. Để đạt được điều này,
+   619→các nhà nghiên cứu đã đề xuất nhiều phương pháp khác nhau cho tìm
+   620→kiếm kiến trúc đa mục tiêu. Lu et al. và Lyu et al. là hai nghiên
+   621→cứu như vậy đã sử dụng tối ưu hóa đa mục tiêu để xác định các kiến
+   622→trúc mạng nơ-ron hiệu quả và chính xác cho các ứng dụng edge computing.
+   623→Tương tự, Chen et al. đã sử dụng các chiến lược dựa trên hiệu suất
+   624→để tìm kiếm hiệu quả các kiến trúc tối ưu với nhiều mục tiêu. Những
+   625→nghiên cứu này nhấn mạnh tầm quan trọng của việc xem xét các mục
+   626→tiêu khác nhau trong quá trình tìm kiếm kiến trúc để đảm bảo rằng
+   627→các kiến trúc mạng nơ-ron vừa chính xác vừa hiệu quả. Bằng cách
+   628→sử dụng các thuật toán tìm kiếm tiên tiến và kỹ thuật tối ưu hóa
+   629→đa mục tiêu, các nhà nghiên cứu có thể thiết kế các mô hình hiệu
+   630→quả trong môi trường có hạn chế tài nguyên trong khi vẫn duy trì độ
+   631→chính xác cao, điều này rất quan trọng cho các ứng dụng edge computing.
+   632→
+   633→Các kỹ thuật và thuật toán sáng tạo để cải thiện hiệu quả và hiệu
+   634→suất của NAS thường được sử dụng trong nghiên cứu. Ví dụ, Mendis
+   635→et al. đã tích hợp hành vi thực thi gián đoạn vào quá trình tìm kiếm
+   636→để tìm các kiến trúc mạng chính xác có thể thực thi an toàn và hiệu
+   637→quả dưới nguồn điện gián đoạn, đây là một thách thức phổ biến trong
+   638→các ứng dụng edge computing. Tương tự, Ning et al. đã xác định các
+   639→yếu tố ảnh hưởng đến khả năng chống lỗi của các mô hình mạng nơ-ron
+   640→và sử dụng kiến thức này để thiết kế các kiến trúc CNN chống lỗi
+   641→cho các thiết bị biên. Những nghiên cứu này chứng minh tầm quan
+   642→trọng của việc xem xét những thách thức và ràng buộc độc đáo của
+   643→các ứng dụng edge computing khi thiết kế mạng nơ-ron thông qua NAS.
+   644→Bằng cách tích hợp các kỹ thuật và thuật toán sáng tạo, các nhà nghiên
+   645→cứu có thể phát triển các kiến trúc không chỉ hiệu quả và chính xác
+   646→mà còn mạnh mẽ và đáng tin cậy.
+   647→
+   648→Hơn nữa, một số nghiên cứu đề xuất các primitives và frameworks
+   649→hiệu quả phần cứng để tối ưu hóa quá trình tìm kiếm và cải thiện
+   650→hiệu suất của các mạng kết quả. Ví dụ, Liu et al. đề xuất Point-Voxel
+   651→Convolution (PVConv) primitive, kết hợp tốt nhất của các mô hình
+   652→point-based và voxel-based cho NAS hiệu quả. Primitive hiệu quả
+   653→phần cứng này đạt được hiệu suất state-of-the-art với tăng tốc đáng
+   654→kể và đã được triển khai thành công trong các tình huống edge computing
+   655→thực tế, như xe đua tự động. Donegan et al. đề xuất sử dụng phương
+   656→pháp NAS có thể vi phân để tìm các CNNs hiệu quả cho Intel Movidius
+   657→Vision Processing Unit (VPU), đạt được độ chính xác phân loại state-of-the-art
+   658→trên ImageNet. Những nghiên cứu này nhấn mạnh tầm quan trọng của
+   659→việc xem xét hiệu quả phần cứng khi thiết kế mạng nơ-ron cho các
+   660→ứng dụng edge computing. Bằng cách tận dụng các primitives và frameworks
+   661→hiệu quả phần cứng, các nhà nghiên cứu không chỉ có thể tối ưu hóa
+   662→quá trình tìm kiếm mà còn phát triển các kiến trúc mạng nơ-ron hiệu
+   663→quả và hiệu suất trong môi trường có hạn chế tài nguyên.
+   664→
+   665→Hơn nữa, một số nghiên cứu đề xuất các phương pháp NAS mới tuân
+   666→thủ nghiêm ngặt các ràng buộc tài nguyên, trong khi những nghiên
+   667→cứu khác tập trung vào giải quyết phân phối dữ liệu non-i.i.d. trong
+   668→các tình huống federated learning. Ví dụ, Nayman et al. giới thiệu
+   669→HardCoRe-NAS, một phương pháp NAS có ràng buộc tuân thủ nghiêm
+   670→ngặt nhiều ràng buộc tài nguyên như độ trễ, năng lượng, và bộ nhớ,
+   671→mà không làm giảm
+   672→
+   673→--- TRANG 12 ---
+   674→12
+   675→độ chính xác của các mạng kết quả. Tương tự, MemNAS là framework
+   676→tối ưu hóa cả hiệu suất và sử dụng bộ nhớ của NAS bằng cách xem
+   677→xét sử dụng bộ nhớ như một mục tiêu tối ưu hóa trong quá trình tìm
+   678→kiếm. Mặt khác, Zhang et al. tập trung vào giải quyết phân phối dữ
+   679→liệu non-i.i.d. trong các tình huống federated learning bằng cách
+   680→đề xuất frameworks Federated Direct NAS (FDNAS) và Cluster Federated
+   681→Direct NAS (CFDNAS). Những frameworks này tận dụng các kỹ thuật
+   682→proxylessNAS và meta-learning tiên tiến để đạt được NAS nhận thức
+   683→thiết bị, phù hợp với phân phối dữ liệu cụ thể và ràng buộc phần
+   684→cứng của mỗi thiết bị. Những nghiên cứu này chứng minh tầm quan
+   685→trọng của việc xem xét các ràng buộc và thách thức khác nhau trong
+   686→thiết kế mạng nơ-ron cho các ứng dụng edge computing.
+   687→
+   688→Thảo luận: Mặc dù NAS đã cho thấy triển vọng trong việc thiết kế
+   689→các mạng nơ-ron hiệu quả và nhẹ cho các ứng dụng edge computing,
+   690→vẫn còn một số nhược điểm đối với phương pháp này. Một hạn chế
+   691→chính là NAS có thể tốn kém về mặt tính toán, đặc biệt khi tìm kiếm
+   692→trong không gian lớn các kiến trúc có thể. Điều này có thể làm cho
+   693→việc triển khai các mô hình dựa trên NAS trở nên thách thức trong
+   694→môi trường có hạn chế tài nguyên, đặc biệt là những môi trường có
+   695→sức mạnh tính toán hạn chế. Ngoài ra, mặc dù NAS có thể tối ưu hóa
+   696→cho nhiều mục tiêu, có thể khó tìm được sự cân bằng giữa độ chính
+   697→xác và hiệu quả, đặc biệt khi xử lý các nhiệm vụ phức tạp hoặc phân
+   698→phối dữ liệu non-i.i.d. Hơn nữa, các kiến trúc mạng nơ-ron kết quả
+   699→có thể không dễ diễn giải, làm cho việc hiểu cách chúng hoạt động
+   700→hoặc giải thích quyết định của chúng trở nên thách thức.
+   701→
+   702→B. Nén Mô hình
+   703→Nén mô hình là một nhóm các phương pháp (như pruning, parameter
+   704→sharing, quantization, knowledge distillation và low-rank factorization)
+   705→để thu nhỏ kích thước của các mô hình deep learning mà không ảnh
+   706→hưởng đáng kể đến độ chính xác hoặc hiệu suất của chúng bằng cách
+   707→loại bỏ các thành phần không cần thiết, như các tham số hoặc layers
+   708→trùng lặp. Do nhu cầu tính toán và lưu trữ cao của các mô hình deep
+   709→learning, nén mô hình đã trở nên ngày càng quan trọng. Những phương
+   710→pháp này được tạo ra để có thể triển khai các mô hình phức tạp trên
+   711→các thiết bị có tài nguyên hạn chế hoặc trong các hệ thống phân tán
+   712→quy mô lớn với xử lý, bộ nhớ và lưu trữ bị ràng buộc. Để tăng cường
+   713→hiệu quả và hiệu suất của các mô hình deep learning trong các ứng
+   714→dụng khác nhau, có thể sử dụng những kỹ thuật này một cách riêng
+   715→lẻ hoặc kết hợp. Ví dụ, một ví dụ cổ điển của việc kết hợp nhiều
+   716→kỹ thuật là Deep Compression, kết hợp các kỹ thuật như pruning,
+   717→quantization, và Huffman coding để đạt được nén đáng kể các mạng
+   718→nơ-ron sâu (DNN).
+   719→
+   720→1) Model Pruning: Các mô hình DNN thường bao gồm nhiều tham số
+   721→và hierarchies, làm cho chúng tốn kém về mặt tính toán và lưu trữ.
+   722→Do việc ứng dụng thường xuyên trong các tình huống có tài nguyên
+   723→hạn chế, như thiết bị di động, điều bắt buộc là những mô hình này
+   724→phải có kích thước nhỏ hơn và yêu cầu ít sức mạnh tính toán hơn
+   725→để hoạt động tối ưu. Pruning là kỹ thuật nén mô hình phổ biến giảm
+   726→kích thước mô hình bằng cách loại bỏ các layers hoặc tham số không
+   727→cần thiết, từ đó tăng hiệu quả và tốc độ suy luận. Ngoài ra, pruning
+   728→giúp ngăn ngừa overfitting và tăng cường khả năng khái quát hóa của
+   729→mô hình.
+   730→
+   731→Trong những năm gần đây, đã có sự quan tâm ngày càng tăng trong
+   732→việc phát triển các kỹ thuật pruning cho các mô hình AI để giảm kích
+   733→thước và cải thiện hiệu quả của chúng, đặc biệt là để triển khai trong
+   734→môi trường có hạn chế tài nguyên. Nhiều nỗ lực nghiên cứu khác nhau
+   735→đã được thực hiện để giải quyết thách thức này. Ví dụ, Xu et al.
+   736→phát triển framework có tên DiReCtX, bao gồm các chiến lược pruning
+   737→mô hình CNN được cải thiện và điều chỉnh độ chính xác để đạt được
+   738→cấu hình lại mô hình nhanh trong thời gian thực, dẫn đến tăng tốc
+   739→tính toán đáng kể, giảm bộ nhớ, và tiết kiệm năng lượng. Ahmad et
+   740→al. đề xuất SuperSlash, sử dụng kỹ thuật pruning được hướng dẫn bởi
+   741→hàm xếp hạng để giảm đáng kể khối lượng truy cập bộ nhớ off-chip
+   742→so với các phương pháp hiện có. DropNet là phương pháp pruning lặp
+   743→giảm độ phức tạp của DNNs bằng cách loại bỏ các nodes/filters có
+   744→giá trị post-activation trung bình thấp nhất trên tất cả các mẫu huấn
+   745→luyện. Các kết quả cho thấy DropNet có thể đạt được pruning đáng
+   746→kể (lên đến 90% nodes/filters) mà không hy sinh độ chính xác, và
+   747→mạng được pruned vẫn hiệu quả ngay cả sau khi khởi tạo lại weight
+   748→và bias. Thú vị là, Li et al. chứng minh trong nghiên cứu của họ
+   749→rằng các mô hình lớn được nén mạnh đạt được độ chính xác cao hơn
+   750→các mô hình nhỏ được nén nhẹ. Ma et al. đề xuất các chiến lược
+   751→pruning dựa trên gradient để cải thiện hiệu suất qua các ngôn ngữ.
+   752→
+   753→Structural pruning là kỹ thuật nổi bật trong pruning liên quan đến
+   754→việc loại bỏ toàn bộ cấu trúc hoặc modules từ mạng nơ-ron. Một
+   755→phương pháp structural pruning là phương pháp được phát triển bởi
+   756→Gao et al., sử dụng phương pháp tối ưu hóa rời rạc hiệu quả để tối
+   757→ưu hóa trực tiếp các channel-wise differentiable discrete gates dưới
+   758→ràng buộc tài nguyên trong khi đóng băng tất cả các tham số mô hình
+   759→khác. Điều này dẫn đến một CNN compact với khả năng phân biệt mạnh.
+   760→Wu et al. đề xuất MOBC, một phương pháp dựa trên reinforcement
+   761→learning được pruned với phương pháp structured pruning thích ứng
+   762→giảm block migrations và foreground segment cleanings trong log-structured
+   763→file systems, dẫn đến cải thiện độ bền lưu trữ và giảm độ trễ với
+   764→overhead thấp hơn. Hơn nữa, structural pruning cũng đã được sử dụng
+   765→trong việc phát triển các frameworks federated learning. NestFL là
+   766→framework federated learning hiệu quả học tập cải thiện hiệu quả
+   767→huấn luyện và đạt được cá nhân hóa bằng cách gán các subnetworks
+   768→có cấu trúc thưa thớt cho các thiết bị biên thông qua structured pruning
+   769→tiệm tiến.
+   770→
+   771→Dynamic pruning là kỹ thuật thường được sử dụng trong mạng nơ-ron
+   772→liên quan đến pruning trong quá trình huấn luyện. Kỹ thuật này đánh
+   773→giá tầm quan trọng của weights hoặc neurons mạng nơ-ron và có chọn
+   774→lọc loại bỏ weights hoặc neurons không quan trọng. Geng et al. phát
+   775→triển kiến trúc out-of-order có tên O3BNN-R sử dụng dynamic pruning
+   776→để giảm đáng kể kích thước của Binarized Neural Networks, cho phép
+   777→tính toán hiệu quả trên các thiết bị biên có hạn chế về chi phí và
+   778→năng lượng. Kỹ thuật này cải thiện hiệu quả của các nhiệm vụ mạng
+   779→nơ-ron trên thiết bị biên, làm cho chúng thực tế hơn. Một kỹ thuật
+   780→dynamic pruning mới khác là FuPruner. Phương pháp này tối ưu hóa
+   781→cả các operators parametric và nonparametric để tăng tốc mạng nơ-ron
+   782→trên
+   783→
+   784→--- TRANG 13 ---
+   785→13
+   786→các thiết bị biên có hạn chế tài nguyên. Phương pháp này sử dụng
+   787→phương pháp fusion tích cực để biến đổi mô hình và phương pháp dynamic
+   788→filter pruning để giảm chi phí tính toán trong khi duy trì độ chính
+   789→xác. Gu et al. chứng minh rằng chiến lược mixed-training được đề
+   790→xuất của họ, kết hợp two-level sparsity và power-aware dynamic pruning,
+   791→đạt được sự ổn định tối ưu hóa vượt trội, hiệu quả cao hơn, và tiết
+   792→kiệm năng lượng đáng kể so với các phương pháp hiện có. Một số nhà
+   793→nghiên cứu đã tập trung vào pruning sau huấn luyện, như Kwon et
+   794→al., đề xuất framework để pruning Transformers sau huấn luyện, đạt
+   795→được giảm đáng kể FLOPs và độ trễ suy luận trong khi duy trì độ
+   796→chính xác.
+   797→
+   798→Một số nhà nghiên cứu đã đề xuất thực hiện pruning kết hợp với
+   799→các phương pháp nén mô hình khác để cải thiện hiệu quả của mạng
+   800→nơ-ron. Lin et al. giới thiệu HRank, một phương pháp filter pruning
+   801→pruning các filters có feature maps low-rank, dẫn đến giảm đáng kể
+   802→FLOPs và tham số trong khi duy trì độ chính xác tương tự. Li et al.
+   803→đề xuất kỹ thuật pruning mới có tên kernel granularity decomposition,
+   804→kết hợp low-rank approximation với redundancy exploitation để đạt
+   805→được model compactness và hardware efficiency đồng thời. Tung et
+   806→al. phát triển CLIP-Q, phương pháp mới kết hợp network pruning và
+   807→weight quantization trong một framework học tập duy nhất. Fedorov
+   808→et al. thiết kế phương pháp Sparse Architecture Search kết hợp NAS
+   809→với pruning để tự động thiết kế CNNs có thể vừa vặn trên MCUs có
+   810→hạn chế bộ nhớ trong khi duy trì độ chính xác dự đoán cao. Khaleghi
+   811→et al. đề xuất kỹ thuật quantization và pruning cho hyperdimensional
+   812→computing để đạt được huấn luyện và suy luận bảo vệ quyền riêng
+   813→tư trong khi che giấu thông tin và cho phép triển khai phần cứng
+   814→hiệu quả. Những kỹ thuật này chứng minh hiệu quả của việc thực
+   815→hiện pruning kết hợp với các phương pháp nén mô hình khác để cải
+   816→thiện hiệu quả của mạng nơ-ron trong khi duy trì độ chính xác.
+   817→
+   818→Các phương pháp khác đã tích hợp context-aware pruning, như Huang
+   819→et al. với DeepAdapter, cải thiện độ chính xác suy luận với mô hình
+   820→nhỏ hơn và nhanh hơn, và Liu et al., đề xuất phương pháp content-aware
+   821→channel pruning mới cho unconditional GANs giảm đáng kể FLOPs
+   822→của StyleGAN2 11x với mất chất lượng hình ảnh có thể bỏ qua về mặt
+   823→thị giác so với mô hình kích thước đầy đủ. Ngoài ra, các nhà nghiên
+   824→cứu đã khám phá việc sử dụng pruning cho các ứng dụng cụ thể, như
+   825→nhiệm vụ radio frequency fingerprinting, super-resolution networks,
+   826→và privacy preserved hyperdimensional computing. Hơn nữa, một số
+   827→nhà nghiên cứu đã đề xuất các phương pháp hardware-software co-design
+   828→cho pruning, như Sun et al., trình bày kỹ thuật hardware-aware pruning
+   829→cho mạng 3D mới có tên R(2+1)D đạt được độ chính xác cao và tăng
+   830→tốc tính toán đáng kể trên FPGA.
+   831→
+   832→Thảo luận: Mặc dù model pruning có thể cải thiện hiệu quả và tốc
+   833→độ của mạng nơ-ron, cũng có một số nhược điểm đối với phương pháp
+   834→này. Một hạn chế chính là pruning có thể dẫn đến mất độ chính xác
+   835→mô hình, đặc biệt khi một số lượng đáng kể tham số hoặc layers bị
+   836→loại bỏ. Ngoài ra, pruning có thể tốn kém về mặt tính toán, đặc biệt
+   837→khi tìm kiếm tập tham số tối ưu để prune. Pruning cũng có thể dẫn
+   838→đến mô hình ít diễn giải hơn, vì các tham số hoặc layers bị loại bỏ
+   839→có thể đã đóng vai trò quan trọng trong quá trình ra quyết định của
+   840→mạng. Cuối cùng, một số phương pháp pruning có thể không tương
+   841→thích với một số cấu hình phần cứng hoặc phần mềm nhất định, hạn
+   842→chế tính thực tế của chúng.
+   843→
+   844→2) Parameter Sharing: Parameter sharing là kỹ thuật nén mô hình
+   845→liên quan đến việc chia sẻ weights của mạng nơ-ron giữa nhiều layers.
+   846→Phương pháp này dẫn đến giảm đáng kể số lượng tham số cần thiết
+   847→để đại diện cho mô hình, do đó giảm yêu cầu tính toán và bộ nhớ.
+   848→Do đó, mô hình có thể phù hợp hơn để triển khai trên các thiết bị
+   849→có hạn chế tài nguyên. Kỹ thuật này đã được áp dụng thành công cho
+   850→nhiều kiến trúc deep learning khác nhau, bao gồm CNNs và RNNs.
+   851→
+   852→Một số nghiên cứu đã khám phá các kỹ thuật parameter sharing khác
+   853→nhau để đạt được tỷ lệ nén cao với mất độ chính xác tối thiểu hoặc
+   854→không có. Ví dụ, Wu et al. đề xuất scheme mới để nén CNNs bằng
+   855→cách áp dụng k-means clustering trên weights để đạt được parameter
+   856→sharing. Phương pháp được đề xuất bao gồm spectrally relaxed k-means
+   857→regularization để thực hiện hard assignments của convolutional layer
+   858→weights cho các cluster centers đã học trong quá trình re-training,
+   859→và được đánh giá trên một số mô hình CNN chứng minh kết quả đầy
+   860→hứa hẹn về tỷ lệ nén và giảm tiêu thụ năng lượng mà không gây mất
+   861→độ chính xác. Obukhove et al. thiết kế T-Basis, đại diện compact
+   862→của một tập tensors được mô hình hóa bằng Tensor Rings để nén weight
+   863→mạng nơ-ron hiệu quả trong khi cho phép weight sharing. T-Basis
+   864→đạt được tỷ lệ nén cao với mức giảm hiệu suất chấp nhận được và
+   865→phù hợp với các thiết bị có hạn chế tài nguyên. Trong nghiên cứu
+   866→của Ullrich et al., họ sử dụng phiên bản soft weight-sharing để đạt
+   867→được tỷ lệ nén cạnh tranh. You et al. đề xuất ShiftAddNAS, phương
+   868→pháp NAS cho hybrid neural networks tích hợp cả powerful multiplication-based
+   869→và efficient multiplication-free operators. Nó nhấn mạnh chiến lược
+   870→weight sharing mới chia sẻ tham số hiệu quả giữa các operators khác
+   871→nhau với phân phối không đồng nhất, dẫn đến kích thước supernet
+   872→giảm lớn và mạng được tìm kiếm tốt hơn. Những phương pháp này
+   873→đã cho thấy kết quả đầy hứa hẹn trong việc đạt được tỷ lệ nén cao
+   874→với mất độ chính xác tối thiểu hoặc không có. Trong nghiên cứu,
+   875→các phương pháp được đề xuất tích hợp parameter sharing giữa các
+   876→kiến trúc ứng viên để cho phép tìm kiếm hiệu quả trên không gian
+   877→thiết kế lớn và luôn vượt trội hơn thiết kế thủ công và phương pháp
+   878→tìm kiếm ngẫu nhiên, đạt được giảm đến 1.0% tỷ lệ lỗi từ tuyệt đối
+   879→và giảm 28% kích thước mô hình tương đối trên corpus Switchboard.
+   880→
+   881→Hơn nữa, nhiều nghiên cứu đã áp dụng các phương pháp parameter
+   882→sharing vào các ứng dụng thực tế. Ví dụ, EfficientTDNN là framework
+   883→tìm kiếm kiến trúc speaker embedding mới sử dụng weight-sharing
+   884→subnets để tìm kiếm hiệu quả các kiến trúc TDNN, đạt được sự cân
+   885→bằng thuận lợi giữa độ chính xác và hiệu quả với parameter sharing,
+   886→như được chứng minh trên dataset VoxCeleb. CpRec là framework recommendation
+   887→tuần tự được nén sử dụng block-wise adaptive decomposition và layer-wise
+   888→parameter sharing schemes để giảm số lượng tham số trong sandwich-structured
+   889→DNNs được sử dụng trong sequential
+   890→
+   891→--- TRANG 14 ---
+   892→14
+   893→recommender systems. Sindhwani et al. đề xuất framework thống nhất
+   894→để học các parameter matrices có cấu trúc với low displacement rank,
+   895→cho phép nhiều cấu hình parameter sharing đa dạng cung cấp sự cân
+   896→bằng accuracy-compactness-speed vượt trội cho mobile deep learning.
+   897→
+   898→Thảo luận: Mặc dù parameter sharing có thể dẫn đến giảm đáng kể
+   899→số lượng tham số cần thiết để đại diện cho mạng nơ-ron, cũng có
+   900→một số nhược điểm đối với phương pháp này. Một hạn chế chính là
+   901→parameter sharing có thể dẫn đến mất độ chính xác mô hình, đặc biệt
+   902→khi các tham số được chia sẻ không phù hợp với nhiệm vụ đang thực
+   903→hiện. Ngoài ra, parameter sharing có thể không tương thích với một
+   904→số loại mạng nơ-ron hoặc kiến trúc nhất định, hạn chế khả năng áp
+   905→dụng. Một vấn đề tiềm ẩn khác là parameter sharing có thể dẫn đến
+   906→mô hình ít diễn giải hơn, vì có thể khó hiểu hơn về cách các tham
+   907→số được chia sẻ góp phần vào quá trình ra quyết định của mạng. Cuối
+   908→cùng, một số phương pháp parameter sharing có thể tốn kém về mặt
+   909→tính toán hoặc yêu cầu tài nguyên tính toán đáng kể, đặc biệt khi
+   910→tìm kiếm tập tham số được chia sẻ tối ưu.
+   911→
+   912→3) Model Quantization: Kỹ thuật quantization đã trở nên ngày càng
+   913→quan trọng để tối ưu hóa các mô hình DNN để triển khai trên các thiết
+   914→bị có hạn chế tài nguyên. Nó cung cấp nhiều lợi ích, bao gồm cải
+   915→thiện hiệu quả tính toán, giảm sử dụng bộ nhớ và lưu trữ, và tiêu
+   916→thụ năng lượng thấp hơn. Bằng cách giảm độ chính xác của các tham
+   917→số mô hình và activations, quantization cho phép giảm đáng kể kích
+   918→thước mô hình trong khi giảm thiểu tác động đến độ chính xác nhiệm
+   919→vụ. Đây là kỹ thuật được áp dụng rộng rãi trong lĩnh vực deep learning
+   920→và đã được chứng minh cung cấp cải thiện đáng kể về hiệu quả và
+   921→hiệu suất mô hình trên nhiều nền tảng phần cứng.
+   922→
+   923→Gần đây, đã có sự quan tâm ngày càng tăng trong việc áp dụng các
+   924→kỹ thuật quantization để thiết kế các mô hình nhẹ cho thiết bị biên.
+   925→Xu hướng này được thúc đẩy bởi nhu cầu cải thiện hiệu quả và hiệu
+   926→suất của ML trên thiết bị biên, thường có tài nguyên hạn chế. Một
+   927→kỹ thuật như vậy là progressive fractional quantization và dynamic
+   928→fractional quantization, được đề xuất trong FracTrain bởi Fu et al.
+   929→Phương pháp này giảm chi phí tính toán và energy/latency của huấn
+   930→luyện DNN trong khi duy trì độ chính xác tương đương. Tương tự,
+   931→edgeBERT là hệ thống phần cứng sử dụng kết hợp adaptive attention
+   932→span, selective network pruning, và floating-point quantization để
+   933→giảm bớt overhead tính toán và memory footprint trên các nền tảng
+   934→biên có hạn chế tài nguyên. PNMQ là phương pháp data-free cho nén
+   935→mạng sử dụng Parametric Non-uniform Mixed precision Quantization,
+   936→cho phép triển khai hiệu quả cho nén mạng trên thiết bị biên mà không
+   937→yêu cầu bất kỳ retraining mô hình hoặc tính toán đắt đỏ nào. Một
+   938→kỹ thuật khác cho quantized deep neural networks (QDNNs) là SPEQ,
+   939→phương pháp huấn luyện stochastic precision ensemble mới sử dụng
+   940→KD mà không cần mạng teacher riêng biệt. Hơn nữa, Cui et al. đề
+   941→xuất phương pháp dựa trên quantization để giảm lưu trữ và tiêu thụ
+   942→bộ nhớ của các mô hình deep ensemble, sử dụng scheme bit sharing
+   943→có thể vi phân và song song hóa cho phép các thành viên chia sẻ
+   944→các bits ít quan trọng của tham số, trong khi duy trì độ chính xác,
+   945→và scheme encoding-decoding hiệu quả cho triển khai thực tế trên
+   946→thiết bị biên.
+   947→
+   948→Một số nghiên cứu cũng đã khám phá quantization của các mạng nơ-ron
+   949→khác. Ví dụ, Capsule Networks (CapsNets) đã được chứng minh vượt
+   950→trội hơn CNNs truyền thống trong phân loại hình ảnh, nhưng chúng
+   951→tốn kém về mặt tính toán và thách thức để triển khai trên các thiết
+   952→bị biên có hạn chế tài nguyên. Một framework quantization chuyên
+   953→biệt cho CapsNets đã được phát triển để cho phép triển khai biên
+   954→hiệu quả, có thể giảm memory footprint 6.2x với mất độ chính xác
+   955→tối thiểu. Hơn nữa, FSpiNN là framework tiết kiệm bộ nhớ và năng
+   956→lượng cho spiking neural networks (SNNs) tích hợp fixed-point quantization
+   957→trong khi duy trì độ chính xác, làm cho nó phù hợp để triển khai
+   958→trên thiết bị biên với khả năng học không giám sát.
+   959→
+   960→Thiết kế quantization dựa trên phần cứng cũng là điểm nóng nghiên
+   961→cứu gần đây. Zhou et al. đề xuất phương pháp huấn luyện INT8 được
+   962→triển khai trong Octo, hệ thống đa nền tảng nhẹ đạt được hiệu quả
+   963→huấn luyện cao hơn và giảm bộ nhớ so với huấn luyện full-precision
+   964→trên các chip AI thương mại. Tương tự, Wang et al. giới thiệu framework
+   965→Hardware-Aware Automated Quantization (HAQ), xác định chính sách
+   966→quantization tối ưu cho mỗi layer trong DNN dựa trên kiến trúc phần
+   967→cứng, dẫn đến giảm latency và tiêu thụ năng lượng mà không mất
+   968→độ chính xác đáng kể. Li et al. đề xuất framework quantization mới,
+   969→RaQu, kết hợp thông tin về các mô hình mạng nơ-ron và cấu trúc
+   970→phần cứng để cải thiện sử dụng tài nguyên và hiệu quả tính toán
+   971→trên resistive-memory-based processing-in-memory (RRAM-based PIM)
+   972→cho thiết bị biên. Ngoài ra, một giải pháp hardware/software co-design
+   973→được đề xuất thông qua inexact multiplier và chiến lược retraining
+   974→để quantize neural network weights thành các giá trị được mã hóa
+   975→Fibonacci cho các thuật toán đòi hỏi tính toán trên thiết bị biên
+   976→có hạn chế tài nguyên.
+   977→
+   978→Thảo luận: Model quantization là kỹ thuật hữu ích để cải thiện hiệu
+   979→quả và hiệu suất của deep neural networks trên các thiết bị có hạn
+   980→chế tài nguyên. Tuy nhiên, nó cũng có một số nhược điểm. Một hạn
+   981→chế chính là quantization có thể dẫn đến mất độ chính xác mô hình,
+   982→đặc biệt nếu độ chính xác của các tham số mô hình và activations
+   983→bị giảm quá nhiều. Ngoài ra, việc tìm tập mức độ chính xác tối ưu
+   984→có thể tốn kém về mặt tính toán. Độ chính xác giảm cũng có thể làm
+   985→cho mô hình ít diễn giải hơn, khiến việc hiểu cách mô hình đưa ra
+   986→quyết định trở nên khó khăn. Hơn nữa, một số cấu hình phần cứng
+   987→hoặc phần mềm nhất định có thể không tương thích với một số phương
+   988→pháp quantization, hạn chế tính thực tế của chúng.
+   989→
+   990→4) Knowledge Distillation: KD là kỹ thuật nén mô hình nhằm giảm
+   991→kích thước và chi phí tính toán của DNNs bằng cách chuyển giao kiến
+   992→thức từ mô hình teacher lớn và phức tạp sang mô hình student nhỏ
+   993→và đơn giản hơn. Nó hoạt động bằng cách làm mềm đầu ra của teacher
+   994→thành phân phối xác suất và sử dụng nó để huấn luyện mô hình student
+   995→bắt chước hành vi của teacher. Kỹ thuật này cho phép nén các mô
+   996→hình phức tạp trong khi vẫn duy trì hiệu suất của chúng, làm cho
+   997→chúng hiệu quả hơn và thực tế hơn để triển khai trong các ứng dụng
+   998→thực tế.
+   999→
+  1000→KD, được giới thiệu bởi Geoffrey Hinton et al., đã được sử dụng
+  1001→hiệu quả trong nhiều lĩnh vực khác nhau. Một phương pháp là
+  1002→
+  1003→--- TRANG 15 ---
+  1004→15
+  1005→framework self-distillation được đề xuất bởi Zhang et al. tăng cường
+  1006→hiệu suất của CNNs bằng cách nén kiến thức trong mạng. Framework
+  1007→này cải thiện độ chính xác trong khi cung cấp suy luận có thể mở
+  1008→rộng theo chiều sâu trên các thiết bị biên có hạn chế tài nguyên.
+  1009→Một phương pháp khác là mô hình DynaBERT được giới thiệu bởi Hou
+  1010→et al., là mô hình BERT có thể điều chỉnh động thích ứng với yêu
+  1011→cầu của các thiết bị biên khác nhau bằng cách chọn width và depth
+  1012→thích ứng. Quá trình huấn luyện liên quan đến KD từ mô hình kích
+  1013→thước đầy đủ đến các sub-networks nhỏ, dẫn đến hiệu suất vượt trội
+  1014→so với các phương pháp nén BERT hiện có. Zhang et al. đề xuất framework
+  1015→SCAN, chia DNNs thành nhiều sections và xây dựng các classifiers
+  1016→nông bằng cách sử dụng attention modules và KD. Cơ chế suy luận
+  1017→có thể mở rộng được kiểm soát ngưỡng của framework này cho phép
+  1018→suy luận cụ thể cho mẫu, dẫn đến cải thiện hiệu suất đáng kể trên
+  1019→CIFAR100 và ImageNet. Ngoài ra, Zhang et al. đề xuất framework
+  1020→dynamic knowledge distillation (DKD) cho deep CNNs, tận dụng dynamic
+  1021→global distillation module cho multiscale features imitation và dynamic
+  1022→instance selection distillation module cho self-judgment. Framework
+  1023→cũng điều chỉnh training-status-aware loss để xử lý hard samples
+  1024→trong regression, cho phép triển khai các mô hình trên các thiết bị
+  1025→edge computing tính toán thấp như vệ tinh và máy bay không người
+  1026→lái. Hao et al. thiết kế framework CDFKD-MFS, nén nhiều mô hình
+  1027→được pre-trained thành mô hình nhỏ cho các thiết bị biên có hạn chế
+  1028→tài nguyên mà không yêu cầu dataset gốc. Framework này sử dụng
+  1029→multi-header student module, asymmetric adversarial data-free KD
+  1030→module, và attention-based aggregation module. Ngoài ra, Hao et
+  1031→al. đề xuất phương pháp fine-grained manifold distillation cho transformer-based
+  1032→networks để nén kiến trúc của vision transformers thành compact
+  1033→students, đạt được độ chính xác cao với chi phí tính toán thấp hơn.
+  1034→Zhang et al. sử dụng mô hình tương đương để dạy lexical knowledge
+  1035→cho mô hình tương ứng, đạt được cải thiện hiệu suất đáng kể. Hơn
+  1036→nữa, Shen et al. sử dụng hai mô hình để dạy lẫn nhau và đạt được
+  1037→sự cân bằng giữa hai mô hình. Kết quả của họ cho thấy các mô hình
+  1038→teacher trong KD không nhất thiết phải là các mô hình lớn hơn hoặc
+  1039→mạnh hơn nhiều.
+  1040→
+  1041→Ngoài ra, nhiều phương pháp KD khác đã được đề xuất cho các ứng
+  1042→dụng khác nhau. Ví dụ, Liu et al. đề xuất content-aware KD mới và
+  1043→effective channel pruning schemes chuyên biệt cho unconditional GANs,
+  1044→đạt được cải thiện đáng kể so với phương pháp nén state-of-the-art.
+  1045→Ni et al. giới thiệu framework Vision-to-Sensor KD (VSKD) end-to-end
+  1046→cho human activity recognition (HAR) dựa trên phương pháp multi-modal,
+  1047→giảm nhu cầu tính toán trên thiết bị biên và tạo ra mô hình học tập
+  1048→khớp chặt với hiệu suất của phương pháp tốn kém tính toán, chỉ sử
+  1049→dụng dữ liệu time-series. Jin et al. trình bày framework Personalized
+  1050→Federated Learning (PFL) cho thiết bị biên, có tên pFedSD, sử dụng
+  1051→self-KD để huấn luyện các mô hình hoạt động tốt cho các clients cá
+  1052→nhân. Bằng cách chưng cất kiến thức từ các mô hình cá nhân hóa
+  1053→trước đó, pFedSD tăng tốc quá trình nhớ lại kiến thức cá nhân hóa
+  1054→và cung cấp ensemble ngầm của các mô hình cục bộ. Li et al. phát
+  1055→triển mô hình instance-specific multi-teacher KD (IsMt-KD) cho phân
+  1056→loại tư thế lái xe mất tập trung trên hệ thống nhúng với không gian
+  1057→bộ nhớ và tài nguyên tính toán hạn chế. Mô hình này sử dụng instance-specific
+  1058→teacher grading module để gán trọng số động cho các mô hình teacher
+  1059→dựa trên các instances cá nhân, đạt được độ chính xác cao và suy
+  1060→luận thời gian thực trên các nền tảng phần cứng biên.
+  1061→
+  1062→Các phương pháp KD có thể được kết hợp với các phương pháp nén mô
+  1063→hình khác để cải thiện thêm hiệu suất của DNNs trên thiết bị biên.
+  1064→Ví dụ, Boo et al. đề xuất scheme huấn luyện stochastic precision
+  1065→ensemble cho QDNNs sử dụng KD với mô hình teacher thay đổi liên
+  1066→tục được hình thành bằng cách chia sẻ các tham số của mạng student.
+  1067→Điều này cho phép cải thiện hiệu suất trong các nhiệm vụ thiết bị
+  1068→biên khác nhau mà không cần các mạng teacher cồng kềnh. Xia et al.
+  1069→trình bày hệ thống recommender on-device cho session-based recommendation
+  1070→sử dụng ultra-compact models và framework self-supervised KD để
+  1071→giải quyết các thách thức của bộ nhớ và tài nguyên tính toán hạn
+  1072→chế. Mô hình được nén đạt được giảm kích thước 30x với hầu như không
+  1073→mất độ chính xác và thậm chí vượt trội hơn phiên bản chưa nén. Xu
+  1074→et al. đề xuất lightweight Identity-aware Dynamic Network (IDN) cho
+  1075→face swapping subject-agnostic trên thiết bị biên, sử dụng efficient
+  1076→Identity Injection Module (IIM) và phương pháp dựa trên KD cho huấn
+  1077→luyện ổn định. Hơn nữa, mô hình lightweight SegFormer được đề xuất
+  1078→trong để semantic segmentation hiệu quả trên thiết bị biên sử dụng
+  1079→dynamic gated linear layer để prune các neurons không cung cấp thông
+  1080→tin dựa trên input instance và two-stage KD để chuyển giao kiến thức
+  1081→từ teacher gốc đến student network được pruned, đạt được hơn 60%
+  1082→tiết kiệm tính toán với mức giảm mIoU tối thiểu.
+  1083→
+  1084→Thảo luận: KD là phương pháp mạnh mẽ để nén các mô hình phức tạp
+  1085→trong khi duy trì hiệu suất của chúng, cho phép triển khai hiệu quả
+  1086→trên các thiết bị biên có hạn chế tài nguyên. Tuy nhiên, nó có thể
+  1087→dẫn đến mất độ chính xác mô hình nếu mức độ chính xác không được
+  1088→chọn một cách thích hợp, và có thể tốn kém về mặt tính toán, đặc
+  1089→biệt khi xử lý các datasets lớn hoặc mô hình phức tạp. Ngoài ra,
+  1090→mặc dù có nhiều ứng dụng thành công của KD, hiệu quả của nó có thể
+  1091→thay đổi tùy thuộc vào lĩnh vực và nhiệm vụ cụ thể, và có thể yêu
+  1092→cầu điều chỉnh cẩn thận và thử nghiệm để đạt được kết quả tối ưu.
+  1093→
+  1094→5) Low-rank Factorization: DNNs thường yêu cầu tiêu thụ bộ nhớ cao
+  1095→và tải tính toán lớn, hạn chế việc triển khai của chúng trên thiết
+  1096→bị biên hoặc di động. Low-rank factorization là phương pháp có thể
+  1097→giúp bằng cách xấp xỉ weight matrices với low-rank matrices, tìm
+  1098→đại diện chiều thấp hơn của dữ liệu giữ lại thông tin quan trọng
+  1099→nhất. Ví dụ, SVD training là phương pháp mới đạt được DNNs low-rank
+  1100→trong quá trình huấn luyện mà không áp dụng SVD ở mỗi bước, sử dụng
+  1101→sparsity-inducing regularizers trên singular values. Phương pháp này
+  1102→đạt được giảm cao hơn trong tải tính toán dưới cùng độ chính xác
+  1103→so với các phương pháp factorization và filter pruning trước đó.
+  1104→Các nỗ lực cũng đã được thực hiện để áp dụng low-rank factorization
+  1105→trên các thiết bị biên có hạn chế tài nguyên. MicroNet là CNN hiệu
+  1106→quả
+  1107→
+  1108→--- TRANG 16 ---
+  1109→16
+  1110→được thiết kế cho thiết bị biên, đạt được chi phí tính toán thấp bằng
+  1111→cách sử dụng Micro-Factorized convolution factorize pointwise và
+  1112→depthwise convolutions thành low-rank matrices. Mạng bù đắp cho việc
+  1113→giảm chiều sâu mạng với việc giới thiệu hàm kích hoạt Dynamic Shift-Max.
+  1114→MicroNet-M1 đạt được 61.1% top-1 accuracy trên phân loại ImageNet
+  1115→với 12 MFLOPs, vượt trội hơn MobileNetV3 11.3%.
+  1116→
+  1117→Thảo luận: Low-rank factorization là phương pháp đầy hứa hẹn để
+  1118→giảm yêu cầu tính toán và bộ nhớ của DNNs, làm cho chúng thực tế
+  1119→hơn để triển khai trên các thiết bị biên có hạn chế tài nguyên. Tuy
+  1120→nhiên, việc triển khai low-rank factorization có thể thách thức do
+  1121→chi phí tính toán cao của hoạt động factorization, và nhu cầu retraining
+  1122→rộng rãi để đạt được sự hội tụ.
+  1123→
+  1124→V. TỐI ƯU HÓA HỆ THỐNG CHO TRIỂN KHAI AI BIÊN
+  1125→Khi nhu cầu về hiệu suất thời gian thực và các mô hình deep learning
+  1126→hiệu quả tài nguyên tăng lên, tối ưu hóa hệ thống đã trở thành lĩnh
+  1127→vực nghiên cứu quan trọng. Để giải quyết nhu cầu triển khai các mô
+  1128→hình deep learning trên thiết bị biên, cần thiết phải tối ưu hóa hiệu
+  1129→quả tính toán của chúng. Trong phần này, chúng tôi trình bày các
+  1130→frameworks cho huấn luyện và suy luận mô hình nhẹ từ góc độ phần
+  1131→mềm, cũng như các phương pháp tăng tốc mô hình bằng cách tiếp cận
+  1132→dựa trên phần cứng. Quy trình làm việc của tối ưu hóa hệ thống được
+  1133→thể hiện trong Hình 9.
+  1134→
+  1135→A. Tối ưu hóa Phần mềm
+  1136→1) Edge AI Learning Frameworks: PyTorch và TensorFlow là các framework
+  1137→deep learning được sử dụng rộng rãi, nhưng chúng có thể không phù
+  1138→hợp cho các ứng dụng di động do tính nặng nề tương đối và phụ thuộc
+  1139→bên thứ ba, có thể gây vấn đề cho thiết bị di động. Tuy nhiên, với
+  1140→sự tiến hóa và phát triển của hệ sinh thái AI, những frameworks này
+  1141→đã được thiết kế đặc biệt cho mobile deep learning thông qua TensorFlow
+  1142→Lite và PyTorch Mobile, cho phép huấn luyện và triển khai hiệu quả
+  1143→trên thiết bị di động.
+  1144→
+  1145→Cả TensorFlow Lite và PyTorch Mobile đều là các frameworks deep
+  1146→learning nhẹ được thiết kế đặc biệt cho các ứng dụng di động. Chúng
+  1147→cung cấp quy trình phát triển được sắp xếp hợp lý hơn và tạo điều
+  1148→kiện thuận lợi cho việc huấn luyện và triển khai mô hình hiệu quả
+  1149→trên thiết bị di động. Khả năng tính toán và bộ nhớ hạn chế của thiết
+  1150→bị di động đã được tính đến trong việc tối ưu hóa các frameworks
+  1151→này cho chúng. Việc tối ưu hóa này làm cho các mô hình phù hợp cho
+  1152→các tình huống edge computing vì chúng có thể được huấn luyện và
+  1153→triển khai trên thiết bị di động với tiêu thụ tài nguyên ít hơn. TensorFlow
+  1154→Lite và PyTorch Mobile có nhiều tính năng được thiết kế đặc biệt
+  1155→cho các ứng dụng di động. Cụ thể, một số tính năng của hai frameworks
+  1156→này được nêu bật trong Bảng 4. Hơn nữa, TensorFlow Lite được tìm
+  1157→thấy hoạt động tốt hơn với các mô hình deep learning nhẹ và phù hợp
+  1158→cho các ứng dụng edge computing, đặc biệt là cho thiết bị di động.
+  1159→
+  1160→2) Edge AI Inference Frameworks: Suy luận mô hình nhẹ đang trở nên
+  1161→ngày càng quan trọng đối với các ứng dụng ở biên, nơi tài nguyên
+  1162→tính toán thường bị hạn chế. Để giải quyết điều này, một số frameworks
+  1163→phần mềm đã xuất hiện cho phép suy luận hiệu quả các mô hình nhẹ,
+  1164→như NCNN, OpenVINO và ONNX Runtime. Những frameworks này thường
+  1165→cung cấp các triển khai được tối ưu hóa của các hoạt động và kiến
+  1166→trúc phổ biến, và có thể chạy trên nhiều nền tảng phần cứng khác
+  1167→nhau, bao gồm thiết bị IoT, thiết bị di động, và máy chủ biên. Trong
+  1168→Bảng 5, chúng tôi đã trình bày danh sách các frameworks suy luận
+  1169→AI thường được sử dụng, bao gồm nhà sản xuất, phần cứng được hỗ
+  1170→trợ, ưu điểm và hạn chế của chúng.
+  1171→
+  1172→Các frameworks suy luận AI hiệu quả cho thiết bị biên đã chứng kiến
+  1173→sự tiến bộ nhanh chóng trong nghiên cứu học thuật gần đây, với trọng
+  1174→tâm vào việc triển khai các mô hình CNN trong các tình huống có hạn
+  1175→chế tài nguyên. Xia et al. giới thiệu kiến trúc mạng nơ-ron nhẹ có
+  1176→tên SparkNet, giảm tham số weight và nhu cầu tính toán cho suy luận
+  1177→feedforward CNN trên thiết bị biên. Memsqueezer, kiến trúc bộ nhớ
+  1178→on-chip cho tăng tốc suy luận deep CNN trên thiết bị di động/nhúng,
+  1179→được thiết kế bởi Wang et al., đạt được cải thiện hiệu suất 2x và
+  1180→giảm năng lượng 80% với nén và phát hiện redundancy. Wang et al.
+  1181→trình bày giải pháp end-to-end cho suy luận mô hình CNN trên integrated
+  1182→GPUs ở biên, sử dụng unified IR và ML-based scheduling search schemes.
+  1183→Pipe-it, framework pipelined hạn chế song song hóa của convolution
+  1184→kernels cho các clusters được gán, được đề xuất bởi Wang et al. cho
+  1185→suy luận CNN trên kiến trúc ARM big.LITTLE trong thiết bị biên. SCA,
+  1186→bộ tăng tốc CNN an toàn sử dụng stochastic computing để bảo vệ mô
+  1187→hình và weights trong cả giai đoạn huấn luyện và suy luận, được đề
+  1188→xuất bởi Zhao et al., đạt được tăng tốc đáng kể và giảm năng lượng
+  1189→so với baseline không an toàn và chỉ an toàn suy luận. Hou et al.
+  1190→phát triển NeuLens, framework tăng tốc CNN động cho các nền tảng
+  1191→di động và biên đạt được giảm latency đáng kể và cải thiện độ chính
+  1192→xác sử dụng cơ chế suy luận động mới và giảm hoạt động tương thích
+  1193→với tăng tốc cấp phần cứng.
+  1194→
+  1195→Các nghiên cứu cũng đã tập trung vào việc triển khai các mô hình
+  1196→recurrent neural network (RNN). Ví dụ, Srivastava et al. đề xuất
+  1197→phương pháp nén RNN hiệu quả cho human action recognition, sử dụng
+  1198→phương pháp pruning dựa trên lý thuyết Variational Information Bottleneck
+  1199→và kỹ thuật group-lasso regularization để giảm đáng kể tham số mô
+  1200→hình và memory footprint. EdgeDRNN được thiết kế bởi Gao et al. cho
+  1201→suy luận RNN biên với batch size là 1, áp dụng thuật toán delta network
+  1202→để khai thác temporal sparsity trong RNNs để đạt được hiệu suất cao
+  1203→và hiệu quả năng lượng. Wen et al. phát triển phương pháp structured
+  1204→pruning thông qua neuron selection để giảm chi phí lưu trữ và tính
+  1205→toán tổng thể của RNNs, đạt được tăng tốc thực tế đáng kể trong suy
+  1206→luận mà không mất hiệu suất. Zhang et al. đề xuất DirNet, phương
+  1207→pháp nén mô hình cho RNNs điều chỉnh động tỷ lệ nén và sparsity
+  1208→của sparse codes qua các hierarchical layers trong khi duy trì mất
+  1209→độ chính xác tối thiểu.
+  1210→
+  1211→Nhiều công trình đã khám phá việc triển khai DNNs trên thiết bị biên
+  1212→để tối ưu hóa hiệu suất và sử dụng tài nguyên. Ví dụ, Ding et al.
+  1213→đề xuất paradigm lập trình task-mapping mới để nhúng scheduling vào
+  1214→tensor programs cho suy luận DNN hiệu quả và giới thiệu Hidet
+  1215→
+  1216→--- TRANG 17 ---
+  1217→17
+  1218→
+  1219→Hình 9. Tổng quan về các hoạt động tối ưu hóa hệ thống. Tối ưu hóa phần mềm liên quan đến việc phát triển frameworks cho huấn luyện và suy luận mô hình nhẹ,
+  1220→trong khi tối ưu hóa phần cứng tập trung vào tăng tốc mô hình bằng cách tiếp cận dựa trên phần cứng để cải thiện hiệu quả tính toán trên thiết bị biên.
+  1221→
+  1222→BẢNG IV
+  1223→EDGE AI LEARNING FRAMEWORKS
+  1224→
+  1225→Framework | Nhà sản xuất | Điểm nổi bật
+  1226→---|---|---
+  1227→TensorFlow Lite | Google | • Tối ưu hóa ML on-device bằng cách giải quyết: latency, privacy, connectivity, size, và power consumption
+  1228→ | | • Hỗ trợ nhiều nền tảng bao gồm Android, iOS, embedded Linux, và microcontrollers
+  1229→ | | • Hỗ trợ nhiều ngôn ngữ lập trình, bao gồm Java, Swift, Objective-C, C++, và Python
+  1230→ | | • Hiệu suất cao với hardware acceleration và model optimization support
+  1231→ | | • Ví dụ cho các nhiệm vụ ML phổ biến trên nhiều nền tảng, bao gồm image/object/text classification
+  1232→Pytorch Mobile | Facebook | • Hoạt động trên nền tảng iOS, Android, và Linux
+  1233→ | | • Cung cấp APIs cho các nhiệm vụ preprocessing và integration phổ biến
+  1234→ | | • Hỗ trợ tracing và scripting thông qua TorchScript IR
+  1235→ | | • Cung cấp XNNPACK floating point và QNNPACK 8-bit quantized kernels cho Arm CPUs
+  1236→ | | • Cung cấp mobile interpreter hiệu quả, build level optimization, và streamline model optimization thông qua optimize formobile
+  1237→
+  1238→BẢNG V
+  1239→EDGE AI INFERENCE FRAMEWORKS
+  1240→
+  1241→Framework | Nhà sản xuất | Phần cứng được hỗ trợ | Ưu điểm | Hạn chế
+  1242→---|---|---|---|---
+  1243→ONNX Runtime | Microsoft | CPU, GPU, etc | • Có các tối ưu hóa tích hợp có thể tăng tốc độ suy luận lên đến 17 lần và tốc độ huấn luyện lên đến 1.4 lần | • Hỗ trợ hạn chế cho các mô hình non-ONNX
+  1244→ | | | • Hỗ trợ nhiều frameworks, hệ điều hành, và nền tảng phần cứng | • Không hỗ trợ một số hardware backends
+  1245→ | | | • Hiệu suất cao, và latency thấp |
+  1246→OpenVINO | Intel | CPU, GPU, VPU, FPGA, etc | • Tối ưu hóa deep learning pipelines cho hiệu suất và throughput cao | • Chỉ hỗ trợ sản phẩm phần cứng Intel
+  1247→ | | | • Hỗ trợ các chức năng tiên tiến như FP16, INT8 quantization | • Triển khai và tích hợp mô hình vẫn
+suất cao như GPU. Để các mô hình AI bao phủ các vấn đề tình huống
+thực tế, việc triển khai chúng trên các thiết bị có tài nguyên hạn chế
+là điều cần thiết. Đồng thời, việc triển khai mô hình trên thiết bị cục
+bộ cũng có thể tránh rò rỉ dữ liệu trong quá trình truyền tải đến máy
+chủ, để đáp ứng nhu cầu bảo mật và riêng tư ngày càng quan trọng
+của mọi người. Do đó, việc nghiên cứu các mô hình hiệu quả có thể
+triển khai đến các thiết bị biên có hạn chế về tài nguyên là cần thiết
+và thực tế.arXiv:2501.03265v1  [cs.LG]  4 Jan 2025
+
+--- TRANG 2 ---
+2
+BẢNG I
+CÁC KHẢO SÁT LIÊN QUAN VÀ ĐÓNG GÓP CỦA CHÚNG
+
+| Bài báo | Đóng góp | Dữ liệu | Mô hình | Hệ thống | Ứng dụng | Kho lưu trữ |
+|---------|----------|---------|---------|----------|----------|-------------|
+| Liu et al. [12] | AI biên cho giao tiếp giữa các thiết bị biên. | ✓ | | | | |
+| Chen et al. [13] | Ứng dụng deep learning được triển khai ở biên của mạng. | ✓ | ✓ | ✓ | | |
+| Letaief et al. [14] | AI biên cho 6G. | ✓ | ✓ | | | |
+| Xu et al. [15] | Giới thiệu edge intelligence từ: caching, training, inference, và offloading. | ✓ | ✓ | ✓ | | |
+| Deng et al. [2] | Giới thiệu edge intelligence từ: edge for AI và edge on AI. | ✓ | ✓ | | | |
+| Yao et al. [16] | Giới thiệu cloud AI và edge AI từ khía cạnh edge-cloud collaboration. | ✓ | ✓ | ✓ | | |
+| Murshed et al. [17] | Triển khai hệ thống machine learning ở biên của mạng. | ✓ | ✓ | ✓ | | |
+| Park et al. [18] | Khám phá các khối xây dựng chính của wireless network intelligence. | ✓ | ✓ | | | |
+| Wang et al. [19] | Giới thiệu lợi ích của edge intelligence và intelligent edge. | ✓ | ✓ | ✓ | | |
+| Zhou et al. [8] | Giới thiệu edge intelligence từ: architecture, framework, và key technologies. | ✓ | ✓ | | | |
+| Của chúng tôi | Giải thích cách học một mô hình hiệu quả từ góc độ dữ liệu, mô hình và hệ thống. | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+A. Các Khảo sát Liên quan
+Công việc chính của chúng tôi trong khảo sát này là cung cấp một
+cái nhìn tổng quan toàn diện về các kỹ thuật và phương pháp tiên
+tiến hiện tại để phát triển các mô hình hiệu quả cho các thiết bị có
+hạn chế về tài nguyên. So với khảo sát AI biên trước đây, Shi et al.
+[12] thảo luận từ góc độ truyền thông hiệu quả, Dai et al. [20] giới
+thiệu từ góc độ computation offloading, Zhang et al. [21] nói về
+mobile edge AI cho Internet of Vehicles, Park et al. [18] cung cấp
+tổng quan cho wireless network intelligence, và Letaief et al. [14]
+thảo luận edge AI cho 6G. Trong khi những khảo sát này là thiết
+yếu và bao phủ các khía cạnh khác nhau của edge AI, chúng không
+cung cấp một cuộc thảo luận toàn diện về việc triển khai các mô
+hình AI trên các thiết bị biên.
+
+Deng et al. [2] thảo luận edge AI từ góc độ AI on edge và AI for
+edge, trong khi Zhou et al. [8] cung cấp một cái nhìn tổng quan
+toàn diện về các framework, công nghệ và cấu trúc liên quan cho
+các mô hình deep learning liên quan đến huấn luyện và suy luận
+trên biên của mạng. Tương tự, Xu et al. [22] tiến hành một đánh
+giá rộng rãi về edge intelligence, bao gồm edge inference, edge
+training, edge caching, và edge offloading. Mặt khác, Hua et al.
+[23] giới thiệu khảo sát của họ từ quan điểm AI-assisted edge
+computing, trong khi Murshed et al. [17] đánh giá edge AI từ góc
+độ ứng dụng thực tế. Ngoài ra, các khảo sát [13] và [19] cũng
+đề cập đến edge inference và model deployment. Cuối cùng, khảo
+sát [24] và [25] bao quát các chủ đề về model compression và
+acceleration. Mặc dù một số khảo sát này đã thảo luận ngắn gọn
+về việc triển khai các mô hình AI trên các thiết bị biên, không có
+khảo sát nào cung cấp một cuộc thảo luận toàn diện về khía cạnh
+quan trọng này. Do đó, khảo sát này nhằm mục đích lấp đầy khoảng
+trống này và cung cấp một phân tích chi tiết và sâu sắc về việc
+triển khai mô hình AI trên các thiết bị biên. Bảng 1 trình bày so
+sánh khảo sát của chúng tôi với các khảo sát hiện có và quan trọng
+về edge AI từ các khía cạnh dữ liệu, mô hình, hệ thống, ứng dụng
+và kho lưu trữ.
+
+B. Đóng góp của Chúng tôi
+Trong khảo sát này, trọng tâm của chúng tôi là cung cấp một phản
+hồi học thuật cho các câu hỏi nghiên cứu (RQ) sau:
+• RQ1: Các thách thức về dữ liệu để xây dựng và triển khai các
+mô hình machine learning (ML) trên các thiết bị biên là gì và
+chúng ta có thể giải quyết chúng như thế nào?
+• RQ2: Làm thế nào chúng ta có thể tối ưu hóa các mô hình ML
+để triển khai biên hiệu quả mà không làm giảm đáng kể độ
+chính xác?
+• RQ3: Hạ tầng hệ thống và công cụ nào có thể hỗ trợ tốt nhất
+quy trình làm việc AI biên và triển khai mô hình liền mạch trên
+phần cứng biên không đồng nhất?
+• RQ4: Các ứng dụng của AI biên trong cuộc sống hàng ngày
+là gì?
+• RQ5: Các thách thức của AI biên là gì và chúng có thể được
+giảm thiểu và giải quyết như thế nào?
+• RQ6: Xu hướng tương lai của AI biên là gì?
+
+BẢNG II
+DANH SÁCH CÁC TỪ VIẾT TẮT
+
+| Từ viết tắt | Giải thích |
+|-------------|------------|
+| 5G | Mạng Di động Thế hệ thứ 5 |
+| 6G | Mạng Di động Thế hệ thứ 6 |
+| AI | Trí tuệ Nhân tạo |
+| ASIC | Mạch Tích hợp Chuyên dụng Ứng dụng |
+| CNN | Mạng Nơ-ron Tích chập |
+| CPU | Bộ Xử lý Trung tâm |
+| DNN | Mạng Nơ-ron Sâu |
+| DSP | Bộ Xử lý Tín hiệu Số |
+| EC | Điện toán Biên |
+| Edge AI | Trí tuệ Nhân tạo Biên |
+| FLOP | Phép toán Dấu phẩy động mỗi Giây |
+| FPGA | Mảng Cổng Lập trình Trường |
+| GAN | Mạng Đối nghịch Sinh |
+| GIGO | Rác vào, Rác ra |
+| GPU | Bộ Xử lý Đồ họa |
+| IoT | Internet of Things |
+| KD | Chưng cất Kiến thức |
+| ML | Machine Learning |
+| NAS | Tìm kiếm Kiến trúc Mạng Nơ-ron |
+| NLP | Xử lý Ngôn ngữ Tự nhiên |
+| NPU | Bộ Xử lý Mạng Nơ-ron |
+| RNN | Mạng Nơ-ron Hồi quy |
+| SLAM | Định vị và Lập bản đồ Đồng thời |
+| VPU | Bộ Xử lý Thị giác |
+
+Bằng cách trả lời các câu hỏi nghiên cứu nêu trên, đóng góp của
+chúng tôi có thể được tóm tắt thành sáu điểm sau:
+
+--- TRANG 3 ---
+3
+
+Hình 1. Phân loại các chủ đề được thảo luận trong khảo sát này.
+
+1) Phân loại Mới: Chúng tôi đề xuất một phân loại mới để tối ưu
+hóa việc triển khai các mô hình ML đến các thiết bị biên dựa
+trên ba chiều: dữ liệu, mô hình và hệ thống. "Bộ ba tối ưu
+hóa" này cung cấp một góc nhìn hệ thống về các yêu cầu,
+thách thức và giải pháp để cho phép AI ở biên. Framework
+bộ ba được đề xuất cung cấp một tiến bộ khái niệm trong
+việc hướng dẫn các giải pháp AI biên tích hợp. Nó nhằm
+mục đích truyền cảm hứng cho việc phát triển thêm các tiêu
+chuẩn thống nhất, công cụ, benchmark và thực hành tốt
+nhất để tăng tốc tiến bộ trong không gian này.
+
+2) Đánh giá Toàn diện: Chúng tôi trình bày một đánh giá toàn
+diện về các kỹ thuật để tối ưu hóa việc triển khai các mô
+hình ML đến môi trường biên có hạn chế về tài nguyên.
+Cho phép AI tinh vi trên các thiết bị đầu cuối đòi hỏi vượt
+qua các hạn chế về dữ liệu, tính toán và hạ tầng thông qua
+các giải pháp tùy chỉnh. Phân tích của chúng tôi cung cấp
+một góc nhìn tích hợp về khả năng và thách thức mở tại
+mỗi lớp của pipeline ML-to-edge.
+
+3) Ứng dụng Tiềm năng: Chúng tôi trình bày một phân tích
+sâu sắc về các ứng dụng AI biên tiềm năng có thể nâng
+cao cuộc sống hàng ngày thông qua kết nối nâng cao và
+cá nhân hóa thông minh. Bằng cách phân loại các trường
+hợp sử dụng dựa trên các thuộc tính kỹ thuật và trải nghiệm,
+đánh giá này nhằm mục đích khám phá một cách có hệ
+thống các đề xuất giá trị để thúc đẩy việc phát triển thêm
+các giải pháp AI biên tùy chỉnh.
+
+4) Thách thức và Chiến lược Giảm thiểu: Chúng tôi phân tích
+các thách thức công nghệ và xã hội khác nhau đối mặt với
+AI biên mà phải được điều hướng để thực hiện lời hứa
+cải thiện cuộc sống hàng ngày. Đánh giá của chúng tôi
+giải thích các hạn chế và rủi ro của AI biên, từ dữ liệu
+đến mô hình và hệ thống, đề xuất các giải pháp và kiểm
+soát tùy chỉnh khi có liên quan.
+
+5) Xu hướng Tương lai: Chúng tôi phân tích các xu hướng
+mới nổi dự kiến sẽ định hình tiến bộ tiếp tục của AI biên,
+hướng dẫn phát triển có trách nhiệm và tối đa hóa lợi ích.
+Trong tương lai, AI biên dự kiến sẽ có ứng dụng rộng
+rãi hơn và trở nên thông minh, linh hoạt, an toàn, hợp
+tác và hiệu quả hơn. Những tiến bộ trong công nghệ chip
+AI, khả năng điện toán biên và các công nghệ mới như
+blockchain sẽ cho phép sự tiến hóa này. Với sức mạnh
+xử lý được cải thiện, bảo vệ quyền riêng tư và các biện
+pháp bảo mật, các thiết bị biên sẽ có thể xử lý các tác
+vụ ngày càng phức tạp, đảm bảo quyền riêng tư dữ liệu
+người dùng
+
+--- TRANG 4 ---
+4
+và mở khóa toàn bộ tiềm năng của AI biên, cung cấp
+các giải pháp hiệu quả cho từng ngành cụ thể.
+
+6) Tài nguyên Phong phú: Chúng tôi biên soạn một bộ tài
+nguyên toàn diện về AI biên bao gồm nền tảng, tài liệu
+và mã nguồn mở vào một kho lưu trữ Github mở truy cập
+có sẵn tại https://github.com/wangxb96/Awesome-AI-on-
+the-edge để cung cấp cho các nhà nghiên cứu và nhà
+phát triển một nền tảng để xây dựng. Bằng cách tổ chức
+và chú thích các tài liệu chính trong không gian này,
+bộ sưu tập được tuyển chọn của chúng tôi nhằm mục
+đích vạch ra lộ trình của AI biên.
+
+C. Tổ chức
+Trong khảo sát này, chúng tôi nhằm mục đích giải thích cách học
+các mô hình hiệu quả để triển khai biên và suy luận biên từ ba
+góc độ: dữ liệu, mô hình và hệ thống. Ở cấp độ dữ liệu, chúng
+tôi tập trung vào tiền xử lý dữ liệu và cải thiện chất lượng của
+mô hình được huấn luyện bằng cách loại bỏ dữ liệu nhiễu và
+trích xuất các đặc trưng chính. Điều này cho phép mô hình học
+hiệu quả từ dữ liệu và tạo ra các dự đoán chính xác. Ở cấp độ
+mô hình, chúng tôi tập trung vào thiết kế kiến trúc mô hình và
+một loạt các phương pháp nén mô hình để làm cho mô hình
+nhỏ gọn hơn. Bằng cách giảm kích thước của mô hình, chúng
+ta có thể đạt được suy luận nhanh hơn và giảm tài nguyên tính
+toán cần thiết để chạy mô hình. Điều này đặc biệt quan trọng
+đối với AI biên, nơi các thiết bị có hạn chế về tài nguyên yêu
+cầu các mô hình hiệu quả. Ở cấp độ hệ thống, chúng tôi khám
+phá cấp độ phần mềm và phần cứng để tăng tốc các phương
+pháp huấn luyện và suy luận mô hình. Bằng cách tận dụng các
+kỹ thuật này, chúng ta có thể đạt được huấn luyện và suy luận
+mô hình nhanh hơn và hiệu quả hơn, cho phép triển khai nhanh
+hơn và các hệ thống AI biên phản hồi nhanh hơn.
+
+Các phần còn lại của bài báo này như sau: Phần 2 đánh giá
+các khái niệm cơ bản của điện toán biên và AI biên. Trong các
+Phần 3, 4 và 5, chúng tôi khám phá việc tối ưu hóa ML cho
+môi trường biên có hạn chế về tài nguyên từ cấp độ dữ liệu,
+mô hình và hệ thống tương ứng (Pipeline công việc được hiển
+thị trong Hình 2.). Phần 6 trình bày các tình huống ứng dụng
+của AI biên. Trong Phần 7, chúng tôi thảo luận về các thách
+thức của AI biên. Cuối cùng, chúng tôi kết luận bài viết và
+trình bày các xu hướng tiềm năng của AI biên trong Phần 8.
+Cụ thể, chúng tôi tóm tắt phân loại các chủ đề được thảo luận
+của bài báo này trong Hình 1, và bộ ba tối ưu hóa AI biên
+được thảo luận được hiển thị trong Hình 3¹.
+
+II. CÁC KHÁI NIỆM CƠ BẢN
+Phần này cung cấp các khái niệm cơ bản về điện toán biên và
+trí tuệ nhân tạo biên, và Hình 4 hiển thị giao điểm giữa điện
+toán biên và trí tuệ nhân tạo và trọng tâm của khảo sát này.
+
+A. Điện toán Biên
+Điện toán đám mây cung cấp nhiều lợi ích, bao gồm tính linh
+hoạt, khả năng mở rộng, hợp tác nâng cao và giảm chi phí cho
+các doanh nghiệp hiện đại [26]. Tuy nhiên, các hệ thống điện
+toán đám mây hoàn toàn phụ thuộc vào Internet, và không có
+kết nối Internet hợp lệ, người dùng sẽ không thể truy cập các
+dịch vụ.
+
+¹Chúng tôi liệt kê các giải thích cho các từ viết tắt chính được sử dụng
+trong toàn bộ bài báo trong Bảng 2.
+
+Ngoài ra, vì hạ tầng đám mây được cung cấp bởi nhà cung cấp
+đám mây, người dùng đám mây có quyền kiểm soát hạn chế
+đối với các ứng dụng, tài nguyên và dịch vụ. Rủi ro dữ liệu
+người dùng bị rò rỉ trong đám mây và trong quá trình truyền
+tải cũng đáng chú ý [27]. Mặc dù có nhiều ưu điểm của điện
+toán đám mây, khi các thiết bị biên có yêu cầu thời gian thực
+cho xử lý dữ liệu, thời gian phản hồi của các chế độ vận
+chuyển đầu ra từ biên đến đám mây để xử lý rồi trả về có thể
+quá dài, đặc biệt trong trường hợp mạng không ổn định. Điện
+toán biên, một kiến trúc tính toán phân tán, đã được đề xuất
+để giải quyết vấn đề này. Nó di chuyển xử lý dữ liệu đến nút
+biên nơi dữ liệu được tạo ra, giải quyết vấn đề phản hồi chậm
+và độ trễ cao có thể xảy ra trong xử lý đám mây [7]. Hình 5
+hiển thị sự khác biệt giữa điện toán đám mây và điện toán biên.
+
+Các dịch vụ ứng dụng biên giảm việc truyền tải dữ liệu và
+nhằm mục đích giữ xử lý cục bộ, điều này giảm bớt các vấn
+đề như độ trễ mạng và chi phí truyền tải. Vì dữ liệu được
+lưu trữ và xử lý cục bộ, người dùng có quyền sở hữu tuyệt
+đối đối với dữ liệu, điều này cũng tránh rủi ro rò rỉ dữ liệu
+trong quá trình truyền tải giữa các nút biên và máy chủ [28].
+Điện toán biên mang tính toán gần hơn với người dùng cuối
+và tăng tốc thời gian phản hồi của các dịch vụ, điều này cần
+thiết và thiết yếu trong các dịch vụ như lái xe tự động [5].
+Khi tài nguyên cục bộ bị hạn chế, thiết bị cục bộ truyền dữ
+liệu đến máy chủ mạng biên thay vì đến máy chủ đám mây,
+có thể tránh truyền tải và phản hồi đường dài và do đó cải
+thiện hiệu quả [29]. Hơn nữa, việc triển khai và truy cập các
+thiết bị biên và khả năng tiếp tục dịch vụ ngay cả khi giao
+tiếp chậm hoặc tạm thời bị gián đoạn đảm bảo khả năng mở
+rộng và độ tin cậy của điện toán biên [7]. Việc ứng dụng điện
+toán biên đã rất thành công trong nhiều khía cạnh, ví dụ,
+IoT [30], lái xe tự động [5], thành phố thông minh [4], robot
+[31], và vân vân.
+
+B. Trí tuệ Nhân tạo Biên
+Trí tuệ nhân tạo biên, hay AI biên, là sự kết hợp của điện
+toán biên và trí tuệ nhân tạo. Với sự phổ biến của các thiết
+bị IoT, một lượng lớn dữ liệu đa phương thức (như âm thanh,
+video, hình ảnh, v.v.) được tạo ra liên tục. Những tiến bộ
+trong điện toán biên cho phép dữ liệu trên các thiết bị biên
+này được xử lý cục bộ theo thời gian thực mà không cần
+gửi trở lại đám mây, giảm độ trễ và cung cấp phản hồi hiệu
+quả và kịp thời hơn [7]. Trí tuệ nhân tạo là một công nghệ
+tự động phân tích nhanh chóng lượng lớn dữ liệu để trích
+xuất thông tin cho dự đoán và ra quyết định tiếp theo, điều
+này làm cho nó phù hợp để ứng dụng trên các thiết bị biên
+trong nhiều tình huống [15]. Khi sức mạnh tính toán của
+các thiết bị biên được cải thiện mà không tăng đáng kể chi
+phí phần cứng và những tiến bộ trong các kỹ thuật tối ưu
+hóa thuật toán cho phép các mô hình AI đòi hỏi tính toán
+cao chạy trên các thiết bị biên, việc tạo ra và phát triển công
+nghệ AI biên đáp ứng yêu cầu phản hồi thời gian thực trở
+nên khả thi [19]. Như được hiển thị trong Hình 6, AI biên
+cho phép dữ liệu được xử lý ở cấp độ cục bộ, điều này làm
+giảm đáng kể độ trễ giữa xử lý dữ liệu đám mây và cục bộ.
+Với ít dữ liệu được truyền tải hơn, yêu cầu băng thông và
+chi phí của hệ thống được giảm. Quan trọng hơn
+
+--- TRANG 5 ---
+5
+
+Hình 2. Tổng quan về triển khai biên. Hình này hiển thị pipeline tổng quát từ ba khía cạnh dữ liệu, mô hình và hệ thống. Lưu ý rằng không phải tất cả các bước đều cần thiết trong các ứng dụng thực tế.
+
+Hình 3. Bộ ba Tối ưu hóa AI Biên.
+
+Hình 4. Giao điểm của điện toán biên và trí tuệ nhân tạo. Khảo sát này tập trung vào triển khai biên và suy luận trong AI biên.
+
+nữa, bởi vì dữ liệu được lưu trữ và xử lý cục bộ, bảo mật
+dữ liệu được cải thiện, và có ít rủi ro rò rỉ dữ liệu hơn.
+Cùng với việc ứng dụng công nghệ AI, điều này làm tăng
+mức độ tự động hóa của các tác vụ được xử lý bởi các thiết
+bị biên. Hơn nữa, AI biên cho phép huấn luyện và suy luận
+mô hình trên các thiết bị biên, điều này cho phép ra quyết
+định thời gian thực. Nó cũng cho phép ra quyết định cục
+bộ, độc lập với chất lượng mạng và hệ thống đám mây, cải
+thiện thêm độ tin cậy của việc thực thi tác vụ biên. AI biên
+được sử dụng trong một loạt ứng dụng rộng rãi, bao gồm
+xe ô tô tự động, trò chơi thực tế ảo, nhà máy thông minh,
+camera an ninh và thiết bị chăm sóc sức khỏe đeo được [32].
+Được hỗ trợ bởi công nghệ AI, mức độ tự động hóa và thông
+minh của thiết bị biên được nâng cao.
+
+III. TỐI ƯU HÓA DỮ LIỆU CHO TRIỂN KHAI AI BIÊN
+
+Rác vào, rác ra (GIGO) là một thành ngữ thường được sử
+dụng trong thế giới máy tính, ngụ ý rằng dữ liệu chất lượng
+kém đi vào hệ thống máy tính sẽ tạo ra kết quả kém. Trong
+ngành công nghiệp, người ta công nhận rộng rãi rằng dữ liệu
+và đặc trưng quyết định giới hạn trên của ML, và các phương
+pháp tiền xử lý dữ liệu, như kỹ thuật đặc trưng, đóng vai
+trò quan trọng trong các quy trình công nghiệp.
+
+--- TRANG 6 ---
+6
+
+Hình 5. Điện toán đám mây tập trung tài nguyên tại các địa điểm tập trung như trung tâm dữ liệu, trong khi điện toán biên đặt tài nguyên tính toán và lưu trữ gần nguồn dữ liệu hơn.
+
+Hình 6. AI biên là việc ứng dụng các thuật toán và công nghệ AI vào các thiết bị điện toán biên để đạt được xử lý dữ liệu và ứng dụng nhanh hơn và thời gian thực.
+
+Một ví dụ về điều này là chuỗi GPT, chia sẻ kiến trúc mô
+hình cơ bản tương tự nhưng đã thấy những cải thiện trong
+cả quy mô và chất lượng dữ liệu huấn luyện. Kết quả là,
+hiệu suất của những mô hình này đã được nâng cao đáng
+kể [33]. Để cải thiện hiệu suất của mô hình trong các thiết
+bị có hạn chế về tài nguyên, tiền xử lý dữ liệu thường là
+một bước thiết yếu. Ngoài ra, các kỹ thuật nén đặc trưng
+có thể giảm đáng kể kích thước dữ liệu, từ đó giảm kích
+thước và yêu cầu tài nguyên của mô hình. Bằng cách tiền
+xử lý dữ liệu một cách hiệu quả, chúng ta có thể loại bỏ
+dữ liệu nhiễu hoặc không liên quan, trích xuất các đặc trưng
+liên quan và chuẩn hóa dữ liệu để đạt được hiệu suất mô
+hình tốt hơn. Các kỹ thuật tiền xử lý dữ liệu phổ biến bao
+gồm làm sạch dữ liệu, lựa chọn đặc trưng và trích xuất đặc
+trưng. Những kỹ thuật này có thể được áp dụng cho các
+loại dữ liệu khác nhau, bao gồm văn bản, hình ảnh và dữ
+liệu chuỗi thời gian. Trong phần này, chúng tôi sẽ giới thiệu
+các phương pháp tiền xử lý dữ liệu phổ biến và ứng dụng
+của chúng trong môi trường có hạn chế về tài nguyên. Hình
+7 hiển thị các hoạt động tối ưu hóa dữ liệu.
+
+A. Làm sạch Dữ liệu
+Làm sạch dữ liệu là một bước quan trọng trong tiền xử lý
+dữ liệu liên quan đến việc loại bỏ hoặc sửa chữa dữ liệu
+nhiễu hoặc không chính xác và loại bỏ các quan sát không
+liên quan hoặc dư thừa. Trong ML, sự hiện diện của nhiễu
+nhãn trong dữ liệu có thể ảnh hưởng đáng kể đến độ chính
+xác của mô hình được huấn luyện. Tuy nhiên, việc gắn nhãn
+lại các tập dữ liệu lớn một cách chính xác có thể là một
+nhiệm vụ thách thức, đặc biệt trong các tình huống có tài
+nguyên hạn chế. Để giải quyết vấn đề này, nghiên cứu gần
+đây đã đề xuất các phương pháp sáng tạo, như làm sạch
+nhãn tích cực, xác định và ưu tiên các mẫu được gắn nhãn
+sai một cách rõ ràng để làm sạch dữ liệu nhiễu [34]. Mishra
+et al. [35] đã phát triển một phương pháp ensemble dựa
+trên ba mô hình deep learning để xử lý nhãn nhiễu của
+các nồng độ khác nhau của các hoạt động chuyển động
+của con người được thu thập bởi điện thoại thông minh,
+có thể làm giảm vấn đề nhiễu nhãn phát sinh từ crowdsourcing
+hoặc gắn nhãn nhanh chóng trên Internet.
+
+Với sự phổ biến của các cảm biến thông minh trong IoT,
+lượng dữ liệu khổng lồ đang được thu thập. Tuy nhiên,
+môi trường cảm biến khắc nghiệt có xu hướng đưa nhiễu
+vào dữ liệu được thu thập. Để giảm thiểu vấn đề mà các
+nút cảm biến truyền thống không đủ để xử lý big data,
+các nhà nghiên cứu đã đề xuất các phương pháp sáng tạo
+khác nhau. Ví dụ, Wang et al. [36] đề xuất một phương
+pháp làm sạch dữ liệu trong quá trình thu thập dữ liệu
+và tối ưu hóa mô hình thông qua học trực tuyến. Ma et
+al. [37] đề xuất một phương pháp làm sạch dữ liệu liên
+hợp cho các ứng dụng IoT phân tán dựa trên biên trong
+tương lai trong khi bảo vệ quyền riêng tư dữ liệu. Sun
+et al. [38] phát triển một hệ thống làm sạch luồng dữ
+liệu với sự giúp đỡ của cả máy chủ đám mây và thiết bị
+biên. Ngoài ra, Sun et al. [39] cũng đề xuất một phương
+pháp làm sạch dữ liệu thích ứng dựa trên hợp tác dữ liệu
+thông minh để lọc dữ liệu nhiễu. Công trình của Gupta
+et al. [40] đề xuất một phương pháp nén ProtoNN để giảm
+thêm kích thước mô hình bằng cách học một số lượng nhỏ
+prototype để đại diện cho tập huấn luyện để cho phép
+triển khai trên các thiết bị thiếu tài nguyên. Những phương
+pháp này cung cấp các giải pháp đầy hứa hẹn để làm sạch
+dữ liệu và cho phép xử lý hiệu quả big data trong môi
+trường có hạn chế về tài nguyên.
+
+Thảo luận: Trong khi các phương pháp sáng tạo như làm
+sạch nhãn tích cực và các phương pháp ensemble dựa trên
+mô hình deep learning
+
+--- TRANG 7 ---
+7
+
+Hình 7. Tổng quan về các hoạt động tối ưu hóa dữ liệu. Làm sạch dữ liệu cải thiện chất lượng dữ liệu bằng cách loại bỏ lỗi và không nhất quán trong dữ liệu thô. Nén đặc trưng được sử dụng để loại bỏ các đặc trưng không liên quan và dư thừa. Đối với dữ liệu khan hiếm, tăng cường dữ liệu được sử dụng để tăng kích thước dữ liệu.
+
+có thể làm giảm vấn đề nhiễu nhãn, chúng có thể có một
+số nhược điểm. Ví dụ, làm sạch nhãn tích cực phụ thuộc
+vào khả năng có sẵn của một tập nhỏ các mẫu được gắn
+nhãn, và hiệu suất của phương pháp có thể bị ảnh hưởng
+nếu các mẫu được gắn nhãn không đại diện cho toàn bộ
+tập dữ liệu. Tương tự, các phương pháp ensemble có thể
+tốn kém về mặt tính toán và có thể tăng nguy cơ overfitting.
+Ngoài ra, một số phương pháp được đề xuất để làm sạch
+dữ liệu trong môi trường IoT, như làm sạch dữ liệu trong
+quá trình thu thập dữ liệu và làm sạch dữ liệu liên hợp,
+có thể yêu cầu tài nguyên tính toán đáng kể và có thể
+không khả thi trong môi trường có hạn chế về tài nguyên.
+Hơn nữa, hợp tác dữ liệu thông minh để lọc dữ liệu nhiễu
+có thể yêu cầu chi phí giao tiếp đáng kể, có thể là một
+thách thức trong môi trường IoT. Do đó, trong khi những
+phương pháp này cung cấp các giải pháp đầy hứa hẹn
+để làm sạch dữ liệu và cho phép xử lý hiệu quả big data
+trong môi trường có hạn chế về tài nguyên, chúng cũng
+có những hạn chế cần được xem xét cẩn thận.
+
+B. Nén Đặc trưng
+Nén đặc trưng là một kỹ thuật phổ biến được sử dụng trong
+ML để giảm chiều của không gian đặc trưng chiều cao.
+Hai phương pháp phổ biến của nén đặc trưng là lựa chọn
+đặc trưng và trích xuất đặc trưng, nhằm mục đích loại bỏ
+các đặc trưng dư thừa và không liên quan trong khi giữ
+lại thông tin cần thiết [41]. Lựa chọn đặc trưng liên quan
+đến việc chọn một tập con các đặc trưng liên quan từ tập
+gốc trong khi duy trì tính hữu ích tối đa, dẫn đến cải
+thiện độ chính xác mô hình, giảm độ phức tạp và nâng
+cao khả năng diễn giải [42]. Ngược lại, trích xuất đặc
+trưng tạo ra các đặc trưng mới dựa trên các hàm của những
+đặc trưng gốc, đảm bảo rằng các đặc trưng mới được tạo
+chứa thông tin hữu ích trong khi không dư thừa [43].
+Bằng cách tận dụng những kỹ thuật này, các nhà nghiên
+cứu có thể nén không gian đặc trưng và cải thiện hiệu
+quả và hiệu suất của các mô hình của họ.
+
+Với sự phổ biến ngày càng tăng và sự phát triển của các
+thiết bị có hạn chế về tính toán như điện thoại thông minh,
+thiết bị đeo và thiết bị IoT, có nhu cầu ngày càng tăng để
+phát triển các thuật toán ML hiệu quả và hiệu suất cho
+phân tích trên thiết bị trên các nền tảng này. Lựa chọn
+đặc trưng đã nổi lên như một kỹ thuật phổ biến để giảm
+chiều của không gian đặc trưng chiều cao và cải thiện
+hiệu quả và độ chính xác của các mô hình ML. Trong
+những năm gần đây, các nhà nghiên cứu đã áp dụng các
+phương pháp lựa chọn đặc trưng cho các ứng dụng có
+hạn chế về tài nguyên khác nhau. Ví dụ, Do et al. [44]
+đề xuất một phương pháp phát hiện u melanoma có thể
+truy cập bằng điện thoại thông minh, nơi họ thiết kế một
+module lựa chọn đặc trưng để chọn các đặc trưng phân
+biệt nhất cho phân loại. Tương tự, Fasih et al. [45] áp
+dụng các phương pháp lựa chọn đặc trưng để giảm yêu
+cầu bộ nhớ và tính toán trong phương pháp Active Feature
+Selection của họ để nhận dạng cảm xúc. Summerville et
+al. [46] thiết kế một phương pháp deep siêu nhẹ dựa trên
+lựa chọn đặc trưng để phát hiện bất thường trong các thiết
+bị IoT. Sudhakar et al. [47] đề xuất ActID, một framework
+để nhận dạng người dùng dựa trên cảm biến hoạt động,
+nơi phương pháp lựa chọn đặc trưng được sử dụng để
+đánh giá và chọn các đặc trưng phân biệt chất lượng cao,
+do đó giảm độ phức tạp của thuật toán và làm cho nó
+thích ứng tốt hơn với yêu cầu của các thiết bị có tài
+nguyên hạn chế. Laddha et al. [48] đề xuất một phương
+pháp để chọn các đặc trưng có tính bất biến và mạnh mẽ
+cao dựa trên điểm số descriptor để đạt được độ chính
+xác pose cần thiết cho định vị và lập bản đồ đồng thời
+(SLAM) thời gian thực trên các nền tảng có hạn chế về
+tài nguyên.
+
+Ngoài ra, lựa chọn đặc trưng cũng đã được áp dụng trong
+các môi trường biên khác để nâng cao hiệu suất và hiệu
+quả của các thuật toán ML. Một số nghiên cứu đã chứng
+minh tính hữu ích của kỹ thuật này trong các ứng dụng
+dựa trên biên khác nhau, như phân loại bệnh Parkinson
+[49], nhận dạng rung tâm nhĩ [50], giảm chiều dữ liệu
+[51], chẩn đoán lỗi trên biên IoT [52], phát hiện COVID-19
+[53], và nhiều hơn nữa. Ví dụ, các phương pháp dựa trên
+swarm intelligence [51], mô hình tiền huấn luyện [53],
+và tối ưu hóa đàn social learning particle swarm [53] đã
+được sử dụng để chọn các đặc trưng thông tin nhất. Lựa
+chọn đặc trưng có vẻ là một phương pháp đầy hứa hẹn
+để giảm độ phức tạp tính toán của các thuật toán ML,
+nâng cao độ chính xác của chúng và cho phép phân tích
+thời gian thực trên các thiết bị có hạn chế về tài nguyên.
+Do đó, việc áp dụng rộng rãi hơn của nó dự kiến sẽ tạo
+thuận lợi cho phân tích trên thiết bị trong môi trường có
+hạn chế và tăng tốc phát triển các giải pháp ML dựa trên
+biên hiệu quả và hiệu suất.
+
+Nhu cầu ngày càng tăng cho cảm biến thông minh và phân
+tích trên biên đã dẫn đến nhu cầu ngày càng tăng cho các
+phương pháp hiệu quả và hiệu suất để giảm chi phí năng
+lượng và bộ nhớ của các thuật toán deep learning trong
+các hệ thống điện toán biên có hạn chế về tài nguyên
+
+--- TRANG 8 ---
+8
+
+hệ thống. Để giải quyết thách thức này, các nhà nghiên
+cứu đã đề xuất các phương pháp nén đặc trưng khác nhau.
+Ví dụ, Matsubara et al. [54] đề xuất một phương pháp
+nén đặc trưng có giám sát dựa trên KD, trong khi Chen
+et al. [55] đề xuất một phương pháp sparse projection
+cho nhận dạng khuôn mặt. Để thực hiện tốt hơn cảm
+biến thông minh ở front end, Chen et al. [56] đề xuất
+một phương pháp nén đặc trưng deep learning tầng trung
+gian. Liu et al. [57] phát triển một phương pháp để nén
+các đặc trưng dọc theo các chiều không gian-thời gian
+cho nhận dạng hành động, trong khi Shao et al. [58]
+thiết kế cấu trúc encoder-decoder nhẹ để giảm kích thước
+của các đặc trưng tương ứng. Hơn nữa, Abdellatif et al.
+[59] đề xuất một cơ chế phân loại nhẹ để phát hiện co
+giật với độ chính xác cao và yêu cầu tính toán thấp ở
+biên của mạng thông qua trích xuất đặc trưng của các
+dấu hiệu sinh tồn. Zhou et al. [60] áp dụng các kỹ thuật
+tiền xử lý hình ảnh cho cảm biến thị giác và thiết kế một
+hệ thống camera không dây công nghiệp để giảm tiêu
+thụ năng lượng. Tương tự, Abdellatif et al. [61] thiết
+kế một phương pháp nén dữ liệu đa phương thức và trích
+xuất đặc trưng dựa trên biên để phát hiện sự kiện. Moreno-
+Rodenas et al. [62] đề xuất một phương pháp để giám
+sát các trạm bơm nước thải bằng xử lý hình ảnh trong
+camera, trong khi Guo et al. [63] thiết kế một lược đồ
+nén hình ảnh thích ứng dựa trên vùng quan tâm để phát
+hiện mục tiêu.
+
+Thảo luận: Những phương pháp nén đặc trưng này đã
+cho thấy tiềm năng lớn trong việc giảm chi phí năng lượng
+và bộ nhớ của các thuật toán deep learning trong các hệ
+thống điện toán biên có hạn chế về tài nguyên. Bằng cách
+nén đặc trưng, những phương pháp này cho phép phân
+tích hiệu quả và hiệu suất trên biên với tài nguyên hạn
+chế, làm cho việc thực hiện cảm biến thông minh và phân
+tích trong một loạt ứng dụng rộng rãi trở nên khả thi.
+Trong khi các phương pháp nén đặc trưng đầy hứa hẹn
+cho các ứng dụng dựa trên biên, có sự đánh đổi giữa kích
+thước của các đặc trưng được nén và độ chính xác của
+mô hình kết quả. Do đó, điều cần thiết là cân bằng cẩn
+thận tỷ lệ nén và độ chính xác của mô hình để đảm bảo
+hiệu suất tốt nhất trên các thiết bị có hạn chế về tài nguyên.
+Hơn nữa, cần nghiên cứu thêm để phát triển các phương
+pháp nén đặc trưng tinh vi hơn có thể thích ứng tốt hơn
+với các ứng dụng và tình huống khác nhau.
+
+C. Tăng cường Dữ liệu
+Tăng cường dữ liệu là một kỹ thuật thường được sử dụng
+trong ML để tăng lượng tập dữ liệu bằng cách tạo ra dữ
+liệu mới thông qua các sửa đổi nhẹ của dữ liệu hiện có.
+Kỹ thuật này có thể đặc biệt hữu ích khi xử lý các tập
+dữ liệu nhỏ hơn và có thể giúp giảm bớt các vấn đề overfitting.
+Trong lĩnh vực xử lý hình ảnh, tăng cường dữ liệu có thể
+được thực hiện thông qua các kỹ thuật khác nhau như
+xoay, tăng cường cạnh, khử nhiễu và co giãn hình ảnh
+[64]. Bằng cách áp dụng những sửa đổi này cho các hình
+ảnh hiện có, các hình ảnh mới và đa dạng có thể được
+tạo ra, do đó tăng kích thước của tập dữ liệu và cải thiện
+hiệu suất của mô hình. Trong các tác vụ xử lý ngôn ngữ
+tự nhiên (NLP), tăng cường dữ liệu có thể được thực hiện
+bằng các kỹ thuật khác nhau như thêm hoặc xóa từ ngẫu
+nhiên, điều chỉnh thứ tự từ, sử dụng tác vụ phụ trợ [65],
+dịch các mẫu sang ngôn ngữ thứ hai rồi dịch ngược lại
+để tạo thành các mẫu mới, trong số những kỹ thuật khác
+[66]. Những kỹ thuật này giúp tạo ra dữ liệu mới và đa
+dạng, có thể được sử dụng để huấn luyện các mô hình
+tốt hơn và cải thiện hiệu suất của mô hình trên dữ liệu
+kiểm tra.
+
+Để giải quyết thách thức về khả năng có sẵn dữ liệu hạn
+chế trong các thiết bị biên, các nhà nghiên cứu đã đề xuất
+các phương pháp tăng cường dữ liệu khác nhau tạo ra dữ
+liệu mới và đa dạng để huấn luyện các mô hình ML. Ví
+dụ, Wang et al. [67] thiết kế một phương pháp dự đoán
+giao thông dựa trên hạ tầng di động 5G kết hợp tăng
+cường dữ liệu để giảm bớt tình trạng thiếu hụt dữ liệu
+và các vấn đề về quyền riêng tư trên các thiết bị biên.
+Tương tự, Liao et al. [68] đề xuất ba phương pháp tăng
+cường dữ liệu để tăng tốc việc tạo ra mô hình hệ thống
+xác thực lớp PHY đa người dùng nâng cao. Một ví dụ
+khác là công trình của Liu et al. [69], người đã cải thiện
+độ chính xác dự đoán của mô hình phát hiện đường KITTI
+bằng cách giới thiệu các chiến lược tăng cường dữ liệu
+phù hợp, như thêm nhãn cạnh đường vào các mẫu huấn
+luyện nhỏ. Ngoài ra, tăng cường dữ liệu đã được các nhà
+nghiên cứu sử dụng để cải thiện tính tổng quát của hình
+ảnh trong các cảnh phức tạp, như được chứng minh bởi
+Jiao et al. [70] trong phương pháp giám sát vải thiều của
+họ. Gu et al. [71] đề xuất một phương pháp phát hiện
+đoạn thẳng có tên M-LSD tận dụng tăng cường dữ liệu
+để cung cấp dữ liệu đường phụ trợ cho quá trình huấn
+luyện. Hơn nữa, Liu et al. [72] sử dụng kỹ thuật tăng
+cường dữ liệu để cải thiện hiệu suất của các hệ thống
+phát hiện xâm nhập trong IoT công nghiệp bằng cách giải
+quyết vấn đề mất cân bằng dữ liệu. Pan et al. [73] mở
+rộng lượng dữ liệu huấn luyện cho theo dõi 1D thông qua
+việc sử dụng tăng cường dữ liệu, điều này giảm áp lực
+thu thập thêm dữ liệu từ người dùng.
+
+Thảo luận: Mặc dù tăng cường dữ liệu là một kỹ thuật
+mạnh mẽ để tạo ra dữ liệu mới và đa dạng và cải thiện
+hiệu suất của các mô hình ML, nó có một số hạn chế và
+nhược điểm. Một nhược điểm chính là tăng cường dữ liệu
+có thể đưa vào thiên lệch hoặc giả định không thực tế
+vào dữ liệu huấn luyện, có thể ảnh hưởng tiêu cực đến
+hiệu suất của mô hình trên dữ liệu kiểm tra. Hơn nữa,
+hiệu quả của tăng cường dữ liệu phụ thuộc vào việc lựa
+chọn các kỹ thuật tăng cường và domain ứng dụng cụ
+thể. Ví dụ, một số kỹ thuật tăng cường có thể không phù
+hợp với một số loại dữ liệu nhất định, như hình ảnh y
+tế, nơi việc đưa vào các sửa đổi nhân tạo có thể rủi ro.
+Ngoài ra, tăng cường dữ liệu có thể tốn kém về mặt tính
+toán, đặc biệt đối với các tập dữ liệu lớn và mô hình phức
+tạp. Do đó, trong khi tăng cường dữ liệu là một kỹ thuật
+có giá trị để cải thiện hiệu suất của các mô hình ML, điều
+quan trọng là phải xem xét cẩn thận các hạn chế và nhược
+điểm tiềm ẩn của nó trong các tình huống ứng dụng khác
+nhau.
+
+IV. TỐI ƯU HÓA MÔ HÌNH CHO TRIỂN KHAI AI BIÊN
+
+Tối ưu hóa mô hình là một bước quan trọng trong việc
+triển khai các mô hình ML đến các thiết bị biên nơi tài
+nguyên tính toán bị hạn chế. Có hai phương pháp chính
+để tối ưu hóa mô hình: thiết kế mô hình và nén mô hình
+(như được hiển thị trong Hình 8). Phương pháp trước
+liên quan đến việc phát triển các kiến trúc mô hình nhỏ
+gọn và sử dụng các kỹ thuật tìm kiếm kiến trúc mạng
+nơ-ron tự động để đạt được hiệu suất vượt trội trong khi
+giảm thiểu gánh nặng tính toán và số lượng tham số mô
+hình. Phương pháp sau liên quan đến việc sử dụng các
+phương pháp như cắt tỉa, chia sẻ tham số, lượng tử hóa,
+chưng cất kiến thức và phân tích thành nhân tử thứ hạng
+thấp để thu nhỏ kích thước của các mô hình deep learning
+mà không ảnh hưởng đáng kể đến độ chính xác hoặc hiệu
+suất của chúng. Những kỹ thuật này rất quan trọng để
+triển khai các mô hình phức tạp trên các thiết bị có tài
+nguyên hạn chế hoặc trong các hệ thống phân tán quy
+mô lớn với xử lý, bộ nhớ và lưu trữ bị hạn chế.
+
+A. Thiết kế Mô hình
+Phát triển các kiến trúc mô hình tối ưu là quan trọng để
+đạt được hiệu suất vượt trội trong một loạt các ứng dụng
+ML. Trong phần này, chúng tôi sẽ khám phá hai phương
+pháp để giải quyết thách thức này: thiết kế cấu trúc mô
+hình nhỏ gọn và sử dụng các kỹ thuật tìm kiếm kiến trúc
+mạng nơ-ron tự động (NAS). Những chiến lược này nhằm
+mục đích đạt được hiệu suất mô hình vượt trội trong khi
+giảm thiểu gánh nặng tính toán và số lượng tham số mô
+hình, cho phép triển khai thực tế trên các thiết bị tính
+toán khác nhau.
+
+1) Thiết kế Kiến trúc Nhỏ gọn: Các kiến trúc mạng nơ-ron
+nhỏ gọn thường được đặc trưng bởi yêu cầu thấp hơn
+về tài nguyên tính toán và ít tham số hơn. Do sức mạnh
+tính toán hạn chế của các thiết bị biên, việc phát triển
+các mô hình mạng nơ-ron vừa hiệu quả vừa nhỏ gọn
+ngày càng quan trọng. Do đó, trong phần này, chúng tôi
+sẽ giới thiệu một số mô hình mạng nơ-ron nhẹ đáng chú
+ý đã được đề xuất trong tài liệu.
+
+Sự gia tăng của các lĩnh vực như IoT và điện toán biên,
+yêu cầu xử lý lượng dữ liệu khổng lồ và khả năng thực
+hiện phân tích thời gian thực trên các thiết bị biên, đã
+thúc đẩy sự phát triển của các mạng nơ-ron nhẹ. Những
+mạng nơ-ron nhẹ này thường sử dụng các kỹ thuật như
+nhóm tích chập, tích chập tách riêng theo chiều sâu,
+tích chập tách riêng theo chiều rộng, cắt tỉa kênh, cắt
+tỉa mạng, và các kỹ thuật khác để làm cho kiến trúc mạng
+nhỏ gọn [74], dẫn đến hiệu quả tính toán cao hơn và tiêu
+thụ bộ nhớ thấp hơn. Ví dụ, chuỗi MobileNets [75] [76]
+[77] là một bộ sưu tập các mạng nơ-ron nhẹ được xây
+dựng cho các ứng dụng thị giác di động. Những mạng
+này được phát triển bởi các nhà nghiên cứu Google và
+đã thu hút nhiều sự chú ý trong thế giới thị giác máy
+tính do độ chính xác cao và độ phức tạp tính toán tối
+thiểu, làm cho chúng hoàn hảo để sử dụng trên các thiết
+bị di động và nhúng có tài nguyên hạn chế. Hơn nữa,
+Zhou et al. [78] đề xuất đảo ngược cấu trúc và giới thiệu
+một thiết kế bottleneck mới, được gọi là "khối sandglass",
+thực hiện ánh xạ đồng nhất và biến đổi không gian ở
+các chiều cao hơn, do đó giảm mất thông tin và nhầm
+lẫn gradient hiệu quả hơn. Trong nghiên cứu của Tan
+et al. [79], họ giới thiệu một phương pháp tự động cho
+NAS di động kết hợp độ trễ mô hình như một mục tiêu
+tối ưu hóa quan trọng để giải quyết khó khăn của giải
+pháp thủ công cho rất nhiều khả năng kiến trúc trong CNN.
+
+Chuỗi ShuffleNets là một CNN nhẹ được đề xuất bởi
+MegVII, nhằm mục đích giải quyết vấn đề cân bằng giữa
+độ chính xác và hiệu quả của các mạng nơ-ron nhẹ. Ý
+tưởng cốt lõi của ShuffleNets là tăng cường luồng thông
+tin của mạng và cải thiện độ chính xác của nó bằng cách
+thực hiện xáo trộn kênh trong các nhóm. Trong ShuffleNetV1
+[80], xáo trộn kênh được giới thiệu, chia nhóm đầu vào
+thành nhiều nhóm con dọc theo chiều kênh và thực hiện
+các phép toán tích chập trên mỗi nhóm con. Kết quả sau
+đó được nối dọc theo chiều kênh. Thông qua thao tác này,
+ShuffleNetV1 có thể giảm hiệu quả độ phức tạp tính toán
+trong khi cải thiện độ chính xác. Dựa trên ShuffleNetV1,
+ShuffleNetV2 [81] sử dụng cấu trúc đơn vị ShuffleNetV2
+mới, kết hợp các thiết kế như xáo trộn kênh và tích chập
+pointwise. Cấu trúc đơn vị này cải thiện đáng kể luồng
+thông tin, do đó nâng cao thêm độ chính xác của mạng.
+Trong OneShot được đề xuất bởi Guo et al. [82], nó giảm
+bớt vấn đề thích ứng trọng số bằng cách xây dựng một
+super network đơn giản hóa trong đó tất cả các kiến trúc
+đều là đường dẫn đơn.
+
+SqueezeNet [83] đạt được truyền thông tin hiệu quả với
+ít tham số bằng cách giới thiệu một thành phần có tên
+"Fire module", bao gồm một lớp tích chập 1 x 1 được
+gọi là lớp squeeze và một lớp tích chập 1 x 1 và 3 x 3
+được gọi là lớp expand. Lớp squeeze nén số lượng kênh
+trong biểu đồ đặc trưng đầu vào, và lớp expand tăng số
+lượng kênh trong biểu đồ đặc trưng được nén. Phiên bản
+tiếp theo của SqueezeNet, SqueezeNext, sử dụng kết quả
+mô phỏng phần cứng về tiêu thụ điện năng và tốc độ suy
+luận trên các hệ thống nhúng, cho thấy rằng so với SqueezeNet,
+mô hình nhanh hơn 2.59 lần, tiết kiệm năng lượng hơn
+2.25 lần, và không có bất kỳ suy giảm độ chính xác nào
+[84]. Han et al. [85] đề xuất một Ghost module plug-and-
+play, có xu hướng tạo ra nhiều biểu đồ đặc trưng hơn
+thông qua các thao tác chi phí thấp để tăng cường trích
+xuất đặc trưng, và đồng thời, nó sử dụng cấu trúc Ghost
+bottleneck để tăng cường khả năng biểu diễn của các mô
+hình.
+
+Chuỗi EfficientNet [86] [87] [88], được đề xuất bởi Tan
+et al. của Google Brain Group, cũng là những CNN hiệu
+quả nổi tiếng. EfficientNet sử dụng một kỹ thuật gọi là
+"compound scaling", điều chỉnh không chỉ độ sâu, chiều
+rộng và độ phân giải của mạng khi mở rộng nó mà còn
+các mối quan hệ phụ thuộc lẫn nhau giữa những tham
+số này. Điều này dẫn đến một mạng hiệu quả và chính
+xác hơn [86]. EfficientNetV2 là phiên bản nâng cấp của
+EfficientNet, cải thiện thêm hiệu suất của mạng bằng
+cách sử dụng thiết kế cấu trúc mạng hiệu quả hơn và
+các chiến lược huấn luyện được tối ưu hóa, và đề xuất
+một phương pháp học tiến bộ cải tiến để điều chỉnh chiến
+lược học một cách thích ứng [87]. EfficientDet dựa trên
+EfficientNet làm mạng backbone và đạt được độ chính
+xác phát hiện cao hơn và tốc độ suy luận nhanh hơn thông
+qua các thiết kế sáng tạo như giới thiệu cấu trúc BiFPN,
+phân cấp mạng đặc trưng được thiết kế cẩn thận và cơ
+chế fusion đặc trưng, cũng như hàm loss được tối ưu
+hóa [88].
+
+Huang et al. [89] đề xuất CondenseNet, một kiến trúc
+CNN hiệu quả khuyến khích tái sử dụng đặc trưng thông
+qua kết nối dày đặc và cắt tỉa các bộ lọc liên quan đến
+tái sử dụng đặc trưng dư thừa thông qua các tích chập
+nhóm được học. Mạng được cắt tỉa có thể được chuyển
+đổi hiệu quả thành một mạng với các tích chập nhóm
+thông thường để suy luận hiệu quả, có thể được triển
+khai dễ dàng với chi phí tính toán hạn chế trong quá
+trình huấn luyện. Yang et al. [90] đề xuất một lược đồ
+thay thế có tên CondenseNetV2 để cải thiện hiệu quả
+tái sử dụng của các đặc trưng. Trong phương pháp này,
+mỗi lớp có khả năng chọn lọc sử dụng một tập hợp cụ
+thể các đặc trưng có ý nghĩa cao từ các lớp trước
+
+--- TRANG 10 ---
+10
+
+Hình 8. Tổng quan về các hoạt động tối ưu hóa mô hình. Thiết kế mô hình liên quan đến việc tạo ra các mô hình nhẹ thông qua các kỹ thuật thủ công và tự động, bao gồm lựa chọn kiến trúc, điều chỉnh tham số và regularization. Nén mô hình liên quan đến việc sử dụng các kỹ thuật khác nhau, như cắt tỉa, lượng tử hóa và chưng cất kiến thức, để giảm kích thước của mô hình và có được một mô hình nhỏ gọn yêu cầu ít tài nguyên hơn trong khi duy trì độ chính xác cao.
+
+BẢNG III
+CÁC MÔ HÌNH MẠNG NƠ-RON NHẸ KINH ĐIỂN
+
+| Họ | Mô hình | Điểm nổi bật |
+|----|---------|----|
+| MobileNets | MobileNets [75] | Tích chập tách riêng theo chiều sâu giảm tính toán trong khi duy trì độ chính xác mô hình. |
+|  | MobileNetV2 [76] | Giới thiệu một module residual đảo ngược mới với bottleneck tuyến tính. |
+|  | MobileNetsV3 [77] | Khám phá cách các thuật toán tìm kiếm tự động và thiết kế mạng có thể làm việc cùng nhau. |
+|  | MobileNeXt [78] | Đề xuất một thiết kế bottleneck mới có tên sandglass block. |
+| MnasNet | MnasNet [79] | Đề xuất một phương pháp NAS di động tự động để giải quyết khó khăn của giải pháp thủ công. |
+| ShuffleNets | ShuffleNetV1 [80] | Sử dụng tích chập nhóm pointwise và xáo trộn kênh. |
+|  | ShuffleNetV2 [81] | Giới thiệu một cấu trúc đơn vị mới, đơn vị ShuffleNetV2. |
+|  | OneShot [82] | Giảm bớt vấn đề đồng thích ứng trọng số bằng cách xây dựng một super network đơn giản hóa. |
+| SqueezeNets | SqueezeNet [83] | Đề xuất một thiết kế cấu trúc mạng cực kỳ nén. |
+|  | SqueezeNext [84] | Giới thiệu các bộ lọc thứ hạng thấp, module bottleneck và lớp fully connected. |
+| GhostNet | GhostNet [85] | Ghost module và ghost bottleneck được thiết kế để giảm tính toán. |
+| EfficientNets | EfficientNet [86] | Đề xuất một phương pháp scaling mới sử dụng hệ số compound đơn giản và hiệu quả. |
+|  | EfficientNetV2 [87] | Kết hợp tìm kiếm kiến trúc mạng nơ-ron nhận thức huấn luyện và scaling. |
+|  | EfficientDet [88] | Giới thiệu các thiết kế sáng tạo như cấu trúc BiFPN, phân cấp mạng đặc trưng được thiết kế tỉ mỉ và cơ chế fusion đặc trưng

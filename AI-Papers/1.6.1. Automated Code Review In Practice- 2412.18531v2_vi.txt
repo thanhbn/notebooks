@@ -1,0 +1,353 @@
+# 1.6.1. Automated Code Review In Practice- 2412.18531v2.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\1.6.1. Automated Code Review In Practice- 2412.18531v2.pdf
+# Kích thước file: 1003700 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+Đánh Giá Mã Tự Động Trong Thực Tế
+Umut Cihan∗, Vahid Haratian∗, Arda Içöz∗,
+Mert Kaan Gül†, Ömercan Devran†, Emircan Furkan Bayendur†,
+Baykal Mehmet Uçar†, Eray Tüzün∗
+∗Đại học Bilkent, Ankara, Thổ Nhĩ Kỳ
+umut.cihan@bilkent.edu.tr, vahid.haratian@bilkent.edu.tr arda.icoz@bilkent.edu.tr, eraytuzun@cs.bilkent.edu.tr
+†Beko, Istanbul, Thổ Nhĩ Kỳ
+mertkaan.gul@beko.com, omercan.devran@beko.com emircanfurkan bayendur@beko.com, baykal.ucar@beko.com
+
+Tóm tắt — Bối cảnh: Đánh giá mã là một thực hành phổ biến trong giới thực hành để cải thiện chất lượng phần mềm và chuyển giao kiến thức. Nó thường được coi là tốn thời gian do cần nỗ lực thủ công và có thể gây chậm trễ trong quy trình phát triển. Một số công cụ đánh giá mã hỗ trợ AI (Qodo, GitHub Copilot, Coderabbit, v.v.) cung cấp đánh giá mã tự động sử dụng các mô hình ngôn ngữ lớn (LLM). Các tác động tổng thể của những công cụ như vậy trong môi trường công nghiệp vẫn chưa được kiểm tra.
+
+Mục tiêu: Nghiên cứu này xem xét tác động của các công cụ đánh giá mã tự động dựa trên LLM trong môi trường công nghiệp.
+
+Phương pháp: Nghiên cứu được tiến hành trong môi trường phát triển phần mềm công nghiệp đã áp dụng một công cụ đánh giá mã hỗ trợ AI (dựa trên Qodo PR Agent mã nguồn mở). 238 thực hành viên trên mười dự án có quyền truy cập vào công cụ này. Chúng tôi tập trung phân tích vào ba dự án, bao gồm 4.335 pull request, trong đó 1.568 trải qua đánh giá tự động. Việc thu thập dữ liệu của chúng tôi bao gồm ba nguồn chính: (1) phân tích định lượng dữ liệu pull request, bao gồm nhãn bình luận cho biết liệu các nhà phát triển có hành động theo các bình luận tự động hay không, (2) khảo sát gửi cho các nhà phát triển về trải nghiệm của họ với các đánh giá trên từng pull request riêng lẻ, và (3) một khảo sát rộng hơn về 22 thực hành viên nắm bắt ý kiến tổng quát của họ về đánh giá mã tự động.
+
+Kết quả: 73,8% bình luận đánh giá mã tự động được gắn nhãn là đã giải quyết. Tuy nhiên, thời gian đóng pull request trung bình tổng thể tăng từ năm giờ 52 phút lên tám giờ 20 phút, với các xu hướng khác nhau được quan sát trên các dự án khác nhau. Theo phản hồi khảo sát, hầu hết thực hành viên quan sát thấy một cải thiện nhỏ về chất lượng mã do đánh giá mã tự động.
+
+Kết luận: Công cụ đánh giá mã tự động dựa trên LLM đã chứng minh hữu ích trong phát triển phần mềm, tăng cường phát hiện lỗi, tăng nhận thức về chất lượng mã, và thúc đẩy các thực hành tốt nhất. Tuy nhiên, nó cũng dẫn đến thời gian đóng pull request lâu hơn và đưa ra những nhược điểm như đánh giá sai sót, sửa chữa không cần thiết, và bình luận không liên quan. Dựa trên những phát hiện này, chúng tôi đã thảo luận về cách các thực hành viên có thể sử dụng hiệu quả hơn các công nghệ đánh giá mã tự động.
+
+Từ khóa chỉ mục —đánh giá mã, mô hình ngôn ngữ lớn, pull request, đánh giá mã hỗ trợ AI, nghiên cứu trường hợp công nghiệp, tự động hóa đánh giá mã
+
+I. GIỚI THIỆU
+Đánh giá mã là một quy trình đảm bảo chất lượng, với các thích ứng khác nhau trong ngành, bao gồm các nhà phát triển kiểm tra thay đổi mã của nhau [1]. Nổi lên như các cuộc kiểm tra mã chính thức [2], đánh giá mã đã phát triển và trở thành một quy trình nhẹ hơn thường được gọi là Đánh giá Mã Hiện đại (MCR) [3]. MCR được đặc trưng bởi tính không chính thức, dựa trên công cụ, và thường xuyên [4]. Các lợi ích chung của quy trình này là chia sẻ kiến thức, học tập, xác định khiếm khuyết, và cải thiện mã [5], [6].
+
+Để tiến hành đánh giá mã, các nhà phát triển dành thời gian hiểu công việc của các nhà phát triển khác và vị trí của nó trong dự án tổng thể. Các nhà phát triển Phần mềm Nguồn mở (OSS) tự báo cáo thời gian đánh giá trung bình là 6,4 giờ mỗi tuần cho đánh giá mã [7], trong khi nghiên cứu trường hợp Google cho thấy một con số thấp hơn với 3,2 giờ [6]. Các con số cho thấy rằng các nhà phát triển dành một lượng thời gian đáng kể cho đánh giá.
+
+Do khối lượng công việc của các nhà phát triển, họ thường hoãn các nhiệm vụ đánh giá mã. Khi làm như vậy, các nhà phát triển hoãn việc hợp nhất các thay đổi mã. Trong cùng một nghiên cứu trường hợp tại Google, thời gian trung vị để phê duyệt hợp nhất là dưới bốn giờ, trong khi đối với các bộ thay đổi lớn, đó là năm giờ [6]. Thời gian phê duyệt trung vị cao hơn được báo cáo từ các công ty khác nhau: 15,7 giờ cho Google Chrome, 20,8 giờ cho Android tại Google, 17,5 giờ cho AMD, 14,7 giờ cho Bing, 19,8 giờ cho SQL, và 18,9 giờ cho Office tại Microsoft [8]. Sự khác biệt trong thời gian phê duyệt này cho thấy sự khác biệt giữa các công ty và dự án. Tuy nhiên, chi phí thực tế của việc chậm trễ trong các thay đổi mã quan trọng, không được phản ánh trong thống kê trung vị hoặc trung bình, có thể có hại hơn. Trong một nghiên cứu về các nhà phát triển Microsoft, nhận phản hồi kịp thời được trích dẫn là thách thức hàng đầu liên quan đến thực hành đánh giá mã [5].
+
+Tự động hóa có thể làm rút ngắn thời gian phê duyệt mã và giảm gánh nặng nỗ lực thủ công cho các nhà phát triển. Về vấn đề này, một số nỗ lực đã được thực hiện để tự động hóa quy trình đánh giá mã [9]–[19], chủ yếu tập trung vào việc phân công người đánh giá [20]. Những nỗ lực này đến từ các công cụ tạo ra đánh giá mã [10]–[12], dự đoán việc phê duyệt các thay đổi mã [21], [22], và sửa mã theo đánh giá mã [23], [24]. Trong nghiên cứu của chúng tôi, chúng tôi tập trung vào việc tự động hóa tạo ra đánh giá mã.
+
+Để tạo ra đánh giá mã, các nhà phát triển dành thời gian hiểu thay đổi mã, tìm kiếm lỗi, và phát hiện các nút thắt hiệu suất hoặc các sai lệch chung khỏi tiêu chuẩn mã hóa. Đã có một số nỗ lực với các mô hình đã được đào tạo trước để cung cấp đánh giá mã [21], [22], [25]. Với việc giới thiệu ChatGPT [26], đã có những nỗ lực tự động hóa đáng kể để tự động hóa tạo ra đánh giá mã [27]. Một số công cụ với khả năng đánh giá mã đã được tạo ra, thường làm việc với các LLM của OpenAI như GPT-4 [28], [29].
+
+arXiv:2412.18531v2 [cs.SE] 28 Dec 2024
+
+--- TRANG 2 ---
+Các công cụ đánh giá mã tự động ngày càng được sử dụng trong ngành [27]. Tuy nhiên, thiếu bằng chứng thực nghiệm về lợi ích tiềm năng của chúng. Ví dụ, thời gian tiết kiệm thông qua đánh giá tự động có thể bị bù trừ bởi những vấn đề mới mà chúng đưa ra. Ngoài ra, lợi ích tài chính của việc giảm nỗ lực nhà phát triển có thể không đáng kể so với chi phí vận hành những công cụ như vậy. Để giải quyết khoảng trống nghiên cứu này, chúng tôi đã tiến hành một nghiên cứu nhằm trả lời các câu hỏi nghiên cứu sau:
+
+•RQ1: Các đánh giá mã tự động dựa trên LLM hữu ích như thế nào trong bối cảnh ngành công nghiệp phần mềm?
+•RQ2: Các đánh giá mã tự động dựa trên LLM tác động như thế nào đến tốc độ của quy trình đóng pull request?
+•RQ3: Việc giới thiệu đánh giá mã tự động dựa trên LLM ảnh hưởng như thế nào đến khối lượng hoạt động đánh giá mã của con người?
+•RQ4: Các nhà phát triển nhận thức như thế nào về các công cụ đánh giá mã tự động dựa trên LLM?
+
+Chúng tôi đã hợp tác với Beko, một công ty đa quốc gia về thiết bị gia dụng, có bộ phận phần mềm đã áp dụng một công cụ đánh giá mã tự động dựa trên Qodo (Trước đây là CodiumAI) PR Agent mã nguồn mở [29] sử dụng mô hình GPT-4 Turbo [30]. Công cụ này cung cấp bình luận đánh giá mã tự động cho mỗi pull request trên 10 dự án và 22 kho lưu trữ dự án. Quy trình thu thập dữ liệu của chúng tôi bao gồm ba nguồn. Đầu tiên, chúng tôi trích xuất dữ liệu từ hệ thống kiểm soát phiên bản và nền tảng phát triển Azure DevOps, nơi lưu trữ các kho lưu trữ dự án. Dữ liệu này bao gồm thông tin pull request, bình luận đánh giá, nhãn bình luận đánh giá, và so sánh giữa phiên bản ban đầu và cuối cùng của pull request. Các nhà phát triển được yêu cầu gắn nhãn mỗi bình luận đánh giá để cho biết liệu họ đã thực hiện các đề xuất vào mã hay chưa. Thứ hai, các tác giả nhận được một khảo sát ngắn cho mỗi pull request. Cuối cùng, chúng tôi đã tiến hành một khảo sát rộng hơn bao gồm 22 thực hành viên để thu thập nhận thức tổng quát của họ.
+
+II. CÔNG TRÌNH LIÊN QUAN
+Đánh giá mã đòi hỏi nỗ lực và thời gian đáng kể của nhà phát triển [5], [7]. Những yêu cầu này, cùng với nhu cầu chuyển đổi ngữ cảnh thường xuyên, đã thúc đẩy việc đẩy mạnh tự động hóa [31]. Tự động hóa trong đánh giá mã là một phần được nghiên cứu kỹ lưỡng, nơi phần lớn nỗ lực giải quyết vấn đề phân công người đánh giá [32]–[40]. Cũng có nỗ lực đáng kể được đưa vào các khía cạnh đánh giá mã khác. Năm 2018, Gupta et al. [25] trình bày một mô hình để khớp các đánh giá lịch sử với đoạn mã sử dụng học sâu có giám sát. Năm 2019, một mô hình dựa trên Mạng Nơ-ron Tích chập (CNN) bởi Li et al. [22] và một khung sử dụng CNN và LSTM bởi Shi et al. [21] được trình bày để dự đoán phê duyệt các thay đổi mã. Năm 2022, Thontanunam et al. [24] trình bày một mô hình để sửa đổi mã nguồn tự động trong quá trình đánh giá mã.
+
+Ngoài những nỗ lực được đề cập ở trên, một số kỹ thuật đã được nghiên cứu để tự động hóa tạo ra đánh giá mã, bao gồm truy xuất thông tin [9], mô hình đã được đào tạo trước [10]–[12], LLM [13]–[15], tinh chỉnh prompt LLM [16], tinh chỉnh LLM với phản hồi của con người [17], và tác nhân LLM [18], [19]. Hiệu quả của tự động hóa đánh giá mã hiện đại đã được Tufano et al. [20] nghiên cứu. Trong nghiên cứu của họ, Tufano et al. đã nghiên cứu mô hình của họ dựa trên mô hình Text-To-Text Transfer Transformer (T5) đã được đào tạo trước [11], [41], mô hình CommentFinder sử dụng kỹ thuật truy xuất thông tin để khuyến nghị đánh giá mã [9], Mô hình CodeReview sử dụng kỹ thuật đào tạo trước [10], cũng như ChatGPT [26] mà không chỉ định phiên bản họ đã sử dụng. Họ phát hiện rằng ChatGPT có thể phục vụ như một cơ sở cạnh tranh để cải thiện mã, cả trong chuyển đổi mã-tới-mã trực tiếp và trong tạo ra mã dựa trên bình luận (bình luận-tới-mã). Ngược lại, ChatGPT không vượt trội hơn hiện đại trong tạo ra bình luận (mã-tới-bình luận).
+
+Việc sử dụng LLM và trí tuệ nhân tạo tạo sinh cho tạo ra đánh giá mã đã thu hút các nghiên cứu khác. Davila et al. [27] đã tiến hành một đánh giá tài liệu xám về việc sử dụng trí tuệ nhân tạo tạo sinh cho đánh giá mã và cho thấy cách các công cụ dựa trên LLM như ChatGPT đã được khám phá cho đánh giá mã. Fan et al. [14] khám phá khả năng của LLM về ba nhiệm vụ liên quan đến thay đổi mã: tạo ra đánh giá mã, tạo ra thông điệp commit và cập nhật bình luận kịp thời. Họ kết luận rằng LLM có triển vọng cho các nhiệm vụ được đề cập trước đó. Watanabe et al. [42] đã nghiên cứu 229 bình luận đánh giá từ 179 dự án GitHub có bao gồm liên kết cuộc trò chuyện ChatGPT. Phân tích của họ cho thấy 30,7% phản ứng với câu trả lời của ChatGPT là tiêu cực, với các nhà phát triển thường trích dẫn thiếu lợi ích bổ sung. Năm 2024, Vijayvergiya et al. [15] từ Google và Đại học Washington đã trình bày phát hiện của họ về phát triển và thực hiện quy mô lớn trong ngành của AutoCommenter. AutoCommenter là một hệ thống đánh giá mã tự động được hỗ trợ bởi LLM cho bốn ngôn ngữ lập trình (C++, Java, Python, và Go). Phát hiện của họ cho thấy tính khả thi của việc phát triển một hệ thống đánh giá mã tự động từ đầu đến cuối trong khi đạt được sự chấp nhận cao của người dùng cuối.
+
+Trong nghiên cứu này, chúng tôi nhằm giải quyết thiếu sót nghiên cứu dọc về tác động của các công cụ đánh giá mã tự động trong phát triển phần mềm. Không giống như các nghiên cứu trước đây, nghiên cứu của chúng tôi xem xét tác động của một công cụ đánh giá mã tự động dựa trên LLM thương mại [29] trong môi trường ngành thực tế liên quan đến tác động của nó đối với các sản phẩm phát triển và nhận thức của nhà phát triển. Nghiên cứu này nhằm cung cấp cho các thực hành viên những hiểu biết có giá trị về việc có nên và làm thế nào để áp dụng một công cụ đánh giá mã tự động dựa trên LLM.
+
+III. CÀI ĐẶT NGHIÊN CỨU
+Trong nghiên cứu này, chúng tôi đã tiến hành một nghiên cứu trường hợp đánh giá để đánh giá tác động của đánh giá mã tự động dựa trên LLM trong phát triển phần mềm. Chúng tôi đánh giá hiệu quả của chúng, ảnh hưởng đến tốc độ đóng pull request, và thay đổi trong khối lượng đánh giá mã của con người. Phần này trình bày cài đặt nghiên cứu của chúng tôi. Phần III-A giới thiệu đối tượng nghiên cứu. Phần III-B trình bày mục tiêu và câu hỏi nghiên cứu của nghiên cứu này. Nghiên cứu của chúng tôi bao gồm cả nguồn dữ liệu định lượng và định tính. Phần III-C mô tả cách chúng tôi thu thập dữ liệu định lượng
+
+--- TRANG 3 ---
+Hình 1. Dòng thời gian Thu thập Dữ liệu
+dữ liệu từ các kho lưu trữ của dự án. Phần III-D mô tả việc thu thập dữ liệu định tính của chúng tôi thông qua khảo sát. Phần III-E mô tả cách tiếp cận của chúng tôi đối với các câu hỏi nghiên cứu.
+
+A. Đối tượng Nghiên cứu
+Chúng tôi đã tiến hành nghiên cứu trong bộ phận phát triển phần mềm của Beko, một công ty đa quốc gia. Nó hoạt động trong lĩnh vực hàng tiêu dùng bền và điện tử. Bộ phận phát triển phần mềm của Beko chịu trách nhiệm phát triển phần mềm hướng khách hàng và hướng nhân viên với 238 thực hành viên.
+
+Hình 1 phác thảo hành trình của Beko để thực hiện CodeReviewBot, bắt đầu với giai đoạn điều tra vào ngày 25 tháng 8 năm 2023, được thúc đẩy bởi nhu cầu nâng cao chất lượng và hiệu quả mã. Beko đã đánh giá một số dự án mã nguồn mở, bao gồm CodeRabbit [28], Qodo (Trước đây là CodiumAI) [29], và các công cụ mở rộng pipeline như Reviewbot1, ChatGPT-CodeReview2, và Codereview.gpt3. Sau khi xem xét cẩn thận, Beko đã chọn Qodo PR-Agent [29], vì hiệu suất cao và tích hợp liền mạch. Họ đã tùy chỉnh chức năng của nó để đáp ứng nhu cầu của mình, và đặt tên nó là "Code Review Bot" nội bộ. Đối với phần còn lại của nghiên cứu, chúng tôi sẽ sử dụng "CodeReviewBot" để tăng khả năng đọc. Dự án thí điểm đầu tiên được khởi chạy vào ngày 7 tháng 11 năm 2023. Đến ngày 5 tháng 6 năm 2024, Beko đã áp dụng CodeReviewBot trên 10 dự án và 22 kho lưu trữ. Vào ngày 24 tháng 5 năm 2024, các thực hành viên được thông báo rằng chính sách giải quyết commit đã được áp dụng thông qua một chiến dịch email, và ngày 20 tháng 9 năm 2024 đánh dấu ngày thu thập dữ liệu cuối cùng của nghiên cứu chúng tôi. Trong Hình 2, bạn có thể thấy một ví dụ bình luận từ CodeReviewBot.
+
+Hình 2. Ví dụ Đánh giá của CodeReviewBot
+
+CodeReviewBot sử dụng Mô hình GPT-4-32K để cung cấp bình luận đánh giá mã tự động cho mỗi pull request. Công cụ bổ sung cho quy trình đánh giá mã; các nhà phát triển vẫn có thể thêm đánh giá của họ. Trong Hình 3, luồng của quy trình pull request được mô tả. Công cụ hoạt động trên một danh mục đa dạng gồm 22 kho lưu trữ trải rộng 10 dự án riêng biệt. Những kho lưu trữ này chứa mã Java, JavaScript, C, HTML, SQL, C# và TypeScript.
+
+1https://github.com/reviewboard/ReviewBot
+2https://github.com/anc95/ChatGPT-CodeReview
+3https://github.com/sturdy-dev/codereview.gpt
+
+Hình 3. Luồng của Quy trình Pull Request
+
+BẢNG I
+CÁC DỰ ÁN ĐƯỢC BAO GỒM TRONG NGHIÊN CỨU CỦA CHÚNG TÔI
+
+Dự án | Giải thích | Số Nhà phát triển | Ngôn ngữ
+Dự án #1 | Cổng Thương mại điện tử B2B | 21 | TypeScript, Java, JavaScript
+Dự án #2 | Nền tảng Quản lý Doanh nghiệp | 51 | HTML, JavaScript, C#
+Dự án #3 | Trung tâm Giải pháp AI Tùy chỉnh | 22 | C#, HTML, JavaScript, SQL
+
+Beko được chọn làm đối tượng nghiên cứu vì họ đã sử dụng CodeReviewBot trong một thời gian đáng kể. Quy mô của các nhóm phát triển của họ (103 nhà phát triển) và sự đa dạng của các dự án (10 dự án) sử dụng công cụ là những phẩm chất khác thúc đẩy chúng tôi chọn họ. Để tránh các rủi ro tiềm ẩn hoặc hậu quả không mong muốn với việc thu thập dữ liệu thực tế, chúng tôi không liên kết bất kỳ kết quả nào với một thực hành viên cá nhân, và kết quả khảo sát cá nhân không được chia sẻ với các tác giả từ Beko. Phân tích dữ liệu của chúng tôi được tiến hành trên ba trong số mười dự án đã sử dụng CodeReviewBot. Điều này là do sự khởi đầu sớm của ba dự án này với CodeReviewBot (Dự án #1 ngày 7 tháng 11 năm 2023, Dự án #2 ngày 13 tháng 11 năm 2023 và Dự án #3 ngày 3 tháng 4 năm 2024). Bảy dự án khác đã áp dụng CodeReviewBot vào khoảng tháng 6 năm 2024; do đó, họ không tích lũy dữ liệu đáng kể. Bảng I cung cấp thông tin về ba dự án.
+
+B. Mục tiêu Nghiên cứu và Câu hỏi Nghiên cứu
+Nghiên cứu của chúng tôi điều tra tác động của đánh giá mã tự động trong phát triển phần mềm từ nhiều góc độ. Về mặt học thuật, nó cung cấp dữ liệu thực nghiệm để hiểu hướng tương lai của đánh giá mã hiện đại và tiết lộ tiềm năng của các công cụ đánh giá mã tự động đầy hứa hẹn. Đối với các thực hành viên, việc xác định liệu đánh giá mã tự động có ảnh hưởng tích cực đến quy trình phát triển hay không là rất quan trọng. Từ góc độ kinh doanh, việc thực hiện những công cụ như vậy bao gồm chi phí mà lợi ích của chúng phải biện minh. Về mặt chất lượng, đánh giá mã tự động nên được kỳ vọng tăng cường chứ không phải làm giảm quy trình đánh giá mã hiện có. Do đó, nghiên cứu này là một điều tra có động lực tốt và có giá trị cho các chuyên gia ngành và học giả.
+
+Chúng tôi đã giải quyết các câu hỏi nghiên cứu sau bằng cách thu thập dữ liệu từ các kho lưu trữ dự án và khảo sát:
+
+--- TRANG 4 ---
+Câu hỏi Nghiên cứu 1: Các đánh giá mã tự động dựa trên LLM hữu ích như thế nào trong bối cảnh ngành công nghiệp phần mềm?
+Câu hỏi nghiên cứu này đánh giá tính hữu ích của đánh giá mã tự động dựa trên LLM trong phát triển phần mềm. Cụ thể, chúng tôi tìm cách xác định liệu các bình luận được tạo ra bởi các công cụ đánh giá mã tự động có được tích hợp hiệu quả vào mã hay không. Điều này phụ thuộc vào tính hữu ích của các đánh giá tự động và sự tiếp nhận của nhà phát triển đối với chúng.
+
+Câu hỏi Nghiên cứu 2: Các đánh giá mã tự động dựa trên LLM tác động như thế nào đến tốc độ của quy trình đóng pull request?
+Một trong những động lực chính cho tự động hóa là lợi ích về thời gian. Với câu hỏi nghiên cứu này, chúng tôi xem xét tác động của đánh giá mã tự động dựa trên LLM đến tốc độ phát triển. Cụ thể, chúng tôi nhằm xác định liệu việc tích hợp đánh giá mã tự động có làm tăng tốc quy trình đóng pull request hay không. Bằng cách phân tích tác động này, chúng tôi tìm cách hiểu liệu các công cụ dựa trên LLM có đóng góp vào quy trình làm việc phát triển hiệu quả hơn hay không.
+
+Câu hỏi Nghiên cứu 3: Việc giới thiệu đánh giá mã tự động dựa trên LLM ảnh hưởng như thế nào đến khối lượng hoạt động đánh giá mã của con người?
+Đánh giá mã của con người đòi hỏi nỗ lực đáng kể. Với việc giới thiệu đánh giá mã tự động dựa trên LLM, việc đánh giá cách điều này ảnh hưởng đến khối lượng đánh giá của con người là thiết yếu. Với câu hỏi nghiên cứu này, chúng tôi nhằm xác định liệu các công cụ tự động có dẫn đến tăng hay giảm hoạt động đánh giá của con người hay không. Chúng tôi nhằm hiểu cách tự động hóa tác động đến nỗ lực và khối lượng công việc liên quan đến đánh giá mã của con người.
+
+Câu hỏi Nghiên cứu 4: Các nhà phát triển nhận thức như thế nào về các công cụ đánh giá mã tự động dựa trên LLM?
+Các nhà phát triển là những tác nhân quan trọng trong quy trình đánh giá mã. Nhận thức của họ về các công cụ đánh giá mã tự động là rất quan trọng để nhận ra những lợi ích mong đợi. Với câu hỏi nghiên cứu này, chúng tôi nhằm phân tích cách các nhà phát triển nhận thức về các bình luận họ nhận được và quy trình chung bằng cách tam giác hóa các nguồn dữ liệu khác nhau của chúng tôi. Đánh giá toàn diện này sẽ cung cấp hiểu biết về thái độ của các nhà phát triển đối với tự động hóa và vai trò của nó trong quy trình đánh giá mã.
+
+Chúng tôi đã sử dụng dữ liệu định tính và định lượng để đạt được mục tiêu nghiên cứu và giải quyết các câu hỏi của chúng tôi. Tương tác giữa các thực hành viên và đánh giá mã tự động là trọng tâm chính của nghiên cứu chúng tôi, điều này đòi hỏi thu thập dữ liệu định tính. Để đạt được điều này, chúng tôi đã phát triển một khảo sát pull request và một khảo sát ý kiến chung và thực hiện một chính sách giải quyết bình luận bắt buộc yêu cầu các nhà phát triển gắn nhãn cách các bình luận được giải quyết. Đối với dữ liệu định lượng, chúng tôi đã chọn khai thác kho lưu trữ, cung cấp hiểu biết có giá trị về việc sử dụng thực tế bằng cách ghi lại có hệ thống các hoạt động kỹ thuật số. Chúng tôi đã tam giác hóa các phát hiện từ khảo sát và nhãn giải quyết bình luận bằng cách phân tích dữ liệu commit lịch sử, pull request, và bình luận liên quan. Hình 4 mô tả tổng quan thu thập dữ liệu của chúng tôi.
+
+C. Thu thập Dữ liệu từ Azure DevOps
+Chúng tôi đã thu thập dữ liệu từ hệ thống kiểm soát phiên bản của dự án ("Azure DevOps"). Dữ liệu này bao gồm thông tin pull request, bình luận đánh giá, và commit cho pull request. Để hiểu rõ hơn về quy trình trích xuất dữ liệu, chúng tôi đã mô tả các thành phần được minh họa trong Hình 4.
+
+Hình 4. Tổng quan Thu thập Dữ liệu
+
+1) Pull Request Ban đầu: Một pull request là một cơ chế để giới thiệu các thay đổi vào cơ sở mã. Khi một pull request được tạo, các nhà phát triển khác được thông báo về các thay đổi được đề xuất. Họ thêm bình luận đánh giá của mình để thông báo cho tác giả, người được kỳ vọng thực hiện các thay đổi cần thiết dựa trên các đánh giá. Pull request được chấp nhận khi mã đạt đến chất lượng chấp nhận được và các thay đổi được hợp nhất vào cơ sở mã.
+
+Các tác giả pull request nhận bình luận đánh giá tự động và bình luận của các nhà đánh giá khác trong trường hợp của chúng tôi. Nghiên cứu của chúng tôi xem xét 4335 pull request, trong đó 1568 được tạo sau khi áp dụng đánh giá mã tự động.
+
+2) Bình luận Pull Request: Bình luận pull request phục vụ như các sản phẩm của quy trình đánh giá mã. Các nhà đánh giá con người thêm đánh giá của họ dưới dạng bình luận. CodeReviewBot đã thêm đánh giá của nó như các bình luận riêng biệt. Chúng tôi đã phân tích các bình luận pull request về khối lượng và thời gian, ai đã tạo ra chúng, và cách các tác giả pull request được hưởng lợi.
+
+Sự hiện diện của một bình luận không có nghĩa là nó đã được xem xét. Để điều tra liệu các tác giả pull request có được hưởng lợi từ các bình luận đánh giá hay không, chúng tôi đã cấu hình một chính sách giải quyết bình luận bắt buộc [43]. Hệ thống này yêu cầu các tác giả chỉ ra cách họ đã xử lý các bình luận pull request. Thật không may, chính sách giải quyết bình luận được đưa ra sau CodeReviewBot, vì vậy chúng tôi không có cùng dữ liệu từ các pull request trước đó. Bảng II trình bày các tùy chọn trạng thái bình luận cho mỗi bình luận đánh giá và giải thích của chúng theo chính sách giải quyết bình luận.
+
+3) Pull Request Đã đóng: Các thay đổi mã được đề xuất trong pull request ban đầu có thể thay đổi với các bình luận đánh giá. Đây là một sự kiện mong đợi nếu các đánh giá chỉ ra vấn đề. Các thay đổi mã được phản ánh như các commit bổ sung. Pull request được chấp nhận hoặc từ chối. Các thực hành viên tại Beko không sử dụng từ chối như một cơ chế đảm bảo chất lượng. Thay vào đó, họ sử dụng từ chối khi thay đổi được coi là không cần thiết hoặc không kịp thời. Do đó, chúng tôi không coi sự chấp nhận như một chỉ số chất lượng mà như dữ liệu phân loại.
+
+4) Trích xuất và Phân tích Dữ liệu: Phân tích dữ liệu của chúng tôi bắt đầu với việc trích xuất dữ liệu thô từ máy chủ Azure DevOps sử dụng
+
+--- TRANG 5 ---
+BẢNG II
+CHÍNH SÁCH GIẢI QUYẾT BÌNH LUẬN TRONG AZURE DEVOPS
+
+Trạng thái | Giải thích
+Active | Đây là trạng thái mặc định cho các bình luận mới.
+Pending | Bình luận tương ứng đang được phân tích hoặc chờ đợi điều gì đó khác.
+Resolved | Bình luận tương ứng thành công và đề xuất của nó đã được thực hiện.
+Won't fix | Bình luận tương ứng có lỗi hoặc không thể thực hiện.
+Closed | Bình luận tương ứng không được thực hiện vì một số lý do khác ngoài "Won't Fix".
+
+API. Chúng tôi đã tạo một lược đồ dữ liệu cho phép chúng tôi lưu trữ thông tin về dự án, kho lưu trữ, commit, pull request, và bình luận pull request trong cơ sở dữ liệu quan hệ. Chúng tôi đã sử dụng lược đồ dữ liệu để lưu trữ phản hồi API.
+
+Bước tiếp theo của chúng tôi là tiền xử lý dữ liệu để đảm bảo tính toàn vẹn và chính xác của nó. Đầu tiên, chúng tôi đã chuyển đổi các bảng thành file CSV, tải dữ liệu lên bằng thư viện pandas4, và tạo các script để trích xuất các số liệu liên quan. Vấn đề đầu tiên chúng tôi nhận thấy là số lượng bình luận active cao, điều này không nên xảy ra đối với chính sách giải quyết bình luận. Chúng tôi đã kiểm tra thủ công các pull request và quan sát rằng một số pull request đã được đóng trước khi CodeReviewBot có thể bình luận. Các bình luận được tạo bởi công cụ đến sau khi pull request đã được đóng, có nghĩa là chúng không cần được giải quyết. Chúng tôi đã xem xét thời gian cần thiết để hợp nhất các PR và, sử dụng đánh giá elbow, xác định một ngưỡng bao phủ 93% PR. Sau đó chúng tôi áp dụng bộ lọc này cho toàn bộ lịch sử để có một đánh giá công bằng. Cuối cùng, chúng tôi đã loại bỏ thủ công 7% còn lại để loại bỏ tất cả các giá trị ngoại lai.
+
+Vấn đề thứ hai chúng tôi gặp phải là số lượng bình luận cao từ một số nhà phát triển. Hai nhà phát triển có bình luận cao một cách bất hợp lý so với các nhà phát triển khác. Chúng tôi đã kiểm tra bình luận của họ và nhận ra rằng tài khoản Azure DevOps của họ được sử dụng cho các bot phần mềm khác nhau, chẳng hạn như SonarQube5. Chúng tôi cũng đã loại trừ những tài khoản này khỏi nghiên cứu của chúng tôi.
+
+Cuối cùng, chúng tôi quan sát rằng nhiều bình luận có nhãn giải quyết bình luận không xác định do bị xóa hoặc bao gồm mô tả pull request được tạo bởi CodeReviewBot. Vì vậy, chúng tôi đã loại trừ những bình luận như vậy. Ngoài ra, chính sách giải quyết bình luận chỉ hoạt động khi pull request nhắm đến nhánh chính của kho lưu trữ. Vì vậy, chúng tôi đã loại trừ các pull request nhắm đến các nhánh khác ngoại trừ nhánh chính. Quy trình làm sạch dữ liệu bao gồm một số phiên hợp tác với cả người tham gia không phải thực hành viên và Beko, sau đó chúng tôi xác nhận tập dữ liệu không bị hỏng. Cuối cùng, chúng tôi đã phân tích 4.335 pull request, trong đó 1.568 được chịu đánh giá tự động.
+
+D. Thu thập Dữ liệu từ Khảo sát
+1) Khảo sát Đánh giá Mã: Với mỗi pull request, các tác giả được yêu cầu đưa ra đánh giá từ không đến năm cho các bình luận đánh giá tự động và nhận một khảo sát gồm ba câu hỏi.
+
+4https://pandas.pydata.org/pandas-docs/stable/index.html#
+5https://www.sonarsource.com/products/sonarqube/
+
+Những khảo sát này là nguồn dữ liệu thứ hai của chúng tôi. Hai câu hỏi đầu tiên có câu trả lời theo thang điểm từ một đến năm, và câu hỏi cuối cùng là mở. Chúng tôi đã bao gồm các câu hỏi khảo sát đánh giá mã trong gói tái tạo.
+
+2) Khảo sát Ý kiến Chung: Chúng tôi đã tạo một khảo sát ý kiến chung và nhận phản hồi từ 22 nhà phát triển đã đóng góp cho ba dự án trong phạm vi nghiên cứu của chúng tôi. Những thực hành viên này có các năm kinh nghiệm và vị trí khác nhau trong tổ chức. Chúng tôi cung cấp thông tin về người tham gia trong Bảng III. Các câu hỏi khảo sát tập trung vào tác động của đánh giá mã tự động đối với các nhà phát triển và quan điểm của họ. Chúng tôi đã bao gồm các câu hỏi khảo sát ý kiến chung trong gói tái tạo.
+
+BẢNG III
+NGƯỜI THAM GIA KHẢO SÁT
+
+Người tham gia Khảo sát
+Kinh nghiệm trong Phát triển Phần mềm | Số Người tham gia
+0-2 | 4
+2-5 | 9
+5-10 | 6
+10+ | 3
+
+Vị trí tại Beko | Số Người tham gia
+Contributor Cá nhân | 16
+Lead/Manager | 6
+Tổng Thực hành viên | 22
+
+E. Cách tiếp cận đối với Câu hỏi Nghiên cứu
+Vì các câu hỏi nghiên cứu của chúng tôi có nhiều khía cạnh, chúng tôi dựa vào các phát hiện từ nhiều nguồn dữ liệu. Chúng tôi đã sử dụng nhãn bình luận đánh giá, commit cho pull request sau đánh giá, và câu trả lời câu hỏi khảo sát ý kiến chung để thiết lập một đánh giá đa khía cạnh cho câu hỏi nghiên cứu đầu tiên. Chúng tôi đã trích xuất dữ liệu thời gian đóng pull request từ Azure DevOps để trả lời câu hỏi nghiên cứu thứ hai. Trong khảo sát ý kiến chung, chúng tôi đã hỏi các thực hành viên liệu đánh giá mã tự động có ảnh hưởng đến tốc độ phát triển hay không.
+
+Chúng tôi đã trích xuất số lượng đánh giá mã của con người từ Azure DevOps cho câu hỏi nghiên cứu thứ ba. Chúng tôi đã hỏi các nhà phát triển liệu họ có thể tạo ra thủ công cùng các bình luận trong khảo sát hay không. Câu hỏi nghiên cứu cuối cùng tập trung xung quanh khảo sát nhà phát triển và pull request. Các script phân tích dữ liệu, câu hỏi khảo sát, và kết quả của chúng tôi được chia sẻ trong gói tái tạo6.
+
+IV. KẾT QUẢ
+A. Khảo sát Đánh giá Mã
+Trong suốt nghiên cứu của chúng tôi, chúng tôi đã thu thập đánh giá cho 38 pull request nhận đánh giá mã tự động. Các tác giả pull request cũng được yêu cầu điền vào một khảo sát gồm hai câu hỏi trắc nghiệm và một câu hỏi mở, và mười người đã tiến hành làm như vậy.
+
+Đánh giá trung bình cho các bình luận đánh giá tự động là 3,46, với độ lệch chuẩn là 1,79. Hình 5 mô tả
+
+6https://doi.org/10.5281/zenodo.13917481
+
+--- TRANG 6 ---
+đánh giá cho các dự án khác nhau và đánh giá tổng thể. Có sự khác biệt đáng kể giữa các đánh giá trên các dự án, với trung bình là 4,04, 2,72, và 3,00 cho Dự án #1, Dự án #2, và Dự án #3, tương ứng. Điều này có thể chỉ ra sự khác biệt về chất lượng đánh giá liên quan đến các điều kiện dự án khác nhau, hoặc có thể do sự khác biệt giữa các nhà phát triển trong các dự án khác nhau.
+
+Khảo sát mà chúng tôi gửi cho các tác giả có ba câu hỏi. Hai câu hỏi đầu tiên liên quan đến việc liệu các tác giả có thấy các đánh giá đồng tình và cách họ thấy việc trình bày các bình luận đánh giá. Câu hỏi thứ ba là mở và yêu cầu phản hồi bổ sung.
+
+Hình 5. Đánh giá Đánh giá Mã Tự động từ Khảo sát Đánh giá Mã
+
+Thật không may, chúng tôi không nhận được nhiều câu trả lời cho câu hỏi thứ ba. Hầu hết các câu trả lời là những nhận xét đơn giản như "Tuyệt vời." Mười thực hành viên đã trả lời hai câu hỏi đầu tiên, và chúng tôi đã báo cáo về các phản hồi trong Hình 6. Tám người đã trả lời với "5" khi được hỏi họ thấy các bình luận đồng tình như thế nào, trong khi chín người trả lời với "5" khi được hỏi họ thấy các bình luận được trình bày tốt như thế nào. Một người đã trả lời cả hai câu hỏi với "1". Có sự khác biệt giữa số phản hồi cho đánh giá và khảo sát. Vì khảo sát đòi hỏi nỗ lực bổ sung, các nhà phát triển không hài lòng có thể cảm thấy ít động lực hoàn thành khảo sát. Nhìn chung, các đánh giá và khảo sát pull request cho thấy các nhà phát triển thấy các bình luận đồng tình và được trình bày tốt.
+
+Hình 6. Khảo sát Đánh giá Mã
+
+B. Khảo sát Ý kiến Chung
+Chúng tôi đã gửi một khảo sát gồm tám câu hỏi cho các nhà phát triển đã đóng góp cho các dự án. Chúng tôi nhận được 23 phản hồi, với 22 người trả lời đồng ý tham gia vào kết quả đã xuất bản. Khảo sát này được tạo ra để thu thập nhận thức tổng quát của các nhà phát triển.
+
+Khảo sát bao gồm sáu câu hỏi trắc nghiệm và hai câu hỏi mở. Hình 7 và 8 trình bày kết quả. Câu hỏi đầu tiên giải quyết tác động của đánh giá mã tự động đến tốc độ phát triển. Tám nhà phát triển nhận thức được một cải thiện nhỏ về tốc độ phát triển do đánh giá mã tự động, trong khi bốn người nhận thức không có tác động, ba người nhận thức một sự suy giảm nhỏ, và hai người nhận thức một cải thiện lớn.
+
+Hình 7. Phản hồi Khảo sát Ý kiến Chung (Câu hỏi 1-3)
+
+Câu hỏi thứ hai tập trung vào chia sẻ kiến thức. Chín thực hành viên nhận thức không có tác động đến chia sẻ kiến thức giữa các nhà phát triển. Đồng thời, tám nhà phát triển nhận thức một tác động tích cực. Câu hỏi thứ ba khám phá chất lượng mã, với hầu hết người trả lời (14) cho rằng đánh giá mã tự động đóng góp vào một cải thiện nhỏ về chất lượng tổng thể của mã.
+
+Hình 8. Phản hồi Khảo sát Ý kiến Chung (Câu hỏi 4-6)
+
+--- TRANG 7 ---
+Câu hỏi thứ tư kiểm tra mức độ liên quan của các bình luận được tạo ra bởi đánh giá mã tự động đối với pull request. Với chín người trả lời đánh giá mức độ liên quan là "4" và bảy người đánh giá mức độ liên quan là "3", kết quả cho thấy hầu hết thực hành viên thấy các bình luận tự động liên quan đến pull request.
+
+Câu hỏi thứ năm hỏi liệu các nhà phát triển có thể xác định thủ công các vấn đề mà đánh giá mã tự động chỉ ra với "1," có nghĩa là họ không thể xác định thủ công, và "5," có nghĩa là họ có thể xác định tất cả. Mười người trả lời đánh giá câu hỏi này "3," trong khi sáu người đánh giá "2".
+
+Câu hỏi thứ sáu giải quyết tầm quan trọng của các vấn đề được làm nổi bật bởi các đánh giá tự động. Tám người trả lời đánh giá câu hỏi này "3," trong khi sáu người đánh giá "2". Sự phân tán của các đánh giá cho thấy các thực hành viên có quan điểm khác nhau.
+
+C. Phân tích Dữ liệu Azure DevOps
+
+Hình 9. Nhãn Bình luận trên PR Đã hợp nhất
+
+1) Nhãn Bình luận: Trong phân tích của chúng tôi, chúng tôi đã trích xuất 4408 bình luận bởi CodeReviewBot. Vì chính sách giải quyết bình luận được thực thi một thời gian sau CodeReviewBot, chúng tôi phải lọc ra các bình luận trước khi giới thiệu chính sách và các bình luận hiện đang hoạt động hoặc đang chờ xử lý. Sau khi lọc, chúng tôi đã kiểm tra 1408 bình luận CodeReviewBot trên các pull request đã hợp nhất. Chúng tôi đã báo cáo trạng thái của các bình luận cho mỗi dự án trong Hình 9. 73,8% bình luận được gắn nhãn là "Resolved," trong khi 21,3% được gắn nhãn là "Won't Fix." Khi chúng tôi so sánh kết quả trên các dự án, chúng tôi thấy sự khác biệt đáng kể cho Dự án #1 và Dự án #3 với 55% và 90% bình luận được gắn nhãn là "Resolved."
+
+2) Commit trên Pull Request: Như một thước đo thay đổi do quy trình đánh giá mã, pull request nhận commit sau khi chúng nhận bình luận. Chúng tôi đã phân tích những commit này cho các pull request sau khi thực hiện CodeReviewBot. Kết quả được hiển thị trong Hình 10. Pull request nhận được 88 commit sau bình luận của CodeReviewBot nhưng trước bình luận của con người. Sau khi người đánh giá con người đã bình luận, các pull request nhận được 69 commit. Cần lưu ý rằng các tác giả cũng có thể hành động theo bình luận của CodeReviewBot sau bình luận của người đánh giá con người. Ngược lại, một số
+
+Hình 10. Commit Sau Đánh giá Mã
+
+pull request có thể đã được mở như bản nháp, với các commit mới được thêm vào sau đó. Sự khác biệt giữa số commit sau CodeReviewBot và các bình luận với nhãn "Resolved" là mong đợi. Vì pull request nhận được nhiều hơn một bình luận và commit được thực hiện cho pull request, các bình luận được gắn nhãn "Resolved" nên nhiều hơn các commit. Tuy nhiên, các nhà phát triển cũng có thể bỏ qua chính sách gắn nhãn mong đợi và sử dụng "Resolved" thay vì "Closed" hoặc "Won't Fix." "Closed" đề cập đến các bình luận không có lỗi nhưng không được thực hiện vì một số lý do khác.
+
+RQ1: Các đánh giá mã tự động dựa trên LLM hữu ích như thế nào trong bối cảnh ngành công nghiệp phần mềm?
+
+Phân tích của chúng tôi cho thấy 73,8% bình luận được đề xuất bởi CodeReviewBot đã được chấp nhận và thực hiện bởi các nhà phát triển, làm nổi bật tác động đáng kể của bot đối với quy trình đánh giá mã. Hơn nữa, 88 commit đã được thực hiện sau CodeReviewBot và trước bình luận của người đánh giá con người, cho thấy những thay đổi chủ động dựa trên đề xuất của bot. Hầu hết người trả lời khảo sát cũng nhận thức được một cải thiện về chất lượng mã khi sử dụng CodeReviewBot. Do đó, chúng tôi kết luận rằng đánh giá mã tự động dựa trên LLM rất hữu ích trong bối cảnh của công ty này.
+
+3) Thời gian Đóng Pull Request: Thời gian đóng pull request trung bình tổng thể tăng từ năm giờ 52 phút trước khi giới thiệu CodeReviewBot lên tám giờ 20 phút sau khi thực hiện. Kiểm định t-test mẫu độc lập cho thấy sự tăng tổng thể này có ý nghĩa thống kê (p-value <0,001). Chúng tôi quan sát các xu hướng khác nhau trên các dự án như được mô tả trong Hình 11.
+
+Dự án #1 cho thấy sự tăng đáng kể về thời gian đóng, tăng từ hai giờ 48 phút lên bốn giờ 38 phút sau khi CodeReviewBot được giới thiệu. Kiểm định t-test cho thấy sự tăng này có ý nghĩa thống kê (p-value < 0,001). Dự án #2 trải qua sự giảm đáng kể về thời gian đóng, giảm từ sáu giờ sáu phút xuống ba giờ bảy phút. Phân tích cho kết quả có ý nghĩa thống kê (p-value <0,001). Dự án #3 quan sát một
+
+--- TRANG 8 ---
+Hình 11. Thời gian Đóng Pull Request Trước và Sau CodeReviewBot (H:MM)
+
+sự tăng thời gian đóng từ 20 giờ 22 phút lên 30 giờ 51 phút sau khi giới thiệu bot. Kiểm định thống kê cho thấy sự tăng này có ý nghĩa thống kê (p-value <0,001).
+
+RQ2: Các đánh giá mã tự động dựa trên LLM tác động như thế nào đến tốc độ của quy trình đóng pull request?
+
+Kết quả của chúng tôi cho thấy một sự chậm lại đáng kể trong quy trình đóng pull request. Sự chậm lại này có thể được giải thích bởi việc các nhà phát triển cần giải quyết các bình luận bổ sung từ bot và những bình luận từ người đánh giá con người. Tác động đến thời gian đóng khác nhau trên các dự án khác nhau, cho thấy rằng các điều kiện cụ thể của dự án đóng vai trò quan trọng trong việc xác định các tác động.
+
+Hình 12. Số Bình luận Trung bình của Người Đánh giá Con người
+
+4) Bình luận Người Đánh giá Con người: Nhìn chung, các người đánh giá con người để lại trung bình 0,31 bình luận mỗi pull request trước khi triển khai CodeReviewBot, giảm xuống 0,28 sau đó, như được hiển thị trong Hình 12. Phân tích hồi quy Poisson cho thấy sự giảm tổng thể này không có ý nghĩa thống kê (p-value ≥0,05). Để so sánh, CodeReviewBot để lại trung bình cao hơn là 3,65 bình luận mỗi pull request. Phân tích thống kê tiết lộ các xu hướng khác nhau trên các dự án:
+
+Sau khi giới thiệu CodeReviewBot, bình luận của con người mỗi pull request tăng đáng kể trong Dự án #1 (từ 0,14 lên 0,29, p-value <0,05), giảm đáng kể trong Dự án #2 (từ 0,37 xuống 0,08, p-value <0,05), và không thay đổi có ý nghĩa thống kê trong Dự án #3 (từ 0,50 xuống 0,49, p-value ≥0,05).
+
+RQ3: Việc giới thiệu đánh giá mã tự động dựa trên LLM ảnh hưởng như thế nào đến khối lượng hoạt động đánh giá mã của con người?
+
+Số bình luận của con người trung bình giảm từ 0,31 xuống 0,28 với việc giới thiệu CodeReviewBot. Tuy nhiên, theo phân tích hồi quy Poisson của chúng tôi, sự giảm này không có ý nghĩa thống kê. Ngoài ra, tác động của đánh giá mã tự động dựa trên LLM đối với hoạt động người đánh giá con người khác nhau trên các dự án khác nhau, có thể bị ảnh hưởng bởi động lực dự án và thực hành nhóm.
+
+D. Câu hỏi Mở của Khảo sát Ý kiến Chung
+Khảo sát ý kiến chung có hai câu hỏi về ưu điểm và nhược điểm của đánh giá mã tự động. Chúng tôi nhận được 20 câu trả lời hợp lệ, với hai phản hồi không hữu ích (khoảng trống). Một tỷ lệ đáng kể người tham gia (13/20) nhận xét về ưu điểm liên quan đến cải thiện chất lượng mã và duy trì tiêu chuẩn mã hóa. Một số người trả lời làm nổi bật những cải tiến trong quy trình đánh giá, chẳng hạn như rút ngắn quy trình đánh giá và giúp phát hiện các code smell bị bỏ qua và lỗi tiềm ẩn. Các mô tả mã được tạo tự động được trích dẫn là có lợi trong việc đẩy nhanh quy trình đánh giá. Các ưu điểm đáng chú ý khác bao gồm cung cấp đề xuất cải thiện và tăng cường nhận thức về các thực hành tốt nhất.
+
+RQ4: Các nhà phát triển nhận thức như thế nào về các công cụ đánh giá mã tự động dựa trên LLM?
+
+Một số thực hành viên bày tỏ lo ngại rằng các đề xuất ngoài phạm vi hoặc không liên quan có thể làm chậm đánh giá và tạo ra sự phân tâm. Một số thực hành viên lo ngại rằng đánh giá mã tự động bỏ lỡ các vấn đề quan trọng mà người đánh giá con người sẽ phát hiện. Một người trả lời đã nêu ra một mối lo ngại đáng kể về đánh giá mã tự động có thể thay đổi ngữ cảnh của pull request, điều này có thể đưa ra các lỗi nghiêm trọng nếu các thay đổi được áp dụng mà không xem xét cẩn thận. Bất chấp những nhược điểm này, phần lớn các nhà phát triển nhận thức các công cụ đánh giá mã tự động là có lợi cho việc cải thiện chất lượng mã và duy trì tiêu chuẩn mã hóa, đặc biệt bằng cách phát hiện các vấn đề chất lượng và cung cấp đề xuất cải thiện.
+
+--- TRANG 9 ---
+V. THẢO LUẬN
+A. Đánh giá mã tự động dựa trên LLM có cải thiện đáng kể hoạt động phát triển phần mềm không?
+
+Thực hiện một công cụ đánh giá mã tự động dựa trên LLM là một quyết định tổ chức đáng kể bao gồm cả lợi ích và chi phí. Trong khi những công cụ như vậy phát sinh chi phí—ví dụ, trong nghiên cứu của chúng tôi, CodeReviewBot sử dụng trung bình 3.937 token mỗi pull request với chi phí 0,48$—chúng cũng yêu cầu các nhà phát triển đầu tư thời gian để giải quyết các bình luận đánh giá.
+
+Các nhãn bình luận được gán bởi các tác giả pull request cho thấy 73,8% bình luận đã được tác giả giải quyết. Ngoài ra, chúng tôi quan sát rằng 88 commit đã được thực hiện sau đánh giá của CodeReviewBot trước đánh giá của con người, cho thấy rằng các đánh giá tự động đã ảnh hưởng đến pull request. Khảo sát các nhà phát triển của chúng tôi tiết lộ rằng 68,8% nhận thức được một cải thiện nhỏ về chất lượng mã sau CodeReviewBot. Theo kết quả khảo sát của chúng tôi, các thực hành viên coi các vấn đề được chỉ ra bởi CodeReviewBot là quan trọng và liên quan đến các pull request tương ứng. Điều này hỗ trợ thêm cho tính hữu ích của đánh giá mã tự động dựa trên LLM.
+
+Ngoài tính hữu ích cho chất lượng mã, đánh giá mã cũng hữu ích cho chia sẻ kiến thức [5]. Trong khảo sát ý kiến chung của chúng tôi, chúng tôi đã hỏi các thực hành viên liệu CodeReviewBot có ảnh hưởng đến chia sẻ kiến thức hay không. Hầu hết người trả lời trích dẫn không có tác động, trong khi không có người trả lời nào chỉ ra tác động tiêu cực.
+
+Một trong những lợi ích được trích dẫn của đánh giá mã tự động là tiềm năng tiết kiệm thời gian và nỗ lực nhà phát triển [31]. Để khám phá điều này, chúng tôi đã phân tích thời gian đóng pull request. Mặc dù chúng tôi quan sát sự tăng tổng thể về thời gian đóng, điều này có thể được quy cho việc các tác giả dành thêm thời gian để sửa các vấn đề được làm nổi bật bởi bot đánh giá tự động. Các xu hướng khác nhau đáng kể trên các dự án khác nhau, cho thấy rằng các nhà phát triển đang tích cực tương tác với phản hồi tự động, điều này có thể đã kéo dài thời gian đóng nhưng có thể dẫn đến chất lượng mã cao hơn. Hơn nữa, phân tích của chúng tôi cho thấy số bình luận đánh giá của con người mỗi pull request không giảm đáng kể sau khi giới thiệu công cụ tự động. Điều này cho thấy rằng trong khi các nhà phát triển đầu tư nỗ lực bổ sung để giải quyết các bình luận tự động, nó không thay thế nhu cầu đánh giá của con người. Do đó, chúng tôi không tìm thấy bằng chứng thuyết phục hỗ trợ việc tiết kiệm thời gian hoặc nỗ lực nhất quán do thực hiện công cụ đánh giá mã tự động.
+
+Phát hiện của chúng tôi cho thấy rằng đánh giá mã tự động có thể cải thiện một cách vừa phải hoạt động phát triển phần mềm. Quyết định thực hiện một công cụ như vậy vẫn nên được xem xét cẩn thận. Những lợi ích quan sát được trong nghiên cứu của chúng tôi có thể bị cản trở bởi thói quen đánh giá mã hiện có hoặc các hoạt động đảm bảo chất lượng khác đang có.
+
+B. Ý nghĩa đối với Thực hành viên
+Phụ thuộc quá mức vào đánh giá mã tự động: Một người trả lời trong khảo sát ý kiến chung nói, "Nó có thể tạo ra thành kiến nên người đánh giá có thể bỏ qua bằng cách nói rằng nếu có vấn đề gì khác tồn tại, bot sẽ đã viết ra nó." Sự phụ thuộc quá mức vào tự động hóa này có thể có hại cho tổ chức bằng cách cho phép các lỗi nghiêm trọng không được chú ý. Các thực hành viên nên kiểm tra các công cụ đánh giá mã tự động dựa trên LLM một cách rộng rãi trước khi áp dụng rộng rãi. Nhận thức tổ chức về các hạn chế nên được thiết lập, và các biện pháp phòng ngừa cần thiết nên được thực hiện.
+
+Bình luận Đánh giá Không cần thiết: Kết quả từ nhãn giải quyết bình luận cho thấy 26,2% bình luận của công cụ không được hành động vì chúng được gắn nhãn "Won't Fix" hoặc "Closed". Những bình luận này có thể quá tầm thường, không liên quan hoặc không phải là vấn đề cho ngữ cảnh của pull request. Dù sao, các nhà phát triển cũng dành thời gian cho chúng. Người trả lời khảo sát cũng trích dẫn vấn đề này. Một người trả lời trong khảo sát ý kiến chung nói, "Nó cũng đưa ra đề xuất sửa chữa các khối mã không nằm trong phạm vi của nhiệm vụ," và một người khác nói, "Đôi khi những lỗi mà nó nghĩ tìm thấy không phải là lỗi."
+
+Xác định Lỗi Sớm: Khảo sát cho thấy rằng xác định lỗi sớm là một ưu điểm của đánh giá mã tự động. Một người trả lời trong khảo sát ý kiến chung nói "Nó làm cho việc tìm kiếm khiếm khuyết mã dễ dàng hơn. Các nhà phát triển có thể thấy lỗi của họ nhanh chóng." Người trả lời cũng làm nổi bật khả năng của công cụ trong việc phát hiện lỗi chính tả và mã test bị quên. Một người khác nói, "rất hiệu quả trong việc phát hiện code smell bị bỏ qua". Những nhận xét này cho chúng tôi thấy cách công cụ có thể cải thiện chất lượng mã.
+
+C. Ý nghĩa đối với Nhà nghiên cứu
+Hiệu quả của Công cụ Dựa trên LLM: Nghiên cứu này cung cấp bằng chứng thực nghiệm có giá trị về hiệu quả của các công cụ đánh giá mã tự động dựa trên LLM trong môi trường ngành thực tế. Sự tiếp nhận tích cực của các nhà phát triển và tỷ lệ phần trăm bình luận được tính đến trong các pull request (73,8%) cho thấy rằng LLM có thể tăng cường quy trình đánh giá mã. Một người trả lời trong khảo sát ý kiến chung nói, "Nó đã cải thiện nhận thức của nhóm về chất lượng mã". Nhận xét này cho thấy rằng công cụ cũng có tác động ngoài thực hành đánh giá mã.
+
+Động lực Tương tác Con người-AI: Việc tích hợp đánh giá tự động vào quy trình đánh giá mã đưa ra động lực mới trong tương tác con người-AI. Một trong những phát hiện là sự thất vọng do đánh giá đệ quy gây ra, với một người trả lời nói, "Với mỗi sửa chữa, một đánh giá mới được tạo ra. Tuy nhiên, sau đánh giá ban đầu, các bình luận tiếp theo về pull request đã được sửa đổi thường trở nên dư thừa và không hữu ích.". Các nhà nghiên cứu có thể điều tra các yếu tố ảnh hưởng đến lòng tin, sự hài lòng và sự phụ thuộc của nhà phát triển vào đánh giá tự động, dẫn đến những cải tiến thiết kế tập trung vào con người hơn trong những công cụ này.
+
+VI. CÁC MỐI ĐE DỌA ĐỐI VỚI TÍNH HỢP LỆ
+A. Tính hợp lệ Cấu trúc
+Quy trình thu thập dữ liệu của chúng tôi bao gồm thu thập dữ liệu từ người trả lời thông qua câu trả lời khảo sát và nhãn giải quyết bình luận. Những mục dữ liệu này có thể bị hiểu sai. Để giảm thiểu mối đe dọa này đối với tính hợp lệ, nỗ lực bổ sung đã được đưa vào việc giải thích kỳ vọng từ người trả lời. Chúng tôi cũng đã xem xét kỹ lưỡng các câu hỏi với nhiều người đánh giá để diễn đạt lại ngôn ngữ có thể gây nhầm lẫn và phức tạp.
+
+--- TRANG 10 ---
+B. Tính hợp lệ Nội bộ
+Một số tác giả của bài báo này là thành viên của tổ chức phát triển phần mềm Beko. Cụ thể, một trong những tác giả đang ở vị trí quản lý trong tổ chức. Điều này đưa ra khả năng thiên vị. Để có lập trường trung lập, các kết quả và thảo luận trong bài báo này được tạo ra bởi các tác giả không phải thực hành viên.
+
+Chúng tôi thừa nhận rằng chính sách giải quyết bình luận bắt buộc có thể được coi là tốn thời gian cho các thực hành viên vì họ không cung cấp nhãn giải quyết bình luận đáng tin cậy. Để tính đến mối đe dọa này, chúng tôi đã tam giác hóa các nguồn dữ liệu của chúng tôi để đưa ra kết luận. Ví dụ, chúng tôi đã sử dụng nhãn bình luận cùng với thông tin thay đổi pull request để xem liệu chúng có đồng ý ở một mức độ nhất định hay không.
+
+Việc thu thập dữ liệu của chúng tôi tập trung xung quanh mùa hè. Các thực hành viên Beko đề cập rằng nhiều nhà phát triển đi nghỉ hơn trong mùa hè, điều này làm giảm năng suất và tốc độ phát triển. Về vấn đề này, chúng tôi thừa nhận rằng kết luận của chúng tôi phụ thuộc vào tính thời vụ.
+
+Các dự án được kiểm tra trong nghiên cứu này là các dự án thực tế đã bắt đầu từ lâu trước khi nghiên cứu bắt đầu. Chúng tôi không liên kết bất kỳ kết quả nào với các thực hành viên cá nhân để tránh tác động không mong muốn và mối quan tâm đạo đức. Do đó, các thực hành viên tham gia vào các dự án không có động lực để hành xử khác đi vì phân tích được tiến hành độc lập sau đó.
+
+Vì các tác giả pull request cùng một khảo sát pull request lặp đi lặp lại, chúng tôi xem xét rằng họ có thể trở nên thất vọng và trả lời một cách bất cẩn. Để tránh sự suy giảm về sự tham gia này, chúng tôi đã quyết định giới hạn khảo sát ở ba câu hỏi.
+
+Phân tích dữ liệu định lượng của chúng tôi dựa vào tính toàn vẹn của dữ liệu trong Azure DevOps. Hỏng dữ liệu trong cơ sở dữ liệu có thể tác động đến kết quả của chúng tôi. Để giảm thiểu tình trạng hỏng như vậy, chúng tôi đã tiến hành các phiên làm sạch dữ liệu chung nơi chúng tôi thảo luận về chất lượng dữ liệu. Chúng tôi đã xác định hai tài khoản tham gia vào các dự án được sử dụng làm tài khoản bot trong một thời gian nhất định. Chúng tôi đã loại bỏ các bình luận được thực hiện bởi những tài khoản đó. Chúng tôi thừa nhận rằng những bình luận đó có thể bao gồm bình luận của con người, mặc dù hầu hết là từ bot.
+
+Mặc dù các bình luận "Active" và "Pending" sẽ không cho phép pull request được đóng, chúng tôi quan sát rằng một số bình luận tự động đến sau khi pull request đã được đóng. Những bình luận này chủ yếu được để lại như hoạt động, và chúng tôi đã bỏ qua chúng trong phân tích của chúng tôi.
+
+C. Tính hợp lệ Ngoài
+Nghiên cứu của chúng tôi được tiến hành với một công cụ đánh giá mã tự động nhất định (Qodo PR Agent [29]) dựa trên một LLM nhất định (GPT-4 32k [30]). Vì chúng tôi đã sử dụng công cụ và mô hình cụ thể này, chúng tôi thừa nhận rằng các LLM và công cụ đánh giá mã tự động khác có thể thể hiện hành vi khác nhau. Do đó, cần nghiên cứu thêm để xác định liệu các LLM khác có hành xử theo cách tương tự hay không.
+
+D. Tính hợp lệ Kết luận
+Nghiên cứu này có thể đã dẫn đến kết quả khác trong một môi trường công ty khác. Chúng tôi không thể tính đến nhiều điều kiện thay đổi để đạt được kết luận thống kê; do đó, chúng tôi coi nghiên cứu trường hợp là cách tiếp cận phù hợp nhất. Một kiểm tra nghiên cứu trường hợp đa số sử dụng phương pháp của chúng tôi sẽ được yêu cầu để đạt được kết luận quyết định. Do những thách thức của việc tiến hành một nghiên cứu toàn diện như vậy, chúng tôi đã giới hạn phạm vi của chúng tôi và không nhằm vào khái quát thống kê.
+
+VII. KẾT LUẬN
+Trong nghiên cứu này, chúng tôi đã tiến hành một nghiên cứu trường hợp đánh giá trong bộ phận phát triển phần mềm của Beko, một công ty đa quốc gia, tập trung vào đánh giá mã tự động. Một công cụ đánh giá mã tự động dựa trên LLM, dựa trên Qodo PR-Agent mã nguồn mở [29], đã được áp dụng trên mười dự án. Chúng tôi đã thu hẹp phạm vi nghiên cứu của chúng tôi xuống ba trong số những dự án này, được chọn dựa trên thời gian sử dụng công cụ lâu hơn của chúng.
+
+Phát hiện của chúng tôi cho thấy rằng công cụ này hiệu quả, với 73,8% bình luận được hành động. Ngoài ra, hầu hết các nhà phát triển báo cáo một cải thiện nhỏ về chất lượng mã trong khảo sát và không có suy giảm trong chia sẻ kiến thức. Về thời gian đóng pull request, có sự tăng có ý nghĩa thống kê giữa thời gian trung bình của năm giờ 52 phút trước và tám giờ 20 phút sau khi giới thiệu công cụ. Trên các dự án, có các xu hướng khác nhau, với thời gian đóng pull request của một dự án giảm. Ngoài ra, không có thay đổi đáng kể về số lượng đánh giá mã của con người trước và sau khi thực hiện công cụ.
+
+Vì các nhà phát triển là người dùng chính tương tác với công cụ, chúng tôi đã kiểm tra nhận thức của họ về đánh giá mã tự động. Khảo sát tiết lộ rằng các thực hành viên thường nhận thức các vấn đề được xác định trong đánh giá tự động là quan trọng và liên quan đến pull request. Người tham gia ghi nhận một số ưu điểm đóng góp vào chất lượng mã, bao gồm phát hiện lỗi nhanh hơn, loại bỏ code smell, tăng nhận thức về chất lượng mã, và thúc đẩy các thực hành tốt nhất được tiêu chuẩn hóa. Các nhược điểm bao gồm đề xuất cho các thay đổi mã ngoài phạm vi và thỉnh thoảng các khuyến nghị không phù hợp làm phân tâm các nhà phát triển và làm chậm phát triển. Cũng có mối lo ngại về những nhược điểm của việc phụ thuộc quá mức tiềm ẩn vào các hệ thống tự động.
+
+Nghiên cứu của chúng tôi tiết lộ rằng đánh giá mã tự động có thể tác động tích cực đến phát triển phần mềm; tuy nhiên, một số tác động không mong muốn và nhược điểm cũng được xác định. Các thực hành viên có thể sử dụng những hiểu biết này để đưa ra quyết định có thông tin hơn về việc thực hiện và sử dụng các công cụ đánh giá mã tự động dựa trên LLM. Chúng tôi nhằm tái tạo nghiên cứu của chúng tôi với các công ty phát triển phần mềm khác nhau để tính đến sự khác biệt giữa các tổ chức trong công việc tương lai của chúng tôi.
+
+VIII. LỜI CẢM ƠN
+Công trình này đã được hỗ trợ bởi dự án ITEA4 GENIUS, đã được tài trợ bởi các cơ quan tài trợ quốc gia của các quốc gia tham gia: https://itea4.org/project/genius.html
+
+--- TRANG 11 ---
+TÀI LIỆU THAM KHẢO
+[1] T. Baum, O. Liskin, K. Niklas, và K. Schneider, "Một lược đồ phân loại đa mặt cho quy trình đánh giá mã công nghiệp dựa trên thay đổi," trong 2016 IEEE International Conference on Software Quality, Reliability and Security (QRS), 2016, tr. 74–85.
+[2] M. E. Fagan, "Thiết kế và kiểm tra mã để giảm lỗi trong phát triển chương trình," IBM Systems Journal, tập 15, số 3, tr. 182–211, 1976.
+[3] N. Davila và I. Nunes, "Một đánh giá tài liệu có hệ thống và phân loại đánh giá mã hiện đại," Journal of Systems and Software, tập 177, tr. 110951, 2021. [Trực tuyến]. Có sẵn: https://www.sciencedirect.com/science/article/pii/S0164121221000480
+[4] A. Bacchelli và C. Bird, "Kỳ vọng, kết quả, và thách thức của đánh giá mã hiện đại," trong 2013 35th International Conference on Software Engineering (ICSE), 2013, tr. 712–721.
+[5] L. MacLeod, M. Greiler, M.-A. Storey, C. Bird, và J. Czerwonka, "Đánh giá mã trong chiến hào: Thách thức và thực hành tốt nhất," IEEE Software, tập 35, số 4, tr. 34–42, 2018.
+[6] C. Sadowski, E. Söderberg, L. Church, M. Sipko, và A. Bacchelli, "Đánh giá mã hiện đại: Một nghiên cứu trường hợp tại google," trong International Conference on Software Engineering, Software Engineering in Practice track (ICSE SEIP), 2018.
+[7] A. Bosu và J. C. Carver, "Tác động của đánh giá mã đồng đẳng đến hình thành ấn tượng đồng đẳng: Một khảo sát," trong 2013 ACM / IEEE International Symposium on Empirical Software Engineering and Measurement, 2013, tr. 133–142.
+[8] P. C. Rigby và C. Bird, "Thực hành đánh giá đồng đẳng phần mềm đương đại hội tụ," trong Proceedings of the 2013 9th Joint Meeting on Foundations of Software Engineering, ser. ESEC/FSE 2013. New York, NY, USA: Association for Computing Machinery, 2013, tr. 202–212. [Trực tuyến]. Có sẵn: https://doi.org/10.1145/2491411.2491444
+[9] Y. Hong, C. Tantithamthavorn, P. Thongtanunam, và A. Aleti, "Commentfinder: một khuyến nghị bình luận đánh giá mã đơn giản hơn, nhanh hơn, chính xác hơn," trong Proceedings of the 30th ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering, ser. ESEC/FSE 2022. New York, NY, USA: Association for Computing Machinery, 2022, tr. 507–519. [Trực tuyến]. Có sẵn: https://doi.org/10.1145/3540250.3549119
+[10] Z. Li, S. Lu, D. Guo, N. Duan, S. Jannu, G. Jenks, D. Majumder, J. Green, A. Svyatkovskiy, S. Fu, và N. Sundaresan, "Tự động hóa hoạt động đánh giá mã bằng đào tạo trước quy mô lớn," 2022.
+[11] R. Tufano, S. Masiero, A. Mastropaolo, L. Pascarella, D. Poshyvanyk, và G. Bavota, "Sử dụng mô hình đã được đào tạo trước để thúc đẩy tự động hóa đánh giá mã," CoRR, tập abs/2201.06850, 2022. [Trực tuyến]. Có sẵn: https://arxiv.org/abs/2201.06850
+[12] L. Li, L. Yang, H. Jiang, J. Yan, T. Luo, Z. Hua, G. Liang, và C. Zuo, "Auger: Tự động tạo bình luận đánh giá với mô hình đào tạo trước," 2022.
+[13] J. Yu, P. Liang, Y. Fu, A. Tahir, M. Shahin, C. Wang, và Y. Cai, "Đánh giá mã bảo mật bằng mô hình ngôn ngữ lớn," 2024. [Trực tuyến]. Có sẵn: https://arxiv.org/abs/2401.16310
+[14] L. Fan, J. Liu, Z. Liu, D. Lo, X. Xia, và S. Li, "Khám phá khả năng của llm cho các nhiệm vụ liên quan đến thay đổi mã," 2024. [Trực tuyến]. Có sẵn: https://arxiv.org/abs/2407.02824
+[15] M. Vijayvergiya, M. Salawa, I. Budiselić, D. Zheng, P. Lamblin, M. Ivanković, J. Carin, M. Lewko, J. Andonov, G. Petrović et al., "Đánh giá thực hành mã hóa hỗ trợ ai trong đánh giá mã hiện đại," trong Proceedings of the 1st ACM International Conference on AI-Powered Software, 2024, tr. 85–93.
+[16] C. Pornprasit và C. Tantithamthavorn, "Tinh chỉnh và kỹ thuật prompt cho tự động hóa đánh giá mã dựa trên mô hình ngôn ngữ lớn," Information and Software Technology, tập 175, tr. 107523, 2024. [Trực tuyến]. Có sẵn: https://www.sciencedirect.com/science/article/pii/S0950584924001289
+[17] M. Nashaat và J. Miller, "Hướng tới tinh chỉnh hiệu quả của mô hình ngôn ngữ với dữ liệu tổ chức cho đánh giá phần mềm tự động," IEEE Transactions on Software Engineering, tr. 1–14, 2024.
+[18] D. Tang, K. Kim, Y. Song, C. Lothritz, B. Li, S. Ezzini, H. Tian, J. Klein, và T. F. Bissyandé, "Codeagent: Tác nhân hợp tác cho kỹ thuật phần mềm," 2024. [Trực tuyến]. Có sẵn: https://api.semanticscholar.org/CorpusID:267412469
+[19] Z. Rasheed, M. A. Sami, M. Waseem, K.-K. Kemell, X. Wang, A. Nguyen, K. Systä, và P. Abrahamsson, "Đánh giá mã được hỗ trợ bởi ai với llm: Kết quả ban đầu," 2024.
+[20] R. Tufano, O. Dabić, A. Mastropaolo, M. Ciniselli, và G. Bavota, "Tự động hóa đánh giá mã: Điểm mạnh và điểm yếu của hiện đại," IEEE Trans. Softw. Eng., tập 50, số 2, tr. 338–353, Tháng 1 2024. [Trực tuyến]. Có sẵn: https://doi.org/10.1109/TSE.2023.3348172
+
+[Tiếp tục với các tài liệu tham khảo còn lại...]

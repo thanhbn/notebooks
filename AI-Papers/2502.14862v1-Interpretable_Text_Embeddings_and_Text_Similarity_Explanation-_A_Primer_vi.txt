@@ -1,0 +1,930 @@
+# 2502.14862v1.pdf
+# Converted from PDF to TXT
+# Source path: D:\llm\notebooks\AI-Papers\2502.14862v1.pdf
+# File size: 628017 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+Biểu Diễn Văn Bản Có Thể Giải Thích và Giải Thích Độ Tương Tự Văn Bản: Một Hướng Dẫn Cơ Bản
+Juri Opitz1Lucas Möller2Andrianos Michail1Simon Clematide1
+1University of Zurich, Switzerland
+2IMS at University of Stuttgart, Germany
+1{jurialexander.opitz,andrianos.michail,simon.clematide}@uzh.ch
+2lucas.moeller@ims.uni-stuttgart.de
+
+Tóm Tắt
+Biểu diễn văn bản (text embeddings) và các mô hình biểu diễn văn bản 
+là xương sống của nhiều hệ thống AI và NLP, 
+đặc biệt là những hệ thống liên quan đến tìm kiếm. Tuy nhiên, 
+các thách thức về khả năng giải thích vẫn tồn tại, đặc biệt là trong 
+việc giải thích các điểm số độ tương tự thu được, điều này 
+rất quan trọng đối với các ứng dụng yêu cầu tính minh bạch. 
+Trong bài báo này, chúng tôi đưa ra một cái nhìn tổng quan có cấu trúc 
+về các phương pháp khả năng giải thích chuyên về việc giải thích 
+những điểm số độ tương tự đó, một lĩnh vực nghiên cứu đang nổi lên. 
+Chúng tôi nghiên cứu các ý tưởng và kỹ thuật riêng lẻ của các phương pháp, 
+đánh giá tiềm năng của chúng trong việc cải thiện khả năng giải thích 
+của biểu diễn văn bản và giải thích độ tương tự dự đoán.
+
+1 Giới Thiệu
+Các mô hình biểu diễn (Reimers and Gurevych, 2019; Gao et al., 2021) 
+là không thể thiếu trong nhiều nhiệm vụ NLP trong cả học thuật và công nghiệp. 
+Các ứng dụng trải rộng từ tìm kiếm ngữ nghĩa và truy xuất thông tin 
+(Ye et al., 2016; Guo et al., 2020; Muennighoff, 2022; Hambarde and Proenca, 
+2023; Alatrash et al., 2024) đến phân loại văn bản (Schopf et al., 2022), 
+mô hình hóa chủ đề (Grootendorst, 2022), đánh giá NLG (Celikyilmaz et al., 
+2020; Uhrig et al., 2021; Sai et al., 2022; Larionov et al., 2023; 
+Chollampatt et al., 2025), xây dựng đồ thị tri thức (Plenz et al., 2023), 
+và tạo sinh tăng cường truy xuất (RAG)—một dạng đặc biệt của truy xuất thông tin 
+tận dụng độ tương tự biểu diễn để xác định bằng chứng từ một kho ngữ liệu lớn 
+và tóm tắt nó bằng cách sử dụng các Mô hình Ngôn ngữ Lớn sinh tạo 
+(LLMs, Lewis et al., 2020; Gao et al., 2023). Hơn nữa, những tiến bộ trong 
+các mô hình cơ sở (Günther et al., 2023; Wang et al., 2024a), kích thước ngữ cảnh 
+(Li et al., 2023), và cơ sở hạ tầng huấn luyện có thể mở rộng (Wang et al., 2022) 
+đã liên tục nâng cao khả năng của các biểu diễn.
+
+Tuy nhiên, một thách thức cấp bách vẫn tồn tại: vấn đề khả năng giải thích. 
+Ví dụ, khi một tập hợp các tài liệu tương tự nhất được truy xuất để phản hồi
+một truy vấn, chúng ta muốn diễn đạt tại sao những tài liệu này được chọn 
+là tương tự nhất, hoặc tại sao một tài liệu cụ thể bị bỏ qua. Các biến số 
+độ tương tự cũng rất phức tạp: Các xếp hạng độ tương tự thu được có dựa trên 
+độ tương tự ngữ nghĩa, tính liên quan, tính diễn giải lại, sự thích hợp—
+những khái niệm khác biệt một cách tinh tế (Budanitsky and Hirst, 2006; Kolb, 
+2009; Michail et al., 2025)—hay chúng chịu ảnh hưởng chủ yếu bởi các đặc điểm 
+bề ngoài như sự trùng lặp từ? Và những câu hỏi như vậy không chỉ là lý thuyết; 
+chúng có những tác động thực tế đáng kể. Ví dụ, các hệ thống biểu diễn được 
+triển khai trong các lĩnh vực nhạy cảm có thể cần phải biện minh cho kết quả đầu ra, 
+có thể thậm chí trong bối cảnh pháp lý.
+
+May mắn thay, nghiên cứu gần đây đã bắt đầu giải quyết khoảng trống khả năng 
+giải thích này. Bài báo của chúng tôi nhằm mục đích phục vụ như một hướng dẫn 
+cơ bản cho các nhà nghiên cứu và thực hành viên tìm hiểu các mô hình và phép đo 
+độ tương tự dựa trên biểu diễn. Bằng cách trình bày một cái nhìn tổng quan có cấu trúc 
+về các cách tiếp cận khả năng giải thích, chúng tôi hy vọng sẽ làm cho việc gia nhập 
+lĩnh vực này dễ dàng hơn và truyền cảm hứng cho những đổi mới tiếp theo. 
+Hiểu được cách tính toán độ tương tự—và cách có thể giải thích nó—không chỉ 
+tăng cường tính minh bạch mà còn có thể mở đường cho các phương pháp và ứng dụng được cải thiện.
+
+2 Thiết Lập Bối Cảnh
+Chúng tôi nghiên cứu khả năng giải thích trong biểu diễn văn bản thần kinh 
+và độ tương tự do chúng tạo ra. Chúng tôi phân biệt điều này với các cách tiếp cận 
+thông thường đối với giải thích phân loại như 'LIME' (Ribeiro et al., 2016), 
+hoặc 'giá trị Shapley', xem thêm khảo sát của Calderon và Reichart (2024). 
+Độ tương tự không dựa trên một đầu vào duy nhất mà là sự tương tác của hai đầu vào, 
+do đó cần các phương pháp chuyên biệt.
+
+Ký hiệu. Giả sử một văn bản đầu vào (đã được tokenize) = [t1, ..., t n], 
+và hai mạng nơ-ron F, G bao gồm L lớp, mỗi lớp đại diện cho một hàm, 
+ví dụ, trong trường hợp của F: F=fL◦...◦f1. Thông thường F=G, 
+tức là, trọng số của hai mạng được chia sẻ,
+1arXiv:2502.14862v1  [cs.CL]  20 Feb 2025
+
+--- TRANG 2 ---
+lớp f1 lớp f...  lớp fL  
+lớp g1 lớp g...lớp gL
+ ∑ =simsim
+reduce
+  ∑ ≈sim
+∈Rd x 1∈Rd x 1Phép Gán Thuộc Tính
+Dựa Trên Tập Hợp
+Đầu vào: n token của Văn bản X Đầu vào: m token của Văn bản Yreduce
+∈Rd x m ∈Rd x nĐặc trưng 1
+Đặc trưng 2
+...
+Định Hình 
+Không Gian
+Sắp Xếp
+Token
+hộp
+Hình 1: Ba góc nhìn giải thích.
+
+cũng được gọi là mạng Siamese (Koch et al., 2015); nếu không được đề cập khác, 
+chúng tôi chỉ nói về F. Lớp đầu tiên ánh xạ các token thành các biểu diễn 
+có giá trị thực: E1=f1(text)∈Rd×m, trong khi các lớp nơ-ron liên tiếp 
+thực hiện các phép toán phi tuyến để biến đổi và tinh chỉnh biểu diễn. 
+Thường thì có một lớp cuối cùng (tùy chọn) L+1 có mục tiêu đặc biệt: 
+tạo ra một biểu diễn vector hóa có kích thước cố định độc lập với độ dài tài liệu, 
+tức là, eL+1=reduce (EL)∈Rd×1. Lớp này sẽ thực hiện phép lấy trung bình, 
+hoặc max-pooling trên các chiều biểu diễn token riêng lẻ. Cuối cùng, 
+chúng ta có thể khớp hiệu quả hai văn bản x, y thông qua các biểu diễn của chúng 
+ex=F(x), ey=F(y) bằng cách tính toán một hàm độ tương tự sim: 
+sim(ex, ey)∈R; trong trường hợp đơn giản nhất, đây có thể là tích vô hướng 
+sim(ex, ey) :=eT x ey, có thể được chuẩn hóa theo độ dài lx,y=|ex|2· |ey|2 
+để đạt được 'độ tương tự cosine' (có tương quan mạnh trong thực tế). 
+Quan trọng là, giá trị như vậy định lượng mối quan hệ tương tự giữa các văn bản, 
+và do đó chúng ta có thể xếp hạng các văn bản theo độ tương tự của chúng.
+
+Phân loại cách tiếp cận và cấu trúc bài báo. Định nghĩa của chúng tôi về biểu diễn 
+văn bản và độ tương tự cho phép chúng tôi phân biệt các loại cách tiếp cận 
+khả năng giải thích khác nhau (Hình 1).
+
+Đầu tiên chúng tôi sẽ tham quan các cách tiếp cận định hình không gian (§3). 
+Chúng nhằm mục đích định hình các không gian biểu diễn được chiếu, truyền vào 
+một số cấu trúc hữu ích. Ví dụ, không gian biểu diễn có thể được tạo thành 
+từ các đặc trưng khác nhau, điều này sẽ tương đương với một sim mà chúng ta 
+có thể phân tách và hiểu rõ hơn (Hình 1: Đặc trưng 1, Đặc trưng 2 ...). 
+Ngoài ra, chúng ta có thể định hình không gian để có tính biểu đạt hơn. 
+Ví dụ, chúng ta quan sát các cách tiếp cận đại diện cho văn bản dưới dạng 
+một hộp nhiều chiều, hoặc một biến ngẫu nhiên (Hình 1, hộp, Nd(µ,Σ)).
+
+Một lớp cách tiếp cận khác là các cách tiếp cận dựa trên tập hợp (§4). 
+Chúng không dựa sim của mình trên hai biểu diễn mà trên hai tập hợp biểu diễn. 
+Những biểu diễn này thường liên quan đến các đơn vị có thể giải thích được bởi con người 
+(tức là, token), thường là đầu ra của lớp cuối cùng fL(x), fL(y). 
+Các toán tử lý thuyết tập hợp sau đó có thể được áp dụng (ví dụ, giao). 
+Chúng ta cũng có thể truy xuất một sự sắp xếp giữa các biểu diễn, 
+thêm một lớp minh bạch khác về những gì tạo nên sim (Hình 1, Sắp xếp Token).
+
+Loại thứ ba của các cách tiếp cận mà chúng tôi ký hiệu là các cách tiếp cận 
+dựa trên phép gán thuộc tính (§5). Những cách này nhằm mục đích gán sim 
+trực tiếp cho các đầu vào, hoặc cặp đầu vào, dựa trên các biểu diễn được 
+tiêu thụ bởi các lớp mạng nơ-ron nhất định (Hình 1, Phép Gán Thuộc Tính: 
+Đối với một lớp cụ thể, một ma trận độ tương tự theo cặp được xây dựng 
+để xấp xỉ sim).
+
+Chúng tôi kết thúc việc trình bày ba lớp cách tiếp cận với một cuộc thảo luận (§6), 
+phác thảo các thách thức thích hợp. Cuối cùng, chúng tôi đưa ra một cái nhìn tổng quan 
+về các nghiên cứu liên quan (§7), cũng như các bộ dữ liệu thu thập 
+giải thích độ tương tự của con người.
+
+3 Định Hình Các Không Gian Có Thể Giải Thích
+3.1 Ý Tưởng
+Những cách tiếp cận này nhằm mục đích cấu trúc hóa không gian biểu diễn 
+sao cho nó trở nên có thể giải thích hơn. Ví dụ, không gian có thể được 
+định hình để biểu đạt các khía cạnh, hình học có thể giải thích hoặc 
+phân phối xác suất.
+
+3.2 Các Cách Tiếp Cận
+3.2.1 Phân Tách Đặc Trưng
+Các phương pháp truyền thống cho độ tương tự văn bản thường dựa vào 
+biểu diễn đặc trưng "túi từ" tường minh. Mặc dù điều này cung cấp 
+tính minh bạch lớn trong biểu diễn và tính toán độ tương tự, nó thiếu 
+sức mạnh biểu diễn của các biểu diễn thần kinh, không thể khớp các 
+diễn giải lại, và do đó dẫn đến hiệu suất tương đối kém trên các 
+điểm chuẩn tiêu chuẩn. Những nỗ lực gần đây nhằm mục đích kết hợp 
+khả năng giải thích của các đặc trưng với sức mạnh của các biểu diễn thần kinh.
+
+Đặc trưng Q/A. Cách tiếp cận này liên quan đến việc đóng khung tạo biểu diễn 
+như việc trả lời một tập hợp các câu hỏi được xác định trước về một văn bản 
+và mã hóa các câu trả lời dưới dạng đặc trưng, cho phép khả năng giải thích. 
+Đối với điều này, trước tiên chúng ta cần tìm một tập hợp câu hỏi phù hợp 
+về văn bản, và tạo dữ liệu huấn luyện thu được các câu trả lời cho những 
+câu hỏi này. Sau đó, chúng ta có thể chưng cất một mô hình biểu diễn văn bản 
+hiệu quả và có thể giải thích bằng cách sử dụng dữ liệu huấn luyện này. 
+Cụ thể, Benara et al. (2024) để một LLM trả lời các câu hỏi "Có"/"Không"
+
+--- TRANG 3 ---
+0.000.250.500.751.00
+TỔNG THỂ Khái niệm Phủ định Tiêu điểm Đồng tham chiếu Lượng từHình 2: Cách sim tổng thể xuất hiện từ những độ tương tự 
+khía cạnh khác nhau, thông qua phân tách không gian (S3BERT). 
+Ví dụ được rút gọn thành một lựa chọn các đặc trưng.
+
+về một văn bản (ví dụ, văn bản có về thể thao không?, Văn bản có biểu đạt 
+một lệnh không?), xây dựng prompt dựa trên mô tả bộ dữ liệu. Để dự đoán 
+phản hồi fMRI cho các kích thích ngôn ngữ, phương pháp của họ vượt trội 
+hơn một số baseline. Mặt khác, Sun et al. (2024) trước tiên xây dựng 
+một không gian khái niệm từ một bộ dữ liệu bằng cách phân cụm các 
+biểu diễn từ, và giới thiệu hai ràng buộc, cụ thể là prompt Q/A phải 
+dựa trên các khái niệm trọng tâm. Ngoài ra, đối với các cặp văn bản 
+tích cực, tất cả câu hỏi nên được trả lời bằng "Có", trong khi đối với 
+các cặp văn bản tiêu cực, tất cả câu hỏi được trả lời bằng "Không", 
+để làm sắc nét ranh giới giữa các văn bản tương tự và không tương tự.
+
+Biểu diễn con. Một không gian biểu diễn có thể được phân tách thành 
+các không gian con nhiều chiều, mỗi không gian cô lập một khía cạnh 
+ngữ nghĩa nhất định. Điều này cho phép độ tương tự tổng thể giữa các 
+văn bản được chia nhỏ thành các điểm số độ tương tự cho các khía cạnh khác nhau. 
+Một ví dụ cho điều này là cách tiếp cận của Opitz và Frank (2022, S3BERT: 
+Semantically Structured SBERT). Phương pháp này yêu cầu người dùng xác định 
+một tập hợp các metric đo lường các khía cạnh độ tương tự có thể giải thích 
+của hai văn bản (ví dụ, Tiêu điểm của các văn bản có giống nhau không?). 
+Vì những khía cạnh như vậy thường ẩn trong các văn bản, họ tận dụng 
+các đồ thị biểu diễn ý nghĩa trừu tượng (Banarescu et al., 2013) mã hóa 
+các khía cạnh như số lượng, tiêu điểm, vai trò ngữ nghĩa, phủ định; 
+và sử dụng các metric khớp đồ thị (Opitz, 2023) trên các đồ thị con khía cạnh. 
+Họ tinh chỉnh một mô hình biểu diễn tham chiếu sao cho độ tương tự của 
+các biểu diễn con khía cạnh hồi quy về các metric đồ thị khía cạnh. 
+Một loss nhất quán và biểu diễn con dư giúp ràng buộc độ tương tự tổng thể 
+với tham chiếu gốc. Cuối cùng, một giải thích có thể trông như sau (Hình 2): 
+Hai người đàn ông đang hát tương tự với Ba người đàn ông đang hát với giá trị 0.76. 
+Độ tương tự của các khái niệm tăng giá trị, trong khi sự khác biệt của 
+cấu trúc lượng từ làm giảm nó.
+
+Các cách tiếp cận tương tự không tận dụng loss nhất quán và muốn tạo ra 
+các không gian phân tách hoàn toàn mới: Chúng ta có thể học các biểu diễn 
+"đa khía cạnh" (Risch et al., 2021, với chân lý đồ thị metric) hoặc 
+biểu diễn "khía cạnh chuyên biệt" (Ostendorff et al., 2022; Schopf et al., 2023, 
+với các encoder transformer đặc thù khía cạnh).
+
+Một phân tách thô hơn được tạo ra bởi Ponwitayarat et al. (2024), 
+người xây dựng hai không gian, một cho các văn bản chỉ tương tự mơ hồ 
+(phạm vi thấp), và một khác để nắm bắt độ tương tự văn bản tinh tế hơn 
+giữa các văn bản đã rất tương tự (phạm vi cao). Ý tưởng này dựa trên 
+phân tích ngôn ngữ học của họ về bộ dữ liệu Semantic Textual Similarity 
+(STS, Cer et al., 2017), phát hiện rằng một phạm vi độ tương tự liên tục 
+không đủ biểu đạt, thúc đẩy việc phân tách của họ thành hai continua. 
+Để phân tách, họ sử dụng một loss phân loại (phạm vi cao vs. phạm vi thấp), 
+và học biểu diễn của các ví dụ tích cực chỉ trong "phần phạm vi trên" của không gian.
+
+3.2.2 Hình Học Phi Euclidean
+Một số mối quan hệ văn bản vốn dĩ bất đối xứng. Ví dụ, một mối quan hệ 
+tự nhiên giữa các văn bản là sự suy luận: Một giả thuyết đã cho phát sinh 
+từ một tiền đề. Một số hình học biểu diễn cung cấp cách để mô hình hóa 
+những mối quan hệ này.
+
+Một ví dụ thú vị là các biểu diễn hộp: Xem xét tất cả các hộp hai chiều 
+được căn giữa tại zero với góc trái dưới của chúng. Đối với hai hộp như vậy 
+a và b, chúng ta có kích thước của chúng sa=a1·a2, sb=b1·b2, và phần chồng lấp 
+của chúng oa,b=min(a1, b1)·min(a2, b2). Chúng ta đạt được, ví dụ, 
+một độ tương tự oa,b/(sa+sb−oa,b), và những mối quan hệ bất đối xứng 
+thú vị như sự bao hàm hoặc suy luận của, ví dụ, a trong b: oa,b/sb— 
+nó chính xác bằng 1 nếu a hoàn toàn được bao hàm/suy luận trong/bởi b. 
+Thách thức là học những đối tượng như vậy trong chiều cao: Để thấy 
+một nút cổ chai lớn, xem xét rằng kích thước hộp và phần chồng lấp 
+tiếp cận zero trong chiều cao, vì chúng liên quan đến một tích lớn. 
+Để giảm bớt những vấn đề học như vậy, Chheda et al. (2021) đề xuất 
+áp dụng một công thức chồng lấp hộp mềm xác suất dựa trên các biến 
+ngẫu nhiên Gumbel (Dasgupta et al., 2020).
+
+Mặt khác, Huang et al. (2023) học các toán tử tổ hợp có thể giải thích, 
+như hợp/fusion, hoặc khác biệt, bằng cách mô hình hóa các toán tử với 
+mạng nơ-ron, và huấn luyện lại các mô hình biểu diễn sao cho không gian 
+của chúng được định hình để cho phép toán tử. Đánh giá cho thấy ít mất mát 
+trên độ chính xác độ tương tự tiêu chuẩn, nhưng hiệu suất được cải thiện 
+đáng kể cho các nhiệm vụ tạo sinh tổ hợp.
+
+Một hướng nghiên cứu khác điều tra các biểu diễn văn bản xác suất, 
+xem một văn bản như một biến ngẫu nhiên (RV). Trực quan, điều này cung cấp 
+cho chúng ta một mô hình của nhiều cách giải thích, điều này có vẻ hấp dẫn 
+do tính mơ hồ của ngôn ngữ tự nhiên: Một văn bản có thể có nhiều cách giải thích, 
+và chỉ một số trong những cách giải thích này có thể ánh xạ đến những cách 
+của một văn bản tương tự khác. Nhưng làm thế nào để xây dựng một không gian 
+xác suất như vậy? Shen et al. (2023) mô hình hóa một văn bản như một RV Gaussian 
+Nd(µ,Σ) bằng cách ước tính "độ không chắc chắn của mô hình" thông qua 
+Monte Carlo Dropout (Gal and Ghahramani, 2016), và độ không chắc chắn dữ liệu 
+thông qua các nhiễu loạn ngôn ngữ nhỏ hơn (ví dụ, bỏ một từ). Ma trận hiệp phương sai 
+(ˆΣ) sau đó được xấp xỉ hiệu quả thông qua bộ ước tính băng tần 
+(Jacob Bien and Xiao, 2016). Để tăng hiệu quả, Yoda et al. (2024) học 
+để dự đoán trực tiếp trung bình (ˆµ) và hiệp phương sai (ˆΣ).
+
+3.2.3 Kết Hợp Biểu Diễn Token
+Các cách tiếp cận dựa trên kết hợp xây dựng một không gian biểu diễn mới 
+bằng cách tổng hợp các biểu diễn cấp token với các trọng số tường minh 
+phản ánh tầm quan trọng của chúng. Ví dụ, Wang và Kuo (2020) ước tính 
+tầm quan trọng và tính mới lạ của token bằng cách sử dụng phương sai 
+trên các lớp transformer, xây dựng các biểu diễn có trọng số. Mặt khác, 
+Seo et al. (2022) huấn luyện các mô hình để học trọng số token trực tiếp, 
+sử dụng loss tái tạo để ngăn chặn quên thảm khốc. Ngoài ra, chúng ta có thể 
+tạo các biểu diễn tĩnh cho tất cả token trong từ vựng, sử dụng một lần 
+truyền tiến transformer (cho mỗi token), và sau đó tính toán một trung bình 
+đơn giản được thông báo bởi thống kê token Zipf (Tulkens và van Dongen, 2024).
+
+3.3 Thách Thức và Cơ Hội
+Các cách tiếp cận Q/A có thể vượt trội một số baseline, nhưng chúng chưa 
+(hoàn toàn) có vẻ khớp với hiệu suất của các mô hình biểu diễn tham chiếu 
+với các đặc trưng phân tán, có lẽ vì khó tìm một tập hợp câu hỏi có thể 
+tổng quát hóa.1
+
+Tương tự, cách tiếp cận phân tách biểu diễn con yêu cầu định nghĩa 
+các khía cạnh tùy chỉnh, và các đặc trưng không trực tiếp có thể giải thích 
+được - chỉ giá trị độ tương tự của chúng mới có thể.
+
+Một mặt, việc tạo ra các đặc trưng phù hợp (thông qua câu hỏi hoặc 
+metric có thể giải thích) có thể được xem như một nhược điểm của các 
+cách tiếp cận dựa trên đặc trưng. Tuy nhiên, đây cũng là một cơ hội thú vị, 
+vì nó cho phép khám phá các không gian tùy chỉnh.
+
+Cuối cùng, các phương pháp dựa trên hình học phi euclidean và các phương pháp 
+dựa trên kết hợp để lại không gian rộng cho khám phá. Mô hình hóa các biểu diễn 
+như, ví dụ, hộp, cho phép áp dụng các toán tử có thể giải thích phù hợp với 
+các mối quan hệ ngữ nghĩa (ví dụ, suy luận).
+
+4 Khả Năng Giải Thích Dựa Trên Tập Hợp
+4.1 Ý Tưởng
+Các cách tiếp cận dựa trên tập hợp đối với khả năng giải thích độ tương tự 
+dựa trên việc khớp hai tập hợp, thay vì hai điểm. Những tập hợp này thường 
+bao gồm các mục có thể giải thích được bởi con người, ví dụ, token. 
+Việc sắp xếp chúng, chúng ta có thể được cung cấp cái nhìn sâu sắc về 
+cách các phần văn bản khác nhau liên quan đến nhau. Các tập hợp cũng 
+cung cấp khả năng giải thích vốn có thông qua các phép toán lý thuyết tập hợp 
+có thể phù hợp tự nhiên với một số mối quan hệ ngữ nghĩa văn bản thú vị 
+(ví dụ, suy luận như tập hợp con).
+
+4.2 Các Cách Tiếp Cận
+4.2.1 Khả Năng Giải Thích Tập Hợp Biểu Diễn
+Các phương pháp dựa trên sắp xếp suy ra độ tương tự bằng cách sắp xếp 
+các biểu diễn token từ một văn bản với những của văn bản khác. Những cách 
+tiếp cận này thường sử dụng các biểu diễn từ lớp cuối của một mô hình. 
+Hai kỹ thuật trọng tâm trong loại này là "ColBERT" và "BERTscore". 
+Cách tiếp cận ColBERT (Khattab và Zaharia, 2020; Santhanam et al., 2022, 
+Hình 3) tính toán một sắp xếp bất đối xứng bằng cách xem x như truy vấn 
+và y như ứng viên (aka "đoạn văn") sử dụng hai encoder; trong ký hiệu của chúng ta, 
+F:=Q và G:=C. Đối với mỗi biểu diễn token riêng lẻ trong truy vấn được 
+biểu diễn Ex=Q(x), chúng ta tìm kiếm trong các token ứng viên được biểu diễn 
+Ey=C(y) để tìm kết quả khớp tốt nhất và tổng lại những kết quả đó. 
+Để tính toán điểm số độ tương tự, cả hai phương pháp đều dựa vào việc 
+khớp max tham lam, chính thức, sim(x, y) =Pt∈xmax([Q(x)TC(y)]t). 
+Cách tiếp cận BERTscore, được sử dụng trong đánh giá dịch máy 
+(Zhang et al., 2020), tiếp tục tính toán một trung bình điều hòa đối xứng 
+(điểm F1) như HM(1|x|sim(x, y),1|y|sim(y, x)).
+
+Trong khi tính bất đối xứng trong ColBERT cũng được đạt được thông qua 
+các encoder khác nhau, tính bất đối xứng trong BERTscore được đạt được 
+bằng cách tính toán precision và recall, do đó các trường hợp ứng dụng 
+khác nhau của chúng (IR vs. đánh giá). Trong tiềm năng khả năng giải thích 
+của chúng, cả hai cách tiếp cận đều có vẻ tương tự: Điểm số độ tương tự 
+của chúng có thể được xem như được xây dựng từ một sắp xếp có thể giải thích 
+từ một tài liệu đến tài liệu khác, và những đóng góp của các cặp biểu diễn 
+token đơn lẻ có thể được làm nổi bật rõ ràng.2
+
+4.2.2 Đa Giải Thích Tường Minh
+Hầu hết các cách tiếp cận dựa trên tập hợp sử dụng biểu diễn token, 
+nhưng một số mở rộng khái niệm đến biểu diễn văn bản. Lớp phương pháp 
+đầu tiên tạo ra các tập hợp biểu diễn văn bản bằng cách giả thuyết về 
+một văn bản hoặc phân tách nó thành các phần nhỏ hơn. Cụ thể, chúng ta 
+có thể sử dụng một mô hình sinh để xây dựng các giả thuyết về một văn bản 
+(Hoyle et al., 2023), hoặc phân tách nó thành các tuyên bố hoặc mô tả nhỏ hơn 
+(Ravfogel et al., 2024). Sau khi phân tách một văn bản x thành các phần nhỏ hơn 
+{x1, ...xn}, chúng ta gọi mô hình biểu diễn văn bản của chúng ta chính xác 
+n lần, và do đó xây dựng một tập hợp n biểu diễn văn bản tương ứng 
+{e1, ...en} có thể được khớp để giải thích độ tương tự của các sự kiện 
+được chứa trong một văn bản, cũng với các mức độ trừu tượng khác nhau.3
+
+Một biến thể thú vị của cách tiếp cận dựa trên tập hợp đa văn bản như vậy 
+được đề xuất bởi Liu et al. (2024). Để tính toán độ tương tự của hai văn bản, 
+họ lấy mẫu các tập hợp tiếp tục có thể từ một LLM, và tính toán sự khác biệt 
+trung bình (tức là, kỳ vọng) trong log-likelihood giữa hai văn bản đầu vào 
+được tiếp tục với một sự tiếp tục được lấy mẫu ngẫu nhiên.
+
+Liu và Soatto (2024) tính toán đa phương thức các giá trị độ tương tự 
+giữa các văn bản thông qua hình ảnh tương ứng mà chúng gợi lên, sử dụng 
+khử nhiễu thông qua Phương trình Vi phân Ngẫu nhiên (Song et al., 2021). 
+Về cơ bản, ý tưởng là hai văn bản tương tự hơn nếu chúng gợi lên hình ảnh 
+tương tự hơn, cho phép giải thích trực quan của điểm số.
+
+4.3 Thách Thức và Cơ Hội
+Các cách tiếp cận dựa trên tập hợp cho phép sắp xếp có thể giải thích 
+của các biểu diễn cấp token. Điều này đã có các ứng dụng hữu ích; 
+ví dụ, để thu thập các khác biệt ngữ nghĩa cấp token giữa các tài liệu 
+liên quan (Vamvas và Sennrich, 2023). Các tập hợp cũng cho phép 
+cái nhìn trực quan về các mối quan hệ văn bản bất đối xứng, tăng 
+sức hấp dẫn giải thích của chúng trong các nhiệm vụ bất đối xứng 
+như NLI. Tuy nhiên, điều quan trọng cần lưu ý là sắp xếp biểu diễn token 
+không tương đương với sắp xếp token đầu vào, vì các bước ngữ cảnh hóa 
+có thể che khuất những đóng góp thực tế của token đầu vào và bất kỳ 
+giải thích dựa trên đó.
+
+Chúng ta cũng thấy rằng chúng ta có thể trừu tượng hóa từ các tập hợp 
+biểu diễn token đến các tập hợp biểu diễn văn bản, ví dụ, bằng cách 
+phân tách một văn bản thành các tuyên bố nhỏ hơn, trước khi tạo ra 
+các biểu diễn. Với chi phí của một số lượng suy luận lớn hơn, tiềm năng 
+khả năng giải thích của lớp cách tiếp cận đa giải thích tường minh này 
+là chúng có thể cung cấp bằng chứng về những tuyên bố nào được truyền đạt 
+bởi các văn bản thực sự khớp và đóng góp vào độ tương tự tổng thể.
+
+5 Khả Năng Giải Thích Dựa Trên Phép Gán Thuộc Tính
+5.1 Ý Tưởng
+Các cách tiếp cận dựa trên phép gán thuộc tính nhằm mục đích gán một dự đoán 
+mô hình vào biểu diễn đặc trưng đầu vào hoặc trung gian. Nói cách khác: 
+chúng gán các giá trị quan trọng cho các đặc trưng về mức độ chúng đóng góp 
+vào một dự đoán nhất định. Tuy nhiên, một đặc điểm đặc biệt của các mô hình 
+độ tương tự là dự đoán của chúng không phụ thuộc vào các đặc trưng riêng lẻ, 
+do tương tác nhân giữa các biểu diễn của hai đầu vào trong sim. Do đó, 
+các phương pháp bậc nhất không đủ (Sundararajan et al., 2020; Janizek et al., 2021). 
+Thay vào đó, các phương pháp bậc hai được yêu cầu để gán dự đoán của 
+các mô hình độ tương tự.
+
+5.2 Các Cách Tiếp Cận
+Hai hướng công việc đã giải quyết vấn đề này trong các mô hình độ tương tự văn bản: 
+integrated Jacobians, một mở rộng của lý thuyết đằng sau integrated gradients 
+đến các mô hình Siamese (Moeller et al., 2023, 2024) và BiLRP sử dụng 
+layer-wise relevance propagation cho lớp mô hình này (Vasileiou và Eberle, 2024).
+
+5.2.1 Integrated Jacobians
+Integrated gradients (IG) gán một dự đoán mô hình vô hướng trở lại 
+các đặc trưng đầu vào riêng lẻ bằng cách tích phân trên một số phép nội suy 
+giữa đầu vào thực tế và một đầu vào tham chiếu không chứa thông tin 
+(Sundararajan et al., 2017). Phương pháp có thể cung cấp một giải pháp 
+dạng đóng để giải thích sự khác biệt trong dự đoán mô hình giữa tham chiếu 
+và đầu vào thực tế. Đầu ra của nó có dạng một vector với các giá trị quan trọng 
+cho tất cả đặc trưng đầu vào. Moeller et al. (2023) đã áp dụng lý thuyết 
+cơ bản của IG cho các encoder Siamese, cho phép gán các dự đoán độ tương tự 
+vào các tương tác đặc trưng giữa hai đầu vào. Khác với IG, đầu ra có dạng 
+ma trận gán cặp đặc trưng. Đối với các mô hình encoder văn bản, nó có thể 
+được rút gọn thành ma trận token-token, hiển thị đóng góp của các tương tác 
+token vào sim (Hình 4). Các tác giả cung cấp một phiên bản chính xác 
+của các phép gán thuộc tính của họ, đảm bảo rằng tổng trên ma trận gán 
+thuộc tính phải chính xác bằng điểm số độ tương tự dự đoán. Phiên bản này 
+cũng cho phép định lượng một lỗi gán thuộc tính, tuy nhiên, nó yêu cầu 
+điều chỉnh các mô hình thông qua tinh chỉnh. Ngoài ra, các phép gán thuộc tính 
+xấp xỉ có thể được tính toán cho bất kỳ mô hình có sẵn nào mà không cần 
+điều chỉnh nó (Moeller et al., 2024). Việc xấp xỉ đã được chứng minh 
+là tương quan đủ với biến thể chính xác.
+
+5.2.2 BiLRP
+Layer-wise relevance propagation (LRP) là một framework để truyền 
+các giá trị quan trọng đặc trưng cho một dự đoán mô hình trở lại thông qua 
+mô hình theo cách từng lớp (Bach et al., 2015; Montavon et al., 2019). 
+Các quy tắc truyền được suy ra cho các lớp riêng lẻ dựa trên khai triển 
+Taylor bậc nhất của hàm cơ bản. Do đó, cách tiếp cận về cơ bản xấp xỉ 
+tuyến tính tất cả các tính toán trong đồ thị của mô hình xung quanh 
+một đầu vào tham chiếu nhất định. BiLRP mở rộng framework LRP cho 
+các mô hình độ tương tự Siamese bằng cách tính toán các giá trị LRP 
+cho mỗi chiều biểu diễn của hai encoder riêng biệt và sau đó lấy 
+tích ma trận của chúng. Do đó, việc tính toán cũng có dạng tích giữa 
+hai ma trận giống Jacobian. Trong khi integrated Jacobians xây dựng 
+những ma trận này bằng cách tích phân trên các đầu vào được nội suy, 
+trong BiLRP chúng bắt nguồn từ các quy tắc truyền từng lớp. Phương pháp 
+này ban đầu được đề xuất trong lĩnh vực thị giác máy tính (Eberle et al., 2020) 
+và gần đây cũng đã được áp dụng cho các mô hình encoder văn bản Siamese 
+(Vasileiou và Eberle, 2024).
+
+5.3 Thách Thức và Cơ Hội
+Các cách tiếp cận gán thuộc tính cần xây dựng các ma trận Jacobian, 
+đến với độ phức tạp thời gian của 2×D lần truyền ngược độc lập, 
+D là chiều biểu diễn của mô hình. Các Jacobian kết quả có độ phức tạp 
+không gian bậc hai của D×Din. Với Din là một biểu diễn tuần tự, 
+bộ nhớ yêu cầu có thể tăng nhanh chóng đối với D cao hơn hoặc đầu vào dài, 
+yêu cầu GPU lớn để tính toán các phép nhân ma trận liên quan một cách hiệu quả.
+
+Bất chấp những chi phí tính toán này, các phương pháp dựa trên gán thuộc tính 
+có lợi thế là không phụ thuộc mô hình, không yêu cầu các lựa chọn thiết kế 
+bổ sung trên kiến trúc mô hình hoặc mục tiêu huấn luyện. Trái ngược với 
+các cách tiếp cận dựa trên tập hợp (biểu diễn lớp cuối) như ColBERT, 
+chúng cũng liên quan trực tiếp hơn đến các token đầu vào thực tế. 
+Khác với các cách tiếp cận định hình không gian, chúng cũng không đặt 
+bất kỳ ràng buộc nào trên các biểu diễn trong quá trình huấn luyện.
+
+6 Thảo Luận
+6.1 Tóm Tắt và Tổng Quan về Các Cách Tiếp Cận
+Chúng tôi xác định các đặc điểm chung cho phép tóm tắt và so sánh 
+các cách tiếp cận khả năng giải thích độ tương tự từ góc nhìn rộng hơn. 
+Chúng tôi đề xuất các đặc điểm chính sau đây để phân loại:
+
+--- TRANG 4 ---
+Hình 3: Một ví dụ về ma trận tương tác muộn giữa các biểu diễn 
+token truy vấn và đoạn văn trong mô hình ColBERTv2.0. 
+Sim tổng thể là 0.965. Các hộp màu đỏ chỉ ra tổng của các 
+giá trị cực đại theo hàng (sắp xếp).
+
+1Trong các thí nghiệm, chúng được so sánh chủ yếu với các baseline 
+như túi từ (Sun et al., 2024), hoặc chúng được xây dựng cho 
+một lĩnh vực cụ thể (Benara et al., 2024).
+
+2Để sắp xếp tinh chỉnh, optimal transport có thể thay thế 
+việc khớp max tham lam (Kusner et al., 2015; Lee et al., 2022).
+
+3Một ví dụ cho các mức độ trừu tượng khác nhau từ Ravfogel et al. (2024): 
+Cho " Vào ngày 2 tháng 7, đồng thời với Trận Gettysburg ở Quận Adams 
+lân cận, đội tuần tra kỵ binh Liên bang của Đại úy Ulric Dahlgren 
+phi nước đại vào quảng trường thị trấn Greencastle, nơi họ bất ngờ 
+và bắt giữ một số kỵ binh Liên minh mang thư từ quan trọng từ Richmond.", 
+mô tả 1 là: "Nhân viên quân sự ngăn chặn nỗ lực của kẻ thù 
+để truyền đạt tài liệu quan trọng." Mô tả 2 là: "Sự gián đoạn 
+của một cuộc trao đổi thông tin trong một khu vực nông thôn." 
+Mô tả 3 là: "Một sự kiện kịch tính, bất ngờ xảy ra tại quảng trường 
+thị trấn trong một trận chiến."
+
+--- TRANG 5 ---
+Hình 4: Phép gán thuộc tính tương tác giữa hai câu được tính toán 
+với phương pháp IG. Sim là 0.618 và lỗi gán thuộc tính là 0.001 
+cho N=50 bước tích phân.
+
+--- TRANG 6 ---
+
+--- TRANG 7 ---
+Bài báo Loại Loại phụ Huấn luyện Xấp xỉ Chi phí Suy luận code
+Sun et al. (2024) định hình không gian đặc trưng QA có không O(n) github
+Benara et al. (2024) định hình không gian đặc trưng QA có không O(n) github
+Opitz and Frank (2022) định hình không gian biểu diễn con có có O(n) github
+Risch et al. (2021) định hình không gian biểu diễn con có không O(n) github
+Schopf et al. (2023) định hình không gian biểu diễn con có không O(nk) NA
+Ponwitayarat et al. (2024) định hình không gian biểu diễn con có không O(n) github
+Huang et al. (2023) định hình không gian không gian phi Euclidean có có O(n2) github
+Chheda et al. (2021) định hình không gian không gian phi Euclidean có không O(n) github
+Shen et al. (2023) định hình không gian không gian phi Euclidean không có O(nk) NA
+Yoda et al. (2024) định hình không gian không gian phi Euclidean có không O(n) github
+Wang and Kuo (2020) định hình không gian kết hợp không không O(n) github
+Seo et al. (2022) định hình không gian kết hợp có không O(n) NA
+Moeller et al. (2023, 2024) gán thuộc tính token integrated gradients không có O(n2) github
+Vasileiou and Eberle (2024) gán thuộc tính token relevance propagation không có O(n2) github
+Khattab and Zaharia (2020); Santhanam et al. (2022) dựa trên tập hợp tập hợp token không có O(nk) github
+Hoyle et al. (2023) dựa trên tập hợp tập hợp văn bản không không O(nk) github
+Ravfogel et al. (2024) dựa trên tập hợp tập hợp văn bản không không O(nk) github
+Liu et al. (2024) dựa trên tập hợp tập hợp văn bản không không O(nk) github
+Liu and Soatto (2024) dựa trên tập hợp tập hợp hình ảnh có không O(nk) NA
+
+Bảng 1: Tổng quan và phân biệt rộng hơn về các cách tiếp cận.
+
+• Loại: Ba loại tổng quát mà chúng tôi sử dụng để cấu trúc bối cảnh khả năng giải thích.
+• Loại phụ: Phân loại con tinh tế hơn của chúng tôi.
+• Huấn luyện: Liệu phương pháp có yêu cầu huấn luyện hay không.
+• Xấp xỉ: Đề cập đến việc liệu một phương pháp có xấp xỉ điểm số độ tương tự 
+của một mô hình biểu diễn tham chiếu hay không. Điều này đảm bảo độ tương tự 
+của phương pháp khả năng giải thích có thể dự đoán được.
+• Chi phí Suy luận: Một ước tính chi phí tính toán về việc suy luận 
+giải thích theo cặp trong một bộ dữ liệu có kích thước n. Chúng tôi sử dụng k 
+để ký hiệu các tham số liên quan tiềm năng khác, ví dụ, kích thước tối đa 
+của các tập hợp token gặp phải, số lần gọi encoder (nếu không phải một).
+
+Một phân loại các cách tiếp cận đã truy cập theo taxonomy này được hiển thị trong Bảng 1.
+
+6.2 Những Thách Thức Thích Hợp
+Giảm thiểu các đánh đổi. Các phương pháp khác nhau trong khái niệm hóa 
+khả năng giải thích, chi phí tính toán, độ trung thực với token đầu vào, 
+và các phụ thuộc cuối cùng vào một mô hình cụ thể làm cơ sở của chúng. 
+Định hình không gian có tính thích ứng cao và cho phép biểu đạt các khía cạnh 
+ngữ nghĩa khác nhau quan tâm, hoặc mô hình các mối quan hệ trực quan với 
+các không gian phi Euclidean - nhưng có xu hướng yêu cầu huấn luyện tùy chỉnh 
+và các định nghĩa có thể không tổng quát hóa. Sau đó, các phương pháp tính toán 
+độ tương tự từ hai tập hợp biểu diễn (biểu diễn token, hoặc biểu diễn văn bản) 
+có thể tạo ra một sự sắp xếp có thể kiểm tra bằng mắt và cho phép khớp bất đối xứng 
+có thể giải thích với các toán tử tập hợp - nhưng các biểu diễn của lớp cuối 
+rất được ngữ cảnh hóa và do đó về mặt kỹ thuật không còn ràng buộc với 
+các token đầu vào tại vị trí đã cho, hạn chế khả năng giải thích và thậm chí 
+mang rủi ro tiềm ẩn cho sự lừa dối từ việc kiểm tra sắp xếp. Với các hạn chế trên, 
+các cách tiếp cận định hình không gian và dựa trên tập hợp, tuy nhiên, dẫn đến 
+các mô hình vốn có thể giải thích được trái ngược với việc yêu cầu khả năng 
+giải thích hậu hoc để có được cái nhìn sâu sắc về cơ chế dự đoán của chúng 
+(Rudin, 2019). Ngược lại, các phương pháp dựa trên gán thuộc tính có thể 
+giảm thiểu vấn đề ngữ cảnh hóa vì chúng gán dự đoán cho các biểu diễn sớm hơn. 
+Chúng cũng tổng quát hóa cho các mô hình tùy ý miễn là chúng có thể vi phân 
+và không yêu cầu sửa đổi và huấn luyện các mô hình. Khác với các phương pháp 
+khả năng giải thích khác, chúng có thể cung cấp một tập hợp đảm bảo lý thuyết 
+(Sundararajan et al., 2017; Janizek et al., 2021), ví dụ rằng các phép gán thuộc tính 
+phải tổng lên điểm số dự đoán (Moeller et al., 2023). Tuy nhiên, đã được chứng minh 
+rằng tuy nhiên vẫn còn những hạn chế cơ bản trong độ trung thực của chúng 
+(Bilodeau et al., 2024) đến với một đánh đổi giữa chi phí tính toán cao hơn 
+nhưng khả năng áp dụng chung cho bất kỳ mô hình nào.
+
+Đâu là giải thích "đúng"? Thật không may, có thể không có câu trả lời 
+đơn giản cho câu hỏi này. Với các đánh đổi trên, không có phương pháp nào 
+có thể được xem là đảm bảo trung thực (Murdoch et al., 2019). Do đó, 
+không có cách tiếp cận nào trong số này nên được giải thích như những 
+giải thích đúng và duy nhất cho dự đoán mô hình. Đồng thời, tất cả chúng 
+đều cung cấp cái nhìn sâu sắc về các mô hình độ tương tự vượt ra ngoài 
+một điểm số độ tương tự vô hướng duy nhất. Chúng tôi lập luận rằng, 
+trong khi chúng ta không thể kết luận các phương pháp riêng lẻ là không 
+có gì mơ hồ, chúng ta vẫn có thể sử dụng chúng để có được cái nhìn sâu sắc 
+hơn về cơ chế mô hình có thể dẫn đến các giả thuyết về nơi những mô hình này 
+thất bại và cách chúng có thể được cải thiện (Wiegreffe và Pinter, 2019). 
+Thay vì cạnh tranh cho giải thích tốt nhất, có thể không tồn tại, chúng tôi 
+đề xuất lấy các phương pháp riêng lẻ như những mảnh bằng chứng độc lập 
+cho một hiện tượng nhất định. Hiện tại, chúng ta có, chẳng hạn, nhiều mảnh 
+bằng chứng cho giả thuyết rằng các mô hình độ tương tự văn bản không tính đủ 
+cho phủ định (Weller et al., 2024; Moeller et al., 2024; Nikolaev và Padó, 2023).
+
+Phương pháp nào để tham khảo cũng sẽ phụ thuộc vào bối cảnh mà một mô hình 
+được sử dụng. Các khía cạnh độ tương tự có thể giải thích được bởi con người 
+ở mức cao hơn có thể được giải thích tốt nhất bởi các biểu diễn ý nghĩa trừu tượng 
+trong một mô hình "S3BERT" (Opitz và Frank, 2022). Thông tin có thể truy cập 
+nhanh chóng về những phần nào của truy vấn và tài liệu được khớp trong 
+một mô hình IR mà không yêu cầu back propagation, có thể được đạt được tốt nhất 
+bởi một mô hình ColBERT dựa trên tập hợp (Santhanam et al., 2022). 
+Tuy nhiên, nếu chúng ta yêu cầu các biểu diễn dày đặc để xây dựng một 
+chỉ mục vector tiết kiệm bộ nhớ cho phép tìm kiếm xấp xỉ và chúng ta 
+không muốn ràng buộc mô hình khác, một cách tiếp cận dựa trên gán thuộc tính 
+như BiLRP có thể là lựa chọn phù hợp (Vasileiou và Eberle, 2024). 
+Nếu, thêm vào đó, chúng ta yêu cầu một tuyên bố về mức độ đáng tin cậy 
+của các giải thích, biến thể chính xác của IJ sẽ là một lựa chọn phù hợp 
+(Moeller et al., 2023).
+
+Các thách thức khác. Khi các mô hình trở nên có khả năng tiêu thụ ngữ cảnh 
+dài hơn (Zhang et al., 2024; Xiong et al., 2024), chúng ta có thể tự hỏi 
+liệu các cách tiếp cận khả năng giải thích có chuyển giao để giải thích 
+độ tương tự của các tài liệu dài hay không. Chúng tôi suy đoán rằng 
+một số mẫu thực sự có thể tổng quát hóa, đặc biệt là những mẫu trừu tượng hơn, 
+như các chủ đề xuất hiện trong chúng. Các trục độ tương tự khác có thể 
+liên quan đến phong cách ("cả hai cuốn sách đều được viết bằng tiếng Anh 
+Anh thế kỷ 18"), hoặc liên quan đến lập trường ("cả hai lập luận đều ủng hộ 
+năng lượng xanh"). Các giải thích chi tiết như gán thuộc tính token có thể 
+cần một bước giải thích meta.
+
+Cảnh quan nghiên cứu biểu diễn cũng đã tìm thấy một trọng tâm gần đây khác 
+trong đa ngôn ngữ (Wang et al., 2024b). Vì nhiều khía cạnh của ngữ nghĩa văn bản 
+có vẻ phổ quát, từ các thuộc tính thô hơn như thực thể hoặc chủ đề, đến những 
+thuộc tính tinh tế hơn, như vai trò ngữ nghĩa và cực tính, chúng tôi thấy 
+một kênh hiệu quả trong việc nghiên cứu các hiện tượng ngôn ngữ xuyên ngôn ngữ 
+thông qua con mắt của các mô hình biểu diễn có thể giải thích, hoặc kiểm tra 
+các giả thuyết về ngữ nghĩa phổ quát.
+
+7 Thêm Giải Thích và Công Trình Liên Quan
+Trong phần cuối này, chúng tôi nghiên cứu công trình liên quan về khả năng 
+giải thích độ tương tự. Chúng tôi muốn tập trung vào các nghiên cứu đánh giá 
+và bộ dữ liệu thu thập giải thích.
+
+Bộ dữ liệu. Lopez-Gazpio et al. (2017) phát hành bộ dữ liệu i(nterpretable)STS 
+thu thập các mối quan hệ và độ tương tự giữa các phân đoạn riêng lẻ của văn bản. 
+Deshpande et al. (2023) đề xuất bộ dữ liệu C(onditional)STS thu thập các giá trị 
+độ tương tự cho khía cạnh quan tâm cụ thể. Lý thuyết cơ bản của iSTS phù hợp với 
+các cách tiếp cận gán thuộc tính hoặc dựa trên tập hợp, trong khi CSTS được 
+thúc đẩy bởi cái nhìn đa khía cạnh trừu tượng hơn tương tự như những gì được 
+tìm kiếm bởi các phương pháp khả năng giải thích dựa trên đặc trưng.
+
+Bộ dữ liệu STS3k (Fodor et al., 2024) bao gồm các cặp câu được kiểm soát 
+có hệ thống được đánh giá độ tương tự ngữ nghĩa bởi những người tham gia. 
+Thông qua các thí nghiệm trên STS3k, họ phát hiện rằng "các transformer 
+hiện đại không nắm bắt tốt mẫu của các phán đoán độ tương tự ngữ nghĩa của con người."
+
+Các bộ dữ liệu cũng có thể được tái sử dụng cho các nghiên cứu khả năng giải thích. 
+Ví dụ, dữ liệu đánh giá làm nổi bật các khoảng lỗi (Freitag et al., 2021; 
+Leiter et al., 2023), hoặc các tương tác được giải thích giữa các khoảng văn bản 
+trong NLI (Ray Choudhury et al., 2023).
+
+Các nghiên cứu khả năng giải thích độ tương tự. Nikolaev và Padó (2023) 
+xây dựng các tập hợp câu với các cấu trúc từ vựng và cú pháp được xác định trước. 
+Nghiên cứu của họ tiết lộ rằng độ tương tự được gán bởi mô hình được xác định 
+mạnh mẽ hơn bởi sự trùng lặp trong tập hợp các tham gia danh từ của chúng 
+hơn là có cùng vị từ, các bộ sửa đổi danh từ dài, hoặc phụ ngữ.
+
+Weller et al. (2024) yêu cầu các mô hình độ tương tự xếp hạng các tài liệu 
+chỉ khác nhau bởi phủ định. Họ phát hiện rằng hầu hết các mô hình truy xuất 
+thông tin hiện tại không xem xét phủ định, hoạt động tương tự hoặc tệ hơn 
+so với xếp hạng ngẫu nhiên.
+
+Nastase và Merlo (2024) theo dõi thông tin ngôn ngữ trong các mô hình biểu diễn 
+thông qua các bộ dữ liệu chuyên biệt kiểm tra thỏa thuận ngữ pháp và ngữ nghĩa, 
+phát hiện rằng kiến thức ngữ nghĩa khía cạnh có thể được định vị trong 
+các vùng biểu diễn nhất định.
+
+8 Kết Luận
+Điều gì làm cho hai văn bản tương tự trong mắt của một mô hình? Chúng tôi 
+đã đưa ra một giới thiệu và tổng quan về một nhánh đang nổi lên của các 
+mô hình biểu diễn văn bản: Thách thức của khả năng giải thích và giải thích 
+độ tương tự. Chúng tôi hy vọng rằng công trình của chúng tôi có thể là 
+một tài nguyên hữu ích và điểm khởi đầu cho nghiên cứu tương lai.
+
+--- TRANG 8 ---
+
+--- TRANG 9 ---
+Hạn Chế
+Việc nắm bắt toàn bộ chiều rộng của lĩnh vực đang nổi lên về biểu diễn văn bản 
+có thể giải thích và độ tương tự của chúng đã khiến chúng tôi mất một số độ sâu 
+và tính chính xác. Đặc biệt trong §6 nơi chúng tôi tóm tắt các phương pháp 
+trên tất cả ba cách tiếp cận khả năng giải thích chung, chúng tôi đã giới thiệu 
+một số khái niệm mờ và thô, ví dụ, "tập hợp token" (đúng hơn: tập hợp biểu diễn 
+token [từ lớp cuối]); chi phí suy luận thân thiện (đôi khi là kích thước của 
+các tập hợp token hoặc biểu diễn gặp phải, đôi khi là các lần gọi encoder mô hình), 
+v.v. Tuy nhiên, sự mờ nhạt nhẹ cũng giúp chúng tôi thảo luận và so sánh 
+các phương pháp đa dạng có các mức độ phức tạp khác nhau - từ khớp tập hợp 
+đơn giản đến các phương pháp gán thuộc tính bậc hai dựa trên Jacobian của 
+các encoder - từ cái nhìn một nghìn feet. Cũng có khả năng chúng tôi đã bỏ lỡ 
+một số bài báo, do đó chúng tôi đề xuất xem primer của chúng tôi như một 
+hướng dẫn và một khảo sát đại diện cho lĩnh vực, nhưng có thể không hoàn toàn đầy đủ.
+
+Về ba ví dụ được hiển thị trong bài báo của chúng tôi: Chúng được chọn 
+để phác thảo ý tưởng đằng sau ba loại cách tiếp cận khác nhau. Chúng tôi 
+đã chọn các cặp văn bản khác nhau để làm nổi bật những ý tưởng này, 
+để tránh bất kỳ tiềm năng có thể gây ra việc đọc ví dụ ưu tiên một phương pháp 
+hơn phương pháp khác, điều này không thể thực hiện được dựa trên một ví dụ duy nhất. 
+Chúng tôi để lại so sánh định tính sâu hơn về các giải thích được cung cấp 
+cho công việc tương lai, và đã thảo luận về nhu cầu cho điều này trong §6.2.
+
+Lời Cảm Ơn
+Ba tác giả đã nhận được tài trợ từ Quỹ Khoa học Quốc gia Thụy Sĩ (SNSF 213585) 
+và Quỹ Nghiên cứu Quốc gia Luxembourg (17498891) thông qua dự án nghiên cứu Impresso.
+
+Tài Liệu Tham Khảo
+Rawaa Alatrash, Mohamed Amine Chatti, Qurat Ul Ain,
+Yipeng Fang, Shoeb Joarder, and Clara Siepmann.
+2024. Conceptgcn: Knowledge concept recommendation in moocs based on knowledge graph convolutional networks and sbert. Computers and Education: Artificial Intelligence, 6:100193.
+
+Sebastian Bach, Alexander Binder, Grégoire Montavon,
+Frederick Klauschen, Klaus-Robert Müller, and Wojciech Samek. 2015. On pixel-wise explanations for non-linear classifier decisions by layer-wise relevance propagation. PloS one, 10(7):e0130140.
+
+Laura Banarescu, Claire Bonial, Shu Cai, Madalina
+Georgescu, Kira Griffitt, Ulf Hermjakob, Kevin Knight, Philipp Koehn, Martha Palmer, and Nathan Schneider. 2013. Abstract Meaning Representation for sembanking. In Proceedings of the 7th Linguistic Annotation Workshop and Interoperability with Discourse, pages 178–186, Sofia, Bulgaria. Association for Computational Linguistics.
+
+Vinamra Benara, Chandan Singh, John X Morris,
+Richard Antonello, Ion Stoica, Alexander G Huth,
+and Jianfeng Gao. 2024. Crafting interpretable embeddings by asking llms questions. arXiv preprint arXiv:2405.16714.
+
+Blair Bilodeau, Natasha Jaques, Pang Wei Koh, and
+Been Kim. 2024. Impossibility theorems for feature attribution. Proceedings of the National Academy of Sciences, 121(2):e2304406120.
+
+Alexander Budanitsky and Graeme Hirst. 2006. Evaluating wordnet-based measures of lexical semantic relatedness. Computational linguistics, 32(1):13–47.
+
+Nitay Calderon and Roi Reichart. 2024. On behalf of
+the stakeholders: Trends in nlp model interpretability in the era of llms. arXiv preprint arXiv:2407.19200.
+
+Asli Celikyilmaz, Elizabeth Clark, and Jianfeng Gao.
+2020. Evaluation of text generation: A survey. arXiv preprint arXiv:2006.14799.
+
+Daniel Cer, Mona Diab, Eneko Agirre, Iñigo Lopez-
+Gazpio, and Lucia Specia. 2017. SemEval-2017 task 1: Semantic textual similarity multilingual and crosslingual focused evaluation. In Proceedings of the 11th International Workshop on Semantic Evaluation (SemEval-2017), pages 1–14, Vancouver, Canada. Association for Computational Linguistics.
+
+Tejas Chheda, Purujit Goyal, Trang Tran, Dhruvesh
+Patel, Michael Boratko, Shib Sankar Dasgupta, and Andrew McCallum. 2021. Box embeddings: An open-source library for representation learning using geometric structures. In Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing: System Demonstrations, pages 203–211, Online and Punta Cana, Dominican Republic. Association for Computational Linguistics.
+
+Shamil Chollampatt, Minh Quang Pham, Sathish Reddy
+Indurthi, and Marco Turchi. 2025. Cross-lingual evaluation of multilingual text generation. In Proceedings of the 31st International Conference on Computational Linguistics, pages 7766–7777, Abu Dhabi, UAE. Association for Computational Linguistics.
+
+Shib Dasgupta, Michael Boratko, Dongxu Zhang, Luke
+Vilnis, Xiang Li, and Andrew McCallum. 2020. Improving local identifiability in probabilistic box embeddings. Advances in Neural Information Processing Systems, 33:182–192.
+
+Ameet Deshpande, Carlos Jimenez, Howard Chen,
+Vishvak Murahari, Victoria Graf, Tanmay Rajpurohit, Ashwin Kalyan, Danqi Chen, and Karthik Narasimhan. 2023. C-STS: Conditional semantic
+
+--- TRANG 10 ---
+textual similarity. In Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing, pages 5669–5690, Singapore. Association for Computational Linguistics.
+
+Oliver Eberle, Jochen Büttner, Florian Kräutli, Klaus-
+Robert Müller, Matteo Valleriani, and Grégoire Montavon. 2020. Building and interpreting deep similarity models. IEEE Transactions on Pattern Analysis and Machine Intelligence, 44(3):1149–1161.
+
+James Fodor, Simon De Deyne, and Shinsuke Suzuki.
+2024. Compositionality and sentence meaning: Comparing semantic parsing and transformers on a challenging sentence similarity dataset. Computational Linguistics, pages 1–52.
+
+Markus Freitag, George Foster, David Grangier, Viresh
+Ratnakar, Qijun Tan, and Wolfgang Macherey. 2021. Experts, errors, and context: A large-scale study of human evaluation for machine translation. Transactions of the Association for Computational Linguistics, 9:1460–1474.
+
+Yarin Gal and Zoubin Ghahramani. 2016. Dropout as
+a bayesian approximation: Representing model uncertainty in deep learning. In Proceedings of The 33rd International Conference on Machine Learning, volume 48 of Proceedings of Machine Learning Research, pages 1050–1059, New York, New York, USA. PMLR.
+
+Tianyu Gao, Xingcheng Yao, and Danqi Chen. 2021.
+SimCSE: Simple contrastive learning of sentence embeddings. In Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing, pages 6894–6910, Online and Punta Cana, Dominican Republic. Association for Computational Linguistics.
+
+Yunfan Gao, Yun Xiong, Xinyu Gao, Kangxiang Jia,
+Jinliu Pan, Yuxi Bi, Yi Dai, Jiawei Sun, and Haofen Wang. 2023. Retrieval-augmented generation for large language models: A survey. arXiv preprint arXiv:2312.10997.
+
+Maarten Grootendorst. 2022. Bertopic: Neural topic
+modeling with a class-based tf-idf procedure. arXiv preprint arXiv:2203.05794.
+
+Michael Günther, Louis Milliken, Jonathan Geuter,
+Georgios Mastrapas, Bo Wang, and Han Xiao. 2023. Jina embeddings: A novel set of high-performance sentence embedding models. In Proceedings of the 3rd Workshop for Natural Language Processing Open Source Software (NLP-OSS 2023), pages 8–18, Singapore. Association for Computational Linguistics.
+
+Jiafeng Guo, Yixing Fan, Liang Pang, Liu Yang,
+Qingyao Ai, Hamed Zamani, Chen Wu, W. Bruce Croft, and Xueqi Cheng. 2020. A deep look into neural ranking models for information retrieval. Information Processing & Management, 57(6):102067.
+
+Kailash A Hambarde and Hugo Proenca. 2023. Information retrieval: recent advances and beyond. IEEE Access.
+
+Alexander Hoyle, Rupak Sarkar, Pranav Goel, and
+Philip Resnik. 2023. Natural language decompositions of implicit content enable better text representations. In Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing, pages 13188–13214, Singapore. Association for Computational Linguistics.
+
+James Y. Huang, Wenlin Yao, Kaiqiang Song, Hongming Zhang, Muhao Chen, and Dong Yu. 2023. Bridging continuous and discrete spaces: Interpretable sentence representation learning via compositional operations. In Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing, pages 14584–14595, Singapore. Association for Computational Linguistics.
+
+Florentina Bunea Jacob Bien and Luo Xiao. 2016. Convex banding of the covariance matrix. Journal of the American Statistical Association, 111(514):834–845. PMID: 28042189.
+
+Joseph D Janizek, Pascal Sturmfels, and Su-In Lee.
+2021. Explaining explanations: Axiomatic feature interactions for deep networks. Journal of Machine Learning Research, 22(104):1–54.
+
+Omar Khattab and Matei Zaharia. 2020. Colbert: Efficient and effective passage search via contextualized late interaction over bert. In Proceedings of the 43rd International ACM SIGIR Conference on Research and Development in Information Retrieval, SIGIR '20, page 39–48, New York, NY, USA. Association for Computing Machinery.
+
+Gregory Koch, Richard Zemel, Ruslan Salakhutdinov,
+et al. 2015. Siamese neural networks for one-shot image recognition. In ICML deep learning workshop, volume 1, pages 1–30. Lille.
+
+Peter Kolb. 2009. Experiments on the difference between semantic similarity and relatedness. In Proceedings of the 17th Nordic conference of computational linguistics (NODALIDA 2009), pages 81–88.
+
+Matt Kusner, Yu Sun, Nicholas Kolkin, and Kilian Weinberger. 2015. From word embeddings to document distances. In International conference on machine learning, pages 957–966. PMLR.
+
+Daniil Larionov, Jens Grünwald, Christoph Leiter, and
+Steffen Eger. 2023. EffEval: A comprehensive evaluation of efficiency for MT evaluation metrics. In Findings of the Association for Computational Linguistics: EMNLP 2023, pages 78–96, Singapore. Association for Computational Linguistics.
+
+Seonghyeon Lee, Dongha Lee, Seongbo Jang, and
+Hwanjo Yu. 2022. Toward interpretable semantic textual similarity via optimal transport-based contrastive sentence learning. In Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers), pages 5969–5979, Dublin, Ireland. Association for Computational Linguistics.
+
+--- TRANG 11 ---
+Christoph Leiter, Juri Opitz, Daniel Deutsch, Yang Gao,
+Rotem Dror, and Steffen Eger. 2023. The eval4nlp 2023 shared task on prompting large language models as explainable metrics. In Proceedings of the 4th Workshop on Evaluation and Comparison of NLP Systems, pages 117–138.
+
+Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio
+Petroni, Vladimir Karpukhin, Naman Goyal, Heinrich Küttler, Mike Lewis, Wen-tau Yih, Tim Rocktäschel, Sebastian Riedel, and Douwe Kiela. 2020. Retrieval-augmented generation for knowledge-intensive nlp tasks. In Advances in Neural Information Processing Systems, volume 33, pages 9459–9474. Curran Associates, Inc.
+
+Zehan Li, Xin Zhang, Yanzhao Zhang, Dingkun Long,
+Pengjun Xie, and Meishan Zhang. 2023. Towards general text embeddings with multi-stage contrastive learning. arXiv preprint arXiv:2308.03281.
+
+Tian Yu Liu and Stefano Soatto. 2024. Conjuring semantic similarity. arXiv preprint arXiv:2410.16431.
+
+Tian Yu Liu, Matthew Trager, Alessandro Achille, Pramuditha Perera, Luca Zancato, and Stefano Soatto. 2024. Meaning representations from trajectories in autoregressive models. In The Twelfth International Conference on Learning Representations.
+
+I. Lopez-Gazpio, M. Maritxalar, A. Gonzalez-Agirre,
+G. Rigau, L. Uria, and E. Agirre. 2017. Interpretable semantic textual similarity: Finding and explaining differences between sentences. Knowledge-Based Systems, 119:186–199.
+
+Andrianos Michail, Simon Clematide, and Juri Opitz.
+2025. PARAPHRASUS: A comprehensive benchmark for evaluating paraphrase detection models. In Proceedings of the 31st International Conference on Computational Linguistics, pages 8749–8762, Abu Dhabi, UAE. Association for Computational Linguistics.
+
+Lucas Moeller, Dmitry Nikolaev, and Sebastian Padó.
+2023. An attribution method for Siamese encoders. In Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing, pages 15818–15827, Singapore. Association for Computational Linguistics.
+
+Lucas Moeller, Dmitry Nikolaev, and Sebastian Padó.
+2024. Approximate attributions for off-the-shelf Siamese transformers. In Proceedings of the 18th Conference of the European Chapter of the Association for Computational Linguistics (Volume 1: Long Papers), pages 2059–2071, St. Julian's, Malta. Association for Computational Linguistics.
+
+Grégoire Montavon, Alexander Binder, Sebastian
+Lapuschkin, Wojciech Samek, and Klaus-Robert Müller. 2019. Layer-wise relevance propagation: an overview. Explainable AI: interpreting, explaining and visualizing deep learning, pages 193–209.
+
+Niklas Muennighoff. 2022. Sgpt: Gpt sentence
+embeddings for semantic search. arXiv preprint arXiv:2202.08904.
+
+W James Murdoch, Chandan Singh, Karl Kumbier,
+Reza Abbasi-Asl, and Bin Yu. 2019. Definitions, methods, and applications in interpretable machine learning. Proceedings of the National Academy of Sciences, 116(44):22071–22080.
+
+Vivi Nastase and Paola Merlo. 2024. Tracking linguistic information in transformer-based sentence embeddings through targeted sparsification. In Proceedings of the 9th Workshop on Representation Learning for NLP (RepL4NLP-2024), pages 203–214, Bangkok, Thailand. Association for Computational Linguistics.
+
+Dmitry Nikolaev and Sebastian Padó. 2023. Representation biases in sentence transformers. In Proceedings of the 17th Conference of the European Chapter of the Association for Computational Linguistics, pages 3701–3716, Dubrovnik, Croatia. Association for Computational Linguistics.
+
+Juri Opitz. 2023. SMATCH++: Standardized and extended evaluation of semantic graphs. In Findings of the Association for Computational Linguistics: EACL 2023, pages 1595–1607, Dubrovnik, Croatia. Association for Computational Linguistics.
+
+Juri Opitz and Anette Frank. 2022. SBERT studies
+meaning representations: Decomposing sentence embeddings into explainable semantic features. In Proceedings of the 2nd Conference of the Asia-Pacific Chapter of the Association for Computational Linguistics and the 12th International Joint Conference on Natural Language Processing (Volume 1: Long Papers), pages 625–638, Online only. Association for Computational Linguistics.
+
+Malte Ostendorff, Till Blume, Terry Ruas, Bela Gipp,
+and Georg Rehm. 2022. Specialized document embeddings for aspect-based similarity of research papers. In Proceedings of the 22nd ACM/IEEE Joint Conference on Digital Libraries, JCDL '22, New York, NY, USA. Association for Computing Machinery.
+
+Moritz Plenz, Juri Opitz, Philipp Heinisch, Philipp Cimiano, and Anette Frank. 2023. Similarity-weighted construction of contextualized commonsense knowledge graphs for knowledge-intense argumentation tasks. In Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers), pages 6130–6158, Toronto, Canada. Association for Computational Linguistics.
+
+Wuttikorn Ponwitayarat, Peerat Limkonchotiwat,
+Ekapol Chuangsuwanich, and Sarana Nutanong. 2024. Space decomposition for sentence embedding. In Findings of the Association for Computational Linguistics: ACL 2024, pages 11227–11239, Bangkok, Thailand. Association for Computational Linguistics.
+
+Shauli Ravfogel, Valentina Pyatkin, Amir David Nissan
+
+--- TRANG 12 ---
+Cohen, Avshalom Manevich, and Yoav Goldberg. 2024. Description-based text similarity. In First Conference on Language Modeling.
+
+Sagnik Ray Choudhury, Pepa Atanasova, and Isabelle
+Augenstein. 2023. Explaining interactions between text spans. In Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing, pages 12709–12730, Singapore. Association for Computational Linguistics.
+
+Nils Reimers and Iryna Gurevych. 2019. Sentence-
+BERT: Sentence embeddings using Siamese BERT-networks. In Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP), pages 3982–3992, Hong Kong, China. Association for Computational Linguistics.
+
+Marco Tulio Ribeiro, Sameer Singh, and Carlos
+Guestrin. 2016. " why should i trust you?" explaining the predictions of any classifier. In Proceedings of the 22nd ACM SIGKDD international conference on knowledge discovery and data mining, pages 1135–1144.
+
+Julian Risch, Philipp Hager, and Ralf Krestel. 2021.
+Multifaceted domain-specific document embeddings. In Proceedings of the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies: Demonstrations, pages 78–83, Online. Association for Computational Linguistics.
+
+Cynthia Rudin. 2019. Stop explaining black box machine learning models for high stakes decisions and use interpretable models instead. Nature machine intelligence, 1(5):206–215.
+
+Ananya B. Sai, Akash Kumar Mohankumar, and
+Mitesh M. Khapra. 2022. A survey of evaluation metrics used for nlg systems. ACM Comput. Surv., 55(2).
+
+Keshav Santhanam, Omar Khattab, Jon Saad-Falcon,
+Christopher Potts, and Matei Zaharia. 2022. ColBERTv2: Effective and efficient retrieval via lightweight late interaction. In Proceedings of the 2022 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, pages 3715–3734, Seattle, United States. Association for Computational Linguistics.
+
+Tim Schopf, Daniel Braun, and Florian Matthes. 2022.
+Evaluating unsupervised text classification: zero-shot and similarity-based approaches. In Proceedings of the 2022 6th International Conference on Natural Language Processing and Information Retrieval, pages 6–15.
+
+Tim Schopf, Emanuel Gerber, Malte Ostendorff, and
+Florian Matthes. 2023. AspectCSE: Sentence embeddings for aspect-based semantic textual similarity using contrastive learning and structured knowledge. In Proceedings of the 14th International Conference on Recent Advances in Natural Language Processing, pages 1054–1065, Varna, Bulgaria. INCOMA Ltd., Shoumen, Bulgaria.
+
+Jaejin Seo, Sangwon Lee, Ling Liu, and Wonik Choi.
+2022. Ta-sbert: Token attention sentence-bert for improving sentence representation. IEEE Access, 10:39119–39128.
+
+Lingfeng Shen, Haiyun Jiang, Lemao Liu, and Shuming Shi. 2023. Sen2Pro: A probabilistic perspective to sentence embedding from pre-trained language model. In Proceedings of the 8th Workshop on Representation Learning for NLP (RepL4NLP 2023), pages 315–333, Toronto, Canada. Association for Computational Linguistics.
+
+Yang Song, Jascha Sohl-Dickstein, Diederik P Kingma,
+Abhishek Kumar, Stefano Ermon, and Ben Poole. 2021. Score-based generative modeling through stochastic differential equations. In International Conference on Learning Representations.
+
+Yiqun Sun, Qiang Huang, Yixuan Tang, Anthony KH
+Tung, and Jun Yu. 2024. A general framework for producing interpretable semantic text embeddings. arXiv preprint arXiv:2410.03435.
+
+Mukund Sundararajan, Kedar Dhamdhere, and Ashish
+Agarwal. 2020. The shapley taylor interaction index. In International conference on machine learning, pages 9259–9268. PMLR.
+
+Mukund Sundararajan, Ankur Taly, and Qiqi Yan. 2017.
+Axiomatic attribution for deep networks. In International conference on machine learning, pages 3319–3328. PMLR.
+
+Stephan Tulkens and Thomas van Dongen. 2024.
+Model2vec: The fastest state-of-the-art static embeddings in the world. GitHub Repositories.
+
+Sarah Uhrig, Yoalli Garcia, Juri Opitz, and Anette Frank.
+2021. Translate, then parse! a strong baseline for cross-lingual AMR parsing. In Proceedings of the 17th International Conference on Parsing Technologies and the IWPT 2021 Shared Task on Parsing into Enhanced Universal Dependencies (IWPT 2021), pages 58–64, Online. Association for Computational Linguistics.
+
+Jannis Vamvas and Rico Sennrich. 2023. Towards unsupervised recognition of token-level semantic differences in related documents. In Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing, pages 13543–13552, Singapore. Association for Computational Linguistics.
+
+Alexandros Vasileiou and Oliver Eberle. 2024. Explaining text similarity in transformer models. In Proceedings of the 2024 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies (Volume 1: Long Papers), pages 7859–7873, Mexico City, Mexico. Association for Computational Linguistics.
+
+--- TRANG 13 ---
+Bin Wang and C.-C. Jay Kuo. 2020. Sbert-wk: A sentence embedding method by dissecting bert-based word models. IEEE/ACM Transactions on Audio, Speech, and Language Processing, 28:2146–2157.
+
+Liang Wang, Nan Yang, Xiaolong Huang, Binxing
+Jiao, Linjun Yang, Daxin Jiang, Rangan Majumder, and Furu Wei. 2022. Text embeddings by weakly-supervised contrastive pre-training. arXiv preprint arXiv:2212.03533.
+
+Liang Wang, Nan Yang, Xiaolong Huang, Linjun Yang,
+Rangan Majumder, and Furu Wei. 2024a. Improving text embeddings with large language models. In Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers), pages 11897–11916, Bangkok, Thailand. Association for Computational Linguistics.
+
+Liang Wang, Nan Yang, Xiaolong Huang, Linjun Yang,
+Rangan Majumder, and Furu Wei. 2024b. Multilingual e5 text embeddings: A technical report. arXiv preprint arXiv:2402.05672.
+
+Orion Weller, Dawn Lawrie, and Benjamin Van Durme.
+2024. NevIR: Negation in neural information retrieval. In Proceedings of the 18th Conference of the European Chapter of the Association for Computational Linguistics (Volume 1: Long Papers), pages 2274–2287, St. Julian's, Malta. Association for Computational Linguistics.
+
+Sarah Wiegreffe and Yuval Pinter. 2019. Attention is not
+not explanation. In Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP), pages 11–20, Hong Kong, China. Association for Computational Linguistics.
+
+Wenhan Xiong, Jingyu Liu, Igor Molybog, Hejia Zhang,
+Prajjwal Bhargava, Rui Hou, Louis Martin, Rashi Rungta, Karthik Abinav Sankararaman, Barlas Oguz, Madian Khabsa, Han Fang, Yashar Mehdad, Sharan Narang, Kshitiz Malik, Angela Fan, Shruti Bhosale, Sergey Edunov, Mike Lewis, Sinong Wang, and Hao Ma. 2024. Effective long-context scaling of foundation models. In Proceedings of the 2024 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies (Volume 1: Long Papers), pages 4643–4663, Mexico City, Mexico. Association for Computational Linguistics.
+
+Xin Ye, Hui Shen, Xiao Ma, Razvan Bunescu, and
+Chang Liu. 2016. From word embeddings to document similarities for improved information retrieval in software engineering. In Proceedings of the 38th international conference on software engineering, pages 404–415.
+
+Shohei Yoda, Hayato Tsukagoshi, Ryohei Sasano, and
+Koichi Takeda. 2024. Sentence representations via Gaussian embedding. In Proceedings of the 18th Conference of the European Chapter of the Association for Computational Linguistics (Volume 2: Short Papers), pages 418–425, St. Julian's, Malta. Association for Computational Linguistics.
+
+Tianyi Zhang, Varsha Kishore, Felix Wu, Kilian Q.
+Weinberger, and Yoav Artzi. 2020. Bertscore: Evaluating text generation with bert. In International Conference on Learning Representations.
+
+Xin Zhang, Yanzhao Zhang, Dingkun Long, Wen Xie,
+Ziqi Dai, Jialong Tang, Huan Lin, Baosong Yang, Pengjun Xie, Fei Huang, Meishan Zhang, Wenjie Li, and Min Zhang. 2024. mGTE: Generalized long-context text representation and reranking models for multilingual text retrieval. In Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing: Industry Track, pages 1393–1412, Miami, Florida, US. Association for Computational Linguistics.

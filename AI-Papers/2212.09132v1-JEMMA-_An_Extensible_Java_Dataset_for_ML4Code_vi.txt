@@ -1,0 +1,102 @@
+# 2212.09132v1.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2212.09132v1.pdf
+# Kích thước file: 10981550 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+JEMMA: Một Tập Dữ liệu Java Có thể Mở rộng cho Ứng dụng ML4Code
+
+Anjan Karmakar Miltiadis Allamanis 
+Romain Robbes
+
+Tóm tắt Machine Learning cho Mã Nguồn (ML4Code) là một lĩnh vực nghiên cứu tích cực trong đó cần thực hiện thử nghiệm mở rộng để khám phá cách sử dụng tốt nhất thông tin có cấu trúc phong phú của mã nguồn. Với suy nghĩ này, chúng tôi giới thiệu JEMMA: Một Tập Dữ liệu Java Có thể Mở rộng cho Ứng dụng ML4Code, đây là một tập dữ liệu quy mô lớn, đa dạng và chất lượng cao nhắm vào ML4Code.
+
+Mục tiêu của chúng tôi với JEMMA là giảm rào cản gia nhập ML4Code bằng cách cung cấp các khối xây dựng để thử nghiệm với các mô hình và nhiệm vụ mã nguồn. JEMMA đi kèm với một lượng lớn thông tin đã được tiền xử lý như metadata, biểu diễn (ví dụ, token mã, AST, đồ thị), và một số thuộc tính (ví dụ, số liệu, kết quả phân tích tĩnh) cho 50.000 dự án Java từ tập dữ liệu 50K-C, với hơn 1,2 triệu lớp và hơn 8 triệu phương thức.
+
+JEMMA cũng có thể mở rộng cho phép người dùng thêm các thuộc tính và biểu diễn mới vào tập dữ liệu, và đánh giá các nhiệm vụ trên chúng. Do đó, JEMMA trở thành một workbench mà các nhà nghiên cứu có thể sử dụng để thử nghiệm với các biểu diễn và nhiệm vụ mới hoạt động trên mã nguồn.
+
+Để chứng minh tính hữu ích của tập dữ liệu, chúng tôi cũng báo cáo kết quả từ hai nghiên cứu thực nghiệm trên dữ liệu của chúng tôi, cuối cùng cho thấy rằng công việc đáng kể nằm ở phía trước trong thiết kế các mô hình mã nguồn nhận thức ngữ cảnh có thể lý luận trên một mạng lưới rộng hơn của các thực thể mã nguồn trong một dự án phần mềm—nhiệm vụ mà JEMMA được thiết kế để giúp đỡ.
+
+Từ khóa Kỹ thuật Phần mềm Machine Learning Tập dữ liệu Thực nghiệm
+
+A. Karmakar
+Đại học Tự do Bozen-Bolzano, Ý
+E-mail: akarmakar@unibz.it
+
+M. Allamanis
+Microsoft Research, Vương quốc Anh (hiện tại tại Google Research)
+E-mail: miltiadis.allamanis@microsoft.com
+
+R. Robbes
+Đại học Tự do Bozen-Bolzano, Ý
+E-mail: rrobbes@unibz.it
+
+arXiv:2212.09132v1 [cs.SE] 18 Dec 2022
+
+--- TRANG 2 ---
+2 Karmakar et al.
+
+1 Giới thiệu
+Các hệ thống phần mềm là các mạng lưới phức tạp của các thực thể tương tác. Điều này khiến chúng cực kỳ thách thức trong việc phát triển, hiểu và sửa đổi—mặc dù có nhu cầu liên tục để làm như vậy. Trong bối cảnh này, hỗ trợ công cụ thích hợp cho mã nguồn có thể làm cho các nhà phát triển nhanh hơn và hiệu quả hơn. Nhiều công cụ như vậy đã được đề xuất qua các năm, từ Môi trường Phát triển Tích hợp (IDE), công cụ kiểm thử, trình phân tích tĩnh, hệ thống kiểm soát phiên bản, và hệ thống theo dõi vấn đề, để kể tên một số.
+
+Machine learning cho mã nguồn. Trong những năm gần đây, nỗ lực nghiên cứu đáng kể đã được thực hiện hướng tới việc phát triển các công cụ dựa trên các mô hình machine learning của mã nguồn (Allamanis et al 2018) để xử lý một số nhiệm vụ.
+
+Một nhiệm vụ, trong mô hình machine learning, là một loại hành động mà một mô hình machine learning được đào tạo để thực hiện. Hoàn thành mã là một ví dụ tốt về một nhiệm vụ—mà một mô hình machine learning có thể được đào tạo để thực hiện. Có thể có một số loại nhiệm vụ khác, chẳng hạn như tóm tắt mã, dự đoán khiếm khuyết, nhiệm vụ phân loại và dịch thuật, và nhiều hơn nữa.
+
+Dòng công việc này được phát triển từ quan sát rằng các mô hình thống kê đơn giản của mã nguồn, chẳng hạn như mô hình n-gram, đã đáng ngạc nhiên hiệu quả cho các nhiệm vụ như hoàn thành mã (Hindle et al 2016). Kể từ đó, các mô hình xác suất của mã nguồn như vậy đã đi một chặng đường dài. Ngày nay, các mô hình machine learning quy mô lớn của mã nguồn, dựa trên kiến trúc Transformer, ví dụ CuBERT (Kanade et al 2020), PLBART (Ahmad et al 2021), CodeBERT (Feng et al 2020), và GraphCodeBERT (Guo et al 2020) đã đạt được hiệu suất hiện đại trên một số nhiệm vụ Kỹ thuật Phần mềm (SE) như sinh mã, tìm kiếm mã, tóm tắt mã, phát hiện bản sao, dịch mã, và tinh chỉnh mã.
+
+Phần lớn bằng cách tăng khả năng của các mô hình và tập dữ liệu đào tạo, hoàn thành mã dựa trên deep learning đã chuyển đổi từ cấp độ token (Karampatsis et al 2020) sang hoàn thành toàn bộ đoạn mã (Chen et al 2021), phiên bản sau hiện đã có sẵn trên IDE như một tiện ích mở rộng có tên GitHub Copilot¹.
+
+Song song, các công trình khác về mô hình hóa mã nguồn đã quan sát thấy rằng mã nguồn có một cấu trúc nổi tiếng so với ngôn ngữ tự nhiên. Mã nguồn có thể được phân tích cú pháp một cách rõ ràng thành các biểu diễn có cấu trúc, chẳng hạn như Cây Cú pháp Trừu tượng (AST); các hàm và phương thức có thể có luồng điều khiển và luồng dữ liệu; các hàm và phương thức có thể tương tác với nhau qua các lời gọi, tham số và giá trị trả về. Do đó, mặc dù mô hình hóa mã nguồn như một chuỗi token—tương tự như các từ trong một câu hoặc một đoạn văn—đã được chứng minh là hiệu quả, một góc nhìn khác cho thấy rằng việc tính toán cấu trúc của mã nguồn hiệu quả hơn.
+
+Một lượng nghiên cứu đáng kể đã giải quyết vấn đề này trong mô hình hóa mã nguồn, bằng cách đề xuất việc kết hợp thông tin cấu trúc vốn có của mã nguồn. Một số công trình mô hình hóa mã nguồn như Cây Cú pháp Trừu tượng (Mou et al
+
+¹https://copilot.github.com
+
+--- TRANG 3 ---
+JEMMA: Một Tập Dữ liệu Java Có thể Mở rộng cho Ứng dụng ML4Code 3
+
+2016; Alon et al 2018; LeClair et al 2019). Allamanis et al. là những người đầu tiên mô hình hóa các đoạn mã nguồn như đồ thị, bao gồm nhiều loại thông tin cấu trúc, từ thông tin luồng dữ liệu, thông tin luồng điều khiển, thông tin sử dụng từ vựng, đến thông tin gọi (Allamanis et al 2017).
+
+Không gian khả năng để mô hình hóa mã nguồn là rộng lớn, từ văn bản đến token đến đồ thị tiên tiến—mặc dù mỗi cái đều đi kèm với các vấn đề và thách thức riêng.
+
+Do đó, trong khi chú ý đến cách chúng ta biểu diễn mã nguồn với càng nhiều thông tin càng tốt, chúng ta cũng cần đảm bảo rằng các mô hình được đào tạo trên các biểu diễn như vậy có thể mở rộng và đáng tin cậy cho một số nhiệm vụ mã nguồn và các ứng dụng tương ứng.
+
+Từ đoạn mã đến dự án. Một hạn chế quan trọng của thế hệ hiện tại của các mô hình deep learning cho mã nguồn là phần lớn công việc cho đến nay đã tập trung nhiều hơn vào các đoạn mã đơn lẻ, phương thức, hoặc hàm, thay vì vào các mối quan hệ phức tạp giữa các phần tử mã nguồn, đặc biệt khi những mối quan hệ này vượt qua ranh giới file.
+
+Vì mã nguồn được kết nối và phụ thuộc lẫn nhau, chúng tôi lập luận rằng lý luận trên một phương thức hoặc hàm duy nhất về cơ bản là không đủ cho một số loại nhiệm vụ. Ví dụ, các nhiệm vụ dự đoán khiếm khuyết, ví dụ dự đoán ngoại lệ con trỏ null, rò rỉ tài nguyên, có thể được hưởng lợi từ việc lý luận trên các thực thể mã liên quan trên khắp dự án. Trên thực tế, Li et al (2019) trong nghiên cứu của họ xây dựng một ngữ cảnh toàn cục bằng cách kết nối các thực thể phương thức liên quan dựa trên Đồ thị Phụ thuộc Chương trình (PDG) và Đồ thị Luồng Dữ liệu (DFG) để đạt được hiệu suất hiện đại trên dự đoán lỗi.
+
+Thậm chí đối với các nhiệm vụ mà nhu cầu về ngữ cảnh bổ sung có thể không rõ ràng, chúng tôi lưu ý rằng hầu hết các phương thức có nhiều lời gọi đến các phương thức callee khác thực tế phụ thuộc vào ngữ cảnh hỗ trợ—vì các phương thức callee đóng góp một cách logic vào chức năng tổng thể của phương thức cha.
+
+Quan điểm của chúng tôi được hỗ trợ bởi các nghiên cứu gần đây cho thấy rằng việc mã hóa ngữ cảnh bổ sung trong khi đào tạo các mô hình machine learning của mã cải thiện đáng kể hiệu suất mô hình trên một số nhiệm vụ. Ví dụ, Tian và Treude (2022) thấy rằng việc thêm ngữ cảnh từ cấu trúc phân cấp gọi (tức là, ngữ cảnh caller và callee) cải thiện hiệu suất trên nhiệm vụ phát hiện bản sao 8%. Li et al (2021) bao gồm ngữ cảnh bổ sung từ các phương thức caller-callee và các phương thức anh em trong cùng lớp bao quanh, để đào tạo một mô hình trên nhiệm vụ đặt tên phương thức, và cải thiện F-score hiện đại 11,9%. Liu et al (2022) bằng cách mã hóa một ngữ cảnh rộng hơn ở cấp độ dự án, bao gồm bình luận, tài liệu, và các phạm vi lồng nhau, cải thiện thêm nhiệm vụ đặt tên phương thức. Lu et al (2022) sử dụng mã bổ sung với tương tự từ vựng như ngữ cảnh bên ngoài để thiết lập hiệu suất hiện đại trên benchmark CodeXGLUE (Lu et al 2021) cho nhiệm vụ hoàn thành mã.
+
+Trong bài báo này, Phần 5 cung cấp bằng chứng thêm rằng việc thêm thông tin ngữ cảnh cùng với các biểu diễn đầu vào cải thiện đáng kể hiệu suất mô hình trên một nhiệm vụ hoàn thành lời gọi phương thức, trên bốn mô hình transformer hiện đại: BERT, CodeBERTa, CodeBERT, và GraphCodeBERT.
+
+--- TRANG 4 ---
+4 Karmakar et al.
+
+Lợi ích của việc bao gồm một ngữ cảnh lớn hơn trong khi mô hình hóa mã nguồn được chứng minh trong các nghiên cứu được đề cập ở trên cũng như của chúng tôi. Do đó, từ giai đoạn hiện tại này, chúng ta phải dần dần hướng tới việc xây dựng các mô hình nhận thức ngữ cảnh có thể lý luận trên các vùng lân cận lớn hơn của các thực thể tương tác.
+
+Đây không chỉ là một sự thay đổi mô hình mà còn là một dấu hiệu rõ ràng về nhu cầu tiềm năng cho các tập dữ liệu mã quy mô lớn từ đó các ngữ cảnh bổ sung có thể được xây dựng và sử dụng trong việc đào tạo các mô hình mã nguồn mạnh mẽ và nhận thức ngữ cảnh.
+
+Lý do chính cho việc thiếu công việc như vậy là dữ liệu cần thiết chưa được thu thập, tổ chức, và thiếu quy mô, hoặc chúng chỉ hỗ trợ một nhiệm vụ duy nhất. Phần sau làm nổi bật sự vắng mặt của các tập dữ liệu như vậy cho mã có sự kết hợp đúng của độ chi tiết mã nguồn, kích thước, quy mô, và chi tiết thông tin để cho phép các nhà nghiên cứu nghiên cứu về các mô hình vượt ra ngoài các đoạn mã đơn lẻ.
+
+Các tập dữ liệu lớn tập trung vào các đoạn mã riêng lẻ ở cấp độ phương thức, hoặc tốt nhất là các file nguồn; trong khi các tập dữ liệu khác hoặc quá nhỏ, hoặc thiếu tiền xử lý đáng kể. Việc chọn dữ liệu chất lượng tốt với số lượng đủ, tải xuống và lưu trữ dữ liệu, trích xuất thông tin có giá trị từ dữ liệu hoặc đơn giản chạy các công cụ để tiền xử lý dữ liệu và thu thập thông tin bổ sung, và sau đó xây dựng cơ sở hạ tầng thử nghiệm tại chỗ, đòi hỏi một lượng lớn thời gian và nỗ lực—thậm chí trước khi một thử nghiệm duy nhất được chạy. Điều này càng đúng hơn khi điều này phải được thực hiện cho các mô hình mã nguồn, nơi một số công cụ tiền xử lý và phân tích có thể cực kỳ tốn thời gian và tài nguyên ở quy mô. Do đó, trong bài báo này, chúng tôi đóng góp một tập dữ liệu như vậy: JEMMA.
+
+JEMMA như một tập dữ liệu. JEMMA có nhiều cấp độ chi tiết: từ phương thức, đến lớp, đến gói, và toàn bộ dự án. Nó bao gồm hơn 8 triệu đoạn phương thức Java cùng với metadata đáng kể; các biểu diễn mã nguồn được tiền xử lý—bao gồm các biểu diễn đồ thị đi kèm với thông tin điều khiển và luồng dữ liệu; thông tin đồ thị gọi cho tất cả các phương thức ở cấp độ dự án; và nhiều thuộc tính và số liệu bổ sung.
+
+Chúng tôi đảm bảo rằng tất cả dữ liệu được xử lý đều sạch, nhất quán, cũng như toàn diện—sử dụng các kỹ thuật xác thực dữ liệu, lọc, khử trùng lặp, và quản lý dữ liệu chung. Các giá trị bị hỏng, không đầy đủ, và trống/null đã được sửa chữa khi có thể; các kết quả hợp lệ đã được ánh xạ chính xác và nhất quán đến các thực thể mã nguồn dựa trên các nguyên tắc quản lý dữ liệu; một số đầu ra đã được lọc tại nguồn dựa trên một phạm vi mong đợi, trên các kiểu dữ liệu mong đợi, và/hoặc trên các quy ước định dạng; trong khi khử trùng lặp loại bỏ các mục dư thừa hoặc bị hỏng. Hơn nữa, tính khả dụng của dữ liệu bổ sung xuống đến cấp độ nút AST, kết quả từ việc xử lý mở rộng của chúng tôi, đảm bảo tính toàn diện ở quy mô, cho hàng triệu thực thể mã nguồn được định nghĩa trong JEMMA. Tất cả những điều này đóng góp vào chất lượng tổng thể của dữ liệu được trình bày.
+
+JEMMA được xây dựng trên tập dữ liệu 50K-C của các dự án Java có thể biên dịch (Martins et al 2018), và bổ sung cho nó với việc xử lý đáng kể, được đo bằng năm thời gian tính toán. Phần 3 trình bày tất cả các thành phần của Tập dữ liệu JEMMA.
+
+--- TRANG 5 ---
+JEMMA: Một Tập Dữ liệu Java Có thể Mở rộng cho Ứng dụng ML4Code 5
+
+JEMMA như một workbench. JEMMA không phải là một tập dữ liệu tĩnh: chúng tôi cố ý thiết kế nó để có thể mở rộng theo nhiều cách khác nhau. Cụ thể, JEMMA đi kèm với một bộ công cụ để: thêm số liệu hoặc nhãn vào các đoạn mã nguồn (ví dụ, bằng cách sử dụng các công cụ phân tích tĩnh); định nghĩa các nhiệm vụ dự đoán dựa trên số liệu, thuộc tính, hoặc chính các biểu diễn; xử lý các đoạn mã và biểu diễn hiện có để tạo ra các biểu diễn mới của mã nguồn; và chạy các mô hình được hỗ trợ trên một nhiệm vụ. Chúng tôi mô tả cách mở rộng tập dữ liệu, cùng với một số ví dụ trong Phần 4. Tính mở rộng này là quan trọng, bởi vì nó biến đổi JEMMA thành một workbench mà người dùng có thể thử nghiệm với thiết kế của các mô hình ML của mã và nhiệm vụ, trong khi tiết kiệm nhiều thời gian trong việc tiền xử lý dữ liệu.
+
+Theo truyền thống, một workbench cơ sở dữ liệu được mô tả như một công cụ có thể được sử dụng để xem, tạo và chỉnh sửa bảng, chỉ mục, thủ tục được lưu trữ, và các đối tượng cơ sở dữ liệu khác

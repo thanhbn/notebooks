@@ -1,0 +1,827 @@
+# 2403.19340v2.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2403.19340v2.pdf
+# Kích thước file: 885053 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+Dataverse: Pipeline ETL (Extract, Transform, Load) Mã Nguồn Mở cho
+Mô Hình Ngôn Ngữ Lớn
+Hyunbyung Park1, Sukyung Lee2, Gyoungjin Gim2
+Yungi Kim3, Dahyun Kim4, Chanjun Park5†
+1Moreh,2Upstage AI,3Liner,4Twelve Labs,5Đại học Korea
+hyunbyung.park@moreh.io ,{sukyung, gyoungjin.gim}@upstage.ai
+eddie@linercorp.com ,kian.kim@twelvelabs.io
+bcj1210@korea.ac.kr
+
+Tóm tắt
+Để giải quyết các thách thức liên quan đến xử lý dữ
+liệu quy mô lớn, chúng tôi đề xuất Dataverse1, một
+pipeline Extract-Transform-Load (ETL) mã nguồn
+mở thống nhất cho các mô hình ngôn ngữ lớn
+(LLMs) với thiết kế thân thiện với người dùng làm
+cốt lõi. Việc dễ dàng bổ sung các bộ xử lý tùy chỉnh
+với giao diện dựa trên block trong Dataverse cho
+phép người dùng dễ dàng và hiệu quả sử dụng
+Dataverse để xây dựng pipeline ETL của riêng họ.
+Chúng tôi hy vọng rằng Dataverse sẽ đóng vai trò
+như một công cụ quan trọng cho việc phát triển
+LLM và mở mã nguồn toàn bộ thư viện để chào
+đón đóng góp từ cộng đồng. Ngoài ra, chúng tôi
+cung cấp một video demo ngắn gọn hai phút về hệ
+thống của chúng tôi, minh họa khả năng và cách
+triển khai2.
+
+1 Giới thiệu
+Sự thành công của các mô hình ngôn ngữ lớn (LLMs) được
+cho là chủ yếu do quy mô của dữ liệu (Zhao et al.,
+2023), hay còn được gọi là 'định luật tỷ lệ' (Kaplan et al., 2020) trong đó hiệu suất LLM tương quan trực
+tiếp với kích thước dữ liệu. Do đó, đã có sự tăng trưởng
+theo cấp số nhân trong nhu cầu về dữ liệu khổng lồ để
+tiếp tục thúc đẩy việc phát triển LLM. Sự gia tăng nhu
+cầu như vậy dẫn đến các pipeline xử lý dữ liệu phức tạp
+hơn, vì ngay cả các thao tác đơn giản cũng cần được tối
+ưu hóa cho việc xử lý dữ liệu ở quy mô khổng lồ. Để xử
+lý các khối lượng công việc dữ liệu như vậy một cách hiệu
+quả và hiệu quả, các hệ thống phân tán và kỹ thuật như
+Spark (Zaharia et al., 2016) và Slurm (Yoo et al., 2003)
+đã trở nên quan trọng.
+
+Thật không may, các công cụ xử lý dữ liệu mã nguồn mở
+hiện có dựa trên hệ thống phân tán (Mou et al., 2023;
+Soldaini et al., 2024; Lee et al., 2022a; Penedo et al.,
+2024) hoặc thiếu hỗ trợ tùy chỉnh dễ dàng hoặc nhiều
+loại thao tác khác nhau như
+†Tác giả liên hệ
+1https://github.com/UpstageAI/
+dataverse
+2https://www.youtube.com/watch?v=
+yYyyLuPNK5s&t=33s
+
+khử trùng lặp (Xia et al., 2016), khử nhiễm (Yang et al.,
+2023), giảm thiểu bias (Shrestha et al., 2022), và giảm
+độc tính (Wang and Chang, 2022). Điều này buộc các
+nhà nghiên cứu phải trải qua đường cong học tập dốc
+hoặc kết hợp các công cụ từ nhiều nguồn khác nhau, cản
+trở hiệu quả và trải nghiệm người dùng.
+
+Để đáp ứng những hạn chế này, chúng tôi trình bày
+Dataverse, một pipeline ETL (Extract, Transform, Load)
+mã nguồn mở thống nhất với thiết kế thân thiện với
+người dùng cho phép tùy chỉnh dễ dàng. Lấy cảm hứng
+từ thư viện Transformers (Wolf et al., 2019), Dataverse
+được xây dựng với nguyên tắc thiết kế tối thiểu hóa các
+cấu trúc kế thừa phức tạp. Lựa chọn thiết kế như vậy
+cho phép dễ dàng bổ sung các thao tác dữ liệu tùy chỉnh.
+Cụ thể, pipeline ETL trong Dataverse được định nghĩa
+bằng giao diện dựa trên block, cho phép tùy chỉnh trực
+quan các pipeline ETL bằng cách đơn giản là thêm, xóa
+hoặc sắp xếp lại các block. Hơn nữa, Dataverse hỗ trợ
+nguyên sinh một loạt rộng các thao tác cần thiết để bao
+phủ các trường hợp sử dụng xử lý dữ liệu đa dạng.
+
+Hơn nữa, các khối lượng công việc xử lý dữ liệu có thể
+được phân phối giữa nhiều node với Spark bằng cách
+đơn giản thiết lập các cấu hình cần thiết. Hơn nữa, các
+tính năng debug thân thiện với người dùng qua Jupyter
+notebooks được bao gồm để xây dựng-kiểm thử nhanh
+các pipeline ETL tùy chỉnh. Ngoài ra, Dataverse hỗ trợ
+ingestion dữ liệu đa nguồn từ lưu trữ tại chỗ, nền tảng
+đám mây, và thậm chí cả web scraping. Tính năng này
+trao quyền cho người dùng dễ dàng chuyển đổi dữ liệu
+thô từ nhiều nguồn khác nhau. Được thúc đẩy bởi các
+tính năng đã nêu trên, chúng tôi khẳng định rằng
+Dataverse sẽ là một công cụ hữu ích để dễ dàng xây
+dựng các pipeline ETL tùy chỉnh quy mô lớn cho việc
+phát triển LLM nhanh chóng.
+
+2 Tại sao Dataverse?
+Trong thời đại của LLMs, dữ liệu tăng theo cấp số nhân
+(Kaplan et al., 2020), đòi hỏi một giải pháp hiệu quả và
+có thể mở rộng (Wang et al., 2023). Không chỉ
+arXiv:2403.19340v2 [cs.CL] 4 Mar 2025
+
+--- TRANG 2 ---
+Thư viện Mã nguồn Mở Hệ thống Phân tán Có thể Mở rộng Độ khó Tùy chỉnh
+text-dedup Spark ✗ N/A
+DPS Spark ✗ N/A
+deduplication-text-datasets Rust ✗ N/A
+Dolma Rust ✗ N/A
+Datatrove Slurm O Cao
+Dataverse Spark O Thấp
+
+Bảng 1: So sánh giữa các thư viện xử lý dữ liệu LLM mã nguồn mở hiện có và Dataverse. "Hệ thống Phân tán",
+"Có thể Mở rộng", "Độ khó Tùy chỉnh" chỉ hệ thống phân tán được tích hợp vào thư viện, liệu thư viện có được thiết kế
+để chống tương lai và có khả năng phát triển, và độ khó của việc tùy chỉnh, tương ứng.
+N/A có nghĩa là tùy chỉnh không được hỗ trợ nguyên sinh.
+
+thế, nhịp độ nhanh của literature LLM đi kèm với nhu
+cầu hỗ trợ một loạt rộng các thao tác dữ liệu như loại bỏ
+độc tính và bias (Garg et al., 2023), che giấu thông tin
+nhận dạng cá nhân (PII) (Schwartz and Solove, 2011),
+và lọc chất lượng dữ liệu (Shin et al., 2022; Choi and
+Park, 2023). Do đó, ngoài việc sử dụng hệ thống phân
+tán, xử lý dữ liệu có ý thức LLM cũng yêu cầu hỗ trợ
+nguyên sinh một loạt rộng các thao tác và dễ dàng bổ
+sung các thao tác dữ liệu tùy chỉnh.
+
+Mặc dù có nhiều thư viện xử lý dữ liệu hiện có như đã
+đề xuất (Mou et al., 2023; Soldaini et al., 2024; Lee et
+al., 2022a; Penedo et al., 2024), không có thư viện nào
+trong số chúng chưa phải là gói hoàn chỉnh dễ tùy chỉnh
+và hỗ trợ nhiều loại thao tác dữ liệu khác nhau. Để giải
+quyết khoảng trống này, chúng tôi giới thiệu Dataverse
+với thiết kế thân thiện với người dùng, cho phép người
+dùng sử dụng các công cụ xử lý dữ liệu (tùy chỉnh) và
+hệ thống phân tán chỉ bằng cách thiết lập các block và
+cấu hình. Trong các phần tiếp theo, chúng tôi trình bày
+chi tiết so sánh giữa Dataverse và các framework mã
+nguồn mở khác hiện có cho xử lý dữ liệu có ý thức LLM.
+
+2.1 So sánh Giữa Dataverse và Các Thư viện
+Mã nguồn Mở Khác
+
+Như đã giải thích trong phần trước, các thư viện xử lý
+dữ liệu cho LLMs cần hỗ trợ một loạt rộng các thao tác
+dữ liệu và hệ thống phân tán để xử lý dữ liệu có thể mở
+rộng. Hơn nữa, bản thân thư viện cần có khả năng mở
+rộng để phù hợp với các thao tác xử lý dữ liệu mới khi
+chúng xuất hiện. Cuối cùng, tiến một bước xa hơn từ
+việc chỉ có thể mở rộng, sẽ lý tưởng nếu việc mở rộng
+như vậy đến các thao tác xử lý dữ liệu tùy chỉnh có thể
+được thực hiện một cách dễ dàng.
+
+Chúng tôi so sánh các thư viện xử lý dữ liệu mã nguồn
+mở khác nhau và Dataverse theo các tiêu chí đã nêu
+trên trong Bảng 1.
+
+Như được hiển thị trong bảng, các thư viện mã nguồn
+mở được so sánh, bao gồm text-dedup (Mou et al.,
+2023), DPS3, deduplicate-text-datasets (Lee et al.,
+2022a), Dolma (Soldaini et al., 2024), và Datatrove
+(Penedo et al., 2024), cũng như Dataverse đều hỗ trợ
+hệ thống phân tán. Cụ thể, text-dedup, DPS, và
+Dataverse sử dụng Spark (Zaharia et al., 2016) làm hệ
+thống phân tán lựa chọn, trong khi deduplication-text-
+datasets sử dụng xử lý song song của Rust (Matsakis
+and Klock II, 2014) và Datatrove sử dụng Slurm (Yoo
+et al., 2003) cho hệ thống phân tán của chúng.
+
+So sánh trở nên rõ ràng hơn khi chúng ta nhìn vào tiêu
+chí "có thể mở rộng". Có thể mở rộng có nghĩa là thay
+vì là một thư viện tĩnh được cung cấp như hiện tại,
+mà là thư viện động, phát triển được thiết kế vốn dĩ để
+phát triển và thích ứng theo thời gian. Cụ thể, các thư
+viện như text-dedup, deduplication-text-datasets, và
+Dolma đều thiếu khả năng mở rộng vì chúng được phát
+triển để sử dụng một lần, ví dụ, cho mục đích học thuật.
+Ngược lại, Datatrove và Dataverse đều hỗ trợ mở rộng
+thư viện phù hợp cho việc xử lý dữ liệu LLM chống tương lai. Chúng có các giao diện tạo điều kiện cho việc
+sửa đổi liên tục thư viện. Ngoài ra, chúng khuyến khích
+sự tham gia của cộng đồng bằng cách cung cấp hướng
+dẫn và quy trình đóng góp đảm bảo thư viện vẫn có thể
+thích ứng và cập nhật.
+
+Hơn nữa, chúng tôi so sánh mức độ khó khăn trong việc
+tùy chỉnh thư viện cho khối lượng công việc xử lý dữ
+liệu của người dùng. Lưu ý rằng đối với các thư viện
+không thể mở rộng, việc so sánh độ khó tùy chỉnh không
+áp dụng được. Độ khó tùy chỉnh cho Datatrove là cao vì
+người dùng cần thực hiện thay đổi mã ở nhiều nơi trong
+khi tuân thủ thiết kế kế thừa phức tạp của thư viện
+Datatrove. Ngược lại, độ khó tùy chỉnh cho Dataverse
+là thấp vì người dùng chỉ cần định nghĩa một hàm thao
+tác xử lý dữ liệu tùy chỉnh và đăng ký nó với
+3https://github.com/EleutherAI/dps
+
+--- TRANG 3 ---
+Hình 1: Tổng quan về thư viện Dataverse.
+
+thư viện Dataverse bằng cách sử dụng decorator, như
+được minh họa trong Phần 3.3. Bây giờ chúng tôi giải
+thích các tính năng chính và kiến trúc hệ thống của
+Dataverse trong các phần tiếp theo.
+
+3 Dataverse
+Dataverse là một thư viện mã nguồn mở để xây dựng
+pipeline ETL cho LLMs với thiết kế thân thiện với
+người dùng làm cốt lõi. Tổng quan về thư viện
+Dataverse được hiển thị trong Hình 1.
+
+3.1 Các Tính năng Chính
+Thiết kế thân thiện với người dùng. Thiết kế thân
+thiện với người dùng của Dataverse được triển khai có
+xem xét đến nhiều khía cạnh khác nhau. Thứ nhất, các
+công cụ khác nhau cần thiết để xây dựng một pipeline
+ETL hoàn chỉnh được tối ưu hóa và thống nhất sao cho
+người dùng có thể sử dụng Dataverse như một giải pháp
+độc lập để xây dựng các pipeline ETL tùy chỉnh của họ.
+Như vậy, Dataverse hỗ trợ nguyên sinh các hàm được
+tối ưu hóa cho các bước khác nhau trong quy trình xử lý
+dữ liệu như tải xuống dữ liệu, định dạng lại, xử lý và
+lưu trữ, loại bỏ nhu cầu tìm kiếm các giải pháp khác
+ngay cả ở quy mô dữ liệu rất lớn. Giải thích chi tiết về
+các chức năng được hỗ trợ được đưa ra trong Phần 3.2.
+
+Thứ hai, để hỗ trợ tùy chỉnh dễ dàng các pipeline ETL,
+Dataverse kết hợp một phương pháp đơn giản đáng kể
+để thêm các hàm xử lý dữ liệu tùy chỉnh thông qua
+Python decorators. Do đó, người dùng có thể dễ dàng
+sử dụng các hàm tùy chỉnh ngoài số lượng lớn các thao
+tác được hỗ trợ nguyên sinh đã được đăng ký.
+
+Thứ ba, việc sử dụng thao tác được hỗ trợ nguyên sinh
+hoặc một hàm tùy chỉnh đã thêm để tạo pipeline ETL
+trong Dataverse là trực quan và linh hoạt. Lý do là các
+pipeline ETL trong Dataverse được triển khai sử dụng
+giao diện dựa trên block sao cho người dùng có thể định
+nghĩa một block modular, một đơn vị nguyên tử của xử
+lý dữ liệu. Sau đó, người dùng có thể thay đổi pipeline
+ETL của họ bằng cách tổ chức lại các block đã định
+nghĩa, cho phép phát triển pipeline xử lý dữ liệu một
+cách đơn giản. Hơn nữa, Dataverse hỗ trợ chức năng
+kiểm thử cục bộ thông qua Jupyter notebooks cho phép
+người dùng kiểm tra pipeline ETL của họ ở các giai
+đoạn khác nhau trước khi mở rộng quy mô.
+
+Khả năng Mở rộng thông qua Tích hợp Spark và AWS
+Để mở rộng các pipeline ETL một cách hiệu quả,
+Dataverse tận dụng Apache Spark (Zaharia et al., 2016),
+cho phép khả năng xử lý phân tán. Hơn nữa, nó tích hợp
+nguyên sinh với Amazon Web Services (AWS) để sử
+dụng đám mây, tạo điều kiện cho khả năng mở rộng lớn
+hơn. Hiện tại, Dataverse hỗ trợ AWS S3 cho lưu trữ
+đám mây và Elastic MapReduce (EMR) cho xử lý dữ
+liệu. Tích hợp này đảm bảo rằng người dùng không có
+quyền truy cập vào đủ tài nguyên tính toán cục bộ có thể
+quản lý dữ liệu của họ một cách hiệu quả mà không gặp
+phải những hạn chế nghiêm trọng. Các tính năng đã nêu
+trên có thể được kích hoạt bằng cách đơn giản thay đổi
+cấu hình hoặc đưa ra đối số khi chạy pipeline ETL.
+
+--- TRANG 4 ---
+Hình 2: Kiến trúc của Dataverse.
+
+3.2 Kiến trúc Hệ thống
+Hình 2 minh họa kiến trúc hệ thống tổng thể của
+Dataverse.
+
+Pipeline ETL. Pipeline ETL đại diện cho giao diện
+chính cho người dùng Dataverse. Giao diện cốt lõi
+trung tâm này tạo điều kiện giao tiếp với các module
+khác nhau, bao gồm cấu hình, registry, giao diện lập
+trình ứng dụng (API), và các tiện ích. Mục tiêu chính
+của nó là đảm bảo việc tạo và vận hành pipeline ETL
+một cách liền mạch, quản lý hiệu quả các tác vụ xử lý
+dữ liệu. Ngoài ra, giao diện cung cấp tích hợp AWS
+EMR bằng cách đơn giản truyền giá trị "True" cho tùy
+chọn "emr", như được mô tả trong Phần 3.3. Cách tiếp
+cận đơn giản này trao quyền cho người dùng tận dụng
+khả năng mở rộng của điện toán đám mây mà không cần
+đường cong học tập dốc thường liên quan đến quản lý
+hệ thống phân tán.
+
+Cấu hình. Người dùng chuẩn bị một đối tượng cấu hình
+bao gồm tất cả các chi tiết thiết yếu cần thiết để thực thi
+Pipeline ETL. Cấu hình tạo điều kiện thiết lập các đặc
+tả Apache Spark và lựa chọn các bộ xử lý dữ liệu sẽ
+được sử dụng.
+
+Configuration manager. Configuration manager quản
+lý các cấu hình khác nhau từ các đường dẫn được chỉ
+định (cục bộ, AWS S3) hoặc xử lý nhiều loại (Python
+Dict, YAML, OmegaConf) dữ liệu cấu hình. Nó chuyển
+đổi các cấu hình này thành định dạng thống nhất tương
+thích với Dataverse, đảm bảo chúng sẵn sàng sử dụng
+trong hệ thống.
+
+Registry. Registry phục vụ như một kho lưu trữ nơi tất
+cả các hàm bộ xử lý dữ liệu được lưu trữ. Các bộ xử lý
+dữ liệu sẽ được sử dụng được chỉ định trong cấu hình
+sau đó được lấy từ registry để lắp ráp pipeline ETL
+mong muốn. Lưu ý rằng các bộ xử lý dữ liệu tùy chỉnh
+có thể được thêm vào bằng cách đơn giản sử dụng
+decorator @register_etl. Danh sách các bộ xử lý dữ
+liệu được hỗ trợ nguyên sinh như sau:
+
+•Data Ingestion: Tạo điều kiện tải dữ liệu từ nhiều
+nguồn khác nhau (ví dụ: dữ liệu trong Huggingface
+Hub, và dữ liệu định dạng parquet/csv/arrow trong
+lưu trữ cục bộ) vào định dạng ưa thích.
+
+•Data Saving: Lưu trữ dữ liệu đã xử lý vào đích ưa
+thích, như data lake hoặc cơ sở dữ liệu.
+
+•Deduplication: Loại bỏ dữ liệu trùng lặp trên cơ sở
+từng bộ dữ liệu hoặc toàn cầu qua nhiều bộ dữ liệu.
+
+•Data Cleaning: Loại bỏ thông tin không liên quan,
+dư thừa hoặc nhiễu từ dữ liệu, như stop words hoặc
+ký tự đặc biệt.
+
+•Data Decontamination: Xác định và loại bỏ dữ liệu
+bị nhiễm như các bộ dữ liệu benchmark.
+
+•Personally Identifiable Information (PII)
+Removal: Đảm bảo loại bỏ thông tin nhạy cảm, như
+dữ liệu nhận dạng cá nhân, từ bộ dữ liệu.
+
+--- TRANG 5 ---
+•Data Quality Enhancement: Cải thiện chất lượng
+dữ liệu từ các góc độ chính xác, nhất quán và độ tin
+cậy cho LLMs.
+
+•Bias Mitigation: Giảm dữ liệu thiên lệch hoặc có
+thành kiến, với trọng tâm đặc biệt vào dữ liệu củng
+cố các khuôn mẫu của LLMs.
+
+•Toxicity Removal: Xác định và loại bỏ nội dung có
+hại, xúc phạm hoặc không phù hợp trong dữ liệu.
+
+•Utilities: Cung cấp các chức năng thiết yếu cho xử
+lý dữ liệu, bao gồm lấy mẫu, ghi log và phân tích
+thống kê.
+
+Utilities. Module Utilities phục vụ như một bộ công cụ
+hỗ trợ nội bộ. Một trong những tính năng cốt lõi của nó
+là các tiện ích API, giúp đơn giản hóa việc sử dụng các
+API bên ngoài khác nhau như AWS EMR. Nó đơn giản
+hóa việc triển khai và quản lý AWS EMR, giảm độ phức
+tạp cho các nhà nghiên cứu không quen thuộc với cơ sở
+hạ tầng đám mây. Bằng cách đơn giản thiết lập AWS
+Credentials của riêng họ, Dataverse tự động xử lý các
+chi tiết phức tạp của việc cung cấp các cluster EMR và
+điều phối các pipeline xử lý dữ liệu qua các node cluster.
+
+Dataverse API. Dataverse API phục vụ như một
+gateway cho người dùng. Hiện tại, Dataverse hỗ trợ
+Python CLI (Command Line Interface). Ngoài ra, việc
+phát triển Bash CLI đang được tiến hành.
+
+3.3 Library Tour
+Giao diện Dataverse được thiết kế để trực quan và thân
+thiện với người dùng, đơn giản hóa đáng kể quy trình
+xử lý dữ liệu. Đã có sự cân nhắc cẩn thận về trải nghiệm
+người dùng, tối thiểu hóa đường cong học tập cho người
+dùng mới và cho phép họ nhanh chóng hiểu và sử dụng
+Dataverse một cách hiệu quả với nỗ lực tối thiểu.
+
+Thực thi pipeline ETL với cấu hình. Sử dụng
+Dataverse rất đơn giản, chủ yếu yêu cầu một cấu hình
+được thiết kế đúng cách để thực thi pipeline ETL. Các
+yếu tố cấu hình thiết yếu bao gồm chỉ định các đặc tả
+Apache Spark để thực thi và sắp xếp thứ tự các bộ xử lý
+dữ liệu sẽ được áp dụng. Bộ xử lý dữ liệu ban đầu phải
+được cấu hình cho data ingestion để tạo điều kiện tải dữ
+liệu, tiếp theo là bất kỳ bộ xử lý dữ liệu bổ sung nào
+người dùng muốn sử dụng. Chúng tôi đưa ra một ví dụ
+sử dụng Dataverse dưới đây, với cấu hình được đơn
+giản hóa để ngắn gọn.
+
+# import các thư viện cần thiết
+import OmegaConf
+from dataverse.etl import ETLPipeline
+# thiết lập cấu hình
+config = OmegaConf.create({
+'spark': {Spark spec},
+'etl': [
+{data ingestion}
+{cleaning}
+{deduplication}
+{data saving}
+]
+})
+# chạy pipeline ETL
+etl = ETLPipeline()
+spark, dataset = etl.run(config)
+
+Kết hợp các bộ xử lý dữ liệu tùy chỉnh. Tích hợp một
+bộ xử lý dữ liệu tùy chỉnh vào Dataverse yêu cầu định
+nghĩa một hàm tùy chỉnh và trang trí nó bằng cách sử
+dụng @register_etl. Hàm tùy chỉnh chỉ yêu cầu hai đầu
+vào bắt buộc, một instance Spark và dữ liệu đầu vào. Do
+đó, việc tạo các thao tác tùy chỉnh trong Dataverse là
+một mở rộng tự nhiên cho những người có thành thạo
+Spark. Một ví dụ về việc thêm bộ xử lý tùy chỉnh được
+đưa ra dưới đây.
+
+# thêm quy trình tùy chỉnh của bạn
+@register_etl
+def add___one___func(spark, x):
+x = x.map(lambda x: x + 1)
+return x
+# thêm vào cấu hình
+config = OmegaConf.create({
+'spark': {Spark spec},
+'etl': [
+{data ingestion}
+{add___one___func}
+{cleaning}
+{deduplication}
+{data saving}
+]
+})
+# chạy pipeline ETL
+etl = ETLPipeline()
+spark, dataset = etl.run(config)
+
+Mở rộng với AWS EMR. Như đã giải thích trong phần
+trước, Dataverse hỗ trợ nguyên sinh tích hợp AWS để
+cung cấp giải pháp cho người dùng đối mặt với hạn chế
+tài nguyên cục bộ. Để tận dụng sức mạnh của AWS
+EMR, người dùng có thể đơn giản thêm một đối số duy
+nhất khi chạy pipeline ETL của riêng họ. Một ví dụ sử
+dụng được đưa ra dưới đây.
+
+# chạy trên AWS EMR
+etl = ETLPipeline()
+etl.run(config, emr=True)
+
+--- TRANG 6 ---
+Debug với các hàm hỗ trợ. Để tạo điều kiện debug,
+Dataverse cung cấp các hàm hỗ trợ như tạo dữ liệu giả.
+Hơn nữa, người dùng có thể bắt đầu debug tại bất kỳ
+điểm nào trong pipeline bằng cách chỉ giữ lại các bước
+đến điểm họ muốn debug trong pipeline ETL của riêng
+họ.
+
+config = OmegaConf.create({
+'spark': {Spark spec},
+'etl': [
+{generate_fake_data}
+]
+})
+etl = ETLPipeline()
+spark, x = etl.run(config, emr=True)
+# bắt đầu debug với output của bạn từ dòng này
+print(x.show())
+
+4 Công trình Liên quan và Bối cảnh
+4.1 Xử lý Phân tán cho Bộ dữ liệu Khổng lồ
+Việc xử lý big data đã đưa ra những thách thức đáng kể
+kể từ sự ra đời của thời đại internet. Trong giai đoạn
+đầu của deep learning, các mô hình được phát triển cho
+các mục đích cụ thể sử dụng các bộ dữ liệu tương đối
+nhỏ. Tuy nhiên, sự xuất hiện của các mô hình ngôn ngữ
+lớn (LLMs) đã làm cho việc sử dụng các bộ dữ liệu
+khổng lồ trở nên cần thiết, khiến xử lý phân tán trở
+thành một yêu cầu không thể thiếu. Thay vì dựa vào các
+node đơn lẻ, các môi trường đa node và đa xử lý được
+kích hoạt bởi các công cụ mã nguồn mở như Slurm
+(Yoo et al., 2003) và Spark (Zaharia et al., 2016) đã trở
+nên thiết yếu. Các công cụ xử lý dữ liệu có ý thức LLM
+đã được thiết kế với kiến trúc xử lý phân tán để giải
+quyết các nhu cầu tính toán to lớn.
+
+4.2 Kiểm soát Chất lượng Dữ liệu cho Mô hình
+Ngôn ngữ Lớn
+Đảm bảo chất lượng dữ liệu ở quy mô khổng lồ đưa ra
+những thách thức ghê gớm. Kiểm tra thủ công dữ liệu
+là không thực tế do khối lượng khổng lồ của nó. Việc
+nhấn mạnh vào kiểm soát chất lượng dữ liệu đã trở nên
+quan trọng (Penedo et al., 2023; Choi and Park, 2023),
+chủ yếu vì việc theo đuổi các bộ dữ liệu lớn hơn thường
+liên quan đến việc kết hợp dữ liệu chất lượng thấp chưa
+trải qua quá trình tuyển chọn thủ công tỉ mỉ (Li et al.,
+2024b; Chung et al., 2022). Một trong những ví dụ đáng
+chú ý nhất của các bộ dữ liệu khổng lồ như vậy là
+Common Crawl (Dodge et al., 2021), thường được coi
+là kho báu thiêng liêng của dữ liệu web. Tuy nhiên, dữ
+liệu được crawl một cách bừa bãi từ internet này thường
+gặp phải vô số vấn đề, bao gồm nội dung trùng lặp, quá
+ngắn gọn hoặc dài dòng, bias ẩn và việc bao gồm dữ
+liệu rác. Để giải quyết những thách thức này, việc triển
+khai một loạt các chiến lược để nâng cao chất lượng dữ
+liệu là thiết yếu, trong đó deduplication đặc biệt quan
+trọng (Lee et al., 2022b). Ngay cả khi sử dụng các bộ
+dữ liệu chất lượng cao, khả năng gặp phải dữ liệu trùng
+lặp vẫn còn, vì nhiều nguồn có thể được kết hợp. Một
+chiến lược chính khác có thể là việc loại bỏ các
+benchmark hoặc dữ liệu không mong muốn khác vô tình
+được bao gồm trong bộ dữ liệu, được gọi là
+decontamination. Ngoài ra, việc loại bỏ các câu quá
+ngắn hoặc quá dài có thể thiết yếu để duy trì tính toàn
+vẹn dữ liệu (Moon et al., 2023; Li et al., 2024a).
+
+4.3 ETL (Extract, Transform, Load)
+ETL, viết tắt của Extract, Transform, Load, là một quy
+trình cơ bản liên quan đến việc thu thập dữ liệu từ nhiều
+nguồn khác nhau và hợp nhất nó. Trong bước "Extract",
+Dataverse lấy dữ liệu thô và chuẩn bị nó để xử lý.
+Trong "Transform", dữ liệu trải qua các quy trình khác
+nhau như deduplication và cleaning. Cuối cùng,
+Dataverse thực hiện bước "Load" chuyển dữ liệu đã xử
+lý vào đích lưu trữ lựa chọn. Việc kết hợp tất cả các
+bước ETL này cho phép xử lý dữ liệu từ đầu đến cuối từ
+nhiều nguồn.
+
+5 Kết luận
+Để giải quyết nhu cầu tăng cao về xử lý dữ liệu ở quy
+mô khổng lồ, do sự gia tăng phổ biến của LLMs, chúng
+tôi đề xuất Dataverse, một thư viện mã nguồn mở cho
+các pipeline ETL được thiết kế với khả năng mở rộng và
+tăng trưởng trong tương lai. Dataverse được thiết kế
+thân thiện với người dùng với giao diện dựa trên block,
+cho phép người dùng dễ dàng thêm các hàm tùy chỉnh
+cho xử lý dữ liệu trong khi cũng hỗ trợ nguyên sinh một
+loạt rộng các thao tác dữ liệu thường được sử dụng.
+Hơn nữa, Dataverse cung cấp các giải pháp có thể mở
+rộng thông qua tích hợp liền mạch với Spark và AWS
+EMR, cho phép người dùng sử dụng Dataverse để xử lý
+khối lượng công việc dữ liệu có kích thước khác nhau.
+Chúng tôi hình dung Dataverse trở thành một trung tâm
+trung tâm cho xử lý dữ liệu LLM, tạo điều kiện hợp tác,
+trao đổi kiến thức và cuối cùng là thúc đẩy những tiến
+bộ trong lĩnh vực này.
+
+Hạn chế
+Mặc dù kiến trúc của Dataverse có thể hỗ trợ dữ liệu đa
+phương thức như hình ảnh hoặc video cũng như
+
+--- TRANG 7 ---
+dữ liệu văn bản, việc triển khai hiện tại của Dataverse
+chưa mang lại những tính năng như vậy. Tuy nhiên,
+chúng tôi dự định kết hợp hỗ trợ hình ảnh và video trong
+các bản phát hành tương lai để duy trì sự phù hợp với
+các xu hướng nghiên cứu mới nổi và nhu cầu đang phát
+triển.
+
+Kiến trúc dựa trên Spark của Dataverse đòi hỏi việc
+điều chỉnh và tối ưu hóa bởi các kỹ sư dữ liệu có kinh
+nghiệm để đạt được hiệu suất và khả năng mở rộng tối
+đa. Mặc dù chúng tôi đã triển khai các mặc định hợp lý,
+chúng tôi thừa nhận rằng phiên bản hiện tại có thể chưa
+khai thác hoàn toàn tiềm năng vốn có trong Spark. Để
+tối ưu hóa thêm, chúng tôi dự định thêm tính năng cấu
+hình tự động tối đa hóa hiệu suất Spark một cách hợp lý.
+
+Tuyên bố Đạo đức
+Chúng tôi nhận ra rằng LLMs có thể phản ánh các bias
+có trong dữ liệu huấn luyện của chúng, có khả năng tạo
+ra kết quả thiên lệch qua các khía cạnh như chủng tộc,
+giới tính và tuổi tác. Mặc dù Dataverse kết hợp các kỹ
+thuật giảm thiểu bias, việc giám sát và cải thiện liên tục
+là cần thiết.
+
+Việc thu thập các bộ dữ liệu khổng lồ cũng làm dấy lên
+các mối lo ngại về quyền riêng tư và bản quyền.
+Dataverse nhằm tối thiểu hóa những rủi ro này thông
+qua việc ẩn danh và lọc, nhưng vẫn cần sự tỉnh táo
+trong suốt các pipeline thu thập và xử lý dữ liệu.
+
+Chúng tôi nhận thức sâu sắc về những thách thức đạo
+đức này trong việc phát triển Dataverse. Chúng tôi cam
+kết liên tục nâng cao khả năng của Dataverse để giải
+quyết các mối lo ngại về bias, quyền riêng tư và lạm
+dụng tiềm ẩn. Mục tiêu của chúng tôi là cung cấp một
+công cụ mạnh mẽ để thúc đẩy AI ngôn ngữ trong khi
+duy trì các nguyên tắc đạo đức mạnh mẽ và giảm thiểu
+rủi ro xã hội ở mức độ lớn nhất có thể.
+
+Tài liệu tham khảo
+Eujeong Choi và Chanjun Park. 2023. Dmops: Data
+management operation and recipes. arXiv preprint
+arXiv:2301.01228.
+
+Hyung Won Chung, Le Hou, Shayne Longpre, Barret
+Zoph, Yi Tay, William Fedus, Yunxuan Li, Xuezhi
+Wang, Mostafa Dehghani, Siddhartha Brahma, Al-
+bert Webson, Shixiang Shane Gu, Zhuyun Dai,
+Mirac Suzgun, Xinyun Chen, Aakanksha Chowdh-
+ery, Alex Castro-Ros, Marie Pellat, Kevin Robinson,
+Dasha Valter, Sharan Narang, Gaurav Mishra, Adams
+Yu, Vincent Zhao, Yanping Huang, Andrew Dai,
+Hongkun Yu, Slav Petrov, Ed H. Chi, Jeff Dean, Ja-
+cob Devlin, Adam Roberts, Denny Zhou, Quoc V. Le,
+và Jason Wei. 2022. Scaling instruction-finetuned
+language models. Preprint, arXiv:2210.11416.
+
+Jesse Dodge, Maarten Sap, Ana Marasović, William
+Agnew, Gabriel Ilharco, Dirk Groeneveld, Margaret
+Mitchell, và Matt Gardner. 2021. Documenting
+large webtext corpora: A case study on the colossal
+clean crawled corpus. Preprint, arXiv:2104.08758.
+
+Tanmay Garg, Sarah Masud, Tharun Suresh, và Tan-
+moy Chakraborty. 2023. Handling bias in toxic
+speech detection: A survey. ACM Computing Sur-
+veys, 55(13s):1–32.
+
+Jared Kaplan, Sam McCandlish, Tom Henighan, Tom B
+Brown, Benjamin Chess, Rewon Child, Scott Gray,
+Alec Radford, Jeffrey Wu, và Dario Amodei. 2020.
+Scaling laws for neural language models. arXiv
+preprint arXiv:2001.08361.
+
+Katherine Lee, Daphne Ippolito, Andrew Nystrom,
+Chiyuan Zhang, Douglas Eck, Chris Callison-Burch,
+và Nicholas Carlini. 2022a. Deduplicating training
+data makes language models better. In Proceedings
+of the 60th Annual Meeting of the Association for
+Computational Linguistics. Association for Compu-
+tational Linguistics.
+
+Katherine Lee, Daphne Ippolito, Andrew Nystrom,
+Chiyuan Zhang, Douglas Eck, Chris Callison-Burch,
+và Nicholas Carlini. 2022b. Deduplicating train-
+ing data makes language models better. Preprint,
+arXiv:2107.06499.
+
+Ming Li, Yong Zhang, Shwai He, Zhitao Li, Hongyu
+Zhao, Jianzong Wang, Ning Cheng, và Tianyi
+Zhou. 2024a. Superfiltering: Weak-to-strong
+data filtering for fast instruction-tuning. Preprint,
+arXiv:2402.00530.
+
+Ming Li, Yong Zhang, Zhitao Li, Jiuhai Chen, Lichang
+Chen, Ning Cheng, Jianzong Wang, Tianyi Zhou, và
+Jing Xiao. 2024b. From quantity to quality: Boosting
+llm performance with self-guided data selection for
+instruction tuning. Preprint, arXiv:2308.12032.
+
+Nicholas D Matsakis và Felix S Klock II. 2014. The
+rust language. In ACM SIGAda Ada Letters, vol-
+ume 34, pages 103–104. ACM.
+
+Hyeonseok Moon, Chanjun Park, Seonmin Koo,
+Jungseob Lee, Seungjun Lee, Jaehyung Seo, Sug-
+yeong Eo, Yoonna Jang, Hyunjoong Kim, Hyoung
+gyu Lee, và Heuiseok Lim. 2023. Doubts on the
+reliability of parallel corpus filtering. Expert Systems
+with Applications, 233:120962.
+
+Chenghao Mou, Chris Ha, Kenneth Enevoldsen, và
+Peiyuan Liu. 2023. Chenghaomou/text-dedup: Ref-
+erence snapshot.
+
+Guilherme Penedo, Alessandro Cappelli, Thomas Wolf,
+và Mario Sasko. 2024. Datatrove: large scale data
+processing.
+
+Guilherme Penedo, Quentin Malartic, Daniel Hesslow,
+Ruxandra Cojocaru, Alessandro Cappelli, Hamza
+Alobeidli, Baptiste Pannier, Ebtesam Almazrouei,
+và Julien Launay. 2023. The refinedweb dataset for
+
+--- TRANG 8 ---
+falcon llm: Outperforming curated corpora with web
+data, and web data only. Preprint, arXiv:2306.01116.
+
+Paul M Schwartz và Daniel J Solove. 2011. The pii
+problem: Privacy and a new concept of personally
+identifiable information. NYUL rev., 86:1814.
+
+Seongjin Shin, Sang-Woo Lee, Hwijeen Ahn, Sungdong
+Kim, HyoungSeok Kim, Boseop Kim, Kyunghyun
+Cho, Gichang Lee, Woomyoung Park, Jung-Woo Ha,
+et al. 2022. On the effect of pretraining corpora on
+in-context learning by a large-scale language model.
+arXiv preprint arXiv:2204.13509.
+
+Robik Shrestha, Kushal Kafle, và Christopher Kanan.
+2022. An investigation of critical issues in bias miti-
+gation techniques. In Proceedings of the IEEE/CVF
+Winter Conference on Applications of Computer Vi-
+sion, pages 1943–1954.
+
+Luca Soldaini, Rodney Kinney, Akshita Bhagia, Dustin
+Schwenk, David Atkinson, Russell Authur, Ben Bo-
+gin, Khyathi Chandu, Jennifer Dumas, Yanai Elazar,
+Valentin Hofmann, Ananya Harsh Jha, Sachin Kumar,
+Li Lucy, Xinxi Lyu, Nathan Lambert, Ian Magnusson,
+Jacob Morrison, Niklas Muennighoff, Aakanksha
+Naik, Crystal Nam, Matthew E. Peters, Abhilasha
+Ravichander, Kyle Richardson, Zejiang Shen, Emma
+Strubell, Nishant Subramani, Oyvind Tafjord, Pete
+Walsh, Luke Zettlemoyer, Noah A. Smith, Hannaneh
+Hajishirzi, Iz Beltagy, Dirk Groeneveld, Jesse Dodge,
+và Kyle Lo. 2024. Dolma: An Open Corpus of
+Three Trillion Tokens for Language Model Pretrain-
+ing Research. arXiv preprint.
+
+Yau-Shian Wang và Yingshan Chang. 2022. Toxicity
+detection with generative prompt-based inference.
+arXiv preprint arXiv:2205.12390.
+
+Zige Wang, Wanjun Zhong, Yufei Wang, Qi Zhu, Fei Mi,
+Baojun Wang, Lifeng Shang, Xin Jiang, và Qun Liu.
+2023. Data management for large language models:
+A survey. arXiv preprint arXiv:2312.01700.
+
+Thomas Wolf, Lysandre Debut, Victor Sanh, Julien
+Chaumond, Clement Delangue, Anthony Moi, Pier-
+ric Cistac, Tim Rault, Rémi Louf, Morgan Funtowicz,
+et al. 2019. Huggingface's transformers: State-of-
+the-art natural language processing. arXiv preprint
+arXiv:1910.03771.
+
+Wen Xia, Hong Jiang, Dan Feng, Fred Douglis, Philip
+Shilane, Yu Hua, Min Fu, Yucheng Zhang, và Yukun
+Zhou. 2016. A comprehensive study of the past,
+present, and future of data deduplication. Proceed-
+ings of the IEEE, 104(9):1681–1710.
+
+Shuo Yang, Wei-Lin Chiang, Lianmin Zheng, Joseph E
+Gonzalez, và Ion Stoica. 2023. Rethinking
+benchmark and contamination for language mod-
+els with rephrased samples. arXiv preprint
+arXiv:2311.04850.
+
+Andy B Yoo, Morris A Jette, và Mark Grondona. 2003.
+Slurm: Simple linux utility for resource management.
+In Workshop on job scheduling strategies for parallel
+processing, pages 44–60. Springer.
+
+Matei Zaharia, Reynold S Xin, Patrick Wendell, Tatha-
+gata Das, Michael Armbrust, Ankur Dave, Xian-
+grui Meng, Josh Rosen, Shivaram Venkataraman,
+Michael J Franklin, et al. 2016. Apache spark: a
+unified engine for big data processing. Communica-
+tions of the ACM, 59(11):56–65.
+
+Wayne Xin Zhao, Kun Zhou, Junyi Li, Tianyi Tang,
+Xiaolei Wang, Yupeng Hou, Yingqian Min, Beichen
+Zhang, Junjie Zhang, Zican Dong, et al. 2023. A
+survey of large language models. arXiv preprint
+arXiv:2303.18223.
+
+--- TRANG 9 ---
+A Thảo luận
+Tiến triển Chậm trong Phát triển Mã nguồn Mở cho Xử lý Dữ liệu LLM Bất chấp sự xuất hiện của
+LLMs trong thời gian gần đây, vẫn tồn tại sự thiếu hụt các giải pháp mã nguồn mở được áp dụng rộng rãi
+trong lĩnh vực xử lý dữ liệu cho những mô hình này. Chi phí tính toán đáng kể và yêu cầu sức mạnh tính
+toán lớn chủ yếu đã giới hạn những tiến bộ cho các tổ chức được tài trợ tốt hoặc quy mô lớn. Do đó, điều
+này đã khiến nghiên cứu LLM không thể tiếp cận được đối với các cá nhân và các thực thể nhỏ hơn. Ban
+đầu, nhu cầu về các giải pháp mã nguồn mở trong nghiên cứu LLM không đáng kể. Tuy nhiên, khi các
+LLMs nhỏ hơn bắt đầu xuất hiện, trao quyền cho các cá nhân và các thực thể nhỏ hơn tham gia vào nghiên
+cứu LLM, sự cần thiết của các giải pháp mã nguồn mở ngày càng trở nên rõ ràng. Ngày càng rõ ràng rằng
+để thúc đẩy khả năng tiếp cận rộng rãi hơn với nghiên cứu LLM và tạo điều kiện cho sự tham gia lớn hơn
+trong lĩnh vực này, có nhu cầu cấp thiết để tăng tốc phát triển các giải pháp mã nguồn mở, với trọng tâm
+đặc biệt vào xử lý dữ liệu.
+
+Các Yếu tố Cốt yếu để Phát triển Giải pháp Xử lý Dữ liệu LLM Mã nguồn Mở Các yếu tố cốt yếu
+để phát triển thành công các giải pháp xử lý dữ liệu LLM mã nguồn mở có thể được chưng cất thành ba
+khía cạnh chính: giao diện thân thiện với người dùng, hiệu quả chi phí trong xử lý dữ liệu, và một công cụ
+đánh giá tài nguyên tự động.
+
+Thứ nhất, và quan trọng nhất, một giao diện thân thiện với người dùng là bắt buộc để đảm bảo việc áp
+dụng rộng rãi trong cộng đồng. Mục tiêu nên là tạo ra một giao diện trực quan như nút nguồn của máy
+tính, từ đó khuyến khích tương tác và sử dụng cao hơn từ người dùng.
+
+Tuy nhiên, việc tập trung vào trải nghiệm người dùng chỉ trở nên hiệu quả khi được hỗ trợ bởi các khả
+năng xử lý dữ liệu đáng tin cậy, được tối ưu hóa cao và hiệu quả về chi phí. Việc sử dụng các công cụ xử
+lý dữ liệu trong thời đại LLM có thể tốn kém về mặt tài chính. Do đó, những công cụ này đòi hỏi việc hiệu
+chỉnh thận trọng để đảm bảo hiệu quả chi phí. Người dùng không được gặp phải các lần thử lặp lại do lỗi,
+vì điều này không chỉ ảnh hưởng tiêu cực đến trải nghiệm người dùng mà còn làm trầm trọng thêm chi phí
+liên quan.
+
+Cuối cùng, việc thiết lập một hệ thống tự động đánh giá sức mạnh tính toán có sẵn và đánh giá tính phù
+hợp của nó cho dữ liệu đã cho là tối quan trọng. Bằng cách làm như vậy, nó nhằm ngăn chặn người dùng
+trải nghiệm thời gian lãng phí và sự thất vọng do khả năng xử lý không đủ.
+
+Hệ thống Dựa trên Registry để Quản lý Bộ xử lý Dữ liệu Hiệu quả Có thể đặt câu hỏi về lý do sử
+dụng registry, do nó có thể gây ra độ phức tạp, đặc biệt trong các hệ thống đa người dùng do các vấn đề
+đồng bộ hóa. Tuy nhiên, Dataverse hoạt động như một hệ thống người dùng đơn, từ đó loại bỏ nhu cầu
+đồng bộ hóa registry giữa các người dùng. Cách tiếp cận này giải quyết thách thức đồng bộ hóa và mang
+lại hai lợi thế chính. Thứ nhất, nó loại bỏ nhu cầu import các hàm bộ xử lý dữ liệu bằng đường dẫn tương
+đối, từ đó đơn giản hóa quy trình phát triển. Thứ hai, nó cho phép hệ thống đăng ký tự động, giảm bớt
+gánh nặng cho người dùng phải lưu thủ công các hàm xử lý dữ liệu trong package. Thay vào đó, người
+dùng được trao sự linh hoạt để triển khai các hàm xử lý dữ liệu của họ ở các vị trí ưa thích, mà không bị
+ràng buộc vào một thư mục cụ thể. Do đó, các hàm tùy chỉnh có thể được đặt trong các môi trường khác
+nhau, bao gồm Jupyter Notebooks, và có thể được tích hợp liền mạch vào pipeline ETL.
+
+Lập trình Dựa trên Block để Nâng cao Thí nghiệm Cách tiếp cận lập trình dựa trên block cơ bản trình
+bày một bộ xử lý dữ liệu như một block đơn lẻ, và một Pipeline ETL như một cấu trúc tổng hợp của nhiều
+block. Mô hình thiết kế này trao cho người dùng sự linh hoạt để thêm, xóa hoặc sắp xếp lại các block một
+cách dễ dàng, có thể đạt được chỉ thông qua cài đặt cấu hình. Do đó, nó cho phép người dùng dễ dàng thí
+nghiệm với các kết hợp vô hạn mà không cần sửa đổi codebase.
+
+Xử lý Batch: Một Cách tiếp cận Bền vững trong Bối cảnh Dữ liệu Quy mô Lớn Trong bối cảnh dữ liệu
+quy mô lớn, độ chính xác được ưu tiên hơn tốc độ. Mục tiêu không chỉ đơn giản là sử dụng một cách vô
+tình dòng dữ liệu đến mà là tập trung vào việc tạo ra dữ liệu chất lượng cao và đáng tin cậy. Để đạt được
+điều này, đánh giá toàn cầu phải bao gồm deduplication và đảm bảo quan điểm cân bằng để tránh bias.
+Điều này trở nên đáng kể thách thức trong xử lý dữ liệu thời gian thực. Kết quả là, Dataverse vẫn phụ
+thuộc nhiều vào
+
+--- TRANG 10 ---
+xử lý batch, vì nó được thiết kế cho việc chuẩn bị dữ liệu LLM, nơi độ chính xác và chất lượng là tối quan
+trọng.
+
+Quy ước Đặt tên: Lý do Đằng sau Việc Lựa chọn ___ Không thông thường Việc đặt tên cho số lượng
+lớn các bộ xử lý dữ liệu, như trong trường hợp của Dataverse, đưa ra hai thách thức chính: duy trì tính
+duy nhất và đảm bảo khả năng sử dụng. Với tiềm năng thêm vào đến 10,000 bộ xử lý dữ liệu, việc đảm
+bảo nhận dạng duy nhất có thể là khó khăn. Do đó, ý tưởng phân loại trên hai cấp độ đã xuất hiện, không
+chỉ đảm bảo tính duy nhất mà còn làm cho các bộ xử lý dữ liệu dễ nhận dạng và hiểu.
+
+Tuy nhiên, một cuộc thảo luận đã xuất hiện về việc có nên tích hợp các danh mục này vào tên của bộ xử
+lý dữ liệu hay không. Sự nhầm lẫn phát sinh khi các hàm như remove xuất hiện trong nhiều danh mục như
+deduplication và cleaning. Làm thế nào chúng ta xác định rõ ràng sự khác biệt? Vấn đề này đã được giảm
+thiểu bằng cách yêu cầu người dùng cung cấp danh mục và tên như các đối số riêng biệt trong cấu hình.
+Tuy nhiên, điều này tỏ ra cồng kềnh, và do đó các yếu tố này đã được kết hợp thành một chuỗi ký tự duy
+nhất. Các dấu gạch dưới phân tách (___) sau đó được giới thiệu để tách biệt rõ ràng ETL Category, ETL
+Sub-Category và ETL Name. Do đó, quy ước đặt tên không thông thường [ETL Category]___[ETL Sub-
+Category]___[ETL Name] đã được sử dụng.

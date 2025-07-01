@@ -1,0 +1,1473 @@
+# 2504.10046v1.pdf
+# Chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2504.10046v1.pdf
+# Kích thước file: 1840026 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+CodeRAG: Thu Thập Mã Hỗ Trợ trên Đồ Thị Hai Chiều cho Sinh Mã 
+Thực Tế
+Jia Li
+Phòng Thí nghiệm Chính về Công nghệ
+Phần mềm Tin cậy Cao (Đại học Bắc Kinh), MoE,
+Khoa Khoa học Máy tính, Đại học Bắc Kinh
+Trung Quốc
+lijiaa@pku.edu.cnXianjie Shi
+Phòng Thí nghiệm Chính về Công nghệ
+Phần mềm Tin cậy Cao (Đại học Bắc Kinh), MoE,
+Khoa Khoa học Máy tính, Đại học Bắc Kinh
+Trung Quốc
+2100013180@stu.pku.edu.cnKechi Zhang
+Phòng Thí nghiệm Chính về Công nghệ
+Phần mềm Tin cậy Cao (Đại học Bắc Kinh), MoE,
+Khoa Khoa học Máy tính, Đại học Bắc Kinh
+Trung Quốc
+zhangkechi@pku.edu.cn
+Lei Li
+Đại học Hong Kong
+Trung Quốc
+nlp.lilei@gmail.comGe Li∗
+Phòng Thí nghiệm Chính về Công nghệ
+Phần mềm Tin cậy Cao (Đại học Bắc Kinh), MoE,
+Khoa Khoa học Máy tính, Đại học Bắc Kinh
+Trung Quốc
+lige@pku.edu.cnZhengwei Tao, Jia Li
+Phòng Thí nghiệm Chính về Công nghệ
+Phần mềm Tin cậy Cao (Đại học Bắc Kinh), MoE,
+Khoa Khoa học Máy tính, Đại học Bắc Kinh
+Trung Quốc
+tttzw@stu.pku.edu.cn,lijia@stu.pku.edu.cn
+Fang Liu
+Khoa Khoa học và Kỹ thuật Máy tính,
+Phòng Thí nghiệm Nhà nước về Môi trường
+Phần mềm Phức tạp & Quan trọng,
+Đại học Beihang
+Trung Quốc
+fangliu@buaa.edu.cnChongyang Tao
+Đại học Beihang
+Trung Quốc
+chongyang@buaa.edu.cnZhi Jin∗
+Phòng Thí nghiệm Chính về Công nghệ
+Phần mềm Tin cậy Cao (Đại học Bắc Kinh), MoE,
+Khoa Khoa học Máy tính, Đại học Bắc Kinh
+Trung Quốc
+zhijin@pku.edu.cn
+
+Tóm tắt
+Các mô hình ngôn ngữ lớn (LLM) đã thể hiện hiệu suất đầy hứa hẹn
+trong việc sinh mã tự động, đặc biệt là xuất sắc trong các tác vụ đơn giản
+như sinh mã độc lập. Khác với các tác vụ đơn giản,
+việc sinh mã thực tế thường phụ thuộc vào môi trường lập trình
+cụ thể (ví dụ: kho mã nguồn). Nó chứa các phụ thuộc phức tạp
+và kiến thức chuyên ngành, điều cần thiết cho LLM
+khi sinh ra các đoạn mã đích. Trong bài báo này, chúng tôi đề xuất
+CodeRAG, một khung sinh mã tăng cường thu thập (RAG) để
+thu thập một cách toàn diện các mã hỗ trợ cho việc sinh mã thực tế.
+Bắt đầu với yêu cầu, CodeRAG trước tiên
+xây dựng một đồ thị yêu cầu cho kho lưu trữ hiện tại, và
+thu thập các nút yêu cầu con và tương tự của yêu cầu
+đích trên đồ thị. Đồng thời, nó mô hình hóa kho lưu trữ thành một
+đồ thị DS-code. CodeRAG sau đó ánh xạ các nút yêu cầu liên quan này
+vào các nút mã tương ứng của chúng, và coi các nút mã này
+làm điểm neo cho việc suy luận LLM trên đồ thị DS-code. Cuối cùng, CodeRAG
+∗Tác giả liên hệ.
+Quyền tạo bản sao kỹ thuật số hoặc in bản cứng của tất cả hoặc một phần công việc này cho mục đích cá nhân hoặc
+lớp học được cấp miễn phí với điều kiện các bản sao không được tạo hoặc phân phối
+vì lợi nhuận hoặc lợi thế thương mại và các bản sao mang thông báo này và trích dẫn đầy đủ
+trên trang đầu tiên. Bản quyền cho các thành phần của công việc này thuộc sở hữu của những người khác ngoài
+(các) tác giả phải được tôn trọng. Tóm tắt có ghi nguồn được phép. Để sao chép khác, hoặc
+tái xuất bản, để đăng trên máy chủ hoặc phân phối lại cho danh sách, cần có sự cho phép cụ thể trước
+và/hoặc phí. Yêu cầu quyền từ permissions@acm.org.
+Từ viết tắt hội nghị 'XX, Woodstock, NY
+©2018 Bản quyền được giữ bởi chủ sở hữu/tác giả. Quyền xuất bản được cấp phép cho ACM.
+ACM ISBN 978-1-4503-XXXX-X/2018/06
+https://doi.org/XXXXXXX.XXXXXXXgiới thiệu một quá trình suy luận tác nhân hướng mã, cho phép
+LLM suy luận và thu thập toàn diện các mã hỗ trợ mà
+LLM cần để sinh ra các chương trình chính xác. Các thí nghiệm
+cho thấy CodeRAG đạt được những cải thiện đáng kể (tăng
+40.90 và 37.79 Pass@1 trên GPT-4o và Gemini-Pro trên
+DevEval) so với các kịch bản không có RAG. Các thử nghiệm tiếp theo trên
+LLM suy luận (tức là QwQ-32B) xác nhận khả năng thích ứng và hiệu quả
+của CodeRAG trên các loại LLM khác nhau. Ngoài ra, CodeRAG vượt trội hơn
+các sản phẩm lập trình thương mại như Copilot và Cursor. Chúng tôi
+tiếp tục nghiên cứu hiệu suất của khung công tác trên các
+loại phụ thuộc khác nhau, và quan sát thấy CodeRAG vượt trội trong việc
+sinh ra các ví dụ mà mã đích gọi các đoạn mã
+xuyên file được định nghĩa trước. Những kết quả này chứng minh tiềm năng của CodeRAG
+trong việc giải quyết các thách thức mã hóa cấp kho lưu trữ thực tế.
+
+Khái niệm CCS
+•Phương pháp tính toán →Mạng nơ-ron ;•Phần mềm
+và kỹ thuật của nó →Lập trình tự động .
+
+Từ khóa
+Sinh mã, Thu thập mã, Đồ thị, Mô hình ngôn ngữ lớn
+
+Định dạng Tham khảo ACM:
+Jia Li, Xianjie Shi, Kechi Zhang, Lei Li, Ge Li, Zhengwei Tao, Jia Li, Fang
+Liu, Chongyang Tao, và Zhi Jin. 2018. CodeRAG: Thu Thập Mã Hỗ Trợ
+trên Đồ Thị Hai Chiều cho Sinh Mã Thực Tế. Trong Proceedings of Hãy chắc
+chắn nhập tiêu đề hội nghị chính xác từ email xác nhận quyền của bạnarXiv:2504.10046v1  [cs.SE]  14 Apr 2025
+
+--- TRANG 2 ---
+Từ viết tắt hội nghị 'XX, June 03–05, 2018, Woodstock, NY Jia Li and Xianjie Shi et al.
+(Từ viết tắt hội nghị 'XX). ACM, New York, NY, USA, 14 trang. https:
+//doi.org/XXXXXXX.XXXXXXX
+
+1 Giới thiệu
+Sinh mã đã nổi lên như một nhiệm vụ then chốt trong kỹ thuật phần mềm,
+cho phép các mô hình tự động hóa các tác vụ phát triển phần mềm thiết yếu.
+Các mô hình ngôn ngữ lớn (LLM) gần đây, như GPT-4o [2],
+Gemini-Pro [31], và DeepSeek-V3 [20], đã chứng minh khả năng
+đáng kinh ngạc trong sinh mã [15,23,39,40], đặc biệt
+trong việc sinh ra các mã độc lập đơn giản. Khác với sinh mã
+độc lập, sinh mã thực tế thường phụ thuộc vào
+môi trường lập trình cụ thể, như sinh mã cấp kho lưu trữ,
+điều này thực tế hơn, xét đến thành công gần đây của Copilot¹
+và Cursor². Sinh mã cấp kho lưu trữ thực tế phụ thuộc rất nhiều
+vào kho lưu trữ hiện tại, bao gồm các phụ thuộc phức tạp và kiến thức
+chuyên ngành, điều này thách thức cho các LLM hiện có trong việc xử lý
+và sinh ra. Để giảm thiểu khoảng cách kiến thức nêu trên của
+LLM, sinh mã tăng cường thu thập (RAG) đã trở thành một
+chiến lược chính cho sinh mã cấp kho lưu trữ thực tế. Một phương pháp
+trực quan để giải quyết thách thức này là đưa kho lưu trữ hiện tại
+vào LLM. Tuy nhiên, phương pháp này bị hạn chế bởi
+cửa sổ ngữ cảnh của LLM và khả năng hiểu ngữ cảnh mã dài của chúng [19].
+
+Hiện tại, các nhà nghiên cứu chủ yếu đề xuất ba loại phương pháp
+cho sinh mã cấp kho lưu trữ tăng cường thu thập. Loại
+đầu tiên [24,37] coi kho lưu trữ hiện tại như nhiều đoạn mã
+độc lập, và thu thập các mã liên quan theo
+điểm số độ tương tự cosine hoặc điểm số BM25 giữa các đoạn mã và
+yêu cầu đích, nhưng nó bỏ qua các phụ thuộc ngữ cảnh
+phức tạp trong kho lưu trữ. Loại thứ hai [21,22] mô hình hóa
+kho lưu trữ hiện tại thành một đồ thị mã, trong đó các nút đại diện cho các đoạn mã
+(ví dụ: hàm hoặc lớp) và các cạnh có nghĩa là mối quan hệ
+giữa các nút như gọi và kế thừa. Với một yêu cầu đích,
+phương pháp này chuyển đổi yêu cầu đích thành một truy vấn đồ thị
+chính thức và sử dụng truy vấn để thu thập mã trên đồ thị mã.
+Mặc dù xem xét các phụ thuộc mã, ngữ pháp của truy vấn đồ thị
+chỉ có một vài loại hạn chế, dẫn đến thu thập không đầy đủ.
+Loại thứ ba [11,33,39] là phương pháp tác nhân, giới thiệu
+các công cụ lập trình để thu thập kiến thức bên ngoài vào
+LLM, như tìm kiếm web.
+
+Mặc dù những phương pháp này đã đạt được cải thiện ấn tượng
+trong sinh mã cấp kho lưu trữ, việc thu thập toàn diện
+các mã hỗ trợ là một quá trình phức tạp. Trong các tình huống lập trình
+thực tế, với một yêu cầu chức năng mới, các nhà phát triển thông thường
+phân tích các mối quan hệ phụ thuộc của các đoạn mã và
+gọi các hàm hoặc lớp được định nghĩa trước trong kho lưu trữ hiện tại.
+Để gọi chúng một cách chính xác, các nhà phát triển thường tham khảo các mã nguồn
+khác có liên quan đến các mã được gọi trong kho lưu trữ hiện tại, vì
+không giống như các API của bên thứ ba, những mã được định nghĩa này cụ thể
+theo domain và lạ lẫm với các nhà phát triển. Ngoài việc học từ
+kho lưu trữ hiện tại, các nhà phát triển đôi khi tham khảo kiến thức bên ngoài
+như sử dụng tìm kiếm web để hiểu các định lý cụ thể theo domain
+và mã. Được truyền cảm hứng từ quá trình lập trình của con người dựa trên
+khung mã nền tảng, chúng tôi đề xuất một khung RAG
+¹https://copilot.microsoft.com/
+²https://www.cursor.com/CodeRAG, nhằm thu thập toàn diện các mã hỗ trợ
+cho sinh mã thực tế. Phương pháp của chúng tôi giới thiệu bốn đổi mới chính:
+
+•Đồ thị Yêu cầu. Bắt đầu với yêu cầu, CodeRAG
+xây dựng một đồ thị yêu cầu cho kho lưu trữ hiện tại bằng cách
+xem xét các mối quan hệ giữa yêu cầu đích và
+các yêu cầu khác. Các nút đại diện cho các mô tả chức năng
+(được gọi là yêu cầu) của các hàm hoặc lớp được định nghĩa trong kho lưu trữ.
+Các cạnh đại diện cho các mối quan hệ giữa các yêu cầu
+(ví dụ: quan hệ cha-con, quan hệ tương tự về mặt ngữ nghĩa). Với
+một yêu cầu đích, chúng tôi thu thập các yêu cầu con và các yêu cầu
+tương tự về mặt ngữ nghĩa trong đồ thị yêu cầu. Khác
+với hầu hết các phương pháp RAG [37,39], CodeRAG mô hình hóa
+các mối quan hệ yêu cầu và thu thập các mã hỗ trợ từ
+góc độ yêu cầu.
+
+•Đồ thị DS-Code. CodeRAG đồng thời thiết kế một đồ thị DS-code.
+Khác với các đồ thị mã hiện có, đồ thị DS-code không chỉ
+mô hình hóa các mối quan hệ phụ thuộc mà còn giới thiệu các mối quan hệ
+ngữ nghĩa giữa các nút. Trong đồ thị DS-code, các nút có nghĩa là các
+phần tử mã trong một kho lưu trữ và có năm loại (ví dụ: hàm và
+mô-đun). Các cạnh chứa các mối quan hệ phụ thuộc và ngữ nghĩa
+giữa các nút. Thông qua đồ thị DS-code, CodeRAG có thể
+mô hình hóa hiệu quả các mối quan hệ phức tạp giữa các mã nguồn.
+
+•Ánh xạ Đồ thị Hai chiều. Dựa trên những điều trên, đồ thị yêu cầu
+và đồ thị DS-code có mối quan hệ ánh xạ. CodeRAG
+có thể ánh xạ các nút yêu cầu con và các nút yêu cầu tương tự
+của yêu cầu đích vào các nút mã tương ứng của chúng và
+thành công trong việc tìm các mã hỗ trợ. Bởi vì các mã
+tương ứng của các nút yêu cầu con rất có thể được gọi bởi
+mã đích, và các mã tương ứng với các nút yêu cầu tương tự
+thường cung cấp thông tin hữu ích cho LLM.
+
+•Suy luận Tác nhân Hướng Mã. Chúng tôi giới thiệu một
+quá trình sinh mã tác nhân, cho phép LLM suy luận một cách liền mạch và
+thu thập toàn diện các mã hỗ trợ mà LLM cần
+trong quá trình sinh. Trong quá trình suy luận, LLM có thể suy luận
+từ một nút mã được chọn sang nút khác trên đồ thị DS-code, cũng như
+tìm kiếm kiến thức bên ngoài thông qua tìm kiếm web, nhằm
+thu thập toàn diện mã hỗ trợ trong quá trình suy luận.
+
+Thông qua cách này, CodeRAG có thể thu thập toàn diện các mã hỗ
+trợ để giúp LLM sinh ra các mã chính xác: ❶API
+(các hàm hoặc lớp được định nghĩa trước trong kho lưu trữ hiện tại) được
+gọi bởi mã đích, ❷Các đoạn mã tương tự về mặt ngữ nghĩa
+với mã đích, ❸Các mã nguồn có liên quan gián tiếp
+đến mã đích. Bên cạnh đó, CodeRAG hỗ trợ thu thập
+❹Kiến thức chuyên ngành bên ngoài thông qua công cụ tìm kiếm web,
+như tham khảo định lý cụ thể theo domain được mô tả trong yêu cầu đích.
+Hình 1 hiển thị các mã hỗ trợ của một ví dụ
+được thu thập bởi CodeRAG. Chúng ta có thể thấy rằng việc có thể truy cập vào những
+mã hỗ trợ này phù hợp với các tình huống phát triển phần mềm thực tế
+như mô tả trong Mục 2.2.
+
+Chúng tôi sử dụng tập dữ liệu sinh mã cấp kho lưu trữ DevEval [18] để
+đánh giá CodeRAG trên các LLM chính thống, bao gồm GPT-4o [2] và
+Gemini-Pro [31]. Kết quả thí nghiệm chứng minh rằng CodeRAG
+đạt được những cải thiện đáng kể so với tất cả các baseline RAG.
+Cụ thể, CodeRAG vượt trội hơn các kịch bản không có RAG với 40.90
+Pass@1 trên GPT-4o và 37.79 Pass@1 trên Gemini-Pro. Các thử nghiệm tiếp theo
+
+--- TRANG 3 ---
+CodeRAG: Thu Thập Mã Hỗ Trợ trên Đồ Thị Hai Chiều cho Sinh Mã Thực Tế Conference acronym 'XX, June 03–05, 2018, Woodstock, NY
+
+trên các LLM suy luận (tức là QwQ-32B [4]) xác nhận khả năng thích ứng
+và hiệu quả của CodeRAG trên các loại LLM khác nhau. Đặc biệt, CodeRAG
+cũng vượt trội hơn các sản phẩm thương mại như GitHub Copilot³ và
+Anysphere Cursor⁴. Ngoài ra, chúng tôi nghiên cứu hiệu suất của
+khung công tác trên các loại phụ thuộc khác nhau. Chúng tôi quan sát thấy rằng
+CodeRAG vượt trội trong việc sinh ra các ví dụ mà mã đích
+gọi các đoạn mã xuyên file được định nghĩa trước. Những kết quả này làm nổi bật
+tiềm năng của khung công tác trong các tác vụ mã hóa cấp kho lưu trữ thực tế.
+
+Chúng tôi tóm tắt những đóng góp của bài báo này như sau:
+•Chúng tôi đề xuất CodeRAG, một khung RAG mới, nhằm
+thu thập toàn diện các mã hỗ trợ cho sinh mã
+cấp kho lưu trữ thực tế. Bắt đầu với yêu cầu,
+nó xây dựng một đồ thị yêu cầu cho kho lưu trữ lập trình
+hiện tại và thu thập các nút yêu cầu liên quan
+của yêu cầu đích. Đồng thời, nó mô hình hóa một đồ thị
+DS-code, và ánh xạ các nút yêu cầu liên quan vào các nút mã
+tương ứng của chúng, tìm thấy các mã hỗ trợ.
+
+•CodeRAG giới thiệu một quá trình sinh mã tác nhân,
+cho phép LLM suy luận và tìm kiếm động cho các mã hỗ trợ
+toàn diện mà LLM cần trong sinh mã cấp kho lưu trữ.
+
+•Kết quả thí nghiệm trên các LLM đa dạng cho thấy hiệu quả
+và tính linh hoạt của CodeRAG trong sinh mã cấp kho lưu trữ,
+làm nổi bật tiềm năng của nó trong việc giải quyết các thách thức
+mã hóa thực tế.
+
+2 Nền tảng & Ví dụ Động lực
+
+2.1 Sinh Mã Cấp Kho Lưu Trữ Thực Tế
+Các tác vụ sinh mã hiện có chủ yếu tập trung vào việc sinh ra các
+đơn vị mã độc lập, bao gồm sinh cấp câu lệnh và cấp hàm.
+Các chương trình được sinh thường ngắn và độc lập
+với các mã khác. Tuy nhiên, trong phát triển phần mềm thực tế, các lập trình viên
+thường làm việc trong một môi trường lập trình cụ thể như kho mã nguồn,
+và mở rộng các chức năng của họ dựa trên khung mã nền tảng.
+Được truyền cảm hứng từ điều này, một số nghiên cứu [17,39] giới thiệu
+tác vụ sinh mã cấp kho lưu trữ. Với một kho mã nguồn, tác vụ sinh mã
+cấp kho lưu trữ nhằm sinh mã dựa trên tất cả các artifact phần mềm
+được bao gồm trong kho lưu trữ, bao quát các yêu cầu, phụ thuộc mã,
+và môi trường thời gian chạy [39]. Với một yêu cầu đích và chữ ký của nó,
+CodeRAG lặp đi lặp lại thu thập các mã hỗ trợ và suy luận
+với một quá trình tác nhân để sinh ra các chương trình thỏa mãn không chỉ
+tuân thủ các yêu cầu mà còn tích hợp liền mạch với
+kho lưu trữ hiện tại.
+
+2.2 Ví dụ Động lực
+CodeRAG được truyền cảm hứng từ quá trình lập trình của con người dựa trên
+khung mã nền tảng, nơi các nhà phát triển chủ yếu mở rộng
+các chức năng phức tạp mới trong một kho mã nguồn. ❶Những chức năng
+phức tạp này thường bao gồm nhiều yêu cầu con,
+và các mã nguồn của những yêu cầu con này thường đã được
+định nghĩa trước trong kho lưu trữ hiện tại. Trong quá trình lập trình,
+các nhà phát triển thường xuyên gọi những hàm hoặc lớp được định nghĩa trước này
+³https://copilot.microsoft.com/
+⁴https://www.cursor.com/trong kho lưu trữ lập trình hiện tại. ❷Không giống như các API được định nghĩa trong
+các thư viện bên thứ ba, một kho mã nguồn thường cụ thể theo domain,
+như domain tài chính và domain bảo mật, điều này không quen thuộc
+với các nhà phát triển. Các nhà phát triển thường tham khảo các mã nguồn khác trong
+kho lưu trữ hiện tại khi hiểu những hàm hoặc lớp được định nghĩa trước này.
+❸Ngoài ra, kho lưu trữ thường chứa
+nhiều mã tương tự về mặt ngữ nghĩa với các chức năng mới,
+thường hữu ích cho các nhà phát triển viết chương trình chính xác bằng cách
+tham khảo chúng. ❹Hơn nữa, các chức năng mới
+đôi khi liên quan đến kiến thức domain như định lý cụ thể theo domain
+trong yêu cầu mới. Họ thường sử dụng tìm kiếm web để thu thập
+kiến thức liên quan và kết hợp nó vào quá trình lập trình.
+Chúng tôi gọi bốn loại kiến thức này là các mã hỗ trợ
+cho sinh mã cấp kho lưu trữ.
+
+Được truyền cảm hứng từ quá trình phát triển nêu trên, một công cụ
+sinh mã thực tế tốt nên có thể thu thập toàn diện
+mã hỗ trợ, thúc đẩy mã được sinh tích hợp liền mạch
+với kho lưu trữ hiện tại. Trong bài báo này, chúng tôi
+đề xuất CodeRAG, một khung RAG, nhằm thu thập toàn diện
+các mã hỗ trợ cho sinh mã cấp kho lưu trữ. CodeRAG
+xây dựng một đồ thị yêu cầu cho kho lưu trữ hiện tại và thu thập
+các nút yêu cầu liên quan của nút yêu cầu đích.
+Đồng thời, nó mô hình hóa một đồ thị DS-code, và ánh xạ các nút yêu cầu
+liên quan vào các nút mã tương ứng của chúng, thành công tìm thấy
+các mã hỗ trợ. Ngoài ra, CodeRAG giới thiệu một
+quá trình tác nhân, cho phép LLM điều chỉnh chiến lược suy luận
+một cách thích ứng và tìm kiếm kiến thức hỗ trợ mà LLM cần trong
+sinh mã cấp kho lưu trữ.
+
+Hình 1 minh họa các mã hỗ trợ được thu thập và các chương trình
+được sinh của một ví dụ bởi CodeRAG. CodeRAG trước tiên thành công
+tìm thấy các yêu cầu con và các yêu cầu tương tự về mặt ngữ nghĩa
+của yêu cầu đích như được hiển thị trong Bước 2. Thông qua
+ánh xạ đồ thị hai chiều, khung công tác của chúng tôi thu thập các mã hỗ trợ
+("_statement_matches_action" và "_matches_after_expansion"), tức là
+các mã tương ứng của các yêu cầu con và các yêu cầu tương tự
+về mặt ngữ nghĩa trên đồ thị DS-code như được hiển thị trong Bước 3.
+Khung công tác của chúng tôi sau đó thực hiện quá trình suy luận tác nhân.
+Chúng ta có thể quan sát thấy CodeRAG tiếp tục thu thập "_listify_string"
+bằng cách suy luận trên đồ thị DS-code trong Bước 4, đây là nút một-hop
+của "_statement_matches_action" và có mối quan hệ gọi giữa
+chúng. Đồng thời, CodeRAG sử dụng tìm kiếm web để thu thập kiến thức
+liên quan và tích hợp nó vào quá trình sinh như được hiển thị
+trong Bước 5. Cuối cùng, dựa trên những mã hỗ trợ này, CodeRAG sinh
+ra các chương trình chính xác và có thể tích hợp thành công với
+kho lưu trữ hiện tại. Như được hiển thị trong Hình 1, CodeRAG phù hợp với
+quá trình lập trình của con người dựa trên kho mã nguồn và
+có thể sinh ra thành công các chương trình mong muốn.
+
+2.3 Câu hỏi Nghiên cứu
+Chúng tôi giả định rằng những mã hỗ trợ này liên quan đến
+yêu cầu đích, và trang bị cho LLM kiến thức hữu ích toàn diện,
+do đó có thể mang lại lợi ích cho sinh mã thực tế. Điều này
+dẫn đến một số RQ.
+
+--- TRANG 4 ---
+Conference acronym 'XX, June 03–05, 2018, Woodstock, NY Jia Li and Xianjie Shi et al.
+
+# Mã Tương tự Ngữ nghĩa
+def _statement_matches_action(
+    statement: dict, 
+    action: str,
+    is_resource_policy_check: bool = False
+  ) -> bool:
+    if 'Action' in statement:
+      for i in _listify_string(statement['Action']):
+          if not is_resource_policy_check:
+            ...
+       return False
+    else 'NoAction' in statement:
+       result = True
+       for i in _listify_string(statement['NoAction']):
+            ...
+        return result
+
+# Mã Được Gọi
+def _matches_after_expansion(
+    str_to_check: str, 
+    str_to_check_against: str,
+    condition_keys: Optional[CaseInsensitiveDict]
+ ) -> bool:
+    copy_str = str_to_check_against
+    if condition_keys is not None:
+        for k, v in condition_keys.items():     
+         matches_action = _statement_matches(  
+           statement, action_to_check, condition_ke
+           ...    
+    return pattern.match(str_to_check) is not None
+
+3. Mã Hỗ Trợ (Ánh xạ Đồ thị Hai chiều)
+def _statement_matches_resource(
+    statement: dict, 
+    resource: str,
+    condition_keys: Optional[CaseInsensitiveDict] = None
+ ) -> bool:
+    """
+    Hàm trợ giúp, trả về True nếu tài nguyên đã cho nằm
+    trong câu lệnh chính sách đã cho. (# Yêu cầu Đích)
+    """               
+1. Mã Cần Hoàn thành
+2. Yêu cầu Liên quan (Đồ thị Yêu cầu)
+
+# Yêu cầu con
+Hàm trợ giúp kiểm tra string_to_check 
+với string_to_check_against..
+
+# Yêu cầu Tương tự Ngữ nghĩa
+Hàm trợ giúp, trả về True nếu hành động đã cho 
+nằm trong câu lệnh chính sách đã cho.
+
+4. Mã Hỗ Trợ (Suy luận Đồ thị DS-Code)
+
+# Mã Một-hop
+def _listify_string(
+    target_object: Union[List[str], str]
+  ) -> List[str]:
+    """    
+    Hàm trợ giúp lấy một từ điển
+    và trả về nó được bao bọc trong một danh sách
+    """
+    if isinstance(target_object, list):
+        return target_object
+    return [target_object]
+
+def _statement_matches_resource(
+    statement: dict, 
+    resource: str,
+    condition_keys: Optional[CaseInsensitiveDict] = None
+) -> bool:
+    if 'Resource' in statement:
+        for res in _listify_string(statement['Resource']):
+            if _matches_after_expansion(resource, res, condition_keys):
+                return True
+        return False
+    elif 'NotResource' in statement:
+        for res in _listify_string(statement['NotResource']):
+            if _matches_after_expansion(resource, res, condition_keys):
+                return False
+        return True
+    else:
+        return True
+
+5. Mã Hoàn thành
+Hàm này là một hàm trợ giúp kiểm tra xem một 
+tài nguyên đã cho có hiện diện trong một câu lệnh chính sách hay không. 
+Nó kiểm tra xem tài nguyên có khớp với bất kỳ tài nguyên nào được liệt kê 
+trong trường 'Resource' của câu lệnh không. Nếu có, nó trả về True. 
+Nếu 'Resource' không có trong câu lệnh và trường 'NotResource' có mặt, 
+nó kiểm tra xem tài nguyên có khớp với bất kỳ tài nguyên nào được liệt kê 
+trong trường đó không. Nếu có, nó trả về False. Nếu cả trường 'Resource' 
+và 'NotResource' đều không có mặt, nó trả về True.
+
+# Đầu ra của Công cụ Tìm kiếm Web
+
+Hình 1: Minh họa về các mã hỗ trợ được thu thập và các chương trình được sinh bởi CodeRAG.
+
+RQ1. CodeRAG hiệu quả như thế nào cho sinh mã 
+cấp kho lưu trữ thực tế?
+CodeRAG là một khung RAG, nhằm thu thập toàn diện
+các mã hỗ trợ cho sinh mã cấp kho lưu trữ. Chúng tôi nghiên cứu
+hiệu quả của khung công tác trên benchmark DevEval
+[18] và so sánh nó với các phương pháp RAG khác.
+
+RQ2. Các thành phần khác nhau trong CodeRAG đóng góp
+như thế nào vào cải thiện hiệu suất?
+CodeRAG là một hệ thống tác nhân, cho phép LLM điều chỉnh
+chiến lược suy luận một cách thích ứng và tìm kiếm các mã hỗ trợ
+mà LLM cần. Chúng tôi thực hiện một nghiên cứu loại bỏ để tìm ra
+đóng góp và hiệu quả của từng thành phần trong CodeRAG.
+
+RQ3. CodeRAG hoạt động như thế nào trên các ví dụ có
+các loại phụ thuộc khác nhau?
+Xem xét rằng các mã đích có các loại phụ thuộc khác nhau
+trong sinh mã cấp kho lưu trữ, chúng tôi nghiên cứu hiệu suất
+của CodeRAG trên các loại phụ thuộc khác nhau bao gồm các phụ thuộc
+độc lập và không độc lập.
+
+RQ4. CodeRAG hoạt động như thế nào trên các
+LLM suy luận?
+Gần đây, các LLM suy luận như QwQ-32B [4] đã đạt được
+khả năng suy luận đầy hứa hẹn trong các tác vụ khác nhau. Trong RQ này, chúng tôi đánh giá
+liệu CodeRAG có hiệu quả trên các LLM suy luận hay không.
+
+RQ5. CodeRAG hoạt động tốt như thế nào so với
+các sản phẩm lập trình thương mại như GitHub
+Copilot và Anysphere Cursor?
+Ngày nay, rất nhiều sản phẩm thương mại trưởng thành có sẵn
+để hỗ trợ các tác vụ sinh mã phức tạp. Trong RQ này, chúng tôi so sánh
+CodeRAG với những sản phẩm đã được thiết lập này.
+
+3 CodeRAG
+CodeRAG nhằm thu thập toàn diện các mã hỗ trợ cho
+sinh mã cấp kho lưu trữ thực tế. Những mã hỗ trợ này có thể
+cung cấp thông tin hữu ích cho LLM để sinh ra các mã mong muốn.
+CodeRAG trước tiên xây dựng một đồ thị yêu cầu của kho lưu trữ lập trình
+hiện tại dựa trên các mối quan hệ của yêu cầu. Với một
+yêu cầu đích, khung công tác của chúng tôi tìm thấy các yêu cầu con và
+các yêu cầu tương tự về mặt ngữ nghĩa của nó (Mục 3.1). CodeRAG sau đó thiết kế
+một đồ thị DS-code để mô hình hóa kho lưu trữ hiện tại. Không giống như các
+đồ thị mã hiện có, đồ thị DS-code của chúng tôi xem xét không chỉ các mối quan hệ
+phụ thuộc mà còn các mối quan hệ ngữ nghĩa của các nút mã (Mục
+3.2). CodeRAG ánh xạ đồ thị yêu cầu vào đồ thị DS-Code
+và thu thập các mã tương ứng của các yêu cầu con và
+các yêu cầu tương tự về mặt ngữ nghĩa (Mục 3.3). Tiếp theo, CodeRAG
+giới thiệu một quá trình suy luận tác nhân hướng mã. Nó cho phép
+LLM điều chỉnh chiến lược suy luận một cách thích ứng và tìm kiếm
+kiến thức hỗ trợ mà LLM cần, và cuối cùng sinh ra các mã
+mong muốn không chỉ đáp ứng yêu cầu đích mà còn
+
+--- TRANG 5 ---
+CodeRAG: Thu Thập Mã Hỗ Trợ trên Đồ Thị Hai Chiều cho Sinh Mã Thực Tế Conference acronym 'XX, June 03–05, 2018, Woodstock, NY
+
+Đồ thị DS-Code
+CONTAINS
+CALLS
+INHERITS
+SIMILARITY
+CALLS
+IMPORTS
+CONTAINS
+CONTAINS
+CONTAINS
+
+Một-Hop
+Đồ thị Yêu cầu
+SIMILARITY
+PARENT-CHILDS
+PARENT-CHILDS
+
+Yêu cầu Đích
+GraphReason()
+WebSearch()
+CodeTest()
+Công cụ Lập trình
+LLMs
+Thu thập Mã Hỗ trợ
+Ánh xạ Đồ thị Hai chiều
+<Yêu cầu Đích> + <Mã Hỗ trợ>
+Suy luận Tác nhân Hướng Mã
+<Mã Được Sinh>
+
+Hình 2: Tổng quan về CodeRAG của chúng tôi.
+
+tích hợp liền mạch vào môi trường lập trình hiện tại
+(Mục 3.4).
+
+3.1 Đồ thị Yêu cầu
+Thu thập các mã hỗ trợ là thách thức. Đầu tiên, yêu cầu đích
+là ngôn ngữ tự nhiên trong khi mã trong một kho lưu trữ là ngôn ngữ
+lập trình, làm cho việc tìm thấy toàn diện các mã hỗ trợ thông qua
+độ tương tự chuỗi văn bản hoặc thông qua các truy vấn đồ thị thu thập trên
+đồ thị mã trở nên khó khăn. Thứ hai, xem xét rằng các mã trong một kho lưu trữ
+thường có các mối quan hệ phụ thuộc khác nhau, việc mô hình hóa một kho lưu trữ
+là một quá trình phức tạp. Trong bài báo này, CodeRAG bắt đầu với các yêu cầu
+và xây dựng một đồ thị yêu cầu, hỗ trợ việc xác định các yêu cầu con
+và các yêu cầu tương tự về mặt ngữ nghĩa của yêu cầu đích.
+
+Trích xuất Nút. Chúng tôi sử dụng công cụ phân tích tĩnh tree-sitter⁵ để
+phân tích kho lưu trữ lập trình hiện tại và trích xuất tất cả các hàm,
+lớp, và phương thức được định nghĩa trước trong đó. Các nút trong đồ thị yêu cầu
+đại diện cho các yêu cầu (tức là các mô tả chức năng) của
+những đoạn mã được định nghĩa trước này trong kho lưu trữ. Xem xét rằng
+một kho lưu trữ thường chứa hàng trăm đoạn mã, việc gắn nhãn
+các yêu cầu của chúng tốn thời gian và công sức. Khi
+các đoạn mã được trích xuất chứa yêu cầu, chúng tôi sử dụng các mô tả chức năng
+tích hợp sẵn làm yêu cầu của chúng. Đối với các đoạn mã
+không có yêu cầu, chúng tôi áp dụng LLM tiên tiến (tức là DeepSeek-V2.5
+[1]) để sinh ra các yêu cầu của chúng vì nó đã chứng minh khả năng
+hiểu và sinh mạnh mẽ. Các hướng dẫn sinh yêu cầu
+được hiển thị trong Phụ lục A. Chúng tôi xác minh độ tin cậy của
+các mô tả được sinh và thấy rằng chúng có thể mô tả hiệu quả
+các chức năng của các đoạn mã như được chứng minh trong Mục 6.1. Mỗi
+nút có các thuộc tính để đại diện cho thông tin meta của nó, bao gồm
+các mã nguồn tương ứng, đường dẫn file, tên mã, và chữ ký.
+
+Trích xuất Quan hệ Yêu cầu. Trong phát triển phần mềm thực tế,
+các lập trình viên thường gọi các mã được định nghĩa trước hoặc
+học từ các mã tương tự về mặt ngữ nghĩa trong kho lưu trữ lập trình
+hiện tại. Được truyền cảm hứng từ điều này, đồ thị yêu cầu chủ yếu
+⁵https://tree-sitter.github.io/tree-sitter/chứa hai loại cạnh: các mối quan hệ cha-con và các mối quan hệ tương tự.
+Mối quan hệ cha-con chỉ ra rằng một yêu cầu là một yêu cầu con
+của yêu cầu khác, trong đó mã của yêu cầu cha thường gọi mã
+của yêu cầu con. Mối quan hệ tương tự biểu thị rằng hai yêu cầu
+có các mô tả chức năng tương tự, và các mã tương ứng của chúng
+thường thể hiện các chức năng tương tự. Xem xét khối lượng công việc
+của việc chú thích thủ công, chúng tôi cũng sử dụng DeepSeek-V2.5 [1] để chú thích
+các mối quan hệ giữa các yêu cầu. Hướng dẫn gắn nhãn
+các mối quan hệ yêu cầu được hiển thị trong Phụ lục A.
+
+Đồ thị yêu cầu của chúng tôi xem xét các mối quan hệ yêu cầu
+và có thể tìm thấy hiệu quả các mã hỗ trợ từ góc độ yêu cầu.
+Ngoài ra, khi chức năng của kho lưu trữ mở rộng,
+đồ thị yêu cầu của chúng tôi có thể được mở rộng thay vì tái mô hình hóa.
+
+3.2 Đồ thị DS-Code
+Trong kho mã nguồn, các đoạn mã tồn tại trong các mối quan hệ phức tạp.
+Đồ thị mã có thể mô hình hóa hiệu quả các mối quan hệ này, tạo thuận lợi
+cho việc phân tích và hiểu kho lưu trữ lập trình hiện tại
+cho LLM. Trong mục này, chúng tôi mô hình hóa một kho mã nguồn thành
+một đồ thị DS-code. Khác với đồ thị mã khác [22], đồ thị
+DS-code không chỉ xem xét các mối quan hệ phụ thuộc mà còn
+giới thiệu các mối quan hệ ngữ nghĩa giữa các đoạn mã trong
+kho lưu trữ.
+
+Lược đồ Đồ thị. Trong đồ thị DS-code, các nút đại diện cho các
+đơn vị mã được định nghĩa trước trong kho lưu trữ, và các cạnh đại diện cho các mối quan hệ
+giữa những đơn vị mã này. Các ngôn ngữ lập trình khác nhau thường
+yêu cầu các lược đồ khác nhau dựa trên các đặc điểm của chúng. Trong bài báo này, chúng tôi
+tập trung vào Python và thiết kế thực nghiệm một lược đồ phù hợp với
+các đặc điểm của nó. Chúng tôi định nghĩa đồ thị DS-code như sau.
+
+Đồ thị DS-code chứa bốn loại nút:
+•Module đại diện cho một file mã.
+•Class là một lớp được định nghĩa trong kho lưu trữ.
+•Method đề cập đến một phương thức được định nghĩa trong lớp.
+•Function là một mã hàm được định nghĩa trong kho lưu trữ.
+
+Đồ thị DS-code chứa năm loại cạnh:
+•Import: Nó đại diện cho các mối quan hệ phụ thuộc của module, tức là một
+module import module khác.
+•Contain: Nó có nghĩa là mã nguồn của một nút chứa đối tác
+của nút khác. Ví dụ, một module có thể chứa
+các lớp, phương thức, và hàm, và một lớp bao gồm các phương thức.
+•Inherit: Nó cho phép một lớp kế thừa các thuộc tính của lớp khác.
+Thông qua kế thừa, một lớp con có thể tái sử dụng mã của lớp cha,
+và nó cũng có thể thêm các thuộc tính và phương thức mới hoặc ghi đè
+các phương thức của lớp cha.
+•Call: Nó đề cập đến mối quan hệ gọi giữa các đoạn mã.
+•Similarity: Nó có nghĩa là hai nút có ngữ nghĩa tương tự.
+
+Trong đồ thị DS-code, mỗi nút có các thuộc tính tương ứng để
+đại diện cho thông tin meta của nó. Ví dụ, các nút Method có
+tên, mã nguồn, chữ ký, lớp mà nó thuộc về, và các thuộc tính đường dẫn file.
+
+Chỉ mục Nút và Cạnh. Quá trình xây dựng đồ thị DS-code
+bao gồm hai giai đoạn, bao gồm chỉ mục nút và trích xuất cạnh.
+Trong giai đoạn chỉ mục nút, chúng tôi trích xuất một cây thư mục phân cấp
+của một kho lưu trữ theo đường dẫn file trong kho lưu trữ,
+nơi các nút lá của cây đại diện cho các file. Sau đó, chúng tôi sử dụng tree-sitter
+
+--- TRANG 6 ---
+Conference acronym 'XX, June 03–05, 2018, Woodstock, NY Jia Li and Xianjie Shi et al.
+
+để phân tích từng file và thu được cây cú pháp trừu tượng (AST) của nó.
+Chúng tôi mở rộng cây thư mục với AST, và cuối cùng thu được một cây
+hoàn chỉnh cho kho lưu trữ. Trong quá trình trích xuất cạnh, chúng tôi
+thiết kế một công cụ language server dựa trên tree-sitter để hoàn thành các cạnh.
+Công cụ này có thể thực hiện phân tích tĩnh của một file hoặc module và cung cấp
+các tên symbol được định nghĩa trong đó, bao gồm các biến global,
+tên hàm, và tên lớp. Sau đó, với một tên lớp hoặc hàm,
+công cụ tìm định nghĩa của nó từ kho mã nguồn. Kết hợp
+quá trình trên, công cụ này có thể duyệt các mã nguồn được định nghĩa trước
+trong một kho lưu trữ và thu được các mối quan hệ phụ thuộc của chúng,
+trao quyền cho LLM hiểu các phụ thuộc phức tạp và
+tái sử dụng mã. Bên cạnh các mối quan hệ phụ thuộc, chúng tôi cũng xây dựng
+các mối quan hệ ngữ nghĩa giữa các nút trong đồ thị DS-code.
+
+Xem xét rằng việc gắn nhãn thủ công các mối quan hệ ngữ nghĩa là
+tốn công sức và thời gian, chúng tôi sử dụng một mô hình embedding tin cậy
+để mã hóa mã nguồn của từng nút và hoàn thành các mối quan hệ ngữ nghĩa
+theo độ tương tự cosine của các vector của chúng. Kết hợp
+hai quá trình, chúng tôi có thể duyệt hiệu quả các mã nguồn được định nghĩa trước
+trong một kho lưu trữ và mô hình hóa các mối quan hệ của chúng, mô hình hóa
+một đồ thị DS-code để giúp LLM hiểu các phụ thuộc phức tạp
+và tái sử dụng mã.
+
+Cơ sở dữ liệu Đồ thị. Để hiệu quả lưu trữ, nút có thuộc tính mã
+không trực tiếp lưu trữ mã nguồn của nó trong cơ sở dữ liệu đồ thị
+mà thay vào đó mô hình hóa một chỉ mục trỏ đến đoạn mã của nó. Cuối cùng, chúng tôi
+lưu trữ tất cả các nút và cạnh của đồ thị DS-code vào Neo4j.
+
+3.3 Ánh xạ Đồ thị Hai chiều
+Sau khi thu được đồ thị yêu cầu và đồ thị DS-code, chúng tôi
+ánh xạ các nút yêu cầu con được chọn và các nút yêu cầu tương tự
+về mặt ngữ nghĩa của yêu cầu đích vào các nút mã trong đồ thị
+DS-code. Sau đó, chúng tôi thu thập những nút mã liên quan này. Các nút mã
+của yêu cầu con thường được gọi bởi mã đích.
+Các nút mã của các yêu cầu tương tự về mặt ngữ nghĩa thường có
+các chức năng tương tự với mã đích. Đồng thời, CodeRAG
+giới thiệu các nút mã của file nơi mã đích nằm trong
+vì nội dung file cục bộ thường liên quan đến mã đích.
+Thông qua cách này, CodeRAG có thể thành công thu thập một số mã hỗ
+trợ cho sinh mã cấp kho lưu trữ thực tế, bao gồm
+❶API (các hàm hoặc lớp được định nghĩa trước trong kho lưu trữ) được gọi
+bởi mã đích, và ❷các đoạn mã tương tự về mặt ngữ nghĩa
+với mã đích.
+
+3.4 Suy luận Tác nhân Hướng Mã
+Trong mục này, CodeRAG giới thiệu một quá trình suy luận tác nhân
+hướng mã, cho phép LLM thích ứng và tuần tự
+thu thập các mã hỗ trợ khác theo nhu cầu của LLM. Quá trình này
+trước tiên thiết kế ba công cụ lập trình để giúp LLM thu thập
+các mã hỗ trợ khác. Sau đó, nó áp dụng một chiến lược suy luận để
+hướng dẫn LLM sử dụng phù hợp những công cụ này trong quá trình suy luận.
+
+Các Công cụ Lập trình Được Thiết kế. Với một yêu cầu đích, các nhà phát triển
+thường trước tiên thu thập kiến thức liên quan theo
+nhu cầu của họ, và viết chương trình để đáp ứng yêu cầu. Sau đó, các nhà phát triển
+xác minh chương trình với sự hỗ trợ của các công cụ và tiếp tục tìm kiếm
+kiến thức theo kết quả xác minh nếu các chương trình được sinh
+có lỗi. Được truyền cảm hứng từ điều này, chúng tôi phát triển ba công cụ lập trình
+được thiết kế đặc biệt cho LLM để thu thập các mã hỗ trợ, bao gồm công cụ tìm kiếm web, công cụ suy luận đồ thị, và
+công cụ kiểm tra mã.
+
+1) Công cụ Tìm kiếm Web. Các lập trình viên thường chia sẻ giải pháp cho các
+vấn đề lập trình khác nhau trên các trang web nơi các công cụ tìm kiếm
+coi chúng là tài nguyên kiến thức. Khi đối mặt với các vấn đề
+tương tự, các nhà phát triển chỉ cần gửi một truy vấn đến một công cụ tìm kiếm,
+sau đó công cụ này cung cấp các đề xuất lập trình hữu ích. Để mô phỏng cách này,
+CodeRAG sử dụng DuckDuckGo⁶, một công cụ tìm kiếm phổ biến có
+hiệu quả chi phí và thuận tiện hơn so với các công cụ tìm kiếm khác
+như Google⁷ và Bing⁸. Sau đó, chúng tôi áp dụng LLM để tóm tắt
+nội dung trang web được tìm kiếm làm đầu ra cuối cùng của công cụ. Trong quá trình này,
+chúng tôi chặn các trang web có thể dẫn đến rò rỉ dữ liệu. Mẫu sử dụng
+của công cụ này được định dạng như: WebSearch(input_query), sẽ
+trả về nội dung được định dạng được tìm kiếm từ các trang web.
+
+2) Công cụ Suy luận Đồ thị. Công cụ này chịu trách nhiệm suy luận
+trên đồ thị DS-code và thu thập các mã hỗ trợ theo
+nhu cầu của LLM. Cụ thể, chúng tôi coi các nút mã đã được
+thu thập là tập neo mã. Với một nút mã được thu thập và
+các nút mã một-hop và cạnh của nó, công cụ này duyệt các nút mã
+một-hop của nó và xác định nút nào cần thu thập
+theo nhu cầu của LLM. Nếu một nút mã được coi là mã hỗ trợ,
+chúng tôi thêm nó vào tập neo mã. Mẫu sử dụng của công cụ
+này được định dạng như: GraphReason(code_anchor, các nút một-hop
+& cạnh của nó), sẽ trả về các mã hỗ trợ mới và cập nhật
+tập neo mã.
+
+3) Công cụ Kiểm tra Mã. Sau khi thu được các mã được sinh, chúng tôi thiết kế
+một công cụ kiểm tra mã để định dạng và kiểm tra chúng, nâng cao
+tính chính xác và khả năng đọc của chúng. Cụ thể, chúng tôi phát triển Black⁹ làm
+công cụ kiểm tra mã. Nó có thể kiểm tra các lỗi định dạng như sai lệch thụt lề
+và thiếu từ khóa. Sau đó, nó gửi thông tin lỗi
+đến LLM và Mẫu sử dụng của công cụ này là:
+CodeTest(generated_code), sẽ tự động định dạng
+mã được sinh gần đây nhất và trả về phiên bản được định dạng.
+
+Chiến lược Suy luận ReAct. Để hướng dẫn LLM tận dụng những
+công cụ lập trình này một cách phù hợp, chúng tôi giới thiệu một chiến lược suy luận
+phổ biến ReAct [34] vào CodeRAG. Chiến lược này nhắc LLM
+sinh ra các dấu vết suy luận và các hành động liên quan đến tác vụ theo một
+mẫu xen kẽ. Dựa trên các hành động, ReAct chọn các công cụ lập trình
+phù hợp và gọi chúng bằng cách cung cấp đầu vào. Chiến lược sau đó coi
+đầu ra của các công cụ là kiến thức bổ sung và quyết định có
+tạo ra một mã cuối cùng hoặc gọi các công cụ khác để xử lý thêm.
+
+4 Thiết lập Thí nghiệm
+
+4.1 Baseline
+Chúng tôi so sánh CodeRAG với các baseline RAG tiên tiến.
+•ScratchCG sinh mã nguồn chỉ dựa trên
+yêu cầu đích và chữ ký, không có mã được thu thập.
+•BM25-based RAG tính điểm BM25 giữa
+yêu cầu đích và các đoạn mã trong kho lưu trữ và sau đó
+chọn top-k đoạn mã có điểm BM25 cao hơn. Trong
+bài báo này, các đoạn mã là các hàm, phương thức,
+và lớp được định nghĩa trước trong kho lưu trữ lập trình hiện tại.
+
+⁶https://duckduckgo.com/
+⁷https://www.google.com/
+⁸https://www.bing.com/
+⁹https://github.com/psf/black
+
+--- TRANG 7 ---
+CodeRAG: Thu Thập Mã Hỗ Trợ trên Đồ Thị Hai Chiều cho Sinh Mã Thực Tế Conference acronym 'XX, June 03–05, 2018, Woodstock, NY
+
+| Phương pháp | Loại RAG | Pass@1 |
+|-------------|----------|---------|
+| | | GPT-4o | Gemini-Pro |
+| ScratchCG | w.o. RAG | 17.24 | 14.95 |
+| BM25-based RAG | Text-Based RAG | 27.07 (↑9.83) | 36.60 (↑21.65) |
+| Embedding-based RAG | Text-Based RAG | 40.43 (↑23.19) | 39.34 (↑24.39) |
+| RepoCoder | Text-Based RAG | 30.95 (↑13.71) | 30.36 (↑15.41) |
+| CodeAgent | Agentic RAG | 28.66 (↑11.42) | 33.09 (↑18.14) |
+| CodeRAG (Ours) | | 58.14 (↑40.90) | 54.74 (↑39.79) |
+
+Bảng 1: Hiệu suất của CodeRAG và các phương pháp RAG tiên tiến trên tập dữ liệu DevEval. Màu đỏ đại diện cho
+những cải thiện tuyệt đối của CodeRAG so với ScratchCG.
+
+•Embedding-based RAG sử dụng một mô hình embedding để mã hóa
+yêu cầu đích và các đoạn mã trong kho lưu trữ,
+tương ứng. Sau đó, nó tính độ tương tự cosine của chúng và
+thu thập top-k mã có điểm độ tương tự cao hơn.
+
+•RepoCoder được thiết kế cho hoàn thành mã cấp kho lưu trữ. Nó
+kết hợp một retriever dựa trên độ tương tự và một trình sinh
+chương trình trong một pipeline lặp. Nó trước tiên hoàn thành mã dựa
+trên nội dung trên, và sử dụng các mã đã hoàn thành để
+thu thập mã. Trong bài báo này, chúng tôi điều chỉnh phương pháp này cho sinh mã
+cấp kho lưu trữ, nơi chúng tôi sử dụng các chương trình được sinh để
+thu thập mã và lặp quy trình thu thập sinh này.
+
+•CodeAgent là một khung tác nhân dựa trên LLM tiên phong cho
+sinh mã cấp kho lưu trữ. Nó tích hợp năm công cụ lập trình
+và thực hiện bốn chiến lược tác nhân để tối ưu hóa việc sử dụng
+các công cụ này, nơi những công cụ này có thể hỗ trợ LLM thu thập
+kiến thức từ trang web và kho lưu trữ hiện tại.
+
+Chúng tôi không so sánh CodeRAG với các phương pháp RAG dựa trên đồ thị như
+CodeXGraph [22] vì các bài báo gốc của họ không cung cấp
+mã nguồn để xây dựng đồ thị mã. Trong bài báo này, để giữ
+một so sánh công bằng, chúng tôi đảm bảo rằng số lượng các phần tử mã được thu thập
+của tất cả các phương pháp là bằng nhau.
+
+4.2 Tập dữ liệu
+DevEval [18] là một tập dữ liệu sinh mã cấp kho lưu trữ đại diện,
+phù hợp với các kho lưu trữ thực tế trong nhiều chiều,
+bao gồm phân phối mã và phân phối phụ thuộc. Nó được
+chú thích bởi 13 nhà phát triển và chứa các chú thích toàn diện
+(ví dụ: yêu cầu, kho lưu trữ gốc, mã tham khảo, và
+phụ thuộc tham khảo). Cuối cùng, DevEval bao gồm 1,825 mẫu kiểm tra
+từ 117 kho lưu trữ, bao quát 10 domain phổ biến như
+Internet và Cơ sở dữ liệu. Với một yêu cầu, DevEval yêu cầu các mô hình
+sinh mã dựa trên yêu cầu và một kho lưu trữ.
+
+4.3 Metrics Đánh giá
+Theo các công trình trước [16,30,38,42], chúng tôi sử dụng tỷ lệ pass
+làm metric, nơi chúng tôi coi chương trình được sinh là chính xác
+chỉ khi đầu ra của nó nhất quán với tất cả ground truth của bộ kiểm tra.
+Cụ thể, chúng tôi chủ yếu quan tâm đến Pass@1, đây là
+đại diện của họ Pass@k, vì trong các tình huống thực tế,
+chúng tôi thường chỉ xem xét mã được sinh duy nhất.
+
+5 Kết quả Thí nghiệm
+
+5.1 RQ1. CodeRAG hiệu quả như thế nào cho
+sinh mã cấp kho lưu trữ thực tế?
+
+Động lực. Chúng tôi nghiên cứu liệu CodeRAG của chúng tôi có đạt được cải thiện
+trong sinh mã cấp kho lưu trữ thực tế khi so sánh với
+các baseline RAG tiên tiến hiện có.
+
+Thiết lập Thí nghiệm. Chúng tôi sử dụng GPT-4o (tức là gpt-4o-2024-08-06) [2]
+và Gemini-Pro (tức là gemini-1.5-pro-latest) [31] làm LLM cơ sở.
+Chúng tôi sử dụng chiến lược tìm kiếm tham lam để sinh chương trình, nơi
+độ dài tối đa của các chương trình được sinh được đặt là 500. Các baseline
+(tức là Embedding-based RAG và RepoCoder) sử dụng cùng
+mô hình embedding (tức là stella_en_400M_v5) như CodeRAG. Đối với tất cả các phương pháp,
+chúng tôi phân tích một kho lưu trữ để thu được tất cả các hàm, phương thức,
+và lớp được định nghĩa trước, được coi là các đơn vị thu thập
+tối thiểu. Để giữ một so sánh công bằng, chúng tôi đảm bảo rằng số lượng
+các đơn vị mã được thu thập là bằng nhau giữa tất cả baseline và CodeRAG.
+Đối với RepoCoder, chúng tôi lặp quy trình thu thập sinh hai
+lần vì lặp hai lần đạt được hiệu suất tốt nhất như
+được chứng minh trong bài báo gốc của nó [37].
+
+Kết quả. Chúng tôi so sánh CodeRAG với các baseline cạnh tranh và
+hiển thị kết quả trong Bảng 1. Trên tất cả các LLM cơ sở, CodeRAG liên tục
+cung cấp những cải thiện hiệu suất đáng kể trên sinh mã cấp kho lưu trữ.
+Cụ thể, đối với mô hình GPT-4o, CodeRAG đạt được
+sự gia tăng 40.90 so với ScratchCG, và vượt trội hơn
+baseline tốt nhất 17.71 điểm trên Pass@1. Đối với Gemini-Pro,
+những cải thiện của CodeRAG đạt 15.40 và 21.65 so với
+RAG dựa trên văn bản mạnh nhất và Agentic RAG, đồng thời
+đạt 39.79 điểm so với ScratchCG. Điều này chứng minh
+rằng CodeRAG có thể thu thập toàn diện các mã hỗ trợ cho
+sinh mã cấp kho lưu trữ, hỗ trợ LLM tạo ra các giải pháp mã chính xác
+và giải quyết hiệu quả các thách thức mã hóa phức tạp.
+
+Khi chuyển sang RAG dựa trên văn bản, các phương pháp như BM25-based
+RAG, Embedding-based RAG, và RepoCoder đạt 9.83, 23.19,
+và 13.71 so với ScratchCG (tức là cài đặt No RAG) trên GPT-4o. Mặc dù
+mang lại những cải thiện vừa phải, hiệu suất của chúng thấp hơn
+CodeRAG. Lý do có thể là RAG dựa trên văn bản chỉ
+dựa vào độ tương tự văn bản hoặc ngữ nghĩa giữa yêu cầu đích
+và mã trong kho lưu trữ, trong khi CodeRAG thu thập
+mã từ góc độ yêu cầu và liên tục thu thập
+
+--- TRANG 8 ---
+Conference acronym 'XX, June 03–05, 2018, Woodstock, NY Jia Li and Xianjie Shi et al.
+
+| Phương pháp | Standalone | Non-standalone | Local-file | Local &Cross-file | Cross-file |
+|-------------|------------|----------------|------------|-------------------|------------|
+| Số lượng Ví dụ | 502 | 1323 | 455 | 571 | 157 |
+| ScratchCG | 29.28 | 9.74 | 12.08 | 7.88 | 18.47 |
+| BM25-based RAG | 38.44 | 21.73 | 25.93 | 18.39 | 20.38 |
+| Embedding-based RAG | 50.19 | 39.79 | 46.81 | 25.04 | 21.66 |
+| RepoCoder | 43.82 | 24.07 | 31.42 | 18.21 | 22.29 |
+| CodeAgent | 40.63 | 24.07 | 31.64 | 18.47 | 18.04 |
+| CodeRAG (Ours) | 60.16 | 48.24 | 69.67 | 45.18 | 43.31 |
+
+Bảng 2: Hiệu suất của CodeRAG trên các ví dụ có các loại phụ thuộc khác nhau.
+
+| Phương pháp | #Usage | Pass@1 |
+|-------------|--------|---------|
+| CodeRAG | | 58.14 |
+| w.o. WebSearch | 0.4 | 57.85 (↓0.29) |
+| w.o. CodeTest | 0.8 | 57.09 (↓1.05) |
+| w.o. GraphReason | 1.7 | 51.83 (↓6.31) |
+
+Bảng 3: Nghiên cứu loại bỏ của CodeRAG. Màu đỏ đại diện cho đóng góp của từng thành phần trong CodeRAG.
+
+mã trong quá trình suy luận dựa trên nhu cầu của LLM. Đối với agentic
+RAG, CodeRAG cao hơn CodeAgent. Lý do có thể là
+CodeAgent chỉ sử dụng việc khớp văn bản giữa tên hàm đích
+và tên đơn vị mã để thu thập các đoạn mã liên quan
+với BM25, dẫn đến thu thập không đầy đủ.
+
+Trên các LLM cơ sở khác nhau, các baseline dựa trên RAG cho thấy
+những cải thiện khác nhau trên LLM. Ví dụ, trong số RAG dựa trên văn bản,
+hiệu suất của RepoCoder tốt hơn so với BM25-based RAG trên GPT-4o,
+trong khi hiện tượng ngược lại trên Gemini-Pro. Tuy nhiên, chúng ta có thể thấy
+một xu hướng đáng chú ý rằng CodeRAG đạt được hiệu suất tốt nhất trên cả hai LLM.
+Những kết quả này nhấn mạnh hiệu quả và tính tổng quát của CodeRAG
+trong việc giải quyết các tác vụ lập trình thực tế.
+
+5.2 RQ2. Các thành phần khác nhau trong
+CodeRAG đóng góp như thế nào vào cải thiện
+hiệu suất?
+
+Động lực. Trong câu hỏi nghiên cứu này, chúng tôi nghiên cứu liệu mỗi thành phần
+trong CodeRAG có đóng góp vào cải thiện hiệu suất hay không,
+và chúng ảnh hưởng đến kết quả như thế nào.
+
+Thiết lập Thí nghiệm. CodeRAG trước tiên mô hình hóa các mối quan hệ của
+yêu cầu và tìm thấy các yêu cầu con và các yêu cầu tương tự
+về mặt ngữ nghĩa của yêu cầu đích, sau đó ánh xạ những nút yêu cầu
+này vào các nút mã trong đồ thị DS-code, nơi
+những nút mã được thu thập này được coi là các neo mã. Tiếp theo,
+CodeRAG tích hợp một quá trình suy luận tác nhân hướng mã để
+cho phép LLM thích ứng thu thập các mã hỗ trợ khác theo
+nhu cầu của LLM. Trong RQ này, chúng tôi giữ các neo mã và loại trừ
+các mã hỗ trợ khác khỏi CodeRAG như một nghiên cứu loại bỏ, vì
+các neo mã là cơ sở cho việc thu thập liên tục. Cụ thể,
+w.o. WebSearch đại diện cho việc loại bỏ công cụ tìm kiếm web khỏi khung công tác đầy đủ. w.o. CodeTest đại diện cho việc xóa trình kiểm tra định dạng mã
+trong CodeRAG. w.o. GraphReason loại bỏ công cụ suy luận đồ thị
+nơi LLM không thể suy luận từ các neo trên đồ thị DS-code
+ngay cả khi LLM cần kiến thức khác. Chúng tôi cũng theo dõi tỉ mỉ
+tần suất sử dụng của từng công cụ trong quá trình sinh mã
+trong CodeRAG, với thống kê được hiển thị trong Bảng 3 dưới
+cột #Usage. Chúng tôi chọn GPT-4o làm LLM cơ sở.
+
+Kết quả. Hiệu suất của những nghiên cứu loại bỏ này được hiển thị
+trong Bảng 3, được phân loại dưới cột Pass@1. Việc loại bỏ
+suy luận đồ thị DS-code (w.o. GraphReason) dẫn đến sự suy giảm
+đáng kể về hiệu suất, với Pass@1 giảm 6.31 điểm
+(từ 58.14 xuống 51.83). Điều này tiết lộ rằng suy luận trên đồ thị DS-code
+là quan trọng để thu thập các mã hỗ trợ cho sinh mã cấp kho lưu trữ.
+Chúng tôi cho rằng LLM suy luận trên đồ thị dựa trên
+nhu cầu riêng của chúng, do đó các nút mã được thu thập có ích cho việc sinh
+ra các chương trình chính xác. Trung bình, CodeRAG sử dụng công cụ này
+khoảng 1.7 lần mỗi lần sinh mã, tần suất cao hơn
+so với các công cụ khác. Chúng ta cũng có thể thấy rằng việc loại bỏ
+công cụ tìm kiếm web (w.o. WebSearch) dẫn đến giảm 0.29 Pass@1
+(từ 58.14 xuống 57.85), chứng minh rằng công cụ tìm kiếm web
+có thể mang lại thông tin hữu ích cho LLM. Ngoài ra, việc loại bỏ
+trình kiểm tra định dạng mã (w.o. CodeTest) mang lại sự giảm hiệu suất 1.05
+trong Pass@1 (từ 58.14 xuống 57.09). Điều này xác nhận rằng mỗi
+công cụ trong CodeRAG đóng góp tác động tích cực vào hiệu suất tổng thể.
+Bằng chứng này xác thực rằng CodeRAG có thể thu thập toàn diện
+các mã hỗ trợ trong việc giải quyết tác vụ mã hóa thực tế.
+
+5.3 RQ3. CodeRAG hoạt động như thế nào trên
+các ví dụ có các loại phụ thuộc khác nhau?
+
+Động lực. Xem xét rằng mã đích thường chứa các mối quan hệ phụ thuộc
+khác nhau và phức tạp với các đoạn mã khác
+trong kho lưu trữ hiện tại, chúng tôi tiếp tục nghiên cứu hiệu suất
+của CodeRAG trong các tình huống phụ thuộc khác nhau.
+
+Thiết lập Thí nghiệm. Chúng tôi chia mã đích thành hai loại
+(tức là standalone và non-standalone) dựa trên các mối quan hệ phụ thuộc
+giữa nó và các mã nguồn khác. Loại Standalone
+có nghĩa là mã đích không gọi bất kỳ mã nào, trong khi loại non-
+standalone đại diện cho mã đích gọi các mã khác trong
+
+--- TRANG 9 ---
+CodeRAG: Thu Thập Mã Hỗ Trợ trên Đồ Thị Hai Chiều cho Sinh Mã Thực Tế Conference acronym 'XX, June 03–05, 2018, Woodstock, NY
+
+kho lưu trữ hiện tại. Sau đó chúng tôi phân loại chương trình non-standalone
+thành ba loại, bao gồm local-file, local &cross-file, và
+cross-file. Local-file có nghĩa là mã đích chỉ gọi các mã nguồn
+trong file mã nơi mã tham khảo nằm.
+Loại Local &cross-file có nghĩa là mã đích gọi không chỉ các mã
+trong file cục bộ mà còn gọi các mã từ các file khác. Loại Cross-file
+tiết lộ rằng mã đích chỉ gọi các mã từ các file khác.
+
+Kết quả. Bảng 2 hiển thị hiệu suất (tức là Pass@1) của GPT-4o
+trên các loại phụ thuộc khác nhau. CodeRAG đạt được cải thiện Pass@1 30.88
+so với ScratchCG trên loại standalone. CodeRAG
+vượt trội hơn ScratchCG với 57.59, 32.30, và 24.84 Pass@1. Chúng ta
+có thể quan sát thấy CodeRAG đạt được những cải thiện cao hơn trên loại
+non-standalone so với loại standalone. Điều này chứng minh
+rằng CodeRAG phù hợp hơn cho tình huống non-standalone
+và có thể thu thập hiệu quả các mã phụ thuộc từ kho lưu trữ
+lập trình hiện tại. Đồng thời, Pass@1 trên các hàm standalone
+cũng tăng. Chúng tôi cho rằng ngay cả khi mã đích không
+gọi bất kỳ mã nào, các đơn vị mã được thu thập cũng có thể cung cấp
+kiến thức domain cho LLM để sinh ra các chương trình chính xác.
+
+Đối với ba loại phụ thuộc trong loại non-standalone, các kết quả
+mang lại hai thông hiểu. Đầu tiên, độ khó của ba loại
+là: cross-file >local&cross-file >local-file. Ngay cả đối với loại khó nhất
+(tức là cross file), CodeRAG vẫn đạt được hiệu suất Pass@1 43.31 ấn tượng.
+Thứ hai, loại càng khó, những cải thiện mà khung công tác của chúng tôi
+đạt được càng cao. Ví dụ, CodeRAG đạt được cải thiện Pass@1 24.85
+(từ 18.47 lên 43.31) trong loại cross file, trong khi khung công tác của chúng tôi
+vượt trội hơn ScratchCG 57.59 Pass@1 (từ 12.08 lên 69.67)
+trong loại local file. Điều này tiết lộ sự vượt trội của CodeRAG trong việc giải quyết
+các tác vụ lập trình phức tạp thực tế.
+
+5.4 RQ4. CodeRAG hoạt động như thế nào trên
+các LLM suy luận?
+
+Động lực. Gần đây, các mô hình suy luận đã cho thấy khả năng mạnh mẽ
+trong các tác vụ mã khác nhau. Trong RQ này, chúng tôi khám phá liệu các LLM suy luận
+có thể sử dụng đầy đủ các mã hỗ trợ được thu thập và đạt được
+những cải thiện đáng kể hay không, vì các mô hình suy luận có khả năng suy luận
+ấn tượng trong quá trình sinh.
+
+Thiết lập Thí nghiệm. Mặc dù các LLM suy luận như GPT-o3 [3],
+DeepSeek-R1 [7], và QwQ-32B [4] tuyên bố hỗ trợ khả năng gọi hàm,
+chúng không mở khả năng này cho công chúng thông qua việc gọi
+các khóa API của chúng khi chúng tôi thực hiện thí nghiệm. Do đó, chúng tôi sử dụng Bigraph-
+based RAG, một biến thể của CodeRAG, để đánh giá các LLM suy luận.
+Bigraph-based RAG loại trừ quá trình tác nhân khỏi khung công tác đầy đủ
+của chúng tôi vì quá trình này cần khả năng gọi hàm của LLM.
+Chúng tôi sử dụng QwQ-32B làm LLM suy luận cơ sở và chỉ thực hiện
+các baseline một phần xem xét chi phí.
+
+Kết quả. Từ Bảng 4, chúng ta có thể thấy rằng Bigraph-based RAG thực hiện
+hiệu suất ấn tượng và đạt được những cải thiện đáng kể
+trên sinh mã cấp kho lưu trữ, với Pass@1 tăng 35.57 điểm
+(từ 18.57 lên 54.41). Ngoài ra, các LLM suy luận
+đạt được hiệu suất tương đương với các mô hình không suy luận (tức là
+GPT-4o và Gemini-Pro), ngay cả khi Bigraph-based RAG không thể sử dụng
+ba công cụ (tức là tìm kiếm web, suy luận đồ thị, và công cụ kiểm tra mã)
+để thu thập kiến thức hỗ trợ khác. Có thể có hai
+lý do cho hiện tượng này. Đầu tiên, khả năng suy luận mạnh mẽ
+
+| Phương pháp | Pass@1 |
+|-------------|---------|
+| ScratchCG | 18.57 |
+| BM25-based RAG | 34.46 |
+| Embedding-based RAG | 47.83 |
+| Bigraph-based RAG (Ours) | 54.14 |
+
+Bảng 4: Hiệu suất của CodeRAG trên các LLM suy luận.
+
+| | Only_localfile (Dễ) | Only_crossfile (Khó) |
+|-------------|-------------------|-------------------|
+| **CodeRAG của chúng tôi** | | |
+| GPT-4o | 5 | 4 |
+| Gemini-Pro | 5 | 4 |
+| **Sản phẩm IDE** | | |
+| GitHub Copilot | 3 | 2 |
+| Anysphere Cursor | 4 | 1 |
+
+Bảng 5: Hiệu suất so với các sản phẩm lập trình thương mại (số lượng vấn đề được giải quyết).
+
+của các LLM suy luận có thể tăng tốc việc sinh ra các chương trình chính xác
+thông qua việc suy nghĩ từng bước. Thứ hai, trong quá trình suy luận,
+các mô hình có thể sử dụng đầy đủ các mã hỗ trợ được thu thập.
+
+5.5 RQ5. CodeRAG hoạt động tốt như thế nào
+so với các sản phẩm thương mại?
+
+Động lực. Ngày nay, rất nhiều sản phẩm thương mại đang nổi lên
+để hỗ trợ các tác vụ sinh mã phức tạp. Trong RQ này, chúng tôi so sánh
+CodeRAG với những sản phẩm đã được thiết lập này.
+
+Thiết lập Thí nghiệm. Chúng tôi so sánh CodeRAG với hai sản phẩm
+IDE phổ biến, bao gồm GitHub Copilot¹⁰ và Anysphere Cursor¹¹.
+Chúng là các công cụ gợi ý tự động hoàn thành theo phong cách AI
+được tích hợp trong phần mềm IDE. Xem xét rằng các sản phẩm IDE chủ yếu
+được thiết kế như các hệ thống hoàn thành, chúng tôi giới hạn các tương tác của con người
+ít hơn ba lần mỗi tác vụ để đảm bảo so sánh công bằng.
+Chúng tôi chọn ngẫu nhiên 5 ví dụ dễ (loại phụ thuộc local-file)
+và 5 ví dụ khó (loại phụ thuộc cross-file) từ DevEval
+để đánh giá chúng, vì việc thực hiện thủ công trên những sản phẩm này
+tốn thời gian và công sức.
+
+Kết quả. Bảng 5 chứng minh hiệu suất của các sản phẩm lập trình
+thương mại và CodeRAG. Chúng ta có thể thấy rằng CodeRAG
+hoạt động tốt hơn các sản phẩm hiện có trên cả loại mã hóa local-file và cross-file,
+đặc biệt trong tình huống cross-file khó. So với
+các sản phẩm IDE cũng có thể phân tích các phụ thuộc mã phức tạp
+trong kho lưu trữ hiện tại, CodeRAG hưởng lợi từ nhiều
+tối ưu hóa thu thập được điều chỉnh cho các tác vụ mã hóa cấp kho lưu trữ thực tế,
+do đó làm cho nó tốt hơn những sản phẩm này.
+
+6 Thảo luận
+
+6.1 Phân tích Chất lượng của Đồ thị Yêu cầu
+Như mô tả trong Mục 3.1, chúng tôi sử dụng DeepSeek-V2.5 để sinh
+các yêu cầu của các đơn vị mã và chú thích các mối quan hệ giữa
+các yêu cầu trong đồ thị yêu cầu. Cần thiết phải phân tích
+¹⁰https://copilot.microsoft.com/
+¹¹https://www.cursor.com/
+
+--- TRANG 10 ---
+Conference acronym 'XX, June 03–05, 2018, Woodstock, NY Jia Li and Xianjie Shi et al.
+
+# Yêu cầu Đích
+Hàm này nhận một JWK (JSON Web Key) làm đầu vào và trả về 
+khóa HMAC (Hash-based Message Authentication Code) tương ứng. 
+Trước tiên nó kiểm tra xem đầu vào có phải là chuỗi JSON hoặc từ điển hợp lệ không. 
+Sau đó, nó xác minh xem loại khóa có phải là "oct" (chỉ HMAC) không. 
+Cuối cùng, nó giải mã và trả về khóa HMAC".
+
+# Yêu cầu Con
+Định nghĩa một ngoại lệ tùy chỉnh để xử lý các khóa không hợp lệ trong các thao tác JWT. 
+Đầu vào: Không có
+Đầu ra: Một instance ngoại lệ của `InvalidKeyError` khi được ném ra.
+
+# Yêu cầu Tương tự
+Xác định xem một item đã cho có phải là khóa HMAC hay không.
+Đầu vào: Một `key` đại diện cho khóa HMAC tiềm năng.
+Đầu ra: Một giá trị boolean chỉ ra liệu đầu vào có phải là khóa HMAC hay không.
+
+Hình 3: Phân tích chất lượng của đồ thị yêu cầu.
+
+chất lượng của đồ thị yêu cầu. Trong mục này, chúng tôi chọn ngẫu nhiên
+một yêu cầu đích từ DevEval và trình bày các yêu cầu một-hot
+của nó trên đồ thị yêu cầu như được hiển thị trong Hình 3. Các nút một-hot
+của yêu cầu đích chứa yêu cầu con và
+yêu cầu tương tự của nó, nơi yêu cầu con là về xử lý
+các khóa không hợp lệ trong các thao tác JWT, và yêu cầu tương tự liên quan
+đến các thao tác HMAC. Chúng ta có thể thấy rằng đồ thị yêu cầu
+có thể mô hình hóa hiệu quả các mối quan hệ giữa các yêu cầu.
+
+6.2 Các Mối đe dọa đối với Tính hợp lệ
+Các mối đe dọa đối với tính hợp lệ nội bộ bao gồm ảnh hưởng của các cài đặt
+siêu tham số mô hình cho cả mô hình của chúng tôi và các baseline được tái tạo.
+Để đảm bảo so sánh công bằng, số lượng các đoạn mã được thu thập
+của CodeRAG giống với các baseline. Đối với các phương pháp
+sử dụng các mô hình embedding để mã hóa yêu cầu hoặc mã nguồn
+(tức là Embedding-based RAG, RepoCoder, và CodeRAG), chúng tôi sử dụng
+stella_en_400M_v5 tiên tiến làm mô hình mã hóa. Xem xét rằng RepoCoder
+được thiết kế cho hoàn thành mã dựa trên thu thập, chúng tôi giữ cùng cài đặt
+với bài báo của nó và điều chỉnh nó cho tình huống sinh mã cấp kho lưu trữ,
+nơi chúng tôi lặp quy trình thu thập sinh hai lần. Đối với tất cả baseline,
+chúng tôi phân tích một kho lưu trữ để thu được tất cả các hàm, phương thức,
+và lớp được định nghĩa trước được coi là các đơn vị thu thập tối thiểu.
+Trong quá trình sinh mã, chúng tôi đặt siêu tham số (tức là độ dài sinh
+tối đa) là 500, có thể hỗ trợ độ dài của các mã tham khảo.
+Đồng thời, chúng tôi sử dụng tìm kiếm tham lam và sinh
+một chương trình duy nhất cho mỗi yêu cầu đích vì các nhà phát triển
+thường chỉ xem xét mã được sinh duy nhất trong môi trường lập trình thực tế.
+Do đó, có một mối đe dọa nhỏ đối với các cài đặt siêu tham số.
+
+Các mối đe dọa đối với tính hợp lệ bên ngoài bao gồm chất lượng của các tập dữ liệu.
+Chúng tôi sử dụng tập dữ liệu DevEval để đánh giá hiệu quả của
+CodeRAG. DevEval là một tập dữ liệu sinh mã cấp kho lưu trữ đại diện,
+phù hợp với các kho lưu trữ thực tế trong nhiều chiều,
+như phân phối mã và phân phối phụ thuộc. Nó chứa 1,825 mẫu kiểm tra
+từ 117 kho lưu trữ và bao quát 10 domain phổ biến, bao gồm Internet và
+Cơ sở dữ liệu, v.v. Mỗi ví dụ được chú thích bởi các nhà phát triển và chứa
+các chú thích toàn diện (ví dụ: yêu cầu, kho lưu trữ gốc, mã tham khảo,
+và phụ thuộc tham khảo). Để xác minh sự vượt trội của CodeRAG, chúng tôi xem xét sáu phương pháp tiên tiến, bao gồm RAG dựa trên văn bản,
+RAG dựa trên cấu trúc, và agentic RAG. Ngoài ra, để đánh giá hiệu quả
+phương pháp của chúng tôi, chúng tôi chọn các LLM chính thống (tức là GPT-4o
+và Gemini-Pro) làm mô hình cơ sở, và tiếp tục phân tích hiệu suất
+của CodeRAG trên các LLM suy luận (ví dụ: QwQ-32B). Chúng tôi áp dụng
+phương pháp của chúng tôi và các baseline cho những mô hình này và đánh giá hiệu suất
+của chúng trong sinh mã cấp kho lưu trữ. Đối với metric, theo
+các nghiên cứu hiện có, chúng tôi chọn một metric Pass@k được sử dụng rộng rãi để đánh giá
+tất cả các phương pháp. Đó là một metric dựa trên thực thi sử dụng các test case
+để kiểm tra tính chính xác của các chương trình được sinh. Để đảm bảo
+công bằng, chúng tôi thực hiện mỗi phương pháp hai lần và báo cáo kết quả thí nghiệm
+trung bình. CodeRAG sử dụng LLM để sinh yêu cầu
+của các đoạn mã và mô hình hóa các mối quan hệ giữa các yêu cầu
+vì việc gắn nhãn thủ công tốn thời gian và công sức. Trong bài báo này,
+chúng tôi chọn DeepSeek-V2.5 tiên tiến để xây dựng đồ thị yêu cầu,
+có khả năng hiểu và sinh ấn tượng. Để đảm bảo độ tin cậy
+của đồ thị yêu cầu, chúng tôi thiết kế tỉ mỉ các hướng dẫn cho LLM.
+Chúng tôi phân tích thủ công các yêu cầu được sinh và các mối quan hệ của chúng.
+Chúng tôi quan sát thấy rằng các yêu cầu được sinh có thể mô tả chính xác
+chức năng của mã, đồng thời, DeepSeek-V2.5 có thể dự đoán hiệu quả
+các mối quan hệ của yêu cầu như được hiển thị trong Phụ lục A.
+Trong tương lai, chúng tôi sẽ khám phá các cách chính xác hơn để mô hình hóa
+đồ thị yêu cầu, thậm chí sử dụng các phương pháp chú thích thủ công.
+
+7 Công trình Liên quan
+
+7.1 Sinh Mã Tăng cường Thu thập
+Sinh Mã Tăng cường Thu thập (RAG) thu thập các mã nguồn liên quan
+hoặc kiến thức khác liên quan đến tác vụ lập trình hiện tại
+và tích hợp thông tin được thu thập vào quá trình sinh
+[9,12,13,36], như là đầu vào ngữ cảnh cho các mô hình.
+Có chủ yếu ba loại nghiên cứu RAG.
+
+RAG dựa trên văn bản tập trung vào độ tương tự văn bản để thu thập [6,8,14,
+25], bao gồm các retriever thưa thớt như sử dụng BM25 [27]
+để tính độ tương tự văn bản giữa yêu cầu và
+các mã ứng viên, và các retriever dày đặc dựa trên embedding [10,26,41]
+gọi các mô hình embedding để mã hóa chúng và chọn các mã nguồn
+theo độ tương tự cosine của chúng. Thông qua việc đạt được
+những cải thiện, nó bỏ qua các phụ thuộc ngữ cảnh phức tạp
+trong một kho mã nguồn.
+
+RAG dựa trên cấu trúc giải quyết điều này bằng cách mô hình hóa một kho lưu trữ
+thành một đồ thị [5,22]. GraphCoder [21] xây dựng đồ thị ngữ cảnh mã
+(CCG) [32] bao gồm luồng điều khiển, phụ thuộc dữ liệu và điều khiển
+giữa các câu lệnh mã được sử dụng trong tác vụ hoàn thành mã tăng cường thu thập.
+CODEXGRAPH [22] sử dụng phân tích tĩnh để mô hình hóa một đồ thị mã
+cho kho lưu trữ hiện tại. Trong đồ thị, các nút mã đại diện cho các đoạn mã,
+bao gồm module, lớp, và hàm. Các cạnh giữa các nút mã đại diện cho
+các mối quan hệ giữa những đoạn mã này. Tuy nhiên, RAG dựa trên cấu trúc
+bị hạn chế bởi cú pháp truy vấn đồ thị, nơi các truy vấn đồ thị chỉ có
+một vài loại cú pháp. Đồng thời, những đồ thị mã này bỏ qua việc xây dựng
+các mối quan hệ ngữ nghĩa.
+
+Agentic RAG tích hợp thu thập vào quá trình suy luận, cho phép
+LLM tương tác với các mã nguồn [11,28,33?]. CodeAgent
+[39] là một khung tác nhân dựa trên LLM tiên phong cho sinh mã cấp kho lưu trữ.
+Nó cho phép LLM gọi các công cụ lập trình bên ngoài
+
+--- TRANG 11 ---
+CodeRAG: Thu Thập Mã Hỗ Trợ trên Đồ Thị Hai Chiều cho Sinh Mã Thực Tế Conference acronym 'XX, June 03–05, 2018, Woodstock, NY
+
+như tìm kiếm web và thiết kế bốn chiến lược tác nhân để tối ưu hóa
+việc sử dụng các công cụ này. Sau đó, các nhà nghiên cứu giới thiệu một số
+khung tác nhân cho các tác vụ mã hóa thực tế khác. Ví dụ,
+Agentless [33] được thiết kế để giải quyết vấn đề tiền xử lý
+cấu trúc kho mã nguồn và khung file, cho phép LLM tương tác
+với kiến thức này.
+
+Khác với những phương pháp RAG tiên tiến này, CodeRAG nhằm
+thu thập toàn diện các mã hỗ trợ từ kho lưu trữ. Nó
+xây dựng đồ thị hai chiều (tức là đồ thị yêu cầu và đồ thị DS-code)
+cho một kho lưu trữ. Bắt đầu với đồ thị yêu cầu, CodeRAG
+xem xét các mối quan hệ giữa yêu cầu đích và các yêu cầu khác,
+và thu thập các yêu cầu liên quan của yêu cầu đích.
+Nó ánh xạ những nút này vào các nút mã tương ứng của chúng
+trên đồ thị DS-code, coi chúng là các neo mã. CodeRAG sau đó
+giới thiệu một quá trình tác nhân, cho phép LLM thu thập các mã hỗ trợ khác
+thông qua suy luận trên đồ thị DS-code trong quá trình sinh mã.
+
+7.2 Sinh Mã Cấp Kho Lưu Trữ
+Những năm gần đây đã chứng kiến sự quan tâm ngày càng tăng đối với sinh mã
+cấp kho lưu trữ [29,35,39], vì nó phản ánh tốt hơn các tình huống phát triển
+phần mềm thực tế. Không giống như các tác vụ sinh mã đơn giản tạo ra
+các đoạn mã ngắn, độc lập, sinh mã cấp kho lưu trữ liên quan đến
+các phụ thuộc ngữ cảnh phức tạp gây ra những thách thức đáng kể
+cho các LLM hiện tại. Hướng nghiên cứu mới nổi này đã truyền cảm hứng
+cho nhiều dòng điều tra. Một mặt, các nhà nghiên cứu đã phát triển
+các benchmark chuyên biệt như DevEval [18] và EvoCodeBench [17] để đánh giá
+khả năng sinh mã cấp kho lưu trữ. Mặt khác, nhiều phương pháp khác nhau
+đã được đề xuất để nâng cao hiệu suất mô hình. Ví dụ, Zhang et al. [37]
+giới thiệu RepoCoder, sử dụng thu thập và sinh lặp
+để tận dụng ngữ cảnh kho lưu trữ, trong khi [39] phát triển một khung tác nhân
+trang bị cho LLM các công cụ lập trình bên ngoài để
+tăng cường hiệu suất của chúng.
+
+8 Kết luận
+Trong bài báo này, chúng tôi đề xuất CodeRAG, một khung RAG cho sinh mã
+thực tế. Nó thiết kế đồ thị hai chiều (tức là đồ thị yêu cầu
+và đồ thị DS-code) cho một kho mã nguồn. Bắt đầu với
+đồ thị yêu cầu, CodeRAG xem xét các mối quan hệ giữa
+yêu cầu đích và các yêu cầu khác, và thu thập các yêu cầu liên quan.
+Nó ánh xạ những nút yêu cầu này vào các nút mã
+trên đồ thị DS-code, nơi những nút mã này được coi là các neo.
+CodeRAG sau đó giới thiệu một quá trình tác nhân, cho phép LLM
+thu thập toàn diện các mã hỗ trợ thông qua suy luận từ
+những neo này trên đồ thị DS-code. Các thí nghiệm cho thấy CodeRAG
+đạt được một cải thiện đáng kể so với các phương pháp RAG tiên tiến
+và các sản phẩm lập trình thương mại, làm nổi bật tiềm năng của nó
+trong các thách thức mã hóa thực tế.
+
+Tài liệu tham khảo
+[1] Deepseek-v2.5. https://huggingface.co/deepseek-ai/DeepSeek-V2.5 , 2024.
+[2] Gpt-4o. https://openai.com/index/hello-gpt-4o/ , 2024.
+[3] Gpt-o3. https://openai.com/index/openai-o3-mini/ , 2024.
+[4] Qwq. https://huggingface.co/Qwen/QwQ-32B , 2024.
+[5]Qiaolong Cai, Zhaowei Wang, Shizhe Diao, James Kwok, và Yangqiu Song.
+Codegraph: Enhancing graph reasoning of llms with code. arXiv preprint
+arXiv:2408.13863 , 2024.
+[6]Jiawei Chen, Hongyu Lin, Xianpei Han, và Le Sun. Benchmarking large language
+models in retrieval-augmented generation. Trong Proceedings of the AAAI Conference
+on Artificial Intelligence , volume 38, trang 17754–17762, 2024.
+[7]DeepSeek-AI, Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song, Ruoyu
+Zhang, Runxin Xu, Qihao Zhu, Shirong Ma, Peiyi Wang, Xiao Bi, Xiaokang
+Zhang, Xingkai Yu, Yu Wu, Z. F. Wu, Zhibin Gou, Zhihong Shao, Zhuoshu Li,
+Ziyi Gao, Aixin Liu, Bing Xue, Bingxuan Wang, Bochao Wu, Bei Feng, Chengda Lu,
+Chenggang Zhao, Chengqi Deng, Chenyu Zhang, Chong Ruan, Damai Dai, Deli
+Chen, Dongjie Ji, Erhang Li, Fangyun Lin, Fucong Dai, Fuli Luo, Guangbo Hao,
+Guanting Chen, Guowei Li, H. Zhang, Han Bao, Hanwei Xu, Haocheng Wang,
+Honghui Ding, Huajian Xin, Huazuo Gao, Hui Qu, Hui Li, Jianzhong Guo, Jiashi Li,
+Jiawei Wang, Jingchang Chen, Jingyang Yuan, Junjie Qiu, Junlong Li, J. L. Cai, Jiaqi
+Ni, Jian Liang, Jin Chen, Kai Dong, Kai Hu, Kaige Gao, Kang Guan, Kexin Huang,
+Kuai Yu, Lean Wang, Lecong Zhang, Liang Zhao, Litong Wang, Liyue Zhang,
+Lei Xu, Leyi Xia, Mingchuan Zhang, Minghua Zhang, Minghui Tang, Meng Li,
+Miaojun Wang, Mingming Li, Ning Tian, Panpan Huang, Peng Zhang, Qiancheng
+Wang, Qinyu Chen, Qiushi Du, Ruiqi Ge, Ruisong Zhang, Ruizhe Pan, Runji
+Wang, R. J. Chen, R. L. Jin, Ruyi Chen, Shanghao Lu, Shangyan Zhou, Shanhuang
+Chen, Shengfeng Ye, Shiyu Wang, Shuiping Yu, Shunfeng Zhou, Shuting Pan, và
+S. S. Li. Deepseek-r1: Incentivizing reasoning capability in llms via reinforcement
+learning. CoRR , abs/2501.12948, 2025. doi: 10.48550/ARXIV.2501.12948. URL
+https://doi.org/10.48550/arXiv.2501.12948.
+[8]Yunfan Gao, Yun Xiong, Xinyu Gao, Kangxiang Jia, Jinliu Pan, Yuxi Bi, Yi Dai,
+Jiawei Sun, Haofen Wang, và Haofen Wang. Retrieval-augmented generation
+for large language models: A survey. arXiv preprint arXiv:2312.10997 , 2, 2023.
+[9]Leonidas Gee, Milan Gritta, Gerasimos Lampouras, và Ignacio Iacobacci. Code-
+optimise: Self-generated preference data for correctness and efficiency. CoRR ,
+abs/2406.12502, 2024. doi: 10.48550/ARXIV.2406.12502. URL https://doi.org/10.
+48550/arXiv.2406.12502.
+[10] Jiwoo Hong, Noah Lee, và James Thorne. Orpo: Monolithic preference opti-
+mization without reference model. arXiv preprint arXiv:2403.07691 , 2(4):5, 2024.
+[11] Dong Huang, Jie M Zhang, Michael Luck, Qingwen Bu, Yuhao Qing, và Heming
+Cui. Agentcoder: Multi-agent-based code generation with iterative testing and
+optimisation. arXiv preprint arXiv:2312.13010 , 2023.
+[12] Dong Huang, Yuhao Qing, Weiyi Shang, Heming Cui, và Jie M Zhang. Effibench:
+Benchmarking the efficiency of automatically generated code. arXiv preprint
+arXiv:2402.02037 , 2024.
+[13] Naman Jain, King Han, Alex Gu, Wen-Ding Li, Fanjia Yan, Tianjun Zhang, Sida
+Wang, Armando Solar-Lezama, Koushik Sen, và Ion Stoica. Livecodebench:
+Holistic and contamination free evaluation of large language models for code.
+arXiv preprint arXiv:2403.07974 , 2024.
+[14] Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin,
+Naman Goyal, Heinrich Küttler, Mike Lewis, Wen-tau Yih, Tim Rocktäschel, et al.
+Retrieval-augmented generation for knowledge-intensive nlp tasks. Advances in
+neural information processing systems , 33:9459–9474, 2020.
+[15] Jia Li, Ge Li, Chongyang Tao, Jia Li, Huangzhao Zhang, Fang Liu, và Zhi Jin.
+Large language model-aware in-context learning for code generation. CoRR ,
+abs/2310.09748, 2023. doi: 10.48550/ARXIV.2310.09748. URL https://doi.org/10.
+48550/arXiv.2310.09748.
+[16] Jia Li, Chongyang Tao, Jia Li, Ge Li, Zhi Jin, Huangzhao Zhang, Zheng Fang, và
+Fang Liu. Large language model-aware in-context learning for code generation.
+ACM Transactions on Software Engineering and Methodology , 2023.
+[17] Jia Li, Ge Li, Xuanming Zhang, Yunfei Zhao, Yihong Dong, Zhi Jin, Binhua Li, Fei
+Huang, và Yongbin Li. Evocodebench: An evolving code generation benchmark
+with domain-specific evaluations. Advances in Neural Information Processing
+Systems , 37:57619–57641, 2024.
+[18] Jia Li, Ge Li, Yunfei Zhao, Yongmin Li, Zhi Jin, Hao Zhu, Huanyu Liu, Kaibo
+Liu, Lecheng Wang, Zheng Fang, et al. Deveval: Evaluating code generation in
+practical software projects. arXiv preprint arXiv:2401.06401 , 2024.
+[19] Jia Li, Xuyuan Guo, Lei Li, Kechi Zhang, Ge Li, Zhengwei Tao, Fang Liu,
+Chongyang Tao, Yuqi Zhu, và Zhi Jin. Longcodeu: Benchmarking long-context
+language models on long code understanding. arXiv preprint arXiv:2503.04359 ,
+2025.
+[20] Aixin Liu, Bei Feng, Bing Xue, Bingxuan Wang, Bochao Wu, Chengda Lu, Cheng-
+gang Zhao, Chengqi Deng, Chenyu Zhang, Chong Ruan, et al. Deepseek-v3
+technical report. arXiv preprint arXiv:2412.19437 , 2024.
+[21] Wei Liu, Ailun Yu, Daoguang Zan, Bo Shen, Wei Zhang, Haiyan Zhao, Zhi Jin,
+và Qianxiang Wang. Graphcoder: Enhancing repository-level code completion
+via code context graph-based retrieval and language model. arXiv preprint
+arXiv:2406.07003 , 2024.
+[22] Xiangyan Liu, Bo Lan, Zhiyuan Hu, Yang Liu, Zhicheng Zhang, Fei Wang, Michael
+Shieh, và Wenmeng Zhou. Codexgraph: Bridging large language models and
+code repositories via code graph databases. arXiv preprint arXiv:2408.03910 , 2024.
+[23] Anton Lozhkov, Raymond Li, Loubna Ben Allal, Federico Cassano, Joel Lamy-
+Poirier, Nouamane Tazi, Ao Tang, Dmytro Pykhtar, Jiawei Liu, Yuxiang Wei, et al.
+Starcoder 2 and the stack v2: The next generation. arXiv preprint arXiv:2402.19173 ,
+2024.
+
+--- TRANG 12 ---
+Conference acronym 'XX, June 03–05, 2018, Woodstock, NY Jia Li and Xianjie Shi et al.
+
+[24] Shuai Lu, Nan Duan, Hojae Han, Daya Guo, Seung-won Hwang, và Alexey
+Svyatkovskiy. Reacc: A retrieval-augmented code completion framework. Trong
+Smaranda Muresan, Preslav Nakov, và Aline Villavicencio, editors, Proceedings of
+the 60th Annual Meeting of the Association for Computational Linguistics (Volume
+1: Long Papers), ACL 2022, Dublin, Ireland, May 22-27, 2022 , trang 6227–6240.
+Association for Computational Linguistics, 2022. doi: 10.18653/V1/2022.ACL-
+LONG.431. URL https://doi.org/10.18653/v1/2022.acl-long.431.
+[25] Mirjam Minor và Eduard Kaucher. Retrieval augmented generation with llms
+for explaining business process models. Trong International Conference on Case-Based
+Reasoning , trang 175–190. Springer, 2024.
+[26] Rafael Rafailov, Archit Sharma, Eric Mitchell, Christopher D Manning, Stefano
+Ermon, và Chelsea Finn. Direct preference optimization: Your language model
+is secretly a reward model. Advances in Neural Information Processing Systems ,
+36, 2024.
+[27] Stephen Robertson, Hugo Zaragoza, et al. The probabilistic relevance framework:
+Bm25 and beyond. Foundations and Trends ®in Information Retrieval , 3(4):333–389,
+2009.
+[28] Samuel Schmidgall, Yusheng Su, Ze Wang, Ximeng Sun, Jialian Wu, Xiaodong Yu,
+Jiang Liu, Zicheng Liu, và Emad Barsoum. Agent laboratory: Using llm agents
+as research assistants. arXiv preprint arXiv:2501.04227 , 2025.
+[29] Qiushi Sun, Zhirui Chen, Fangzhi Xu, Kanzhi Cheng, Chang Ma, Zhangyue
+Yin, Jianing Wang, Chengcheng Han, Renyu Zhu, Shuai Yuan, et al. A survey
+of neural code intelligence: Paradigms, advances and beyond. arXiv preprint
+arXiv:2403.14734 , 2024.
+[30] Zhihong Sun, Yao Wan, Jia Li, Hongyu Zhang, Zhi Jin, Ge Li, và Chen Lyu. Sifting
+through the chaff: On utilizing execution feedback for ranking the generated
+code candidates. Trong Vladimir Filkov, Baishakhi Ray, và Minghui Zhou, editors,
+Proceedings of the 39th IEEE/ACM International Conference on Automated Software
+Engineering, ASE 2024, Sacramento, CA, USA, October 27 - November 1, 2024 , trang
+229–241. ACM, 2024. doi: 10.1145/3691620.3695000. URL https://doi.org/10.1145/
+3691620.3695000.
+[31] Gemini Team, Petko Georgiev, Ving Ian Lei, Ryan Burnell, Libin Bai, Anmol
+Gulati, Garrett Tanzer, Damien Vincent, Zhufeng Pan, Shibo Wang, et al. Gemini
+1.5: Unlocking multimodal understanding across millions of tokens of context.
+arXiv preprint arXiv:2403.05530 , 2024.
+[32] Yuxiang Wei, Federico Cassano, Jiawei Liu, Yifeng Ding, Naman Jain, Zachary
+Mueller, Harm de Vries, Leandro Von Werra, Arjun Guha, và Lingming Zhang.
+Selfcodealign: Self-alignment for code generation. arXiv preprint arXiv:2410.24198 ,
+2024.
+[33] Chunqiu Steven Xia, Yinlin Deng, Soren Dunn, và Lingming Zhang. Agent-
+less: Demystifying llm-based software engineering agents. arXiv preprint
+arXiv:2407.01489 , 2024.
+[34] Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik Narasimhan,
+và Yuan Cao. React: Synergizing reasoning and acting in language models. Trong
+International Conference on Learning Representations (ICLR) , 2023.
+[35] Daoguang Zan, Ailun Yu, Wei Liu, Dong Chen, Bo Shen, Wei Li, Yafen Yao,
+Yongshun Gong, Xiaolin Chen, Bei Guan, et al. Codes: Natural language to code
+repository via multi-layer sketch. arXiv preprint arXiv:2403.16443 , 2024.
+[36] Dylan Zhang, Shizhe Diao, Xueyan Zou, và Hao Peng. PLUM: preference
+learning plus test cases yields better code language models. CoRR , abs/2406.06887,
+2024. doi: 10.48550/ARXIV.2406.06887. URL https://doi.org/10.48550/arXiv.2406.
+06887.
+[37] Fengji Zhang, Bei Chen, Yue Zhang, Jacky Keung, Jin Liu, Daoguang Zan, Yi Mao,
+Jian-Guang Lou, và Weizhu Chen. Repocoder: Repository-level code completion
+through iterative retrieval and generation. arXiv preprint arXiv:2303.12570 , 2023.
+[38] Kechi Zhang, Ge Li, Yihong Dong, Jingjing Xu, Jun Zhang, Jing Su, Yongfei Liu,
+và Zhi Jin. Codedpo: Aligning code models with self generated and verified
+source code. CoRR , abs/2410.05605, 2024. doi: 10.48550/ARXIV.2410.05605. URL
+https://doi.org/10.48550/arXiv.2410.05605.
+[39] Kechi Zhang, Jia Li, Ge Li, Xianjie Shi, và Zhi Jin. Codeagent: Enhancing code
+generation with tool-integrated agent systems for real-world repo-level coding
+challenges. arXiv preprint arXiv:2401.07339 , 2024.
+[40] Kechi Zhang, Ge Li, Jia Li, Yihong Dong, Jia Li, và Zhi Jin. Focused-dpo:
+Enhancing code generation through focused preference optimization on error-
+prone points. CoRR , abs/2502.11475, 2025. doi: 10.48550/ARXIV.2502.11475. URL
+https://doi.org/10.48550/arXiv.2502.11475.
+[41] Shengyu Zhang, Linfeng Dong, Xiaoya Li, Sen Zhang, Xiaofei Sun, Shuhe Wang,
+Jiwei Li, Runyi Hu, Tianwei Zhang, Fei Wu, et al. Instruction tuning for large
+language models: A survey. arXiv preprint arXiv:2308.10792 , 2023.
+[42] Yuqi Zhu, Jia Li, Ge Li, Yunfei Zhao, Jia Li, Zhi Jin, và Hong Mei. Hot or cold?
+adaptive temperature sampling for code generation with large language mod-
+els. Trong Michael J. Wooldridge, Jennifer G. Dy, và Sriraam Natarajan, editors,
+Thirty-Eighth AAAI Conference on Artificial Intelligence, AAAI 2024, Thirty-Sixth
+Conference on Innovative Applications of Artificial Intelligence, IAAI 2024, Four-
+teenth Symposium on Educational Advances in Artificial Intelligence, EAAI 2014,
+February 20-27, 2024, Vancouver, Canada , trang 437–445. AAAI Press, 2024. doi:
+10.1609/AAAI.V38I1.27798. URL https://doi.org/10.1609/aaai.v38i1.27798.
+
+--- TRANG 13 ---
+CodeRAG: Thu Thập Mã Hỗ Trợ trên Đồ Thị Hai Chiều cho Sinh Mã Thực Tế Conference acronym 'XX, June 03–05, 2018, Woodstock, NY
+
+A Hướng dẫn cho Đồ thị Yêu cầu
+Chúng tôi trình bày các hướng dẫn được sử dụng trong đồ thị yêu cầu, bao gồm
+các hướng dẫn sinh yêu cầu và hướng dẫn trích xuất quan hệ yêu cầu.
+Mỗi hướng dẫn đã trải qua tinh chỉnh lặp để đảm bảo rằng các mô hình khác nhau không chỉ có thể tuân theo nó
+mà còn tạo ra các đầu ra có vẻ thỏa mãn và có thể áp dụng
+cho các tình huống phát triển thực tế khi sử dụng những hướng dẫn này.
+
+Nhận được 20 tháng 2 năm 2007; sửa đổi 12 tháng 3 năm 2009; chấp nhận 5 tháng 6 năm 2009
+
+--- TRANG 14 ---
+Conference acronym 'XX, June 03–05, 2018, Woodstock, NY Jia Li and Xianjie Shi et al.
+
+Bạn là một lập trình viên Python chuyên nghiệp. Hiểu hàm Python đã cho Function_name. Sinh một yêu cầu lập trình mô tả ngắn gọn
+mục đích, đầu vào, và đầu ra của hàm Python đã cho Function_name.
+Không sinh bất kỳ giải thích nào.
+Vui lòng tuân theo định dạng để hoàn thành khung bên dưới:
+—
+Mục đích:···
+Đầu vào:···
+Đầu ra:···
+—
+
+Hình 4: Hướng dẫn Sinh Yêu cầu.
+
+Bạn là một lập trình viên Python chuyên nghiệp. Nhiệm vụ cuối cùng là sinh đoạn mã của yêu cầu đích trong kho mã nguồn. Trong nhiệm vụ này, lập trình viên Python
+cần tập trung không chỉ vào yêu cầu đích, mà còn vào các yêu cầu con của yêu cầu đích và các yêu cầu tương tự về mặt ngữ nghĩa
+của yêu cầu đích.
+Hiểu yêu cầu đích và yêu cầu ứng viên. Xác định và chọn mối quan hệ giữa yêu cầu đích và yêu cầu ứng viên
+từ ba tùy chọn sau:
+1. Quan hệ Cha-Con: Yêu cầu ứng viên là một yêu cầu con của yêu cầu đích. Mã tương ứng của yêu cầu đích
+gọi mã tương ứng của yêu cầu con.
+2. Quan hệ Tương tự Ngữ nghĩa: Yêu cầu ứng viên và yêu cầu đích tương tự về mặt ngữ nghĩa. Việc triển khai mã của yêu cầu đích
+có thể học từ việc triển khai mã của yêu cầu ứng viên.
+3. Quan hệ Khác: Yêu cầu ứng viên và yêu cầu đích không có các quan hệ trên.
+Chỉ trả về Quan hệ Cha-Con hoặc Quan hệ Tương tự Ngữ nghĩa hoặc Quan hệ Khác.
+Yêu cầu đích:
+Target_requirement
+Target_requirement_path
+Yêu cầu ứng viên:
+Candidate_requirement
+Candidate_requirement_path
+Quan hệ được chọn giữa yêu cầu đích và yêu cầu ứng viên:
+—
+—
+Không sinh bất kỳ giải thích và chi tiết nào.
+
+Hình 5: Hướng dẫn Trích xuất Quan hệ Yêu cầu.

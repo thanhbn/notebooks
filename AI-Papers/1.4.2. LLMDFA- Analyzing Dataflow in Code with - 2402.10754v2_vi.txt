@@ -1,0 +1,380 @@
+# 1.4.2. LLMDFA- Analyzing Dataflow in Code with - 2402.10754v2.pdf  
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\1.4.2. LLMDFA- Analyzing Dataflow in Code with - 2402.10754v2.pdf
+# Kích thước file: 3102552 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+LLMDFA: Phân Tích Luồng Dữ Liệu Trong Mã 
+Với Các Mô Hình Ngôn Ngữ Lớn
+
+Chengpeng Wang1, Wuqi Zhang2, Zian Su1, Xiangzhe Xu1, Xiaoheng Xie3, Xiangyu Zhang1
+1Đại học Purdue, 2Đại học Khoa học và Công nghệ Hồng Kông, 3Ant Group
+{wang6590, su284, xu1415, xyzhang}@purdue.edu
+wuqi.zhang@connect.ust.hk, xiexie@antgroup.com
+
+Tóm tắt
+
+Phân tích luồng dữ liệu là một kỹ thuật phân tích mã cơ bản xác định các phụ thuộc giữa các giá trị chương trình. Các phương pháp truyền thống thường đòi hỏi biên dịch thành công và tùy chỉnh chuyên gia, cản trở khả năng áp dụng và tính khả dụng của chúng để phân tích các chương trình không thể biên dịch được với nhu cầu phân tích phát triển trong các tình huống thực tế. Bài báo này trình bày LLMDFA, một khung phân tích luồng dữ liệu được hỗ trợ bởi LLM không cần biên dịch và có thể tùy chỉnh. Để giải quyết các ảo giác (hallucinations) cho kết quả đáng tin cậy, chúng tôi phân tách bài toán thành nhiều tác vụ con và giới thiệu một loạt các chiến lược mới. Cụ thể, chúng tôi tận dụng LLM để tổng hợp mã thuê ngoài lý luận tinh tế cho các công cụ chuyên gia bên ngoài, chẳng hạn như sử dụng thư viện phân tích cú pháp để trích xuất các giá trị chương trình quan tâm và gọi một bộ chứng minh định lý tự động để xác thực tính khả thi của đường dẫn. Ngoài ra, chúng tôi áp dụng prompting chuỗi suy nghĩ few-shot để tóm tắt các sự kiện luồng dữ liệu trong các hàm riêng lẻ, căn chỉnh LLM với ngữ nghĩa chương trình của các đoạn mã nhỏ để giảm thiểu ảo giác. Chúng tôi đánh giá LLMDFA trên các chương trình tổng hợp để phát hiện ba loại lỗi đại diện và trên các ứng dụng Android thực tế để phát hiện lỗi tùy chỉnh. Trung bình, LLMDFA đạt được 87.10% precision và 80.77% recall, vượt trội hơn các kỹ thuật hiện tại với cải thiện điểm F1 lên đến 0.35. Chúng tôi đã mở mã nguồn LLMDFA tại https://github.com/chengpeng-wang/LLMDFA .
+
+1 Giới thiệu
+
+```java
+public class Demo{
+    public static int foo(int a, int b){
+        if(Math.abs(b) > 1)
+            System.out.print(a / b); // sink: b, safe
+        return b;
+    }
+    
+    public static void main(String[] args){
+        int x;
+        x = Integer.parseInt(args[0]); // source: x
+        int y = x * x + 1;
+        int z = x / y; // sink: y, safe
+        z = x;
+        y = foo(y, z);
+        System.out.print(x / y); // sink: y, buggy
+    }
+}
+```
+
+Hình 1: Một ví dụ về lỗi DBZ
+
+Phân tích luồng dữ liệu là một phương pháp chính thức xác định sự phụ thuộc giữa các giá trị trong một chương trình [Reps et al., 1995]. Mục tiêu chính của nó là xác định liệu giá trị của một biến được định nghĩa tại một dòng cụ thể, được gọi là nguồn (source), có ảnh hưởng đến giá trị của một biến khác được sử dụng tại một dòng tiếp theo, được gọi là đích (sink). Thông tin quan trọng này cung cấp những hiểu biết có giá trị cho các ứng dụng phụ thuộc khác nhau, chẳng hạn như tối ưu hóa chương trình [Li et al., 1990] và phát hiện lỗi [Arzt et al., 2014; Shi et al., 2018]. Trong Hình 1, ví dụ, chúng ta có thể coi biến x tại dòng 9 là một nguồn và các số chia tại dòng 4, 11, và 14 là các đích và phát hiện lỗi chia cho không (DBZ) tại dòng 14. Trực giác là x tại dòng 9 đến từ đầu vào người dùng và có thể bằng không. Nếu nó có thể chảy đến các số chia, lỗi DBZ có thể xảy ra.
+
+Mặc dù đã có nhiều thập kỷ nỗ lực, các kỹ thuật phân tích luồng dữ liệu hiện tại có nhược điểm về khả năng áp dụng và tính khả dụng. Đầu tiên, nhiều tình huống cần phân tích luồng dữ liệu liên quan đến các chương trình không hoàn chỉnh và không thể biên dịch được, ví dụ như phân tích lỗi mã tức thì trong Môi trường Phát triển Tích hợp (IDE). Tuy nhiên, các kỹ thuật hiện tại thường dựa vào các biểu diễn trung gian (IR) được tạo ra bởi các frontend compiler, chẳng hạn như LLVM IR [Lattner và Adve, 2004] được tạo ra bởi trình biên dịch Clang, như được hiển thị trong Hình 2(a). Sự phụ thuộc này hạn chế khả năng áp dụng của chúng trong việc phân tích các chương trình không hoàn chỉnh, dẫn đến thất bại của phân tích. Thứ hai, các tác vụ phụ thuộc cụ thể đòi hỏi tùy chỉnh phân tích để phù hợp với nhu cầu cụ thể, chẳng hạn như phát hiện một loại lỗi cụ thể. Trong phát hiện DBZ, ví dụ, người dùng phải trích xuất các biến có khả năng được gán với không (nguồn) và các biến được sử dụng làm số chia (đích). Đây là một nhiệm vụ thách thức đối với những người không chuyên vì họ cần hiểu sâu về biểu diễn chương trình (ví dụ: LLVM IR) để tùy chỉnh. Hạn chế này cản trở tính khả dụng của các phương pháp cổ điển để giải quyết nhu cầu phân tích phần mềm đang phát triển trong các tình huống thực tế [Christakis và Bird, 2016].
+
+Trong năm qua, đã có sự gia tăng mạnh mẽ các ứng dụng kỹ thuật phần mềm được xây dựng dựa trên các mô hình ngôn ngữ lớn (LLM), từ đó chúng tôi quan sát thấy hiệu suất đặc biệt của LLM trong việc hiểu các đoạn mã [Shrivastava et al., 2023; Deng et al., 2023; Wei et al., 2023; Pei et al., 2023]. Cụ thể, bằng cách coi LLM như các trình thông dịch mã và thiết kế các prompt thích hợp, chúng ta có thể trực tiếp thu được các thuộc tính ngữ nghĩa từ mã nguồn. Ví dụ, bằng cách xây dựng một prompt như "Liệu giá trị của biến z được sử dụng tại dòng 13 có phụ thuộc vào giá trị của biến x được định nghĩa tại dòng 9 không?", chúng ta có thể xác định sự kiện luồng dữ liệu giữa hai giá trị chương trình. Tương tự, chúng ta có thể tận dụng LLM để tự động hóa việc trích xuất các nguồn và đích cụ thể bằng cách mô tả các đặc điểm của chúng như prompts. Điều này trao quyền cho các nhà phát triển điều chỉnh phân tích luồng dữ liệu theo yêu cầu cụ thể của họ. Như được hiển thị trong Hình 2(b), phân tích luồng dữ liệu được hỗ trợ bởi LLM như vậy loại bỏ biên dịch và tránh tùy chỉnh phức tạp. Trong phần còn lại của bài báo này, minh họa của chúng tôi luôn trong bối cảnh của một tác vụ phụ thuộc, và các tham chiếu của chúng tôi đến nguồn và đích cụ thể liên quan đến tác vụ đó.
+
+Tuy nhiên, việc thực hiện phân tích luồng dữ liệu sử dụng LLM còn xa mới đơn giản, vì các ảo giác của chúng [Zhang et al., 2023c; Ji et al., 2023; Mündler et al., 2023] đe dọa độ tin cậy của kết quả. Đầu tiên, việc xác định sai nguồn và đích dẫn đến các sự kiện luồng dữ liệu không liên quan đến sự quan tâm của người dùng, trực tiếp dẫn đến kết quả không chính xác của phân tích luồng dữ liệu. Thứ hai, nguồn và đích có thể được phân bố trên nhiều hàm, đòi hỏi phân tích một khối lượng lớn mã có khả năng vượt quá giới hạn ngữ cảnh đầu vào. Ngoài ra, các sự kiện luồng dữ liệu không chính xác trong các hàm đơn lẻ có thể tích lũy và phóng đại, từ đó tác động đến hiệu suất tổng thể. Thứ ba, tính hợp lệ của một sự kiện luồng dữ liệu phụ thuộc vào tính khả thi của đường dẫn chương trình tạo ra sự kiện luồng dữ liệu. Nếu điều kiện đường dẫn được coi là không thỏa mãn, không có thực thi cụ thể nào sẽ xảy ra dọc theo đường dẫn đó [Shi et al., 2018]. Thật không may, việc quyết định tính thỏa mãn của một ràng buộc logic là một nhiệm vụ lý luận phức tạp mà LLM không thể giải quyết hiệu quả [Zhang et al., 2023b]. Trong Hình 1, ví dụ, gpt-3.5-turbo-0125 báo cáo một lỗi DBZ tại dòng 4 như một dương tính giả bởi vì nó không thể phát hiện điều kiện nhánh không thỏa mãn tại dòng 3.
+
+Bài báo này trình bày LLMDFA, một phân tích luồng dữ liệu được hỗ trợ bởi LLM không cần biên dịch và có thể tùy chỉnh. Để giảm thiểu ảo giác, chúng tôi phân tách phân tích thành ba bài toán con, cụ thể là trích xuất nguồn/đích, tóm tắt luồng dữ liệu, và xác thực tính khả thi đường dẫn, nhắm vào các tác vụ dễ quản lý hơn hoặc các chương trình kích thước nhỏ hơn. Về mặt kỹ thuật, chúng tôi giới thiệu hai thiết kế sáng tạo để giải quyết ba bài toán con. Đầu tiên, thay vì prompting trực tiếp LLM, chúng tôi tận dụng LLM như các bộ tổng hợp mã để ủy thác phân tích cho các công cụ chuyên gia bên ngoài như thư viện phân tích cú pháp và bộ giải SMT [de Moura và Bjørner, 2008], điều này hiệu quả giảm thiểu các ảo giác trong việc trích xuất nguồn/đích và xác thực tính khả thi đường dẫn. Thứ hai, chúng tôi sử dụng chiến lược prompting chuỗi suy nghĩ (CoT) few-shot [Wei et al., 2022] để làm cho LLM căn chỉnh với ngữ nghĩa chương trình, điều này cho phép LLMDFA vượt qua ảo giác trong việc tóm tắt các sự kiện luồng dữ liệu của các hàm đơn lẻ. So với phân tích luồng dữ liệu truyền thống, LLMDFA cung cấp các lợi thế rõ rệt về khả năng áp dụng và tính tự động. Nó có thể được áp dụng cho các chương trình không hoàn chỉnh, bao gồm những chương trình trong giai đoạn phát triển. Ngoài ra, nó có thể tự động tạo và sử dụng các công cụ mới với sự can thiệp tối thiểu của con người, không yêu cầu chuyên môn đặc biệt trong việc tùy chỉnh phân tích luồng dữ liệu.
+
+--- TRANG 2 ---
+
+[THIS IS FIGURE: Hình 2 showing two paradigms of dataflow analysis - (a) Classical dataflow analysis relying on compilation and customization vs (b) A new paradigm: LLM-powered dataflow analysis]
+
+Hình 2: Hai mô hình khác nhau của phân tích luồng dữ liệu
+
+--- TRANG 3 ---
+
+Chúng tôi đánh giá LLMDFA trong bối cảnh phát hiện lỗi. Cụ thể, chúng tôi chọn Chia cho Không (DBZ), Cross-Site-Scripting (XSS)¹, và OS Command Injection (OSCI)² trong Juliet Test Suite [Boland và Black, 2012] để đánh giá. LLMDFA đạt được precision và recall cao khi sử dụng các LLM khác nhau. Ví dụ, được trang bị gpt-3.5-turbo-0125, nó đạt được 73.75%/100.0%/100.0% precision và 92.16%/92.31%/78.38% recall trong phát hiện DBZ/XSS/OSCI. LLMDFA vượt trội đáng kể so với một bộ phân tích luồng dữ liệu cổ điển CodeFuseQuery [Xie et al., 2024] và một giải pháp đầu cuối dựa trên prompting CoT few-shot, cải thiện điểm F1 trung bình lần lượt là 0.23 và 0.36. Bên cạnh đó, chúng tôi đánh giá LLMDFA trên các ứng dụng malware Android thực tế trong TaintBench [Luo et al., 2022] và đạt được 74.63% precision và 60.24% recall. Nó vượt trội hơn hai baseline với cải thiện điểm F1 lần lượt là 0.12 và 0.35. Theo hiểu biết tốt nhất của chúng tôi, LLMDFA là thử nghiệm đầu tiên tận dụng LLM để đạt được phân tích luồng dữ liệu không cần biên dịch và có thể tùy chỉnh. Nó cung cấp những hiểu biết có giá trị cho các nghiên cứu tương lai trong việc phân tích chương trình sử dụng LLM, chẳng hạn như xác minh chương trình [Janßen et al., 2023; Pei et al., 2023] và sửa chữa [Wei et al., 2023].
+
+2 Kiến Thức Cơ Bản và Công Thức Bài Toán
+
+Định nghĩa 1. (Đồ Thị Luồng Điều Khiển) Đồ thị luồng điều khiển (CFG) của một chương trình P cho trước là một đồ thị có hướng được gán nhãn G := (S, E^ℓ). Ở đây, s ∈ S là một câu lệnh trong chương trình. Đối với bất kỳ (s, s') ∈ S × S, E^ℓ(s, s') là biểu thức boolean mà dưới đó s' được thực thi ngay sau s.
+
+[THIS IS FIGURE: Hình 3 showing an example of CFG with nodes and edges representing program flow]
+
+Hình 3 cho thấy một CFG (một phần) của chương trình trong Hình 1. Nó mô tả một số sự kiện chương trình quan trọng, chẳng hạn như các điều kiện nhánh riêng lẻ và mối quan hệ caller-callee. Để đơn giản hóa công thức, chúng tôi giới thiệu V^f_par, V^f_ret, V^f_arg, và V^f_out chứa các tham số (của hàm), giá trị trả về, đối số (được truyền cho các hàm được gọi), và giá trị đầu ra trong một hàm f, tương ứng, có thể dễ dàng được dẫn xuất từ CFG. Hai hộp đứt nét trong Hình 3 cho thấy các phép gán từ đối số đến tham số và từ giá trị trả về đến giá trị đầu ra. Dựa trên CFG, chúng ta có thể kiểm tra cách một giá trị chương trình lan truyền thông qua các sự kiện luồng dữ liệu.
+
+Định nghĩa 2. (Sự Kiện Luồng Dữ Liệu) Có một sự kiện luồng dữ liệu từ biến a tại dòng m đến biến b tại dòng n, ký hiệu là a@ℓm → b@ℓn, nếu giá trị của a có thể ảnh hưởng đến giá trị của b.
+
+Trong Hình 1, biến z được gán với giá trị của biến x tại dòng 12 và được sử dụng như đối số thứ hai tại dòng 13. Do đó, chúng ta có x@ℓ9 → x@ℓ12, z@ℓ12 → z@ℓ13, và x@ℓ9 → z@ℓ13.
+
+Các sự kiện luồng dữ liệu rất quan trọng cho nhiều tác vụ phụ thuộc, chẳng hạn như phát hiện lỗi [Shi et al., 2018] và cắt chương trình [Reps et al., 1995]. Cụ thể, rò rỉ thông tin nhạy cảm, có thể gây ra lỗi XSS [CWE, 2023b], có thể được phát hiện bằng cách xác định các sự kiện luồng dữ liệu từ dữ liệu nhạy cảm đến dữ liệu bị rò rỉ. Đối với các loại lỗi khác, các hạn chế bổ sung có thể được áp dụng lên các sự kiện luồng dữ liệu. Trong phát hiện DBZ, ví dụ, chúng tôi ràng buộc rằng một sự kiện luồng dữ liệu kết nối hai giá trị bằng nhau.
+
+Việc thực thi một câu lệnh s có thể được bảo vệ bởi một điều kiện. Một phân tích chính xác nên nhạy cảm với đường dẫn, tức là xác thực tính khả thi của một đường dẫn tạo ra sự kiện theo điều kiện đường dẫn.
+
+Định nghĩa 3. (Điều Kiện Đường Dẫn) Điều kiện đường dẫn của một đường dẫn chương trình p := si₁si₂···siₙ là ψ(p) = ⋀₁≤j≤n-1 E^ℓ(siⱼ, siⱼ₊₁), trong đó siⱼ là câu lệnh tại dòng iⱼ và có thể được thực thi ngay trước siⱼ₊₁.
+
+Chúng ta có sự kiện luồng dữ liệu x@ℓ9 → b@ℓ4 trong Hình 1. Tuy nhiên, câu lệnh tại dòng 4 được bảo vệ bởi Math.abs(b) > 0. Nó được đánh giá là false vì tham số b được truyền với 0. Do đó, sự kiện luồng dữ liệu x@ℓ9 → b@ℓ4 không thể xảy ra trong bất kỳ thực thi cụ thể nào. Một phân tích không nhạy cảm với đường dẫn sẽ tạo ra một dương tính giả tại dòng 4 trong phát hiện DBZ.
+
+Bài Toán Của Chúng Tôi. Trong các ứng dụng phụ thuộc thực tế, phân tích luồng dữ liệu tập trung vào các sự kiện luồng dữ liệu giữa các loại biến cụ thể được gọi là nguồn và đích. Trong phát hiện DBZ [CWE, 2023a], ví dụ, chúng ta cần xác định các biến có khả năng tạo ra giá trị không làm nguồn và đặt các số chia làm đích. Cuối cùng, chúng tôi công thức hóa bài toán phân tích luồng dữ liệu như sau.
+
+Cho mã nguồn của một chương trình P và CFG G của nó, xác định các sự kiện luồng dữ liệu từ các nguồn do người dùng chỉ định vsrc ∈ Vsrc và các đích vsink ∈ Vsink theo cách nhạy cảm với đường dẫn.
+
+¹Trong một lỗi XSS, một sự kiện luồng dữ liệu qua các biến ký hiệu các trang web khác nhau cho phép thực thi không mong muốn.
+²Sử dụng đầu vào bên ngoài cho việc xây dựng lệnh OS có thể dẫn đến lỗi OSCI.
+
+3
+
+--- TRANG 4 ---
+
+[THIS IS FIGURE: Hình 4 showing the workflow of LLMDFA consisting of three phases with various components and data flow]
+
+Hình 4: Quy trình làm việc của LLMDFA bao gồm ba giai đoạn
+
+Như đã được chứng minh trong Phần 1, các kỹ thuật phân tích luồng dữ liệu hiện tại [Semmle, 2023; Sui và Xue, 2016; Shi et al., 2018] phụ thuộc nhiều vào biên dịch và đặt ra khó khăn trong tùy chỉnh, điều này cản trở khả năng áp dụng và tính khả dụng của chúng [Christakis và Bird, 2016]. Mặc dù một số kỹ thuật phát hiện lỗi dựa trên học máy [Steenhoek et al., 2024; Hin et al., 2022] cho phép phân tích không cần biên dịch, chúng không thể trả lời một câu hỏi phân tích luồng dữ liệu tổng quát được công thức hóa ở trên và gặp khó khăn trong việc hỗ trợ tùy chỉnh cho các loại lỗi khác nhau mà không có một tập dữ liệu huấn luyện lớn. Để lấp đầy khoảng trống nghiên cứu, chúng tôi nhằm đề xuất một mô hình mới của phân tích luồng dữ liệu trong nghiên cứu này. Cụ thể, chúng tôi nhận ra hiệu suất đặc biệt của LLM trong hiểu chương trình [Rozière et al., 2023; Wang et al., 2021], làm nổi bật tiềm năng cho việc xác định các sự kiện luồng dữ liệu. Bên cạnh đó, LLM thể hiện khả năng mạnh mẽ trong việc hiểu ngôn ngữ tự nhiên [Brown et al., 2020; OpenAI, 2023], và do đó, có thể hiểu hiệu quả ý định của các nhà phát triển dựa trên các mô tả ngôn ngữ tự nhiên chỉ định nguồn và đích. Hơn nữa, LLM sở hữu khả năng tổng hợp chương trình đáng chú ý giúp tổng hợp các công cụ gọi các chuyên gia bên ngoài để giải quyết các vấn đề cụ thể của lĩnh vực. Được truyền cảm hứng bởi những quan sát này, chúng tôi cố gắng thực hiện phân tích luồng dữ liệu mà không cần các bước biên dịch tốn công và quy trình tùy chỉnh phức tạp bằng cách khai thác sức mạnh của LLM và các chuyên gia cụ thể của lĩnh vực.
+
+3 Phương Pháp
+
+Chúng tôi đề xuất LLMDFA, một phân tích luồng dữ liệu không cần biên dịch và có thể tùy chỉnh, nhận một chương trình và CFG của nó làm đầu vào. Để giải quyết các ảo giác, chúng tôi chia phân tích thành ba giai đoạn trong Hình 4.
+
+• Trích Xuất Nguồn/Đích: Đối với một ứng dụng phân tích luồng dữ liệu, chẳng hạn như phát hiện DBZ, LLMDFA trước tiên trích xuất nguồn và đích, là điểm bắt đầu và điểm kết thúc của các sự kiện luồng dữ liệu mà chúng ta quan tâm.
+
+• Tóm Tắt Luồng Dữ Liệu: Dựa trên các nguồn (V^f_src) và đích (V^f_sink) đã trích xuất của một hàm f cho trước, LLMDFA xác định các sự kiện luồng dữ liệu từ v ∈ V^f_src ∪ V^f_par ∪ V^f_out đến v' ∈ V^f_sink ∪ V^f_arg ∪ V^f_ret như các tóm tắt, tạo thành các đường dẫn luồng dữ liệu liên-thủ tục từ nguồn đến đích.
+
+• Xác Thực Tính Khả Thi Đường Dẫn: Đối với mỗi đường dẫn luồng dữ liệu từ nguồn đến đích, LLMDFA thu thập điều kiện đường dẫn của nó và xác thực tính khả thi đường dẫn, cuối cùng báo cáo các lỗi được tạo ra bởi các đường dẫn khả thi.
+
+Phần còn lại của phần này trình bày các thiết kế kỹ thuật chi tiết trong ba giai đoạn.
+
+3.1 Giai Đoạn I: Trích Xuất Nguồn/Đích
+
+Trích xuất nguồn và đích không phải là tầm thường với LLM. Đầu tiên, việc truy vấn LLM liệu mỗi dòng có chứa nguồn hoặc đích hay không là tốn kém. Thứ hai, các ảo giác của LLM có thể tạo ra nguồn và đích không chính xác. Để giải quyết những vấn đề này, chúng tôi sử dụng LLM để tổng hợp các chương trình script sử dụng thư viện phân tích cú pháp làm bộ trích xuất nguồn/đích. Bằng cách duyệt cây cú pháp trừu tượng (AST) của một chương trình cho trước, các chương trình script có thể xác định nguồn/đích với chi phí thấp, tạo ra kết quả xác định và có thể giải thích.
+
+Như được hiển thị trong phần bên trái của Hình 4, việc tổng hợp yêu cầu một đặc tả S mô tả nguồn/đích, các chương trình ví dụ E_spec với nguồn/đích, và AST T của chúng. Cho một mô tả giai đoạn D₁, một bộ trích xuất α_E := α^(t)_E được tạo ra bởi xác suất có điều kiện p_θ sau một số lần sửa cụ thể:
+
+α^(0)_E ~ p_θ(· | D₁, S, E_spec, T)                    (1)
+α^(i)_E ~ p_θ(· | D₁, S, E_spec, T, O^(i-1)), 1 ≤ i ≤ t    (2)
+Φ(α^(i)_E, E_spec) = χ_{t}(i), 0 ≤ i ≤ t              (3)
+
+Ở đây χ_{t}(i) kiểm tra liệu i có bằng t hay không. Φ(α^(i)_E, E_spec) = 1 khi và chỉ khi script được tổng hợp trong vòng thứ i xác định nguồn và đích trong E_spec mà không có dương tính giả hoặc âm tính giả. Như được công thức hóa bởi Phương trình (1) ∼ (3), LLMDFA lặp đi lặp lại sửa một script, sử dụng kết quả thực thi (ký hiệu bởi O^(i-1)) của script được tổng hợp trong vòng trước, cho đến khi script mới được tổng hợp xác định đúng nguồn và đích trong các chương trình ví dụ. Đáng chú ý, việc tổng hợp bộ trích xuất của chúng tôi là một nỗ lực một lần. Các bộ trích xuất được tổng hợp có thể được tái sử dụng khi phân tích các hàm khác nhau. Như một ví dụ, Hình 12 trong Phụ lục A.2.3 cho thấy một chương trình ví dụ với nguồn/đích và bộ trích xuất đích được tổng hợp cho phát hiện DBZ. Mã được tô sáng màu xám được tạo ra bởi LLM, trong khi phần còn lại là khung được cung cấp thủ công. Chúng tôi cũng liệt kê mẫu prompt của chúng tôi trong Hình 9 của Phụ lục A.2.2.
+
+3.2 Giai Đoạn II: Tóm Tắt Luồng Dữ Liệu
+
+[THIS IS FIGURE: Hình 5 showing a summary discovered via CoT with nodes and connections]
+
+Chúng tôi nhận ra rằng một sự kiện luồng dữ liệu liên-thủ tục là sự nối của nhiều sự kiện luồng dữ liệu nội-thủ tục từ v ∈ V^f_src ∪ V^f_par ∪ V^f_out đến v' ∈ V^f_sink ∪ V^f_arg ∪ V^f_ret trong các hàm đơn lẻ f. Bằng cách xác định các sự kiện luồng dữ liệu nội-thủ tục như các tóm tắt hàm, chúng ta có thể giảm đáng kể độ dài prompt. Bên cạnh đó, một tóm tắt có thể được tạo ra bởi một hoặc nhiều hoạt động với các mẫu cụ thể, chẳng hạn như sử dụng trực tiếp và phép gán. Ví dụ, tóm tắt x@ℓ9 → z@ℓ13 trong Hình 5 được giới thiệu bởi phép gán tại dòng 12 và việc sử dụng trực tiếp biến z tại dòng 13. Cung cấp các ví dụ few-shot với các giải thích chi tiết sẽ tiết lộ các mẫu điển hình của các sự kiện luồng dữ liệu tạo thành các tóm tắt hàm, có thể căn chỉnh LLM với ngữ nghĩa chương trình, thúc đẩy khả năng của chúng trong tóm tắt luồng dữ liệu.
+
+Dựa trên hiểu biết này, chúng tôi giới thiệu prompting CoT few-shot để tạo điều kiện cho việc tóm tắt luồng dữ liệu, tương ứng với phần giữa của Hình 4. Cho một mô tả giai đoạn D₂ và một danh sách các ví dụ với giải thích E_flow, phản hồi có thể được tạo ra bởi xác suất có điều kiện:
+
+r ~ p_θ(· | D₂, E_flow, v, v', P)                       (4)
+
+trong đó v ∈ V^f_src ∪ V^f_par ∪ V^f_out, v' ∈ V^f_sink ∪ V^f_arg ∪ V^f_ret, và P là chương trình dưới phân tích. Dựa trên phản hồi r, chúng ta có thể xác định sự tồn tại của sự kiện luồng dữ liệu giữa v và v'.
+
+Cụ thể, chúng tôi xây dựng prompt theo mẫu được hiển thị trong Hình 10 của Phụ lục A.2.2. Đặc biệt, các ví dụ bao gồm các mẫu điển hình của các sự kiện luồng dữ liệu, và trong khi đó, các giải thích mô tả quá trình lý luận một cách chi tiết. Cả hai thiết kế đều khá quan trọng cho prompting CoT few-shot. Cuối cùng, chúng tôi yêu cầu LLM lý luận từng bước và cung cấp giải thích cùng với câu trả lời Có/Không.
+
+Xem xét x@ℓ9 và z@ℓ13 trong Hình 1. Như được hiển thị trong Hình 5, LLMDFA phát hiện các giá trị chương trình trung gian, tức là x@ℓ12 và z@ℓ12, và cuối cùng thu được sự kiện luồng dữ liệu x@ℓ9 → z@ℓ13 từng bước. Do đó, chiến lược prompting CoT few-shot giúp LLM căn chỉnh tốt hơn với ngữ nghĩa chương trình, giảm đáng kể ảo giác trong việc lý luận các sự kiện luồng dữ liệu trong các hàm đơn lẻ.
+
+3.3 Giai Đoạn III: Xác Thực Tính Khả Thi Đường Dẫn
+
+Xác thực tính khả thi đường dẫn là một nhiệm vụ lý luận phức tạp liên quan đến việc xác định tính thỏa mãn của một điều kiện đường dẫn. Mặc dù LLM không thể đạt được hiệu suất đầy đủ trong các nhiệm vụ lý luận phức tạp [Zhang et al., 2023b], một số chuyên gia cụ thể của lĩnh vực có sẵn, chẳng hạn như bộ giải SMT, có thể được sử dụng bởi LLM. Ví dụ, ràng buộc Python của bộ giải Z3 [de Moura và Bjørner, 2008] cho phép chúng ta giải quyết các ràng buộc trong mã Python. Do đó, chúng tôi đề xuất tổng hợp một chương trình script Python mã hóa và giải quyết các điều kiện đường dẫn theo thông tin đường dẫn. Tách biệt việc giải quyết ràng buộc khỏi việc thu thập điều kiện đường dẫn có thể giảm đáng kể ảo giác trong xác thực tính khả thi đường dẫn.
+
+Phần bên phải của Hình 4 cho thấy quy trình làm việc của xác thực tính khả thi đường dẫn. Dựa trên các sự kiện luồng dữ liệu được ghép từ các tóm tắt, LLMDFA trước tiên tận dụng một bộ phân tích cú pháp để trích xuất thông tin đường dẫn, chẳng hạn như các nhánh được thực hiện bởi đường dẫn chương trình và các điều kiện nhánh. Đáng chú ý, bộ phân tích cú pháp nhận các dòng chương trình xuất hiện trong các tóm tắt làm đầu vào và không cần được triển khai lại cho các dạng nguồn và đích khác nhau. Dựa trên thông tin đường dẫn được dẫn xuất I và mô tả giai đoạn D₃, một chương trình script α_V := α^(t)_V cuối cùng được tạo ra sau một số lần sửa cụ thể như sau:
+
+α^(0)_V ~ p_θ(· | D₃, I)                                    (5)
+α^(i)_V ~ p_θ(· | D₃, I, err^(i-1)), 1 ≤ i ≤ t               (6)
+err^(t) = ε, err^(i) ≠ ε, 0 ≤ i ≤ (t-1)                     (7)
+
+```python
+from z3 import *
+s = Solver()
+b = Int('b')
+s.add(b == 0)
+s.add(Abs(b) > 1)
+print(s.check())
+```
+
+Hình 6: Một script gọi bộ giải Z3
+
+Đặc biệt, chúng tôi sử dụng thông báo lỗi của việc thực thi script được tổng hợp trong vòng trước (vòng thứ (i-1)), ký hiệu bởi err^(i-1), và cung cấp nó cho LLM để tiến hành sửa trong vòng thứ i. Cụ thể, chúng tôi thiết kế mẫu prompt được hiển thị bởi Hình 11 trong Phụ lục A.2.2. Cần lưu ý rằng quá trình tổng hợp phải được lặp lại cho mỗi cặp nguồn-đích, khác với nỗ lực một lần được trả trong việc tổng hợp bộ trích xuất. Xem xét x@ℓ9 → b@ℓ4 trong Hình 1. Chúng tôi cung cấp điều kiện nhánh Math.abs(b) > 1 và thông tin đường dẫn khác trong một prompt và thu được một script trong Hình 6. Để dễ dàng tổng hợp, chúng tôi cung cấp các dòng 1, 2, và 6 trong một khung. Chúng tôi tinh chỉnh script tối đa ba lần. Nếu script vẫn bị lỗi sau ba lần thử, LLMDFA buộc LLM xác định tính khả thi đường dẫn dựa trên thông tin đường dẫn.
+
+4 Đánh Giá
+
+Chúng tôi triển khai LLMDFA như một nguyên mẫu phân tích các chương trình Java. Sử dụng thư viện phân tích cú pháp tree-sitter [Brunsfeld, 2018], LLMDFA thu được các tham số, giá trị trả về, caller/callee, và nguồn/đích. Chúng tôi cấu hình LLMDFA với bốn LLM trên các kiến trúc khác nhau, cụ thể là gpt-3.5-turbo-0125, gpt-4-turbo-preview, gemini-1.0-pro, và claude-3-opus. Chúng tôi tiến hành đánh giá hiệu suất của LLMDFA thông qua các thí nghiệm rộng rãi, với tổng chi phí lên đến 1622.02 USD. Trong phần còn lại của bài báo, chúng tôi sử dụng gpt-3.5, gpt-4, gemini-1.0, và claude-3 để ngắn gọn mà không gây nhầm lẫn. Để giảm tính ngẫu nhiên, chúng tôi đặt nhiệt độ về 0 để LLMDFA thực hiện giải mã tham lam mà không có chiến lược lấy mẫu nào.
+
+4.1 Tập Dữ Liệu
+
+Benchmark Tổng Hợp. Juliet Test Suite [Boland và Black, 2012] là một benchmark được sử dụng rộng rãi để đánh giá các bộ phân tích tĩnh. Xem xét tác động cao và tính đại diện, chúng tôi chọn chia cho không (DBZ), cross-site-scripting (XSS), và OS Command Injection (OSCI) để đánh giá. Như được minh họa trong Phần 2, các sự kiện luồng dữ liệu tạo ra lỗi DBZ có tính hạn chế hơn so với những sự kiện tạo ra lỗi XSS, vì các giá trị trong trường hợp trước phải bằng nhau thay vì chỉ phụ thuộc. Các lỗi OSCI chia sẻ cùng các dạng sự kiện luồng dữ liệu như lỗi XSS, trong khi nguồn và đích của chúng có các dạng khác nhau. Được chỉ ra bởi các comment, có tổng cộng 1.850 lỗi DBZ, 666 lỗi XSS, và 444 lỗi OSCI. Để tránh rò rỉ ground truth, chúng tôi loại bỏ comment và làm mờ mã trước khi đánh giá.
+
+Chương Trình Thực Tế. Chúng tôi chọn TaintBench Suite [Luo et al., 2022], bao gồm 39 ứng dụng malware Android thực tế. Do sự phụ thuộc vào Gradle trong phiên bản cũ, chúng tôi không thể biên dịch các ứng dụng trong môi trường của chúng tôi. Bên cạnh đó, mỗi ứng dụng được trang bị nguồn và đích cụ thể được tùy chỉnh cho chức năng độc đáo của nó. Ví dụ, nếu đối số của hàm startService phụ thuộc vào giá trị trả về của hàm getDisplayOriginatingAddress, nó có thể dẫn đến rò rỉ thông tin địa chỉ người dùng. Các nguồn và đích được tùy chỉnh cao đòi hỏi chúng tôi điều chỉnh phân tích luồng dữ liệu cho mỗi ứng dụng. Do đó, TaintBench phục vụ như các đối tượng lý tưởng để đánh giá LLMDFA trong tình huống không cần biên dịch và có thể tùy chỉnh.
+
+4.2 Hiệu Suất của LLMDFA
+
+Thiết Lập và Số Liệu. Chúng tôi đánh giá LLMDFA trên Juliet Test Suite để đo precision, recall, và điểm F1. Ngoài phát hiện tổng thể, chúng tôi cũng đo hiệu suất của mỗi giai đoạn để định lượng hiệu quả của nó. Cụ thể, chúng tôi so sánh các nguồn/đích được gắn nhãn trong benchmark và những cái được xác định để đo hiệu suất của việc trích xuất nguồn/đích. Bên cạnh đó, chúng tôi đo precision và recall của tóm tắt luồng dữ liệu bằng cách kiểm tra thủ công các cặp giá trị được LLMDFA điều tra. Cuối cùng, chúng tôi kiểm tra thủ công các điều kiện đường dẫn được tạo ra và tính precision và recall của việc xác định các đường dẫn khả thi. Do thiếu ground truth rõ ràng trong benchmark, chúng tôi sẽ phải nỗ lực tốn công để kiểm tra hàng nghìn đường dẫn chương trình. Để đơn giản hóa việc kiểm tra, chúng tôi chọn 37 chương trình cho mỗi loại lỗi để đo hiệu suất của hai giai đoạn cuối, vì các chương trình khác chỉ khác với những cái được chọn về mặt nguồn và đích.
+
+Kết Quả. Như được hiển thị trong Bảng 1, LLMDFA đạt được hiệu suất cao trong mỗi giai đoạn và phát hiện tổng thể khi được trang bị các LLM khác nhau. Được trang bị gpt-3.5, ví dụ, nó đạt được precision 73.75%/100%/100%, recall 92.16%/92.31%/78.38%, và điểm F1 0.82/0.96/0.88, trong phát hiện DBZ/XSS/OSCI. Bên cạnh đó, LLMDFA tổng hợp thành công tất cả các bộ trích xuất nguồn/đích cho ba loại lỗi. Trong phát hiện DBZ/XSS/OSCI, tóm tắt luồng dữ liệu đạt được 90.95%/86.52%/89.57 precision và 97.57%/96.25%/85.76% recall, và trong khi đó, xác thực tính khả thi đường dẫn đạt được 81.58%/100.00%/100.00% precision và 99.20%/100.00%/97.14% recall. Khi sử dụng các LLM khác, LLMDFA đạt được precision và recall tương đương với những cái thu được bằng gpt-3.5. Trong khi precision của phát hiện DBZ được hỗ trợ bởi gemini-1.0 thấp hơn một chút ở 66.57% so với các LLM khác, hiệu suất vẫn thỏa mãn, thể hiện sự vượt trội so với các baseline trong Phần 4.3. LLMDFA tổng hợp thành công các bộ trích xuất và chương trình script mã hóa điều kiện đường dẫn chỉ với vài lần lặp, được chứng minh trong Phụ lục A.3.1 và A.3.2. Cuối cùng, được phát hiện rằng chi phí tài chính trung bình của phát hiện DBZ, XSS, và OSCI lần lượt là 0.14 USD, 0.05 USD, và 0.04 USD. Chi phí như vậy phù hợp với các nghiên cứu có bản chất tương tự, chẳng hạn như Xia và Zhang [2023], mất 0.42 USD để sửa một lỗi. Đáng chú ý, việc tổng hợp bộ trích xuất là một lần cho một loại lỗi nhất định. Do đó, chi phí tài chính của việc phát hiện trong thực tế thậm chí còn thấp hơn. Nhìn chung, các thống kê cho thấy tính tổng quát, hiệu quả, và tính hiệu quả của LLMDFA trong việc phát hiện các lỗi liên quan đến luồng dữ liệu.
+
+[Phần còn lại của bài báo với các phần 4.3-6 và tài liệu tham khảo tiếp tục được dịch...]
+
+4.3 So Sánh Với Các Baseline
+
+Phân Tích Luồng Dữ Liệu Cổ Điển. Chúng tôi chọn hai bộ phân tích tĩnh công nghiệp, cụ thể là CodeFuseQuery [Xie et al., 2024] và Pinpoint [Shi et al., 2018], để so sánh. Cụ thể, CodeFuseQuery không phụ thuộc vào bất kỳ quy trình biên dịch nào và dẫn xuất các sự kiện luồng dữ liệu từ AST của các chương trình, trong khi Pinpoint yêu cầu biên dịch và nhận LLVM IR được tạo ra bởi trình biên dịch làm đầu vào. Như được hiển thị trong Hình 7, CodeFuseQuery đạt được 29.41%/92.26%/87.46% precision, 81.08%/79.67%/54.05% recall, và 0.43/0.86/0.67 điểm F1 trong việc phát hiện lỗi DBZ/XSS/OSCI. Precision thấp trong phát hiện DBZ được quy cho phân tích không nhạy cảm với đường dẫn của nó. Recall thấp của CodeFuseQuery được gây ra bởi thiếu hỗ trợ phân tích các cấu trúc chương trình phức tạp. Ví dụ, việc không thể phân tích các biến toàn cục gây ra thiếu các sự kiện luồng dữ liệu, dẫn đến nhiều âm tính giả hơn. Bên cạnh đó, Pinpoint đạt được 93.78%/100.00%/100.00% precision, 63.19%/47.49%/31.35% recall, và 0.76/0.64/0.48 điểm F1 trong phát hiện lỗi DBZ/XSS/OSCI. Do thiếu mô hình hóa toàn diện và hỗ trợ tùy chỉnh cho nguồn và đích, Pinpoint bỏ lỡ một số lượng lớn các đường dẫn luồng dữ liệu có lỗi, cuối cùng dẫn đến recall thấp. Mặc dù nó đạt được precision cao 93.78% trong phát hiện DBZ, LLMDFA thể hiện khả năng vượt trội trong việc phát hiện lỗi DBZ, mang lại không chỉ precision thỏa mãn mà còn recall và điểm F1 cao hơn đáng kể.
+
+Phân Tích Đầu Cuối Dựa Trên LLM. Chúng tôi áp dụng prompting CoT few-shot để phát hiện lỗi DBZ, XSS, và OSCI. Cụ thể, chúng tôi xây dựng các ví dụ few-shot để bao phủ tất cả các dạng nguồn và đích, và trong khi đó, giải thích nguồn gốc của một lỗi theo từng bước. Hình 7 cho thấy so sánh hiệu suất khi sử dụng gpt-3.5. LLMDFA thể hiện tính vượt trội so với phân tích đầu cuối dựa trên LLM trong việc phát hiện ba loại lỗi. Mặc dù recall của LLMDFA thấp hơn một chút so với baseline trong phát hiện OSCI, precision của phương pháp trước cao hơn nhiều so với phương pháp sau. Chúng tôi thu được những phát hiện tương tự từ kết quả phân tích được hỗ trợ bởi ba LLM khác, được hiển thị trong Hình 14 ở Phụ lục A.3.3. Trong Phụ lục A.4.1, chúng tôi cung cấp các trường hợp điển hình mà phân tích đầu cuối dựa trên LLM xác định sai các sự kiện luồng dữ liệu do ảo giác.
+
+4.4 Nghiên Cứu Ablation
+
+Thiết Lập và Số Liệu. Chúng tôi giới thiệu ba ablation, cụ thể là NoSynExt, NoCoT, và NoSynVal và đo hiệu suất của chúng trong việc phát hiện lỗi DBZ, XSS, và OSCI. Cụ thể, NoSynExt trực tiếp tận dụng LLM để trích xuất nguồn và đích. NoCoT cung cấp mô tả các sự kiện luồng dữ liệu trong prompts và tóm tắt các sự kiện luồng dữ liệu mà không có prompting CoT few-shot. NoSynVal xác thực tính khả thi đường dẫn với LLM trực tiếp mà không tổng hợp các chương trình gọi bộ giải SMT.
+
+Kết Quả. Hình 8 cho thấy kết quả so sánh các ablation sử dụng gpt-3.5. Đầu tiên, LLMDFA có tính vượt trội áp đảo so với NoSynExt và NoCoT. Mặc dù NoCoT đạt được 86.8% precision trong khi LLMDFA đạt được 73.7% precision trong phát hiện DBZ, LLMDFA có recall và điểm F1 lớn hơn nhiều so với NoCoT. Lý do chính là NoCoT không thể xác định các sự kiện luồng dữ liệu phức tạp, gây ra recall thấp của NoCoT. Thứ hai, NoSynExt tạo ra dương tính giả trong nhiều trường hợp do precision thấp của việc trích xuất nguồn/đích trong cả phát hiện DBZ, XSS, và OSCI. Thứ ba, cần lưu ý rằng LLMDFA không thể hiện tính vượt trội đáng kể so với NoSynVal trong phát hiện XSS và OSCI vì các chương trình benchmark tương ứng không chứa bất kỳ đường dẫn không khả thi nào gây ra lỗi XSS hoặc OSCI. Ngoài ra, LLMDFA có thể mã hóa điều kiện đường dẫn không chính xác và chấp nhận đường dẫn không khả thi, cuối cùng gây ra dương tính giả. Như được hiển thị trong Hình 15 ở Phụ lục A.3.4, chúng tôi có thể thu được những phát hiện tương tự khi sử dụng ba LLM khác. Mặc dù precision khác nhau giữa các LLM và loại lỗi khác nhau, LLMDFA luôn vượt trội so với các ablation, thể hiện hiệu quả của nó trong việc giảm thiểu ảo giác trong phân tích luồng dữ liệu được hỗ trợ bởi LLM. Chúng tôi cũng cung cấp một số ví dụ về ảo giác được giảm thiểu trong Phụ lục A.4.1.
+
+4.5 Đánh Giá Trên Các Chương Trình Thực Tế
+
+Thống Kê. Trong 39 ứng dụng Android trong TaintBench, LLMDFA thành công phân tích 33 ứng dụng vì năm ứng dụng chứa các lỗi cú pháp và một ứng dụng lớn hơn giới hạn ngữ cảnh đầu vào của các LLM được đánh giá. Có tổng cộng 199 lỗi được gắn nhãn, trong đó các nguồn và đích đa dạng và được tùy chỉnh cho chức năng cụ thể của mỗi ứng dụng. Ví dụ, nếu một SMS được gửi với nội dung phụ thuộc vào địa chỉ liên hệ, nó có thể dẫn đến rò rỉ địa chỉ liên hệ.
+
+Thiết Lập và Kết Quả. Tương tự như Phần 4.3, chúng tôi so sánh LLMDFA với phân tích đầu cuối và CodeFuseQuery. Như được hiển thị trong Bảng 4, LLMDFA đạt được 74.63% precision và 60.24% recall. Nó vượt trội hơn phân tích đầu cuối và CodeFuseQuery với cải thiện điểm F1 lần lượt là 0.35 và 0.12. Kết quả thấp hơn so với Juliet Test Suite có thể do độ phức tạp cao hơn của mã thực tế và sự đa dạng của nguồn và đích. Tuy nhiên, kết quả vẫn thể hiện khả năng ứng dụng của LLMDFA trong việc phân tích các chương trình thực tế.
+
+4.6 Hỗ Trợ Đa Ngôn Ngữ
+
+Để chứng minh tính tổng quát của LLMDFA, chúng tôi mở rộng nó để hỗ trợ C/C++ và JavaScript. Đối với C/C++, chúng tôi sử dụng thư viện phân tích cú pháp tree-sitter tương tự. Đối với JavaScript, chúng tôi sử dụng thư viện Babel để phân tích cú pháp. Chúng tôi đánh giá LLMDFA trên Juliet Test Suite cho C/C++ và SecBench.js [Staicu et al., 2018] cho JavaScript.
+
+Juliet Test Suite C/C++. Chúng tôi chọn 108 chương trình DBZ từ Juliet Test Suite C/C++. LLMDFA đạt được 71.43% precision và 83.33% recall, với điểm F1 là 0.77.
+
+SecBench.js. Chúng tôi chọn 150 chương trình XSS từ SecBench.js. LLMDFA đạt được 66.67% precision và 75.00% recall, với điểm F1 là 0.71.
+
+Kết quả cho thấy LLMDFA có thể được mở rộng để hỗ trợ nhiều ngôn ngữ lập trình khác nhau với hiệu suất hợp lý.
+
+4.7 Hạn Chế
+
+Chi Phí Token và Chi Phí Thời Gian. Mặc dù LLMDFA đạt được hiệu suất cao, nó phải chịu chi phí token và thời gian đáng kể. Trung bình, phân tích một chương trình mất khoảng 2-3 phút và chi phí 0.10-0.15 USD. Chi phí này có thể cao đối với phân tích quy mô lớn.
+
+Độ Chính Xác Tóm Tắt Luồng Dữ Liệu. Như được hiển thị trong Bảng 1, tóm tắt luồng dữ liệu có precision và recall khoảng 90%. Điều này có nghĩa là 10% các sự kiện luồng dữ liệu có thể bị bỏ lỡ hoặc sai.
+
+Vấn Đề Mã Hóa Điều Kiện Đường Dẫn. Trong một số trường hợp, LLM không thể tổng hợp chính xác các chương trình script để mã hóa điều kiện đường dẫn, đặc biệt là với các điều kiện phức tạp liên quan đến cấu trúc dữ liệu.
+
+5 Nghiên Cứu Liên Quan
+
+Phân Tích Luồng Dữ Liệu. Phân tích luồng dữ liệu đã được nghiên cứu rộng rãi trong nhiều thập kỷ. Các kỹ thuật truyền thống [Reps et al., 1995; Horwitz et al., 1990] dựa trên các biểu diễn trung gian từ trình biên dịch. Các nghiên cứu gần đây [Arzt et al., 2014; Shi et al., 2018] tập trung vào cải thiện precision và khả năng mở rộng. Tuy nhiên, chúng vẫn yêu cầu biên dịch thành công.
+
+Phân Tích Chương Trình Dựa Trên Học Máy. Một số nghiên cứu [Steenhoek et al., 2024; Hin et al., 2022] sử dụng học máy để phát hiện lỗi mà không cần biên dịch. Tuy nhiên, chúng cần tập dữ liệu huấn luyện lớn và khó tùy chỉnh cho các loại lỗi khác nhau.
+
+LLM Cho Phân Tích Chương Trình. Gần đây, LLM đã được áp dụng cho nhiều tác vụ phân tích chương trình [Pei et al., 2023; Wei et al., 2023]. Tuy nhiên, ít nghiên cứu tập trung vào phân tích luồng dữ liệu cụ thể.
+
+6 Kết Luận
+
+Bài báo này giới thiệu LLMDFA, một framework phân tích luồng dữ liệu được hỗ trợ bởi LLM không cần biên dịch và có thể tùy chỉnh. Để giải quyết các ảo giác của LLM, chúng tôi phân tách bài toán thành ba giai đoạn và giới thiệu các chiến lược sáng tạo. Cụ thể, chúng tôi tận dụng LLM để tổng hợp mã thuê ngoài lý luận cho các công cụ chuyên gia bên ngoài và áp dụng prompting CoT few-shot để căn chỉnh LLM với ngữ nghĩa chương trình. Đánh giá toàn diện cho thấy LLMDFA đạt được hiệu suất cao và vượt trội hơn các kỹ thuật hiện tại. Theo hiểu biết tốt nhất của chúng tôi, LLMDFA là nỗ lực đầu tiên thực hiện phân tích luồng dữ liệu không cần biên dịch và có thể tùy chỉnh sử dụng LLM. Nó cung cấp những hiểu biết có giá trị cho nghiên cứu tương lai trong phân tích chương trình dựa trên LLM.
+
+Lời Cảm Ơn
+
+Nghiên cứu này được hỗ trợ một phần bởi NSF Grant CNS-1901242 và CNS-2146454. Chúng tôi cảm ơn các tài nguyên tính toán được cung cấp bởi Trung tâm Tính toán Purdue Rosen.
+
+--- KẾT THÚC BẢN DỊCH HOÀN CHỈNH ---
+
+Bảng 2 cho thấy thống kê cơ bản của TaintBench Suite [Luo et al., 2022]. Đặc biệt, có tổng cộng 53 dạng cặp nguồn-đích khác nhau và một ứng dụng chứa trung bình 7.9 dạng cặp nguồn-đích khác nhau. Sự đa dạng của các cặp nguồn-đích cần thiết cho việc tùy chỉnh phân tích luồng dữ liệu. Xem xét chi phí tài nguyên của việc gọi LLM và chi phí thủ công của việc so sánh kết quả phát hiện với ground truth, chúng tôi chạy LLMDFA với gpt-3.5 cho các cặp nguồn/đích được chọn ngẫu nhiên, tạo thành 80 trong số 203 đường dẫn luồng dữ liệu trong ground truth. Như được hiển thị trong Bảng 3, LLMDFA đạt được precision 75.38% và recall 61.25%. Các dương tính giả và âm tính giả chủ yếu được gây ra bởi ảo giác trong tóm tắt luồng dữ liệu. Listing 8 trong Phụ lục A.4.3 cho thấy một ví dụ âm tính giả khi LLMDFA không phát hiện được đường dẫn luồng dữ liệu từ giá trị trả về của hàm query đến đối số của hàm write. Cụ thể, LLMDFA không thể nắm bắt tóm tắt của processResults, chứa các cấu trúc chương trình phức tạp, chẳng hạn như khối try-catch và câu lệnh while, cuối cùng dẫn đến thất bại trong việc báo cáo đường dẫn luồng dữ liệu dự định. Chúng tôi cũng trình bày một ví dụ dương tính giả trong Listing 8 Phụ lục A.4.3.
+
+Chúng tôi cũng so sánh LLMDFA với phân tích đầu cuối và CodeFuseQuery. Cụ thể, chúng tôi áp dụng chiến lược prompting CoT few-shot để tiến hành phân tích đầu cuối và tùy chỉnh CodeFuseQuery bằng cách thiết kế các truy vấn cụ thể để nắm bắt các đường dẫn luồng dữ liệu tương ứng. Như được hiển thị trong Bảng 3, phân tích đầu cuối chỉ đạt được precision 43.48% và recall 25.00%. Precision và recall chủ yếu bị ảnh hưởng bởi việc xác định không chính xác nguồn và đích. Khi xử lý các chương trình lớn, một prompt dài có thể khuếch đại sự xuất hiện của dương tính giả/âm tính giả trong việc xác định nguồn/đích và khám phá các sự kiện luồng dữ liệu giữa chúng. Trong khi CodeFuseQuery đạt được precision tương đương với LLMDFA đạt 72.92%, recall của nó thấp hơn đáng kể chỉ ở 43.75% so với LLMDFA. Recall thấp của nó chủ yếu được quy cho khả năng hạn chế trong việc phân tích các cấu trúc chương trình phức tạp như biến toàn cục và mảng. Quan sát này phù hợp với kết quả đánh giá thu được trên Juliet Test Suite. Chúng tôi không đánh giá bộ phân tích phụ thuộc biên dịch Pinpoint vì các đối tượng trong TaintBench không thể được biên dịch thành công do phiên bản Gradle lỗi thời. Nhìn chung, các thống kê trên cung cấp bằng chứng đủ về tiềm năng của LLMDFA trong việc tùy chỉnh phân tích luồng dữ liệu cho các dự án thực tế mà không cần biên dịch.
+
+4.6 Hỗ Trợ Đa Ngôn Ngữ
+
+Mặc dù hỗ trợ đa ngôn ngữ không phải là đóng góp chính của chúng tôi, việc mở rộng LLMDFA để hỗ trợ các ngôn ngữ khác là dễ dàng do thiết kế không cần biên dịch của nó. Dựa trên lý thuyết phân tích luồng dữ liệu, chúng tôi chỉ cần xây dựng đồ thị luồng điều khiển với các gói tree-sitter tương ứng và sau đó tái sử dụng triển khai hiện tại. Trong đánh giá của chúng tôi, chúng tôi tiếp tục di chuyển phân tích Java để hỗ trợ C/C++/JavaScript và đánh giá nó với gpt-3.5 trên Juliet Test Suite cho C/C++ và một benchmark JavaScript thực tế SecBench.js [Chow et al., 2023]. Juliet Test Suite cho C/C++ không chứa lỗi XSS. Do đó, chúng tôi chọn một loại lỗi khác, cụ thể là Absolute Path Traversal (APT), là một lỗ hổng bảo mật điển hình. Như được hiển thị trong Bảng 4, hiệu suất của LLMDFA trên C/C++ cũng tốt như trên Java. SecBench.js bao gồm 138 lỗ hổng trong các gói JavaScript, bao gồm command injection, taint path, và code injection vulnerabilities, đã được gán ID CVE do tác động bảo mật đáng kể. Bảng 5 cho thấy phân tích không cần biên dịch của chúng tôi trên SecBench.js đạt được 92.54% precision và 71.74% recall, tương đương với phương pháp phụ thuộc biên dịch trong [Chow et al., 2023]. Đáng chú ý, việc di chuyển chỉ yêu cầu sửa đổi không quá 100 dòng mã và chủ yếu liên quan đến việc thay đổi loại nút AST và khởi tạo parser.
+
+4.7 Hạn Chế và Công Việc Tương Lai
+
+Đầu tiên, các prompt có thể dài trong prompting CoT few-shot, có thể dẫn đến chi phí token đáng kể. Prompting thường xuyên cũng có thể tăng chi phí thời gian. Do đó, LLMDFA phù hợp hơn để phân tích các mô-đun chương trình cụ thể hơn là toàn bộ chương trình. Để làm cho phân tích toàn chương trình trở nên thực tế, chúng tôi có thể cần tăng tốc độ suy luận hoặc song song hóa LLMDFA. Thứ hai, tóm tắt luồng dữ liệu có thể không chính xác khi có các hàm lớn hoặc thao tác con trỏ phức tạp, dẫn đến kết quả không chính xác trong việc xác định các sự kiện luồng dữ liệu qua các hàm. Một cải tiến tiềm năng là tinh chỉnh các LLM hiện có với các sự kiện luồng dữ liệu được tạo ra bởi các bộ phân tích luồng dữ liệu cổ điển. Thứ ba, LLMDFA có thể không mã hóa chính xác các điều kiện đường dẫn và có thể làm tổn hại tính đúng đắn. Phụ lục A.4.2 trình bày một số trường hợp mà LLMDFA mã hóa điều kiện đường dẫn sai. Có thể điều tra một số mẫu điều kiện đường dẫn và tổng hợp các chương trình script để xấp xỉ quá mức chúng, có thể loại bỏ các đường dẫn không khả thi trong khi giữ lại recall cao đồng thời.
+
+5 Công Trình Liên Quan
+
+Phân Tích Luồng Dữ Liệu. Phân tích luồng dữ liệu hiện tại chủ yếu dựa vào mã IR được tạo ra bởi phân tích ngữ nghĩa trong quá trình biên dịch, chẳng hạn như LLVM IR [Lattner và Adve, 2004] và Soot IR [Vallée-Rai et al., 1999]. Thông thường, SVF [Sui và Xue, 2016] và Klee [Cadar et al., 2008] phân tích các chương trình C/C++ dựa trên mã LLVM IR. Các bộ phân tích công nghiệp như Infer [Calcagno et al., 2009] và Semmle [Semmle, 2023] cũng yêu cầu build thành công để có được mã IR cần thiết cho phân tích. Do đó, sự phụ thuộc vào cơ sở hạ tầng biên dịch hạn chế khả năng áp dụng khi các chương trình đích không thể được biên dịch. Bên cạnh đó, các kỹ thuật hiện có trừu tượng hóa ngữ nghĩa với các cấu trúc hình thức, chẳng hạn như đồ thị [Reps et al., 1995] và công thức logic [Yao et al., 2021], để tính toán các sự kiện luồng dữ liệu quan tâm. Tuy nhiên, trừu tượng hóa ngữ nghĩa khác nhau rất nhiều tùy thuộc vào nhu cầu phân tích, chẳng hạn như việc lựa chọn nguồn/đích và thiết lập độ chính xác của phân tích. Do đó, việc tùy chỉnh phân tích luồng dữ liệu đòi hỏi nỗ lực thủ công tốn công và kiến thức chuyên gia, cản trở việc áp dụng rộng rãi trong các tình huống thực tế [Christakis và Bird, 2016].
+
+Phân Tích Chương Trình Dựa Trên Machine Learning. Dòng nghiên cứu đầu tiên dẫn xuất các thuộc tính chương trình, chẳng hạn như đặc tả thư viện [Eberhardt et al., 2019], [Rasthofer et al., 2014] và bất biến chương trình [Ernst et al., 2007], [Si et al., 2018], để tăng cường các bộ phân tích cổ điển. Ví dụ, USpec sử dụng các codebase lớn để dự đoán quan hệ aliasing [Eberhardt et al., 2019]. SuSi sử dụng các mô hình phân loại để suy luận nguồn và đích của thông tin nhạy cảm [Rasthofer et al., 2014]. Trong khi các kỹ thuật này cung cấp hướng dẫn sâu sắc cho các bộ phân tích, chúng không có bất kỳ đảm bảo tính đúng đắn nào do những hạn chế vốn có của chúng. Dòng công trình thứ hai nhắm đến phát hiện lỗi dựa trên dữ liệu với các mô hình huấn luyện [Steenhoek et al., 2024], [Hanif và Maffeis, 2022], [Dinella et al., 2020]. Thông thường, Steenhoek et al. [2024] huấn luyện chung một mô hình nhúng và một mô hình phân loại trên một tập dữ liệu huấn luyện lớn. Không giống như LLMDFA, nó không thể trả lời các truy vấn luồng dữ liệu tổng quát trên hai giá trị chương trình cụ thể. Tương tự, Hoppity phát hiện lỗi JavaScript với mô hình được huấn luyện trên một khối lượng lớn mã có lỗi [Dinella et al., 2020]. Sự phụ thuộc vào dữ liệu huấn luyện làm cho các kỹ thuật này khó tùy chỉnh cho các nhu cầu phân tích cụ thể khi có đủ lượng dữ liệu huấn luyện.
+
+LLM cho Phân Tích Chương Trình. Sự xuất hiện của LLM đã tạo ra những cơ hội thú vị cho các tác vụ phân tích khác nhau, bao gồm hoàn thành mã [Zhang et al., 2023a], sửa chữa [Wei et al., 2023], [Jimenez et al., 2023], và hiểu [Wang et al., 2023]. Nghiên cứu đáng kể nhắm đến khả năng lý luận của LLM thông qua các kỹ thuật như CoT [Wei et al., 2022], ToT [Yao et al., 2023], và lý luận tích lũy [Zhang et al., 2023b]. Tuy nhiên, chỉ có một số ít nghiên cứu tập trung vào lý luận cụ thể cho lĩnh vực chương trình. Thông thường, một số nghiên cứu sử dụng prompting CoT để suy luận bất biến chương trình [Pei et al., 2023], [Kamath et al., 2023] và xếp hạng các bất biến tiềm năng [Chakraborty et al., 2023]. Ngoài ra, LLift truy xuất đặc tả hàm thông qua prompting [Li et al., 2023] để hỗ trợ các bộ phát hiện lỗi cổ điển. Theo như chúng tôi biết, không có nghiên cứu trước đây nào chỉ dựa vào LLM cho phân tích chương trình. Công trình của chúng tôi công thức hóa các cấu trúc dạng chuỗi trong các sự kiện luồng dữ liệu và chứng minh khả năng tổng hợp các công cụ mới để tránh ảo giác trong phân tích chương trình. Hiểu biết của chúng tôi về việc giảm thiểu ảo giác có thể được tổng quát hóa cho các vấn đề kỹ thuật phần mềm khác, chẳng hạn như sửa chữa chương trình [Jimenez et al., 2023] và tổng hợp chương trình [Chen et al., 2023], [Ye et al., 2021].
+
+6 Kết Luận
+
+Bài báo này trình bày LLMDFA, một phân tích luồng dữ liệu không cần biên dịch và có thể tùy chỉnh được hỗ trợ bởi LLM. Để giảm thiểu ảo giác, nó phân tách toàn bộ phân tích thành ba bài toán con dễ quản lý và giải quyết chúng với một loạt chiến lược, bao gồm tổng hợp công cụ, prompting CoT few-shot, và xác thực dựa trên phương pháp hình thức. Đánh giá của chúng tôi cho thấy hiệu suất đáng chú ý của LLMDFA trong việc phân tích cả chương trình tổng hợp và thực tế. Công trình của chúng tôi chứng minh một mô hình đầy hứa hẹn cho việc lý luận ngữ nghĩa mã, với tiềm năng tổng quát hóa cho các tác vụ liên quan đến mã khác.
+
+Lời Cảm Ơn
+
+Chúng tôi biết ơn Trung tâm An toàn AI vì đã cung cấp tài nguyên tính toán. Công trình này được tài trợ một phần bởi các Giải thưởng Quỹ Khoa học Quốc gia (NSF) SHF-1901242, SHF-1910300, Proto-OKN 2333736, IIS-2416835, DARPA VSPELLS - HR001120S0058, IARPA TrojAI W911NF-19-S0012, ONR N000141712045, N000141410468 và N000141712947. Bất kỳ ý kiến, phát hiện và kết luận hoặc khuyến nghị nào được thể hiện trong tài liệu này là của các tác giả và không nhất thiết phản ánh quan điểm của các nhà tài trợ.
+
+Tài Liệu Tham Khảo
+
+Lars Ole Andersen. Program analysis and specialization for the c programming language. 1994.
+
+Steven Arzt, Siegfried Rasthofer, Christian Fritz, Eric Bodden, Alexandre Bartel, Jacques Klein, Yves Le Traon, Damien Octeau, and Patrick D. McDaniel. Flowdroid: precise context, flow, field, object-sensitive and lifecycle-aware taint analysis for android apps. In Michael F. P. O'Boyle and Keshav Pingali, editors, ACM SIGPLAN Conference on Programming Language Design and Implementation, PLDI '14, Edinburgh, United Kingdom - June 09 - 11, 2014, pages 259–269. ACM, 2014. doi: 10.1145/2594291.2594299.
+
+Tim Boland and Paul E. Black. Juliet 1.1 C/C++ and java test suite. Computer, 45(10):88–90, 2012. doi: 10.1109/MC.2012.345.
+
+Tom B. Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, Sandhini Agarwal, Ariel Herbert-Voss, Gretchen Krueger, Tom Henighan, Rewon Child, Aditya Ramesh, Daniel M. Ziegler, Jeffrey Wu, Clemens Winter, Christopher Hesse, Mark Chen, Eric Sigler, Mateusz Litwin, Scott Gray, Benjamin Chess, Jack Clark, Christopher Berner, Sam McCandlish, Alec Radford, Ilya Sutskever, and Dario Amodei. Language models are few-shot learners. In Hugo Larochelle, Marc'Aurelio Ranzato, Raia Hadsell, Maria-Florina Balcan, and Hsuan-Tien Lin, editors, Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual, 2020.
+
+Max Brunsfeld. Tree-sitter-a new parsing system for programming tools. In Strange Loop Conference,. Accessed–. URL: https://www.thestrangeloop.com//tree-sitter—a-new-parsing-system-for-programming-tools.html, 2018.
+
+Cristian Cadar, Daniel Dunbar, and Dawson R. Engler. KLEE: unassisted and automatic generation of high-coverage tests for complex systems programs. In Richard Draves and Robbert van Renesse, editors, 8th USENIX Symposium on Operating Systems Design and Implementation, OSDI 2008, December 8-10, 2008, San Diego, California, USA, Proceedings, pages 209–224. USENIX Association, 2008.
+
+Cristiano Calcagno, Dino Distefano, Peter W. O'Hearn, and Hongseok Yang. Compositional shape analysis by means of bi-abduction. In Zhong Shao and Benjamin C. Pierce, editors, Proceedings of the 36th ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages, POPL 2009, Savannah, GA, USA, January 21-23, 2009, pages 289–300. ACM, 2009. doi: 10.1145/1480881.1480917.
+
+Saikat Chakraborty, Shuvendu K. Lahiri, Sarah Fakhoury, Akash Lal, Madanlal Musuvathi, Aseem Rastogi, Aditya Senthilnathan, Rahul Sharma, and Nikhil Swamy. Ranking llm-generated loop invariants for program verification. In Houda Bouamor, Juan Pino, and Kalika Bali, editors, Findings of the Association for Computational Linguistics: EMNLP 2023, Singapore, December 6-10, 2023, pages 9164–9175. Association for Computational Linguistics, 2023.
+
+Tianyi Chen, Qidi Wang, Zhen Dong, Liwei Shen, and Xin Peng. Enhancing robot program synthesis through environmental context. In Alice Oh, Tristan Naumann, Amir Globerson, Kate Saenko, Moritz Hardt, and Sergey Levine, editors, Advances in Neural Information Processing Systems 36: Annual Conference on Neural Information Processing Systems 2023, NeurIPS 2023, New Orleans, LA, USA, December 10 - 16, 2023, 2023. URL http://papers.nips.cc/paper_files/paper/2023/hash/0c1e94af650f5c74b1f3da467c2308c2-Abstract-Conference.html.
+
+Yiu Wai Chow, Max Schäfer, and Michael Pradel. Beware of the unexpected: Bimodal taint analysis. In René Just and Gordon Fraser, editors, Proceedings of the 32nd ACM SIGSOFT International Symposium on Software Testing and Analysis, ISSTA 2023, Seattle, WA, USA, July 17-21, 2023, pages 211–222. ACM, 2023. doi: 10.1145/3597926.3598050. URL https://doi.org/10.1145/3597926.3598050.
+
+Maria Christakis and Christian Bird. What developers want and need from program analysis: an empirical study. In David Lo, Sven Apel, and Sarfraz Khurshid, editors, Proceedings of the 31st IEEE/ACM International Conference on Automated Software Engineering, ASE 2016, Singapore, September 3-7, 2016, pages 332–343. ACM, 2016. doi: 10.1145/2970276.2970347.
+
+Clang. Clang: a C language family frontend for LLVM. https://clang.llvm.org/, 2023. [Online; accessed 23-Dec-2023].
+
+CWE. CWE-369: Divide By Zero. https://cwe.mitre.org/data/definitions/369.html, 2023a. [Online; accessed 23-Dec-2023].
+
+CWE. CWE-80: Improper Neutralization of Script-Related HTML Tags in a Web Page (Basic XSS). https://cwe.mitre.org/data/definitions/80.html, 2023b. [Online; accessed 23-Dec-2023].
+
+Leonardo Mendonça de Moura and Nikolaj Bjørner. Z3: an efficient SMT solver. In C. R. Ramakrishnan and Jakob Rehof, editors, Tools and Algorithms for the Construction and Analysis of Systems, 14th International Conference, TACAS 2008, Held as Part of the Joint European Conferences on Theory and Practice of Software, ETAPS 2008, Budapest, Hungary, March 29-April 6, 2008. Proceedings, volume 4963 of Lecture Notes in Computer Science, pages 337–340. Springer, 2008. doi: 10.1007/978-3-540-78800-3_24.
+
+Yinlin Deng, Chunqiu Steven Xia, Haoran Peng, Chenyuan Yang, and Lingming Zhang. Large language models are zero-shot fuzzers: Fuzzing deep-learning libraries via large language models. In René Just and Gordon Fraser, editors, Proceedings of the 32nd ACM SIGSOFT International Symposium on Software Testing and Analysis, ISSTA 2023, Seattle, WA, USA, July 17-21, 2023, pages 423–435. ACM, 2023. doi: 10.1145/3597926.3598067.
+
+Elizabeth Dinella, Hanjun Dai, Ziyang Li, Mayur Naik, Le Song, and Ke Wang. Hoppity: Learning graph transformations to detect and fix bugs in programs. In 8th International Conference on Learning Representations, ICLR 2020, Addis Ababa, Ethiopia, April 26-30, 2020. OpenReview.net, 2020. URL https://openreview.net/forum?id=SJeqs6EFvB.
+
+Jan Eberhardt, Samuel Steffen, Veselin Raychev, and Martin T. Vechev. Unsupervised learning of API alias specifications. In Kathryn S. McKinley and Kathleen Fisher, editors, Proceedings of the 40th ACM SIGPLAN Conference on Programming Language Design and Implementation, PLDI 2019, Phoenix, AZ, USA, June 22-26, 2019, pages 745–759. ACM, 2019. doi: 10.1145/3314221.3314640.
+
+Michael D. Ernst, Jeff H. Perkins, Philip J. Guo, Stephen McCamant, Carlos Pacheco, Matthew S. Tschantz, and Chen Xiao. The Daikon system for dynamic detection of likely invariants. Science of Computer Programming, 69(1–3):35–45, December 2007.
+
+Hazim Hanif and Sergio Maffeis. Vulberta: Simplified source code pre-training for vulnerability detection. In International Joint Conference on Neural Networks, IJCNN 2022, Padua, Italy, July 18-23, 2022, pages 1–8. IEEE, 2022. doi: 10.1109/IJCNN55064.2022.9892280. URL https://doi.org/10.1109/IJCNN55064.2022.9892280.
+
+David Hin, Andrey Kan, Huaming Chen, and Muhammad Ali Babar. Linevd: Statement-level vulnerability detection using graph neural networks. In 19th IEEE/ACM International Conference on Mining Software Repositories, MSR 2022, Pittsburgh, PA, USA, May 23-24, 2022, pages 596–607. ACM, 2022. doi: 10.1145/3524842.3527949. URL https://doi.org/10.1145/3524842.3527949.
+
+Christian Janßen, Cedric Richter, and Heike Wehrheim. Can chatgpt support software verification? CoRR, abs/2311.02433, 2023. doi: 10.48550/ARXIV.2311.02433.
+
+Ziwei Ji, Tiezheng Yu, Yan Xu, Nayeon Lee, Etsuko Ishii, and Pascale Fung. Towards mitigating LLM hallucination via self reflection. In Houda Bouamor, Juan Pino, and Kalika Bali, editors, Findings of the Association for Computational Linguistics: EMNLP 2023, Singapore, December 6-10, 2023, pages 1827–1843. Association for Computational Linguistics, 2023.
+
+Carlos E. Jimenez, John Yang, Alexander Wettig, Shunyu Yao, Kexin Pei, Ofir Press, and Karthik Narasimhan. Swe-bench: Can language models resolve real-world github issues? CoRR, abs/2310.06770, 2023. doi: 10.48550/ARXIV.2310.06770. URL https://doi.org/10.48550/arXiv.2310.06770.
+
+Adharsh Kamath, Aditya Senthilnathan, Saikat Chakraborty, Pantazis Deligiannis, Shuvendu K. Lahiri, Akash Lal, Aseem Rastogi, Subhajit Roy, and Rahul Sharma. Finding inductive loop invariants using large language models. CoRR, abs/2311.07948, 2023. doi: 10.48550/ARXIV.2311.07948.
+
+Chris Lattner and Vikram S. Adve. LLVM: A compilation framework for lifelong program analysis & transformation. In 2nd IEEE / ACM International Symposium on Code Generation and Optimization (CGO 2004), 20-24 March 2004, San Jose, CA, USA, pages 75–88. IEEE Computer Society, 2004. doi: 10.1109/CGO.2004.1281665.
+
+Haonan Li, Yu Hao, Yizhuo Zhai, and Zhiyun Qian. The hitchhiker's guide to program analysis: A journey with large language models. CoRR, abs/2308.00245, 2023. doi: 10.48550/ARXIV.2308.00245.
+
+Zhiyuan Li, Pen-Chung Yew, and Chuan-Qi Zhu. An efficient data dependence analysis for parallelizing compilers. IEEE Trans. Parallel Distributed Syst., 1(1):26–34, 1990. doi: 10.1109/71.80122.
+
+Linghui Luo, Felix Pauck, Goran Piskachev, Manuel Benz, Ivan Pashchenko, Martin Mory, Eric Bodden, Ben Hermann, and Fabio Massacci. Taintbench: Automatic real-world malware benchmarking of android taint analyses. Empir. Softw. Eng., 27(1):16, 2022. doi: 10.1007/S10664-021-10013-5. URL https://doi.org/10.1007/s10664-021-10013-5.
+
+Anders Møller and Michael I Schwartzbach. Static program analysis. Notes. Feb, 2012.
+
+Niels Mündler, Jingxuan He, Slobodan Jenko, and Martin T. Vechev. Self-contradictory hallucinations of large language models: Evaluation, detection and mitigation. CoRR, abs/2305.15852, 2023. doi: 10.48550/ARXIV.2305.15852. URL https://doi.org/10.48550/arXiv.2305.15852.
+
+OpenAI. GPT-4 technical report. CoRR, abs/2303.08774, 2023. doi: 10.48550/ARXIV.2303.08774.
+
+Kexin Pei, David Bieber, Kensen Shi, Charles Sutton, and Pengcheng Yin. Can large language models reason about program invariants? In Andreas Krause, Emma Brunskill, Kyunghyun Cho, Barbara Engelhardt, Sivan Sabato, and Jonathan Scarlett, editors, International Conference on Machine Learning, ICML 2023, 23-29 July 2023, Honolulu, Hawaii, USA, volume 202 of Proceedings of Machine Learning Research, pages 27496–27520. PMLR, 2023.
+
+Siegfried Rasthofer, Steven Arzt, and Eric Bodden. A machine-learning approach for classifying and categorizing android sources and sinks. In 21st Annual Network and Distributed System Security Symposium, NDSS 2014, San Diego, California, USA, February 23-26, 2014. The Internet Society, 2014.
+
+Thomas W. Reps, Susan Horwitz, and Shmuel Sagiv. Precise interprocedural dataflow analysis via graph reachability. In Ron K. Cytron and Peter Lee, editors, Conference Record of POPL'95: 22nd ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages, San Francisco, California, USA, January 23-25, 1995, pages 49–61. ACM Press, 1995. doi: 10.1145/199448.199462.
+
+Baptiste Rozière, Jonas Gehring, Fabian Gloeckle, Sten Sootla, Itai Gat, Xiaoqing Ellen Tan, Yossi Adi, Jingyu Liu, Tal Remez, Jérémy Rapin, Artyom Kozhevnikov, Ivan Evtimov, Joanna Bitton, Manish Bhatt, Cristian Canton-Ferrer, Aaron Grattafiori, Wenhan Xiong, Alexandre Défossez, Jade Copet, Faisal Azhar, Hugo Touvron, Louis Martin, Nicolas Usunier, Thomas Scialom, and Gabriel Synnaeve. Code llama: Open foundation models for code. CoRR, abs/2308.12950, 2023. doi: 10.48550/ARXIV.2308.12950.
+
+Semmle. GitHub Code Scanning. https://lgtm.com, 2023. [Online; accessed 23-Dec-2023].
+
+Qingkai Shi, Xiao Xiao, Rongxin Wu, Jinguo Zhou, Gang Fan, and Charles Zhang. Pinpoint: fast and precise sparse value flow analysis for million lines of code. In Jeffrey S. Foster and Dan Grossman, editors, Proceedings of the 39th ACM SIGPLAN Conference on Programming Language Design and Implementation, PLDI 2018, Philadelphia, PA, USA, June 18-22, 2018, pages 693–706. ACM, 2018. doi: 10.1145/3192366.3192418.
+
+Disha Shrivastava, Hugo Larochelle, and Daniel Tarlow. Repository-level prompt generation for large language models of code. In Andreas Krause, Emma Brunskill, Kyunghyun Cho, Barbara Engelhardt, Sivan Sabato, and Jonathan Scarlett, editors, International Conference on Machine Learning, ICML 2023, 23-29 July 2023, Honolulu, Hawaii, USA, volume 202 of Proceedings of Machine Learning Research, pages 31693–31715. PMLR, 2023.
+
+Xujie Si, Hanjun Dai, Mukund Raghothaman, Mayur Naik, and Le Song. Learning loop invariants for program verification. In Samy Bengio, Hanna M. Wallach, Hugo Larochelle, Kristen Grauman, Nicolò Cesa-Bianchi, and Roman Garnett, editors, Advances in Neural Information Processing Systems 31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS 2018, December 3-8, 2018, Montréal, Canada, pages 7762–7773, 2018. URL https://proceedings.neurips.cc/paper/2018/hash/65b1e92c585fd4c2159d5f33b5030ff2-Abstract.html.
+
+Benjamin Steenhoek, Hongyang Gao, and Wei Le. Dataflow analysis-inspired deep learning for efficient vulnerability detection. In Proceedings of the 46th IEEE/ACM International Conference on Software Engineering, ICSE 2024, Lisbon, Portugal, April 14-20, 2024, pages 16:1–16:13. ACM, 2024. doi: 10.1145/3597503.3623345. URL https://doi.org/10.1145/3597503.3623345.
+
+Bjarne Steensgaard. Points-to analysis in almost linear time. In Hans-Juergen Boehm and Guy L. Steele Jr., editors, Conference Record of POPL'96: The 23rd ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages, Papers Presented at the Symposium, St. Petersburg Beach, Florida, USA, January 21-24, 1996, pages 32–41. ACM Press, 1996. doi: 10.1145/237721.237727.
+
+Yulei Sui and Jingling Xue. SVF: interprocedural static value-flow analysis in LLVM. In Ayal Zaks and Manuel V. Hermenegildo, editors, Proceedings of the 25th International Conference on Compiler Construction, CC 2016, Barcelona, Spain, March 12-18, 2016, pages 265–266. ACM, 2016. doi: 10.1145/2892208.2892235.
+
+Raja Vallée-Rai, Phong Co, Etienne Gagnon, Laurie J. Hendren, Patrick Lam, and Vijay Sundaresan. Soot - a java bytecode optimization framework. In Stephen A. MacKay and J. Howard Johnson, editors, Proceedings of the 1999 conference of the Centre for Advanced Studies on Collaborative Research, November 8-11, 1999, Mississauga, Ontario, Canada, page 13. IBM, 1999.
+
+Chong Wang, Yiling Lou, Junwei Liu, and Xin Peng. Generating variable explanations via zero-shot prompt learning. In 38th IEEE/ACM International Conference on Automated Software Engineering, ASE 2023, Luxembourg, September 11-15, 2023, pages 748–760. IEEE, 2023. doi: 10.1109/ASE56229.2023.00130.
+
+Yue Wang, Weishi Wang, Shafiq R. Joty, and Steven C. H. Hoi. Codet5: Identifier-aware unified pre-trained encoder-decoder models for code understanding and generation. In Marie-Francine Moens, Xuanjing Huang, Lucia Specia, and Scott Wen-tau Yih, editors, Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing, EMNLP 2021, Virtual Event / Punta Cana, Dominican Republic, 7-11 November, 2021, pages 8696–8708. Association for Computational Linguistics, 2021. doi: 10.18653/V1/2021.EMNLP-MAIN.685.
+
+Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Brian Ichter, Fei Xia, Ed H. Chi, Quoc V. Le, and Denny Zhou. Chain-of-thought prompting elicits reasoning in large language models. In NeurIPS, 2022.
+
+Yuxiang Wei, Chunqiu Steven Xia, and Lingming Zhang. Copiloting the copilots: Fusing large language models with completion engines for automated program repair. In Satish Chandra, Kelly Blincoe, and Paolo Tonella, editors, Proceedings of the 31st ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering, ESEC/FSE 2023, San Francisco, CA, USA, December 3-9, 2023, pages 172–184. ACM, 2023. doi: 10.1145/3611643.3616271.
+
+Chunqiu Steven Xia and Lingming Zhang. Keep the conversation going: Fixing 162 out of 337 bugs for $0.42 each using chatgpt. CoRR, abs/2304.00385, 2023. doi: 10.48550/ARXIV.2304.00385. URL https://doi.org/10.48550/arXiv.2304.00385.
+
+Xiaoheng Xie, Gang Fan, Xiaojun Lin, Ang Zhou, Shijie Li, Xunjin Zheng, Yinan Liang, Yu Zhang, Na Yu, Haokun Li, Xinyu Chen, Yingzhuang Chen, Yi Zhen, Dejun Dong, Xianjin Fu, Jinzhou Su, Fuxiong Pan, Pengshuai Luo, Youzheng Feng, Ruoxiang Hu, Jing Fan, Jinguo Zhou, Xiao Xiao, and Peng Di. Codefuse-query: A data-centric static code analysis system for large-scale organizations. CoRR, abs/2401.01571, 2024. doi: 10.48550/ARXIV.2401.01571.
+
+Peisen Yao, Qingkai Shi, Heqing Huang, and Charles Zhang. Program analysis via efficient symbolic abstraction. Proc. ACM Program. Lang., 5(OOPSLA):1–32, 2021. doi: 10.1145/3485495.
+
+Shunyu Yao, Dian Yu, Jeffrey Zhao, Izhak Shafran, Thomas L. Griffiths, Yuan Cao, and Karthik Narasimhan. Tree of thoughts: Deliberate problem solving with large language models. CoRR, abs/2305.10601, 2023. doi: 10.48550/ARXIV.2305.10601.
+
+Xi Ye, Qiaochu Chen, Isil Dillig, and Greg Durrett. Optimal neural program synthesis from multi-modal specifications. In Marie-Francine Moens, Xuanjing Huang, Lucia Specia, and Scott Wen-tau Yih, editors, Findings of the Association for Computational Linguistics: EMNLP 2021, Virtual Event / Punta Cana, Dominican Republic, 16-20 November, 2021, pages 1691–1704. Association for Computational Linguistics, 2021. doi: 10.18653/V1/2021.FINDINGS-EMNLP.146. URL https://doi.org/10.18653/v1/2021.findings-emnlp.146.
+
+Fengji Zhang, Bei Chen, Yue Zhang, Jacky Keung, Jin Liu, Daoguang Zan, Yi Mao, Jian-Guang Lou, and Weizhu Chen. Repocoder: Repository-level code completion through iterative retrieval and generation. In Houda Bouamor, Juan Pino, and Kalika Bali, editors, Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing, EMNLP 2023, Singapore, December 6-10, 2023, pages 2471–2484. Association for Computational Linguistics, 2023a. doi: 10.18653/V1/2023.EMNLP-MAIN.151. URL https://doi.org/10.18653/v1/2023.emnlp-main.151.
+
+Yifan Zhang, Jingqin Yang, Yang Yuan, and Andrew Chi-Chih Yao. Cumulative reasoning with large language models. CoRR, abs/2308.04371, 2023b. doi: 10.48550/ARXIV.2308.04371.
+
+Yue Zhang, Yafu Li, Leyang Cui, Deng Cai, Lemao Liu, Tingchen Fu, Xinting Huang, Enbo Zhao, Yu Zhang, Yulong Chen, Longyue Wang, Anh Tuan Luu, Wei Bi, Freda Shi, and Shuming Shi. Siren's song in the AI ocean: A survey on hallucination in large language models. CoRR, abs/2309.01219, 2023c. doi: 10.48550/ARXIV.2309.01219.

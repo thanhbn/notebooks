@@ -1,0 +1,48 @@
+Files needing Vietnamese translation in AI-Papers directory:
+===============================================================
+
+Total files: 35
+
+1. 1.3.2.AgentCoder. Multi-Agent-based Code Generation with Iterative Testing and Optimisation2312.13010v3.txt
+2. 1.3.3. Chain-of-Thought in Neural Code Generation.2312.05562v2.txt
+3. 1.3.4. StarCoder 2 and The Stack v2- The Next Generation. 2402.19173v1.txt
+4. 1.4.1. GraphCodeBERT- Pre-training Code Representations with Data Flow-2009.08366v4.txt
+5. 1.4.2. LLMDFA- Analyzing Dataflow in Code with - 2402.10754v2.txt
+6. 1.4.3. AST-T5- Structure-Aware Pretraining for Code Generation and Understanding - 2401.03003v4.txt
+7. 1.6.1. Automated Code Review In Practice- 2412.18531v2.txt
+8. 1.6.2.Chain-of-Thought in Neural Code Generation-2312.05562v2.txt
+9. 1.6.3. CodeAgent Paper- 2402.02172v5.txt
+10. 2211.16490v1-Coder_Reviewer_Reranking_for_Code_Generation.txt
+11. 2212.09132v1-JEMMA-_An_Extensible_Java_Dataset_for_ML4Code.txt
+12. 2305.06161v2-Published_in_Transactions_on_Machine_Learning_Research_(12-2023).txt
+13. 2308.10462v3-Exploring_Parameter-Efficient_Fine-Tuning_Techniques_for.txt
+14. 2402.01035v2-Getting_the_most_out_of_your_tokenizer_for_pre-training_and_domain_adaptation.txt
+15. 2402.11811v4-FIPO-_Free-form_Instruction-oriented_Prompt_Optimization_with.txt
+16. 2403.18350v2-EVALUATION_OF_SEMANTIC_SEARCH_AND_ITS_ROLE_IN.txt
+17. 2405.13565v1-AI-Assisted_Assessment_of_Coding_Practices.txt
+18. 2405.18414v1-Improving_RAG_with_Graph-based_Reranking.txt
+19. 2405.19250v1-arXiv-2405.19250v1_[cs.SE]_29_May_2024Kotlin_ML_Pack-_Technical_Report.txt
+20. 2406.19223v2-T-FREE-_Subword_Tokenizer-Free_Generative_LLMs_via.txt
+21. 2407.04803v1-The_Impact_of_Quantization_and_Pruning_on_Deep_Reinforcement_Learning.txt
+22. 2407.08275v1-Beyond_Benchmarks-_Evaluating_Embedding_Model_Similarity_for.txt
+23. 2407.15462v4-Retrieval_with_Learned_Similarities.txt
+24. 2409.10959v1-Leveraging_Reviewer_Experience_in_Code_Review_Comment_Generation.txt
+25. 2410.17170v2-Self-calibration_for_Language_Model_Quantization_and_Pruning.txt
+26. 2410.20424v3-AutoKaggle-_A_Multi-Agent_Framework_for_Autonomous_Data_Science_Competitions.txt
+27. 2411.10129v1-Prompting_and_Fine-tuning_Large_Language_Models.txt
+28. 2411.11401v3-Deep_Learning-based_Code_Reviews.txt
+29. 2501.03265v1-1.txt
+30. 2502.02757v2-Too_Noisy_To_Learn-_Enhancing_Data_Quality_for.txt
+31. 2502.14862v1-Interpretable_Text_Embeddings_and_Text_Similarity_Explanation-_A_Primer.txt
+32. 2502.20273v4-arXiv-2502.20273v4_[cs.CL]_16_Jun_2025How_Much_is_Enough.txt
+33. 2503.13505v1-JOURNAL_OF_IEEE_TRANSACTIONS_ON_ARTIFICIAL_INTELLIGENCE,_VOL._00,_NO._0,_MONTH_2020_1.txt
+34. 2504.10046v1-CodeRAG-_Supportive_Code_Retrieval_on_Bigraph_for_Real-World.txt
+35. 2505.24581v1-arXiv-2505.24581v1_[cs.CL]_30_May_2025GATE-_General_Arabic_Text_Embedding_for_Enhanced_Semantic_Text.txt
+
+Notes:
+- All files are located in: /home/admin88/notebook_clone/AI-Papers/
+- The translation files should be named with "_vi.txt" suffix
+- Some papers already have Vietnamese translations (18 files have _vi.txt versions)
+- Total papers with .txt files: 53
+- Papers already translated: 18
+- Papers needing translation: 35

@@ -1,0 +1,246 @@
+# 2410.17170v2.pdf
+# Chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2410.17170v2.pdf
+# Kích thước file: 882929 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+Tự hiệu chuẩn cho Lượng tử hoá và Cắt tỉa Mô hình Ngôn ngữ
+Miles Williams♢♠George Chrysostomou♠Nikolaos Aletras♢
+♢Đại học Sheffield
+♠Dịch vụ AI Doanh nghiệp, AstraZeneca
+{mwilliams15, n.aletras}@sheffield.ac.uk
+
+Tóm tắt
+Lượng tử hoá và cắt tỉa là những phương pháp cơ bản cho nén mô hình, cho phép suy luận hiệu quả cho các mô hình ngôn ngữ. Trong bối cảnh hậu huấn luyện, các phương pháp lượng tử hoá và cắt tỉa tiên tiến nhất yêu cầu dữ liệu hiệu chuẩn, một tập hợp nhỏ các ví dụ không nhãn. Theo quy ước, đây là văn bản web được lấy mẫu ngẫu nhiên, nhằm phản ánh dữ liệu huấn luyện mô hình. Tuy nhiên, điều này đặt ra hai vấn đề chính: (1) các ví dụ hiệu chuẩn không đại diện có thể làm hại hiệu suất mô hình, và (2) các tổ chức ngày càng tránh việc công bố dữ liệu huấn luyện mô hình. Trong bài báo này, chúng tôi đề xuất tự hiệu chuẩn như một giải pháp. Phương pháp của chúng tôi không yêu cầu dữ liệu bên ngoài, thay vào đó tận dụng chính mô hình để tạo ra dữ liệu hiệu chuẩn tổng hợp, với mục tiêu xấp xỉ tốt hơn phân phối dữ liệu tiền huấn luyện. Chúng tôi so sánh toàn diện hiệu suất của tự hiệu chuẩn với một số đường cơ sở, trên nhiều mô hình, phương pháp nén và tác vụ khác nhau. Phương pháp của chúng tôi chứng minh tính cạnh tranh nhất quán trong việc tối đa hóa hiệu suất tác vụ cuối, thường vượt trội ngay cả khi sử dụng dữ liệu thực.¹
+
+1 Giới thiệu
+Các mô hình ngôn ngữ lớn (LLM) được huấn luyện bằng các kho ngữ liệu khổng lồ đã mang lại những tiến bộ đáng kể trên nhiều lĩnh vực và tác vụ khác nhau (Touvron et al., 2023a; Jiang et al., 2023; Mesnard et al., 2024). Tuy nhiên, chúng đòi hỏi tài nguyên tính toán rộng lớn cho suy luận (Wu et al., 2022; Luccioni et al., 2023), tạo nên yếu tố hạn chế cho việc sử dụng thực tế của chúng. Do đó, điều này đã thúc đẩy việc phát triển một bộ sưu tập rộng lớn các phương pháp để cải thiện hiệu suất suy luận (Treviso et al., 2023). Đặc biệt, nén mô hình nhằm giảm kích thước của mô hình trong khi duy trì hiệu suất tác vụ cuối (Wan et al., 2024).
+
+Lượng tử hoá và cắt tỉa đã nổi lên như những phương pháp nén mô hình nổi bật cho các LLM (Gholami et al., 2021; Wan et al., 2024).
+
+¹https://github.com/mlsw/llm-compression-calibration
+
+Mô hình Ngôn ngữ Tiền huấn luyện → Dữ liệu Hiệu chuẩn Tổng hợp → Nén Hậu huấn luyện → [Mô hình Ngôn ngữ Lượng tử hoá / Mô hình Ngôn ngữ Cắt tỉa]
+
+Hình 1: Tự hiệu chuẩn cho lượng tử hoá và cắt tỉa hậu huấn luyện của các mô hình ngôn ngữ.
+
+Cắt tỉa loại bỏ các trọng số ít quan trọng hơn khỏi mô hình, trong khi lượng tử hoá biểu diễn các trọng số (và có thể cả các kích hoạt) bằng ít bit hơn. Cả lượng tử hoá và cắt tỉa đều có thể được áp dụng hiệu quả trong bối cảnh hậu huấn luyện, duy trì hiệu suất tương đương trên một loạt các tác vụ cuối (Frantar et al., 2023; Frantar và Alistarh, 2023; Sun et al., 2024; Lin et al., 2024).
+
+Lượng tử hoá và cắt tỉa hậu huấn luyện thường phụ thuộc vào dữ liệu hiệu chuẩn, một tập hợp nhỏ các ví dụ không nhãn (Nagel et al., 2020; Hubara et al., 2021) được sử dụng để tạo ra các kích hoạt tầng trong toàn bộ mô hình. Theo quy ước, dữ liệu hiệu chuẩn LLM bao gồm văn bản web được lấy mẫu ngẫu nhiên (Frantar et al., 2023; Sun et al., 2024; Lin et al., 2024), nhằm phản ánh phân phối dữ liệu huấn luyện mô hình.
+
+Tuy nhiên, công trình gần đây đã đặt câu hỏi về ảnh hưởng của dữ liệu hiệu chuẩn trong nén LLM. Jaiswal et al. (2024) gợi ý rằng việc lựa chọn cẩn thận dữ liệu hiệu chuẩn có thể có lợi cho cắt tỉa thưa thớt cao. Đồng thời, Williams và Aletras (2024) minh họa tác động của dữ liệu hiệu chuẩn trong lượng tử hoá và cắt tỉa. Cuối cùng, Zeng et al. (2024) và Kurz et al. (2024) làm nổi bật vai trò của dữ liệu hiệu chuẩn đặc thù ngôn ngữ cho các mô hình đa ngôn ngữ.
+
+--- TRANG 2 ---
+Để làm phức tạp thêm vấn đề, các tổ chức ngày càng miễn cưỡng công bố dữ liệu huấn luyện mô hình hoặc tiết lộ các chi tiết sao chép cần thiết. Bảng 1 minh họa rằng mặc dù trọng số của một số LLM tiên tiến nhất được công khai, dữ liệu huấn luyện của chúng chủ yếu không có sẵn. Điều này có thể do (1) lo ngại về trách nhiệm pháp lý phát sinh từ việc cấp phép dữ liệu (Eckart de Castilho et al., 2018), và (2) lo ngại về quyền riêng tư khi sử dụng dữ liệu độc quyền hoặc cá nhân (Carlini et al., 2021). Hơn nữa, dữ liệu huấn luyện được công bố có thể sau này trở nên không có sẵn. Ví dụ, The Pile (Gao et al., 2020) không còn được phân phối do vi phạm bản quyền. Việc thiếu dữ liệu huấn luyện đặt ra câu hỏi về cách lựa chọn dữ liệu hiệu chuẩn đại diện, khi bản thân phân phối huấn luyện là không rõ. Vấn đề này đặc biệt liên quan đến các mô hình được huấn luyện chủ yếu với bộ dữ liệu riêng, chẳng hạn như dòng mô hình Phi của Microsoft (Gunasekar et al., 2023; Li et al., 2023b).
+
+[THIS IS TABLE: Bảng 1 showing various LLM models and their data/weights availability]
+Mô hình Nguồn mở | Tham chiếu | Trọng số | Dữ liệu
+GPT-4 | Achiam et al. (2023) | ✗ | ✗
+Mistral | Jiang et al. (2023) | ✓ | ✗
+Llama 2 | Touvron et al. (2023b) | ✓ | ✗
+Falcon | Almazrouei et al. (2023) | ✓ | ✓
+Phi-2 | Javaheripi et al. (2023) | ✓ | ✗
+Gemini | Anil et al. (2024) | ✗ | ✗
+OLMo | Groeneveld et al. (2024) | ✓ | ✓
+Claude 3 | Anthropic (2024) | ✗ | ✗
+Gemma | Mesnard et al. (2024) | ✓ | ✗
+
+Bảng 1: Dữ liệu huấn luyện cho các LLM tiên tiến hiếm khi có sẵn. Các mô hình được lựa chọn theo hiệu suất benchmark và được sắp xếp theo ngày xuất bản.
+
+Trong bài báo này, chúng tôi đề xuất tự hiệu chuẩn như một giải pháp để giảm thiểu lo ngại về tính khả dụng, chất lượng và tính đại diện của dữ liệu huấn luyện. Phương pháp đề xuất của chúng tôi loại bỏ nhu cầu về các nguồn dữ liệu hiệu chuẩn bên ngoài, thay vào đó tận dụng chính mô hình để tự động tạo ra dữ liệu hiệu chuẩn tổng hợp. Chúng tôi so sánh phương pháp của mình với các bộ dữ liệu thực và tổng hợp khác nhau, bao gồm dữ liệu được lấy mẫu từ một mô hình hỗn hợp chuyên gia lớn. Phương pháp của chúng tôi luôn có tính cạnh tranh trong việc tối đa hóa hiệu suất của các mô hình nén, trên nhiều mô hình và phương pháp nén khác nhau. Trong nhiều trường hợp, chúng tôi thấy rằng tự hiệu chuẩn có thể vượt trội ngay cả dữ liệu thực.
+
+2 Công trình liên quan
+
+2.1 Nén mô hình
+Nén mô hình nhằm giảm kích thước của mô hình mà không làm tổn hại hiệu suất tác vụ cuối, do đó giảm tài nguyên tính toán cần thiết cho suy luận (Treviso et al., 2023). Lượng tử hoá và cắt tỉa là hai phương pháp nén mô hình nổi bật đã được áp dụng rộng rãi cho các LLM (Wan et al., 2024).
+
+Cắt tỉa. Mục tiêu của cắt tỉa là loại bỏ các trọng số mô hình dư thừa (LeCun et al., 1989). Cắt tỉa thường dựa vào một bước tinh chỉnh (Han et al., 2015; Sanh et al., 2020), tuy nhiên điều này có thách thức ở quy mô của các LLM. Thay vào đó, đã có nhiều nỗ lực khác nhau hướng tới việc điều chỉnh khung Optimal Brain Surgeon (OBS) (LeCun et al., 1989; Hassibi et al., 1993) cho cắt tỉa mô hình ngôn ngữ (Frantar et al., 2021; Kurtic et al., 2022; Frantar và Alistarh, 2022). Tuy nhiên, kích thước rộng lớn của các LLM khiến việc áp dụng các phương pháp như vậy trở nên không thực tế. SparseGPT (Frantar và Alistarh, 2023) trình bày một phương pháp tái tạo trọng số xấp xỉ, cho phép cắt tỉa LLM hiệu quả mà không làm tổn hại hiệu suất. Riêng biệt, Wanda (Sun et al., 2024) dựa vào một tiêu chí cắt tỉa không yêu cầu thông tin bậc hai, cho phép cắt tỉa với một lần truyền tiến duy nhất.
+
+Lượng tử hoá. Mục tiêu của lượng tử hoá là biểu diễn trọng số mô hình (và có thể cả các kích hoạt) bằng ít bit hơn. Các đặc trưng ngoại lai có độ lớn lớn đặt ra một vấn đề đáng kể cho việc lượng tử hoá các LLM, có thể được giải quyết thông qua việc giữ chúng ở độ chính xác cao hơn (Dettmers et al., 2022). Tuy nhiên, phương pháp này ít thân thiện với phần cứng hơn. Thay vào đó, SmoothQuant (Xiao et al., 2023) chuyển khó khăn của lượng tử hoá kích hoạt sang các trọng số, dễ lượng tử hoá hơn. AWQ (Lin et al., 2024) trình bày một phương pháp thân thiện với phần cứng để giữ một phần nhỏ các trọng số ở độ chính xác cao hơn. Trong một hướng nghiên cứu riêng biệt, Frantar và Alistarh (2022) điều chỉnh khung OBS cho lượng tử hoá. GPTQ (Frantar et al., 2023) xây dựng trên công trình này để cho phép lượng tử hoá bit thấp bậc hai cho các LLM.
+
+2.2 Dữ liệu hiệu chuẩn
+Trong bối cảnh hậu huấn luyện, các phương pháp nén mô hình dựa vào dữ liệu hiệu chuẩn (Wan et al., 2024). Điều này bao gồm một tập hợp nhỏ các ví dụ không nhãn, được sử dụng để tạo ra các kích hoạt tầng (Nagel et al., 2020; Hubara et al., 2021). Dữ liệu hiệu chuẩn cho các LLM theo quy ước bao gồm văn bản được lấy mẫu từ một bộ dữ liệu huấn luyện được tuyển chọn (Frantar et al., 2023; Xiao et al., 2023; Frantar và Alistarh, 2023; Sun et al., 2024; Lin et al., 2024). Trong thực tế, dữ liệu huấn luyện mô hình chính xác có thể không có sẵn công khai (Bảng 1).
+
+--- TRANG 3 ---
+Do đó, các bộ dữ liệu văn bản web quy mô lớn (ví dụ C4; Raffel et al., 2020) thường được sử dụng như một xấp xỉ của phân phối tiền huấn luyện. Công trình gần đây đã đặt câu hỏi về tác động hiệu suất của dữ liệu hiệu chuẩn được sử dụng cho nén LLM (Jaiswal et al., 2024; Williams và Aletras, 2024; Zeng et al., 2024). Dữ liệu tổng hợp trình bày một hướng hứa hẹn để giảm thiểu những lo ngại như vậy, bao gồm chất lượng đa dạng của các ví dụ văn bản web (Dodge et al., 2021). Tuy nhiên, dữ liệu hiệu chuẩn tổng hợp cho nén LLM hậu huấn luyện vẫn chưa được khám phá một cách có hệ thống.
+
+Dữ liệu tổng hợp cho nén mô hình đã được khám phá trước đây trong thị giác máy tính, thường được thúc đẩy bởi lo ngại về quyền riêng tư và bảo mật phát sinh từ các hình ảnh huấn luyện nhạy cảm (ví dụ bối cảnh y tế). Haroush et al. (2020) và Cai et al. (2020) đề xuất các phương pháp cho lượng tử hoá không cần dữ liệu (Nagel et al., 2019), cho phép chính mô hình tổng hợp dữ liệu đầu vào cho lượng tử hoá. Về cơ bản, những phương pháp này tạo ra hình ảnh phù hợp với các thống kê học được từ các tầng chuẩn hoá theo lô (Zhang et al., 2021; Li et al., 2023a), vốn đáng chú ý là vắng mặt trong các LLM (Wang et al., 2022).
+
+2.3 Dữ liệu tổng hợp với mô hình ngôn ngữ
+Dữ liệu tổng hợp đề cập đến dữ liệu nhân tạo đã được tạo ra với mục tiêu bắt chước dữ liệu thế giới thực (Liu et al., 2024). Trong bối cảnh các mô hình ngôn ngữ, huấn luyện có giám sát các mô hình phân loại với dữ liệu có nhãn tổng hợp đã được khám phá rộng rãi (Kumar et al., 2020; Schick và Schütze, 2021; Sahu et al., 2022; Meng et al., 2022; Chung et al., 2023; Li et al., 2023c). Tương tự, dữ liệu tổng hợp đã được sử dụng rộng rãi cho tinh chỉnh hướng dẫn có giám sát (Wang et al., 2023; Ding et al., 2023; Xu et al., 2024). Gần đây nhất, các bộ dữ liệu một phần hoặc hoàn toàn tổng hợp đã được sử dụng cho tiền huấn luyện (Gunasekar et al., 2023; Li et al., 2023b; Maini et al., 2024; Ben Allal et al., 2024). Tuy nhiên, phân phối của những bộ dữ liệu như vậy có thể lệch khỏi phân phối tiền huấn luyện của các LLM khác.
+
+3 Tự hiệu chuẩn
+Khi dữ liệu huấn luyện chính xác cho một mô hình không có sẵn, việc lấy mẫu dữ liệu hiệu chuẩn từ một phân phối thay thế chỉ mang lại một xấp xỉ tốt nhất. Ngay cả khi dữ liệu huấn luyện chính xác có sẵn, các ví dụ riêng lẻ có thể có nhiễu và lệch khỏi phân phối tổng thể. Để giải quyết những hạn chế này, chúng tôi đề xuất tự hiệu chuẩn, một điều chỉnh đa mục đích cho nén mô hình dựa vào dữ liệu hiệu chuẩn từ chính mô hình. Giả thuyết của chúng tôi là việc lấy mẫu từ phân phối hậu nghiệm học được, xấp xỉ dữ liệu huấn luyện, mang lại các ví dụ hiệu chuẩn đại diện hơn. Đổi lại, chúng tôi kỳ vọng rằng những ví dụ hiệu chuẩn như vậy sẽ cho phép bảo tồn tốt hơn hiệu suất tác vụ cuối sau nén mô hình.
+
+3.1 Tổng hợp dữ liệu hiệu chuẩn
+Chúng tôi công thức hoá việc tổng hợp các ví dụ hiệu chuẩn như một bài toán sinh văn bản mở cho một mô hình ngôn ngữ cụ thể mà chúng tôi muốn nén. Quan trọng, chúng tôi nhằm tạo ra dữ liệu tổng hợp đại diện nhất có thể đối với phân phối huấn luyện. Để đạt được điều này, chúng tôi tránh sử dụng dữ liệu bên ngoài, vốn đưa ra các giả định về phân phối dữ liệu huấn luyện.
+
+Về cơ bản, sinh văn bản bao gồm việc dự đoán token tiếp theo trong một chuỗi. Chính thức, chúng tôi tính toán một phân phối xác suất trên từ vựng V cho token tiếp theo wi, cho trước ngữ cảnh w1:i−1. Lấy ngữ cảnh làm đầu vào, một mô hình ngôn ngữ tạo ra các logit đầu ra, u1:|V|. Phân phối xác suất sau đó được hình thành thông qua việc chuẩn hoá các logit với hàm softmax.
+
+Để tạo ra dữ liệu hiệu chuẩn phản ánh phân phối dữ liệu huấn luyện mô hình, chúng tôi điều kiện hoá việc sinh chỉ dựa trên token bắt đầu chuỗi (ví dụ <s> hoặc <|start_of_text|>). Chúng tôi tiếp tục tạo ra các token cho đến khi đạt được token kết thúc chuỗi hoặc độ dài chuỗi tối đa. Trong trường hợp một việc sinh không đạt được độ dài mong muốn, chúng tôi đơn giản nối thêm các việc sinh bổ sung. Vì một tiền tố hoặc gợi ý sẽ đưa ra thiên vị và yêu cầu dữ liệu bên ngoài, chúng tôi không điều kiện hoá sinh trực tiếp. Thay vào đó, chúng tôi dựa vào lấy mẫu nhiệt độ theo lịch để hướng dẫn sinh.
+
+3.2 Lập lịch nhiệt độ
+Hàm softmax có thể được tham số hoá thêm với một nhiệt độ t, để kiểm soát độ sắc nét của phân phối xác suất (Ackley et al., 1985; Hinton et al., 2015). Một nhiệt độ thấp hơn tập trung khối lượng xác suất vào các token có khả năng nhất, trong khi một nhiệt độ cao hơn phân tán khối lượng xác suất đều hơn. Trong thực tế, nhiệt độ ảnh hưởng đến các đặc tính của văn bản được tạo ra, thường cải thiện chất lượng và sự đa dạng của nó so với giải mã tham lam (Holtzman et al., 2020; Meister et al., 2023).
+
+--- TRANG 4 ---
+Khi tạo ra văn bản mà không có ngữ cảnh, chúng tôi giả thuyết rằng một vài token được tạo ra đầu tiên là quan trọng, ảnh hưởng đến nội dung và tính mạch lạc. Để khám phá nhiều tiền tố khác nhau, chúng tôi đề xuất việc sử dụng một lịch nhiệt độ, được lấy cảm hứng từ Carlini et al. (2021). Chính thức, chúng tôi định nghĩa xác suất của một token như:
+
+P(wi|w1:i−1) = exp(ui/ti) / Σ(j=1 to |V|) exp(uj/ti)
+
+trong đó ti tăng tuyến tính từ tinitial ở đầu sinh ra tfinal, qua n bước sinh token:
+
+ti = {
+  tinitial + i/n(tfinal - tinitial)  nếu i ≤ n,
+  tfinal                            nếi i > n.
+}
+
+Trong thực tế, một lịch nhiệt độ cho phép chúng tôi thử nghiệm với nhiều chiến lược sinh khác nhau. Ví dụ, chúng tôi có thể tạo ra một tiền tố đa dạng (tức là tinitial > 1) theo sau bởi một phần tiếp theo tự tin hơn (tức là tfinal ≤ 1), cũng như một tiền tố có khả năng cao theo sau bởi một phần tiếp theo sáng tạo. Chúng tôi cung cấp một phân tích toàn diện về những lựa chọn tham số này trong §6.2. Để so sánh, chúng tôi cũng trình bày kết quả với giải mã tham lam và lấy mẫu tiêu chuẩn (tức là không có nhiệt độ).
+
+4 Thiết lập thí nghiệm
+
+4.1 Dữ liệu hiệu chuẩn cơ sở
+Dữ liệu thực. Để đánh giá hiệu suất của tự hiệu chuẩn cho nén LLM, chúng tôi đầu tiên xem xét các bộ dữ liệu thế giới thực thường được sử dụng cho nén LLM (Frantar et al., 2023).
+
+• C4 (Raffel et al., 2020): Kho ngữ liệu Được Thu thập Sạch Khổng lồ thường được sử dụng như một nguồn dữ liệu hiệu chuẩn (§2.2). Điều này bao gồm văn bản web đã được loại bỏ trùng lặp và lọc để tối đa hóa văn bản ngôn ngữ tự nhiên chất lượng cao.
+
+• WikiText (Merity et al., 2017): Bộ dữ liệu WikiText bao gồm văn bản bách khoa toàn thư chất lượng cao từ Wikipedia. Đáng chú ý, điều này chỉ bao gồm các bài viết được làm nổi bật là 'Tốt' hoặc 'Nổi bật' bởi các biên tập viên con người. Quá trình đánh giá đánh giá độ chính xác và chất lượng viết, trong số các yếu tố khác.
+
+Dữ liệu tổng hợp. Riêng biệt, chúng tôi so sánh hiệu suất của tự hiệu chuẩn với dữ liệu tổng hợp được tạo ra (1) không có mô hình ngôn ngữ, và (2) với một mô hình bên ngoài lớn hơn đáng kể.
+
+• Từ vựng: Như một đường cơ sở đơn giản, chúng tôi tạo ra các ví dụ bao gồm các token được lấy mẫu ngẫu nhiên từ từ vựng mô hình. Chúng tôi giả định một phân phối đều trên từ vựng, tuy nhiên chúng tôi loại trừ các token mục đích đặc biệt (ví dụ <unk>).
+
+• Cosmopedia (Ben Allal et al., 2024): Bộ dữ liệu Cosmopedia bao gồm một loạt rộng các văn bản tổng hợp, bao gồm sách giáo khoa, bài đăng blog và truyện. Những điều này được tạo ra bằng cách nhắc Mixtral 8x7B Instruct (Jiang et al., 2024) với nhiều chủ đề chất lượng cao được lựa chọn từ dữ liệu thực.
+
+Lấy mẫu. Theo quy ước, chúng tôi lấy mẫu ngẫu nhiên 128 ví dụ hiệu chuẩn bao gồm 2,048 token mỗi cái (Frantar et al., 2023; Frantar và Alistarh, 2023; Sun et al., 2024; Chrysostomou et al., 2024). Mặc dù mục tiêu của lấy mẫu ngẫu nhiên là tránh thiên vị lựa chọn, nó có thể tạo ra một mẫu ít đại diện hơn cho bộ dữ liệu nguồn. Do đó, chúng tôi lặp lại quá trình lấy mẫu để tạo ra năm tập hiệu chuẩn riêng biệt cho mỗi bộ dữ liệu nguồn. Chúng tôi trình bày một nghiên cứu phân tích về số lượng dữ liệu hiệu chuẩn được sử dụng trong §6.1.
+
+Một số mô hình (Gemma, Mistral và Llama) được huấn luyện bằng dữ liệu đa ngôn ngữ, điều này được phản ánh khi lấy mẫu từ những mô hình này. Để cho phép so sánh công bằng với các bộ dữ liệu hiệu chuẩn chỉ tiếng Anh và các tác vụ đánh giá của chúng tôi, chúng tôi thúc đẩy việc tạo ra văn bản tiếng Anh cho những mô hình này. Cụ thể, chúng tôi chỉ ràng buộc bước sinh đầu tiên với một danh sách từ dừng tiếng Anh được xác định trước được tuyển chọn bởi Honnibal et al. (2020).
+
+4.2 Mô hình
+Chúng tôi thử nghiệm với các LLM 'nguồn mở' phổ biến từ năm họ mô hình khác nhau: (1) Gemma 2B (Mesnard et al., 2024), (2) Phi-2 2.7B (Javaheripi et al., 2023), (3) OPT 6.7B (Zhang et al., 2022), (4) Mistral 7B (v0.3) (Jiang et al., 2023), và (5) Llama 3.1 8B (Dubey et al., 2024).²
+
+Với ngoại lệ của OPT, vốn được tiền huấn luyện chỉ sử dụng các bộ dữ liệu có sẵn công khai, các chi tiết hạn chế xung quanh phân phối dữ liệu huấn luyện đã được tiết lộ. Dữ liệu huấn luyện cho tất cả các mô hình được báo cáo bao gồm các tài liệu web công khai. Tuy nhiên, dữ liệu huấn luyện cho Phi-2 đáng chú ý dựa vào một tỷ lệ đáng kể dữ liệu tổng hợp được tạo ra với GPT-3.5 (Ouyang et al., 2022).
+
+²Mesnard et al. (2024) sử dụng một sơ đồ đặt tên loại trừ các tham số nhúng. Để so sánh, chúng tôi lưu ý rằng Gemma 2B có 2.5B tham số có thể huấn luyện. Chúng tôi cũng lưu ý rằng các tham số nhúng được chia sẻ (Press và Wolf, 2017).
+
+--- TRANG 5 ---
+[Bảng 2: Độ chính xác tác vụ trung bình trên năm tập hiệu chuẩn cho tất cả các mô hình]
+
+4.3 Nén mô hình
+Vì không thể thử nghiệm với mọi phương pháp nén mô hình hiện có, chúng tôi lựa chọn bốn phương pháp được áp dụng rộng rãi nhất. Chúng tôi báo cáo các chi tiết triển khai trong Phụ lục A và lựa chọn siêu tham số hoàn chỉnh trong Phụ lục C.
+
+Lượng tử hoá. Cho lượng tử hoá, chúng tôi thử nghiệm AWQ (Lin et al., 2024) và GPTQ (Frantar et al., 2023). Trong cả hai trường hợp, chúng tôi sử dụng lượng tử hoá trọng số 4-bit, vốn có sự suy giảm hiệu suất tối thiểu trong khi cho phép suy luận hiệu quả (Frantar et al., 2024).
+
+Cắt tỉa. Cho cắt tỉa, chúng tôi sử dụng SparseGPT (Frantar và Alistarh, 2023) và Wanda (Sun et al., 2024). Trong cả hai trường hợp, chúng tôi tập trung vào thiết lập thưa thớt bán cấu trúc 2:4 (50%), cho phép tăng tốc suy luận trên GPU (Mishra et al., 2021).
+
+4.4 Tác vụ đánh giá
+Để cung cấp một lựa chọn tác vụ đánh giá không thiên vị, chúng tôi áp dụng tất cả các tác vụ zero-shot được sử dụng trong công trình gốc để đánh giá AWQ, GPTQ, SparseGPT và Wanda. Cụ thể, ARC (tập dễ và thách thức) (Clark et al., 2018), BoolQ (Clark et al., 2019), HellaSwag (Zellers et al., 2019), LAMBADA (Paperno et al., 2016), OpenBookQA (Banerjee et al., 2019), PIQA (Bisk et al., 2020), RTE (Dagan et al., 2006), StoryCloze (Mostafazadeh et al., 2016), và WinoGrande (Sakaguchi et al., 2021).
+
+5 Kết quả
+Bảng 2 trình bày hiệu suất trung bình trên tất cả các tác vụ cuối (§4.4) cho mọi mô hình được kiểm tra (§4.2).³ Cho tự hiệu chuẩn, chúng tôi đặt tinitial và tfinal là 1.0 (tức là lấy mẫu tiêu chuẩn), để cho phép so sánh công bằng giữa các mô hình. Tuy nhiên, chúng tôi nhấn mạnh rằng việc lựa chọn cẩn thận những tham số này có thể dẫn đến cải thiện hiệu suất thêm. Chúng tôi cung cấp một phân tích sâu hơn xung quanh tác động của lịch nhiệt độ trong §6.2.
+
+Tự hiệu chuẩn vượt trội các bộ dữ liệu tổng hợp khác. Chúng tôi quan sát rằng hiệu suất của tự hiệu chuẩn khớp hoặc vượt quá các bộ dữ liệu tổng hợp khác trong 17 trên 20 trường hợp. Ví dụ, khi lượng tử hoá Gemma 2B với GPTQ, tự hiệu chuẩn ghi nhận độ chính xác trung bình 59.9%, so với 58.5% với Cosmopedia và 57.9% với Từ vựng. Tương tự, khi cắt tỉa Llama 3.1 8B với SparseGPT, tự hiệu chuẩn mang lại sự gia tăng 2.9 điểm trong độ chính xác trung bình so với Cosmopedia (53.8% so với 50.9%). Điều này gợi ý rằng tự hiệu chuẩn có thể tạo ra dữ liệu hiệu chuẩn đại diện hơn cho phân phối huấn luyện của mỗi mô hình, so với các bộ dữ liệu tổng hợp khác.
+
+Tự hiệu chuẩn có thể vượt trội dữ liệu thế giới thực. Kết quả của chúng tôi cho thấy rằng đối với Phi-2, Gemma 2B và OPT 6.7B, tự hiệu chuẩn đạt được độ chính xác trung bình cao nhất so với tất cả các bộ dữ liệu khác trong tất cả trừ một trường hợp. Ngoại lệ duy nhất là khi cắt tỉa OPT 6.7B với SparseGPT, nơi tự hiệu chuẩn xếp thứ hai sau C4 (52.7% với tự hiệu chuẩn so với 52.8% với C4). Mặc dù tự hiệu chuẩn không vượt trội dữ liệu thực cho Mistral 7B và Llama 3.1 8B, chúng tôi quan sát rằng hiệu suất có tính cạnh tranh với dữ liệu thực như Cosmopedia (tức là khớp hoặc vượt trội Cosmopedia trong năm trên tám trường hợp).
+
+³Kết quả hoàn chỉnh được trình bày trong Phụ lục E.
+
+--- TRANG 6 ---
+[Hình 2: Độ chính xác zero-shot trung bình khi nén Gemma 2B và Phi-2 với mỗi phương pháp]
+
+Những kết quả này gợi ý rằng việc sử dụng tự hiệu chuẩn cho nén mô hình dẫn đến hiệu suất cuối ít nhất là tương đương với dữ liệu thực.
+
+Cắt tỉa hưởng lợi nhiều nhất từ tự hiệu chuẩn. Trên tất cả các mô hình và cả hai phương pháp cắt tỉa, tự hiệu chuẩn dẫn đến độ chính xác trung bình cao hơn so với dữ liệu tổng hợp khác. Ví dụ, khi cắt tỉa Llama 3.1 8B với Wanda, tự hiệu chuẩn chỉ đứng thứ hai sau WikiText với sự khác biệt 0.1 điểm (49.1% so với 49.2% với WikiText) trong khi cũng cao hơn 1.4 điểm so với Cosmopedia. Chúng tôi cũng quan sát rằng các phương pháp lượng tử hoá có vẻ ít nhạy cảm hơn với dữ liệu hiệu chuẩn. Ví dụ, sự khác biệt giữa nguồn dữ liệu hiệu chuẩn có hiệu suất tốt nhất và tệ nhất cho Gemma 2B là 0.6% với AWQ và 2.0% với GPTQ. Ngược lại, có phạm vi 7.5% với SparseGPT và 3.2% với Wanda. Điều này gợi ý rằng việc lựa chọn bộ dữ liệu hiệu chuẩn ít quan trọng hơn khi áp dụng lượng tử hoá cho các mô hình ngôn ngữ, xác nhận các phát hiện trước đó từ Williams và Aletras (2024).
+
+Từ vựng ngẫu nhiên liên tục có hiệu suất thấp. Đối với mọi mô hình và phương pháp nén, chúng tôi quan sát rằng dữ liệu hiệu chuẩn ngẫu nhiên (tức là Từ vựng) tạo ra hiệu suất thấp nhất. So với C4, việc nén Phi-2 với dữ liệu hiệu chuẩn tổng hợp ngẫu nhiên này làm giảm hiệu suất 0.9% cho AWQ, 0.5% cho GPTQ, 4.2% cho SparseGPT và 3.4% cho Wanda. Điều này minh họa rằng dữ liệu tổng hợp hoàn toàn ngẫu nhiên là không tối ưu cho hiệu chuẩn, ngay cả đối với lượng tử hoá có thể ít nhạy cảm hơn.
+
+6 Phân tích
+
+6.1 Phân tích số lượng dữ liệu hiệu chuẩn
+Phương pháp. Để đánh giá cách số lượng dữ liệu hiệu chuẩn ảnh hưởng đến hiệu suất, chúng tôi thử nghiệm với các tập hiệu chuẩn có kích thước khác nhau. Đối với mỗi tập hiệu chuẩn, chúng tôi thử nghiệm các tập con của n ví dụ, trong đó n ∈ {1,2,4,8,16,32,64,128}. Chúng tôi lặp lại quá trình này trên năm tập hiệu chuẩn riêng biệt được lấy mẫu từ mỗi nguồn dữ liệu hiệu chuẩn.⁴
+
+Tự hiệu chuẩn có thể hiệu quả hơn về mẫu. Trong trường hợp cắt tỉa, tự hiệu chuẩn có thể mang lại hiệu suất tương đương hoặc lớn hơn với ít dữ liệu hơn. Ví dụ, khi cắt tỉa Phi-2 với SparseGPT, C4 đạt độ chính xác trung bình 54.3% với 128 ví dụ, trong khi tự hiệu chuẩn đạt 54.5% chỉ với 16 ví dụ. Trong khi xu hướng tương tự có thể thấy đối với GPTQ, biên độ hiệu suất giữa các nguồn dữ liệu quá nhỏ để rút ra kết luận tương tự.
+
+⁴Chúng tôi thực hiện phân tích này sử dụng các mô hình nhỏ hơn (Gemma 2B và Phi-2) do hạn chế tài nguyên tính toán.
+
+Cuối cùng, chúng tôi lưu ý rằng hiệu quả mẫu cải thiện có thể giảm chi phí tính toán của nén mô hình (Frantar và Alistarh, 2023). Về mặt thực tế, điều này có thể cho phép (1) ít lần truyền tiến hơn, như kết quả trực tiếp của ít ví dụ hơn, hoặc (2) kích thước lô tăng, do ít kích hoạt trung gian hơn.
+
+6.2 Phân tích chiến lược lấy mẫu
+Phương pháp. Để điều tra cách các tham số của chiến lược lấy mẫu của chúng tôi (§3.1) ảnh hưởng đến hiệu suất, chúng tôi khám phá một phạm vi rộng các giá trị: tinitial, tfinal ∈ {0.0,0.5,1.0,1.5,2.0}. Chúng tôi nhấn mạnh rằng một số tập con của những giá trị này tương đương với một số chiến lược giải mã tiêu chuẩn:
+
+• Giải mã tham lam. Khi cả tinitial = 0 và tfinal = 0, điều này tương đương với việc lựa chọn token có xác suất cao nhất tại mỗi bước thời gian.
+• Lấy mẫu tiêu chuẩn. Sử dụng kết hợp tinitial = 1 và tfinal = 1 tương đương với việc áp dụng softmax không có tham số nhiệt độ.
+• Lấy mẫu nhiệt độ. Khi tinitial = tfinal, một nhiệt độ không đổi được duy trì trong suốt quá trình sinh, tương đương với lấy mẫu nhiệt độ.
+
+[Hình 3: Tìm kiếm tham số kết hợp cho tinitial và tfinal sử dụng n = 10]
+
+Chiến lược lấy mẫu có thể ảnh hưởng đến hiệu suất. Hình 3 trình bày ảnh hưởng của các tham số chiến lược lấy mẫu đến độ chính xác tác vụ trung bình. Đối với SparseGPT và Wanda, việc lựa chọn cẩn thận các tham số lấy mẫu có thể mang lại hiệu suất cải thiện. Ví dụ, Gemma 2B thấy hiệu suất hơi nâng cao khi sử dụng nhiệt độ ban đầu cao hơn và nhiệt độ cuối vừa phải. Ngược lại, việc sử dụng cả nhiệt độ ban đầu và cuối thấp dẫn đến hiệu suất thấp hơn đáng kể.
+
+Lựa chọn tham số lấy mẫu không cần thiết. Chúng tôi quan sát rằng có thể đạt được trong vòng 0.5 điểm của hiệu suất tối đa thông qua việc sử dụng chỉ lấy mẫu tiêu chuẩn (tức là tinitial = tfinal = 1). Điều này gợi ý rằng tự hiệu chuẩn có thể đạt được hiệu suất hợp lý với ít chú ý đến các tham số cụ thể được sử dụng. Do đó, chúng tôi nghi ngờ rằng việc sử dụng chính mô hình để tạo ra dữ liệu hiệu chuẩn là một phương pháp tương đối ổn định và đáng tin cậy.
+
+6.3 Phân tích dữ liệu hiệu chuẩn
+Phương pháp. Nội dung và phong cách của văn bản có thể khác nhau đáng kể giữa các nguồn dữ liệu hiệu chuẩn. Do đó, chúng tôi tìm cách phân tích cách các đặc tính văn bản khác nhau giữa chúng. Để đạt được mục tiêu này, chúng tôi sử dụng nhiều số liệu tự động khác nhau để đánh giá các đặc tính văn bản khác nhau của các tập hiệu chuẩn.
+
+• Độ phức tạp. Như một chỉ số gián tiếp về chất lượng văn bản, chúng tôi tính toán độ phức tạp trung bình trên các ví dụ trong tập hiệu chuẩn cho một mô hình nhất định.
+
+• Lặp lại. Theo Welleck et al. (2020), chúng tôi báo cáo phần trung bình của các token lặp lại trên mỗi chuỗi. Chính thức hơn, điều này được tính toán trên mỗi chuỗi w có độ dài L trong bộ dữ liệu D, trong đó I biểu thị hàm chỉ số nhị phân:
+
+R = 1/(|D|L) Σ(w∈D) Σ(i=1 to L) I(wi ∈ w1:i−1)
+
+• Phủ từ vựng. Để đánh giá sự đa dạng từ vựng của các tập hiệu chuẩn, chúng tôi báo cáo phủ từ vựng. Chúng tôi định nghĩa điều này như tỷ lệ giữa các token từ phụ có trong tập hiệu chuẩn và trong từ vựng mô hình.
+
+• Sự đa dạng n-gram. Theo Meister et al. (2023), chúng tôi báo cáo phần trung bình của các n-gram duy nhất (n ∈ {1,2,3,4}) trong tập hiệu chuẩn:
+
+D = 1/N Σ(n=1 to N) (số n-gram duy nhất)/(số n-gram tổng)
+
+• Hệ số Zipf. Cuối cùng, chúng tôi kiểm tra mức độ mà tập hiệu chuẩn tuân theo định luật Zipf. Cụ thể, chúng tôi tính toán sự phù hợp của số mũ tương ứng với tập hiệu chuẩn. Văn bản ngôn ngữ tự nhiên có xu hướng có giá trị gần một.
+
+--- TRANG 7 ---
+[Bảng 3: Đoạn bắt đầu của ba văn bản tổng hợp đầu tiên được tạo ra bởi Gemma 2B và Llama 3.1 8B]
+
+Dữ liệu tự hiệu chuẩn nói chung là văn bản mạch lạc. Bảng 3 trình bày dữ liệu tự hiệu chuẩn từ Gemma 2 và Llama 3.1 8B. Để ngắn gọn, chúng tôi lựa chọn ba văn bản đầu tiên được tạo ra bởi mỗi mô hình. Chúng tôi quan sát rằng văn bản tự tạo thường mạch lạc và trôi chảy trong cả hai mô hình. Hơn nữa, nội dung thường hợp lý về mặt ngữ nghĩa. Những tính chất này được hỗ trợ phần nào bởi kết quả độ phức tạp trong Bảng 4, với tự hiệu chuẩn cho thấy độ phức tạp thấp hơn đáng kể so với dữ liệu thực.
+
+[Bảng 4: Đặc tính văn bản trên tất cả các tập hiệu chuẩn cho Gemma 2B và Llama 3.1 8B]
+
+Tự hiệu chuẩn có thể tạo ra văn bản ít đa dạng hơn. Bảng 4 trình bày các đặc tính văn bản cho Gemma 2B và Llama 3.1 8B trên tất cả các bộ dữ liệu.⁵ So với các nguồn dữ liệu thực (tức là C4 và WikiText), dữ liệu tự hiệu chuẩn khác nhau trên nhiều số liệu khác nhau. Ví dụ, dữ liệu tự hiệu chuẩn từ Llama 3.1 8B có phủ từ vựng thấp hơn (0.15 so với 0.16-0.18) và sự đa dạng n-gram (0.58 so với 0.62-0.65). Tuy nhiên, dữ liệu tự hiệu chuẩn có hệ số Zipf cao hơn (1.24 so với 1.12-1.16) và lặp lại hơi nâng cao (0.66 so với 0.64-0.65). Nhìn chung, điều này gợi ý rằng dữ liệu tự hiệu chuẩn thường ít đa dạng hơn so với dữ liệu thực.
+
+⁵Chúng tôi quan sát kết quả tương tự trong các mô hình khác (Phụ lục D).
+
+7 Kết luận
+Trong bài báo này, chúng tôi đề xuất tự hiệu chuẩn cho lượng tử hoá và cắt tỉa LLM như một giải pháp để giảm thiểu lo ngại về tính khả dụng, chất lượng và tính đại diện của dữ liệu huấn luyện. Phương pháp đề xuất của chúng tôi trực quan và không yêu cầu nguồn dữ liệu bên ngoài, thay vào đó dựa vào chính mô hình. Chúng tôi đã chứng minh thực nghiệm rằng tự hiệu chuẩn duy trì hiệu suất tác vụ cuối tương đương hoặc lớn hơn trên nhiều mô hình và phương pháp nén khác nhau. Đáng ngạc nhiên, kết quả của chúng tôi cũng tiết lộ rằng tự hiệu chuẩn có thể cho phép hiệu suất tác vụ cuối cao hơn so với việc sử dụng dữ liệu thực. Chúng tôi hy vọng rằng nghiên cứu của chúng tôi sẽ truyền cảm hứng cho công trình tiếp theo về ứng dụng dữ liệu tổng hợp cho nén LLM.
+
+--- TRANG 8 ---
+Hạn chế
+Trong nghiên cứu này, chúng tôi thử nghiệm với các mô hình và tác vụ đánh giá tiếng Anh, và do đó chỉ dữ liệu hiệu chuẩn tiếng Anh. Tuy nhiên, công trình gần đây đã minh họa tầm quan trọng của dữ liệu hiệu chuẩn đặc thù ngôn ngữ khi nén các mô hình đa ngôn ngữ (Zeng et al., 2024; Kurz et al., 2024). Mặc dù chúng tôi dự đoán rằng phương pháp của chúng tôi sẽ tổng quát hoá đến các mô hình đa ngôn ngữ, chúng tôi hy vọng khám phá vấn đề này sâu hơn trong công trình tương lai.
+
+Cân nhắc đạo đức
+Các mô hình ngôn ngữ có khả năng tạo ra văn bản không chính xác, thiên vị và có hại (Weidinger et al., 2022). Để nén một mô hình nhất định, phương pháp của chúng tôi yêu cầu việc sinh không giám sát dữ liệu hiệu chuẩn từ chính mô hình. Do đó, dữ liệu hiệu chuẩn có thể chứa tài liệu có vấn đề. Tuy nhiên, chúng tôi lưu ý rằng điều này khó có thể đưa ra các vấn đề an toàn mới trong mô hình nén. Để dữ liệu hiệu chuẩn được tạo ra chứa nội dung có vấn đề, nó phải đã được mã hoá trong trọng số của mô hình gốc.
+
+Lời cảm ơn
+Chúng tôi biết ơn Vladimir Poroshin, Vitor Jeronymo, Szymon Palucha, Christopher May, Mario Sanger, và các nhà đánh giá ẩn danh cho phản hồi vô giá của họ. MW được hỗ trợ bởi Trung tâm Đào tạo Tiến sĩ về Công nghệ Lời nói và Ngôn ngữ (SLT) và Ứng dụng của chúng được tài trợ bởi tài trợ UK Research and Innovation EP/S023062/1. NA được hỗ trợ bởi tài trợ EPSRC EP/Y009800/1, một phần của các dự án nền tảng RAI UK.
+
+[Phần Tài liệu tham khảo từ trang 9-14 - Danh sách đầy đủ các tài liệu tham khảo học thuật]
+
+--- TRANG 15 ---
+A Cơ sở hạ tầng
+Chúng tôi sử dụng các triển khai mô hình và bộ dữ liệu được chuẩn bị từ thư viện Hugging Face Transformers (Wolf et al., 2020) và Datasets (Lhoest et al., 2021), tương ứng. Cho cắt tỉa với SparseGPT và Wanda, chúng tôi áp dụng triển khai từ Sun et al. (2024). Cho lượng tử hoá với AWQ và GPTQ, chúng tôi sử dụng thư viện NVIDIA TensorRT Model Optimizer và AutoGPTQ, tương ứng.⁶ Để cho phép đánh giá mô hình có thể tái tạo, chúng tôi sử dụng EleutherAI Language Model Evaluation Harness (Gao et al., 2023). Tất cả các thí nghiệm được tiến hành sử dụng một GPU NVIDIA A100 80GB duy nhất.
+
+B Bộ dữ liệu đánh giá
+Bảng 5 liệt kê số lượng ví dụ được sử dụng từ phần chia tập dữ liệu liên quan trong mỗi tác vụ đánh giá. Đây là phần chia validation hoặc test, như được triển khai bởi Gao et al. (2023).
+
+C Siêu tham số
+Bảng 6 trình bày các siêu tham số được sử dụng trong tất cả các thí nghiệm. Cho SparseGPT và Wanda, chúng tôi áp dụng các siêu tham số được sử dụng trong công trình gốc. Cho AWQ và GPTQ, chúng tôi sử dụng các siêu tham số từ các triển khai tương ứng, NVIDIA TensorRT Model Optimizer và AutoGPTQ (§A).
+
+D Phân tích dữ liệu hiệu chuẩn
+Bổ sung cho kết quả đặc tính văn bản cho Gemma 2 và Llama 3.1 8B được trình bày trong §6.3, chúng tôi trình bày kết quả cho Phi-2 2.7B, OPT 6.7B và Mistral 7B trong Bảng 8. Cuối cùng, chúng tôi cũng trình bày các ví dụ tự hiệu chuẩn cho các mô hình còn lại (Phi-2 2.7B, OPT 6.7B và Mistral 7B) trong Bảng 7.
+
+E Kết quả hoàn chỉnh
+Ngoài kết quả tóm tắt (Bảng 2), chúng tôi trình bày hiệu suất tác vụ trên các phương pháp nén và nguồn dữ liệu hiệu chuẩn cho mỗi mô hình: Gemma 2B (Bảng 9), Phi-2 2.7B (Bảng 10), OPT 6.7B (Bảng 11), Mistral 7B (Bảng 12), và Llama 3.1 8B (Bảng 13).
+
+⁶Xem https://nvidia.github.io/TensorRT-Model-Optimizer và https://github.com/AutoGPTQ/AutoGPTQ.
+
+[Các bảng chi tiết 5-13 với kết quả thí nghiệm đầy đủ từ trang 15-19]

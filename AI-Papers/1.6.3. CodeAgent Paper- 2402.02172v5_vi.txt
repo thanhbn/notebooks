@@ -1,0 +1,180 @@
+# 1.6.3. CodeAgent Paper- 2402.02172v5.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\1.6.3. CodeAgent Paper- 2402.02172v5.pdf
+# Kích thước file: 11796138 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+CodeAgent: Các Tác Nhân Giao Tiếp Tự Động cho Đánh Giá Mã
+Xunzhu Tang1, Kisub Kim2, Yewei Song1, Cedric Lothritz3, Bei Li4, Saad Ezzini5,
+Haoye Tian6,*, Jacques Klein1, và Tegawendé F. Bissyandé1
+1Đại học Luxembourg
+2Đại học Quản lý Singapore
+3Viện Khoa học và Công nghệ Luxembourg
+4Đại học Northeastern
+5Đại học Lancaster
+6Đại học Melbourne
+
+Tóm tắt
+Đánh giá mã, nhằm đảm bảo chất lượng tổng thể và độ tin cậy của phần mềm, là nền tảng của phát triển phần mềm. Tuy nhiên, mặc dù quan trọng, đánh giá mã là một quá trình tốn nhiều lao động mà cộng đồng nghiên cứu đang tìm cách tự động hóa. Các phương pháp tự động hiện tại dựa vào các mô hình sinh đơn lẻ đầu vào-đầu ra và do đó thường gặp khó khăn trong việc mô phỏng bản chất hợp tác của đánh giá mã. Nghiên cứu này giới thiệu CodeAgent, một hệ thống Mô hình Ngôn ngữ Lớn (LLM) đa tác nhân mới cho tự động hóa đánh giá mã. CodeAgent kết hợp một tác nhân giám sát, QA-Checker, để đảm bảo rằng tất cả các đóng góp của tác nhân đều giải quyết câu hỏi đánh giá ban đầu. Chúng tôi đánh giá CodeAgent trên các nhiệm vụ đánh giá mã quan trọng: (1) phát hiện sự không nhất quán giữa thay đổi mã và thông điệp commit, (2) xác định việc giới thiệu lỗ hổng bảo mật, (3) xác thực tuân thủ phong cách mã, và (4) đề xuất sửa đổi mã. Kết quả chứng minh hiệu quả của CodeAgent, đóng góp vào trạng thái nghệ thuật mới trong tự động hóa đánh giá mã. Dữ liệu và mã của chúng tôi được công khai (https://github.com/Code4Agent/codeagent).
+
+1 Giới thiệu
+Đánh giá mã (Bacchelli và Bird, 2013; Bosu và Carver, 2013; Davila và Nunes, 2021) thực hiện một quy trình trong đó các nhà bảo trì phần mềm kiểm tra và đánh giá các đóng góp mã để đảm bảo chất lượng và tuân thủ tiêu chuẩn mã hóa, và xác định các lỗi tiềm ẩn hoặc cải tiến. Trong tài liệu gần đây, nhiều phương pháp khác nhau (Tufano et al., 2021, 2022) đã được đề xuất để nâng cao hiệu suất của tự động hóa đánh giá mã. Thật không may, các phương pháp chính trong lĩnh vực này bỏ qua một khía cạnh cơ bản: quy trình đánh giá mã vốn dĩ có tính tương tác và hợp tác (Bacchelli và Bird, 2013). Thay vào đó, chúng chủ yếu tập trung vào việc viết lại và điều chỉnh mã được gửi (Watson et al., 2022; Thongtanunam et al., 2022; Staron et al., 2020). Về khía cạnh này, một phương pháp hiệu quả không chỉ nên giải quyết cách đánh giá mã được gửi cho một số nhu cầu cụ thể (ví dụ, phát hiện lỗ hổng bảo mật (Chakraborty et al., 2021; Yang et al., 2024a)). Tuy nhiên, các khía cạnh không thể bỏ qua khác của đánh giá mã cũng nên được xem xét, như phát hiện vấn đề trong định dạng mã hoặc sự không nhất quán trong sửa đổi mã (Oliveira et al., 2023; Tian et al., 2022; Panthaplackel et al., 2021). Tuy nhiên, việc xử lý nhiều nhiệm vụ con đòi hỏi tương tác giữa các nhân viên trong các vai trò khác nhau trong một tình huống đánh giá mã thực tế, điều này làm cho việc thiết kế một mô hình thực hiện đánh giá mã tự động trở nên thách thức.
+
+Hệ thống dựa trên tác nhân là một mô hình mới nổi và một khung tính toán trong đó các thực thể tự động (còn gọi là tác nhân) tương tác với nhau (Li et al., 2023a; Qian et al., 2023; Hong et al., 2023) để thực hiện một nhiệm vụ. Các phương pháp dựa trên tác nhân đã được đề xuất để giải quyết một loạt các nhiệm vụ kỹ thuật phần mềm (Qian et al., 2023; Zhang et al., 2024; Tang et al., 2023; Tian et al., 2023), vượt ra ngoài mô hình đầu vào-đầu ra thông thường do khả năng đặc biệt của chúng trong việc mô phỏng và mô hình hóa các tương tác và hành vi phức tạp trong môi trường động (Xi et al., 2023; Yang et al., 2024b; Wang et al., 2023). Gần đây, các hệ thống đa tác nhân đã tận dụng điểm mạnh của các tác nhân đa dạng để mô phỏng các quy trình ra quyết định giống con người (Du et al., 2023; Liang et al., 2023; Park et al., 2023), dẫn đến hiệu suất được nâng cao trên nhiều nhiệm vụ khác nhau (Chen et al., 2023; Li et al., 2023b; Hong et al., 2023). Mô hình này rất phù hợp với thách thức của đánh giá mã, nơi nhiều người đánh giá, mỗi người có kỹ năng và vai trò đa dạng, hợp tác để đạt được một đánh giá toàn diện về mã.
+
+Bài báo này. Dựa trên thành công của hợp tác dựa trên tác nhân, chúng tôi đề xuất một khung đa tác nhân CodeAgent để mô phỏng động lực của một nhóm hợp tác tham gia vào quy trình đánh giá mã, kết hợp các vai trò đa dạng như tác giả thay đổi mã, người đánh giá, và người ra quyết định. Đặc biệt, một đóng góp chính của CodeAgent là chúng tôi giải quyết thách thức của prompt drifting (Zheng et al., 2024; Yang et al., 2024c), một vấn đề phổ biến trong các hệ thống đa tác nhân và lý luận Chuỗi Suy nghĩ (CoT). Vấn đề này, được đặc trưng bởi các cuộc trò chuyện lệch khỏi chủ đề chính, làm nổi bật nhu cầu về các chiến lược để duy trì sự tập trung và tính mạch lạc (Greyling, 2023; Chae et al., 2023). Sự lệch hướng này, thường được kích hoạt bởi các tiếp tuyến được mô hình truyền cảm hứng hoặc tính ngẫu nhiên của Mô hình Ngôn ngữ Lớn (LLM), đòi hỏi việc tích hợp một tác nhân giám sát. Chúng tôi sử dụng một tác nhân có tên QA-Checker (cho "Question-Answer Checker") giám sát luồng cuộc trò chuyện, đảm bảo rằng các câu hỏi và câu trả lời vẫn liên quan và phù hợp với mục tiêu dự định của cuộc đối thoại. Một tác nhân như vậy không chỉ tinh chỉnh các truy vấn mà còn điều chỉnh lại các câu trả lời để phù hợp với ý định ban đầu, sử dụng một phương pháp có hệ thống dựa trên một khung toán học.
+
+Để đánh giá hiệu suất của CodeAgent, trước tiên chúng tôi đánh giá hiệu quả của nó đối với các mục tiêu đánh giá điển hình như phát hiện lỗ hổng bảo mật 4.1 và xác thực tính nhất quán và căn chỉnh của định dạng mã 4.2. Sau đó chúng tôi so sánh CodeAgent với các mô hình ngôn ngữ chung và đặc thù mã tiên tiến như ChatGPT (OPENAI, 2022) và CodeBERT (Feng et al., 2020). Cuối cùng, chúng tôi đánh giá hiệu suất của CodeAgent so với các công cụ tiên tiến cho đề xuất sửa đổi mã (Tufano et al., 2021; Thongtanunam et al., 2022; Tufano et al., 2022). Vì mỗi công trình liên quan này trình bày một tập dữ liệu cụ thể, chúng tôi cũng sử dụng chúng hướng tới một so sánh công bằng. Ngoài ra, chúng tôi cũng thu thập các pull request từ GitHub, có một loạt rộng lớn các commit, thông điệp, và bình luận để đánh giá các khả năng tiên tiến. Kết quả thử nghiệm tiết lộ rằng CodeAgent vượt trội đáng kể so với tiên tiến, đạt được 41% tăng tỷ lệ hit trong việc phát hiện lỗ hổng bảo mật. CodeAgent cũng xuất sắc trong kiểm tra tính nhất quán và căn chỉnh định dạng, vượt trội hơn các mô hình mục tiêu.
+
+arXiv:2402.02172v5 [cs.SE] 24 Sep 2024
+
+động lực của một nhóm hợp tác tham gia vào quy trình đánh giá mã, kết hợp các vai trò đa dạng như tác giả thay đổi mã, người đánh giá và người ra quyết định. Kết quả thử nghiệm cho thấy CodeAgent vượt trội đáng kể so với hiện đại. Cuối cùng, CodeAgent thể hiện tính mạnh mẽ của nó đối với sửa đổi mã bằng cách trình bày tiến độ chỉnh sửa trung bình vượt trội.
+
+Chúng tôi tóm tắt những đóng góp của mình như sau:
+• Theo hiểu biết tốt nhất của chúng tôi, chúng tôi là những người đầu tiên đề xuất một hệ thống dựa trên tác nhân tự động cho đánh giá mã thực tế trong lĩnh vực bảo trì phần mềm.
+• Chúng tôi xây dựng một tập dữ liệu mới bao gồm 3.545 thay đổi mã và thông điệp commit trong thế giới thực. Tập dữ liệu này, bao gồm tất cả các file liên quan và chi tiết trong định dạng tự chứa, có giá trị để đánh giá các nhiệm vụ đánh giá mã tiên tiến như phát hiện lỗ hổng bảo mật, phát hiện phong cách mã, và đề xuất sửa đổi mã.
+• Chúng tôi chứng minh hiệu quả của QA-Checker. Tác nhân này giám sát luồng cuộc trò chuyện để đảm bảo căn chỉnh với ý định ban đầu, hiệu quả giải quyết các vấn đề prompt drifting phổ biến trong các hệ thống đa tác nhân.
+
+Đánh giá thử nghiệm làm nổi bật hiệu suất của CodeAgent: Trong phát hiện lỗ hổng bảo mật, CodeAgent vượt trội hơn GPT-4 và CodeBERT từ 3 đến 7 điểm phần trăm về số lượng lỗ hổng bảo mật được phát hiện. Đối với căn chỉnh định dạng, CodeAgent vượt trội hơn ReAct khoảng 14% về recall trong phát hiện sự không nhất quán. Trong nhiệm vụ sửa đổi mã, CodeAgent vượt qua hiện đại trong tài liệu kỹ thuật phần mềm, đạt được cải thiện hiệu suất trung bình khoảng 30% trong số liệu Edit Progress (Zhou et al., 2023).
+
+2 CodeAgent
+Phần này trình bày chi tiết phương pháp đằng sau khung CodeAgent của chúng tôi. Chúng tôi thảo luận về nhiệm vụ và định nghĩa trong Phần 2.1, pipeline trong Phần 2.2, thẻ vai trò được định nghĩa trong Phần 2.3, và thiết kế của QA-Checker trong Phần 2.4.
+
+2.1 Nhiệm vụ
+Chúng tôi định nghĩa CA, VA, FA, và CR như sau:
+CA (Zhang et al., 2022): Phân tích tính nhất quán giữa thay đổi mã và thông điệp commit; nhiệm vụ là phát hiện các trường hợp mà thông điệp commit mô tả chính xác (bằng ngôn ngữ tự nhiên) ý định của các thay đổi mã (bằng ngôn ngữ lập trình).
+VA (Braz et al., 2022): Phân tích lỗ hổng bảo mật; nhiệm vụ là xác định các trường hợp mà thay đổi mã giới thiệu một lỗ hổng bảo mật trong mã.
+FA (Han et al., 2020): Phân tích tính nhất quán định dạng giữa commit và file gốc; nhiệm vụ là
+
+--- TRANG 3 ---
+Thông điệp Commit Pull Request
+Tôi có một đoạn mã có thể chứa một số lỗi. Bạn có thể hỗ trợ kiểm tra nó để tìm vấn đề không? Nếu phát hiện vấn đề, tôi sẽ đánh giá cao việc cung cấp phiên bản đã sửa. Tôi đang tìm kiếm một đánh giá sâu về mã, đặc biệt tập trung vào khía cạnh sau: ......
+
+CodeAgent
+Các Giai đoạn:
+Đồng bộ Thông tin Cơ bản;
+Tài liệu
+
+## Đầu ra
+tài liệu
+Mã
+phương thức Ngôn ngữ
+
+Định nghĩa Vai trò:
+##Cuộc trò chuyện
+Đồng bộ Thông tin Cơ bản Tài liệu Trách nhiệm chính của bạn bao gồm việc trở thành một người ra quyết định tích cực trong đánh giá mã.....
+
+Người dùng CEO Người đánh giá CPO Coder Vai trò Nhóm
+CTO
+Kiểm tra trong vòng lặp
+
+##File
+
+Các Giai đoạn:
+Đồng bộ Thông tin Cơ bản
+
+## Đầu ra
+phương thức Ngôn ngữ
+
+Định nghĩa Vai trò:
+##Cuộc trò chuyện
+Đồng bộ Thông tin Cơ bản Bạn là CTO của CodeAgent, bạn quen thuộc với nhiều ngôn ngữ lập trình và giỏi về tổng thể....
+
+Các Giai đoạn:
+Đánh giá Mã;
+Căn chỉnh Mã;
+Tài liệu
+
+Định nghĩa Vai trò:
+##Cuộc trò chuyện
+Tài liệu Trách nhiệm chính của bạn bao gồm việc trở thành một người ra quyết định tích cực trong đánh giá mã.....
+
+##Mã đã sửa đổi
+## Phân tích Hành động
+Để giải quyết lỗi tiềm ẩn này, tôi khuyến nghị sử dụng phương thức "Objects.equals" thay vì gọi trực tiếp "equals" trên đối tượng "expected". Điều này sẽ đảm bảo một so sánh an toàn null và nhất quán.
+
+Căn chỉnh Mã
+Đánh giá Mã
+##File
+
+Nhật ký Mã
+Định nghĩa Vai trò:
+##Cuộc trò chuyện Bạn là một người đánh giá mã tại CodeAgent hợp tác để đảm bảo chất lượng phần mềm bằng cách đánh giá mã để tìm khiếm khuyết, lỗ hổng bảo mật, và vấn đề tính nhất quán, sửa lỗi, và đề xuất cải tiến...
+
+Các Giai đoạn:
+Đánh giá Mã;
+Căn chỉnh Mã
+
+Căn chỉnh Mã
+Đánh giá Mã
+
+##Phân tích Tính nhất quán
+... Tôi thấy rằng có thiếu tính nhất quán ngữ nghĩa giữa chúng. Thông điệp commit không phản ánh chính xác các thay đổi được thực hiện trong mã. Sự không nhất quán này
+
+##Phân tích Bảo mật
+... Tôi không tìm thấy bất kỳ sửa đổi nào trong mã có thể giới thiệu lỗ hổng bảo mật, tấn công, hoặc lỗi.... Tuy nhiên, luôn được khuyến nghị tiến hành đánh giá bảo mật kỹ lưỡng toàn bộ codebase để đảm bảo ....
+
+## Phân tích Định dạng
+Định dạng của đoạn mã không phù hợp với phong cách viết và định dạng của file gốc. Định dạng không nhất quán có thể ảnh hưởng tiêu cực đến khả năng đọc và bảo trì của dự án. Điều quan trọng là duy trì mã hóa nhất quán....
+
+## Đề xuất Sửa đổi
+Tôi khuyến nghị căn chỉnh đoạn mã với phong cách viết. Tôi đề xuất sửa đổi mã để khắc phục rủi ro tiềm ẩn
+
+Các Giai đoạn:
+Tài liệu
+
+Định nghĩa Vai trò:
+##Cuộc trò chuyện Bạn là một CPO làm việc tại codeagent, bạn chịu trách nhiệm hỗ trợ CEO và coder tóm tắt báo cáo đánh giá mã...
+
+##File
+
+Tài liệu
+
+tài liệu
+mã file gốc cuộc trò chuyện CEO CTO
+Người đánh giá Coder
+CPO
+
+Hình 1: Sơ đồ thẻ dữ liệu vai trò của nhóm đánh giá mã mô phỏng và các cuộc trò chuyện của họ trong CodeAgent. Chúng tôi có sáu nhân vật trong CodeAgent qua bốn giai đoạn, bao gồm "Đồng bộ Thông tin Cơ bản", "Đánh giá Mã", "Căn chỉnh Mã", và "Tài liệu". Đánh giá mã là một loại công việc hợp tác, nơi chúng tôi thiết kế các cuộc trò chuyện giữa mọi hai vai trò cho mỗi bước để hoàn thành nhiệm vụ.
+
+xác thực rằng phong cách định dạng thay đổi mã không phù hợp với mã đích.
+CR (Zhou et al., 2023): Sửa đổi mã; nhiệm vụ này cố gắng tự động đề xuất viết lại thay đổi mã để giải quyết bất kỳ vấn đề nào được phát hiện.
+
+2.2 Pipeline
+Chúng tôi định nghĩa sáu nhân vật và bốn giai đoạn cho khung. Vai trò của các nhân vật được minh họa trong Hình 1. Mỗi giai đoạn chứa nhiều cuộc trò chuyện, và mỗi cuộc trò chuyện xảy ra giữa các tác nhân. Bốn giai đoạn bao gồm 1) Đồng bộ Thông tin Cơ bản, chứa các vai trò của giám đốc điều hành (CEO), giám đốc công nghệ (CTO), và Coder để tiến hành phân tích phương thức và ngôn ngữ; 2) Đánh giá Mã, yêu cầu Coder và Reviewer thực hiện đánh giá mã thực tế (tức là các nhiệm vụ con mục tiêu); 3) Căn chỉnh Mã, hỗ trợ Coder và Reviewer sửa chữa commit thông qua sửa đổi mã và đề xuất cho tác giả; và 4) Tài liệu, hoàn thiện bằng cách tổng hợp ý kiến của CEO, CPO (Giám đốc Sản phẩm), Coder, và Reviewer để cung cấp bình luận cuối cùng. Ngoài sáu vai trò được định nghĩa, kiến trúc được đề xuất của CodeAgent bao gồm các thành phần cấp giai đoạn và cấp cuộc trò chuyện. Mô hình thác nước chia quy trình đánh giá mã ở cấp giai đoạn thành bốn giai đoạn tuần tự. Ở cấp cuộc trò chuyện, mỗi giai đoạn được chia thành các cuộc trò chuyện nguyên tử. Những cuộc trò chuyện nguyên tử này liên quan đến việc đóng vai hướng nhiệm vụ giữa hai tác nhân, thúc đẩy giao tiếp hợp tác. Một tác nhân hoạt động như một người hướng dẫn và tác nhân khác như một trợ lý. Giao tiếp theo phong cách tuân theo hướng dẫn, nơi các tác nhân tương tác để hoàn thành một nhiệm vụ con cụ thể trong mỗi cuộc trò chuyện, và mỗi cuộc trò chuyện được giám sát bởi QA-Checker. QA-Checker được sử dụng để căn chỉnh
+
+--- TRANG 4 ---
+Đồng bộ Thông tin Cơ bản
+Đánh giá Mã Căn chỉnh Mã Tài liệu Người hướng dẫn Trợ lý
+Phương thức Ngôn ngữ Mã/Tài liệu Mã/Tài liệu
+Đánh giá
+Thông điệp Commit Pull Request
+mã file gốc cuộc trò chuyện vòng lặp Mã/Tài liệu
+
+Người dùng CEO Người đánh giá CPO Coder
+CTO Vai trò
+
+Hình 2: Pipeline/tình huống của CodeAgent về một cuộc trò chuyện đầy đủ trong quy trình đánh giá mã giữa các vai trò khác nhau. "Đồng bộ Thông tin Cơ bản" thể hiện xác nhận thông tin cơ bản bởi CEO, CTO, và Coder; "Đánh giá Mã" cho thấy quy trình đánh giá mã thực tế; "Căn chỉnh Mã" minh họa sửa đổi mã tiềm năng; và "Tài liệu" đại diện cho việc tóm tắt và viết kết luận cho tất cả các bên liên quan. Tất cả các cuộc trò chuyện được đảm bảo bởi Quality Assurance checker cho đến khi chúng đạt đến số lượt đối thoại tối đa hoặc đáp ứng tất cả các yêu cầu.
+
+tính nhất quán của câu hỏi và câu trả lời giữa người hướng dẫn và trợ lý trong một cuộc trò chuyện để tránh lạc đề. QA-Checker sẽ được giới thiệu trong Phần 2.4.
+
+Hình 2 cho thấy một ví dụ minh họa về pipeline CodeAgent. CodeAgent nhận yêu cầu thực hiện đánh giá mã với commit được gửi, thông điệp commit, và file gốc. Trong giai đoạn đầu tiên, CEO, CTO, và Coder sẽ hợp tác để nhận ra phương thức của đầu vào (ví dụ, tài liệu, mã) và ngôn ngữ (ví dụ, Python, Java và Go). Trong giai đoạn thứ hai, với sự giúp đỡ của Coder, Reviewer sẽ viết một báo cáo phân tích về phân tích tính nhất quán, phân tích lỗ hổng bảo mật, phân tích định dạng và đề xuất cho sửa đổi mã. Trong giai đoạn thứ ba, dựa trên báo cáo phân tích, Coder sẽ căn chỉnh hoặc sửa đổi mã nếu bất kỳ đoạn mã không chính xác nào được xác định với sự hỗ trợ từ Reviewer. Coder hợp tác với CPO và CEO để tóm tắt tài liệu và mã về toàn bộ đánh giá mã trong giai đoạn cuối cùng.
+
+2.3 Định nghĩa Thẻ Vai trò
+Như được hiển thị trong Hình 1, chúng tôi định nghĩa sáu nhân vật trong hệ thống mô phỏng của chúng tôi (CodeAgent), bao gồm User, CEO, CPO, CTO, Reviewer, Coder, và chúng được định nghĩa cho các nhiệm vụ cụ thể khác nhau.
+
+Tất cả các nhiệm vụ được xử lý bởi công việc hợp tác của hai tác nhân trong các cuộc trò chuyện nhiều vòng của chúng. Ví dụ, với vai trò Reviewer, trách nhiệm của cô ấy là thực hiện đánh giá mã cho các mã và file đã cho trong ba khía cạnh (nhiệm vụ CA, VA, và FA trong Phần 2.1) và cung cấp mô tả chi tiết về quan sát. Hoạt động đánh giá mã của Reviewer được hỗ trợ với Coder như được hiển thị trong Hình 2. Trong khi đó, với sự hỗ trợ của Reviewer, Coder có thể xử lý sửa đổi mã như được hiển thị trong phần 'Mã đã sửa đổi' trong thẻ Coder trong Hình 1. Ngoài Reviewer, Coder cũng hợp tác với CTO và CEO trong nhóm mô phỏng.
+
+Mỗi vai trò và cuộc trò chuyện, đầu vào và đầu ra của mỗi cuộc trò chuyện được thiết kế trong Hình 1. Thông tin thêm về chi tiết định nghĩa vai trò được cung cấp trong Phụ lục-Phần C.1 của chúng tôi.
+
+2.4 Cải thiện Tự động CoT với QA Checker
+1
+người hướng dẫn
+trợ lý
+câu hỏi (hướng dẫn)
+câu trả lời 2 N q0 a0 QA

@@ -1,0 +1,851 @@
+Leveraging Reviewer Experience in Code Review Comment Generation
+
+Tận Dụng Kinh Nghiệm Người Đánh Giá trong Việc Tạo Bình Luận Đánh Giá Mã Nguồn
+
+HONG YI LIN, Khoa Công Nghệ Thông Tin, Đại học Melbourne, Australia
+PATANAMON THONGTANUNAM, Khoa Công Nghệ Thông Tin, Đại học Melbourne, Australia
+CHRISTOPH TREUDE, Khoa Công Nghệ Thông Tin, Đại học Melbourne, Australia
+MICHAEL W. GODFREY, David R. Cheriton Khoa Khoa học Máy tính, Đại học Waterloo, Canada
+CHUNHUA LIU, Khoa Khoa học Máy tính, Đại học Ryerson, Canada
+WACHIRAPHAN CHAROENWET, Trường Khoa học Dữ liệu và Công nghệ Thông tin, Đại học Vidyasirimedhi Khoa học và Công nghệ, Thái Lan
+
+Các hệ thống đánh giá mã nguồn tự động hiện đại đã được phát triển để hỗ trợ các nhà phát triển tạo ra những bình luận đánh giá chất lượng và có ý nghĩa. Tuy nhiên, các phương pháp hiện tại tập trung chủ yếu vào việc cải thiện kỹ thuật như mô hình học máy mà ít chú ý đến việc tích hợp các khái niệm kỹ thuật phần mềm quan trọng. Trong nghiên cứu này, chúng tôi khám phá tác động của kinh nghiệm người đánh giá đến việc tạo bình luận đánh giá mã nguồn tự động. Chúng tôi giới thiệu các **Hàm Mất Mát Nhận Biết Kinh Nghiệm (Experience-Aware Loss Functions - ELF)**, một kỹ thuật huấn luyện mới tăng trọng số cho dữ liệu huấn luyện dựa trên kinh nghiệm của người đánh giá, được đo lường thông qua các chỉ số quyền sở hữu mã nguồn: **Quyền Sở Hữu Mã Nguồn Tác Giả (Authoring Code Ownership - ACO)** và **Quyền Sở Hữu Cụ Thể Đánh Giá (Review-Specific Ownership - RSO)** tại các cấp độ kho lưu trữ, hệ thống con và gói. Chúng tôi đánh giá ELF trên một tập dữ liệu lớn gồm 826 kho lưu trữ GitHub và thể hiện tính hiệu quả qua cả đánh giá tự động và nhân công. Kết quả cho thấy ELF cải thiện đáng kể chất lượng bình luận đánh giá được tạo: **tính ứng dụng** (+29% bình luận ứng dụng được), **tính thông tin** (+56% gợi ý), và **phát hiện vấn đề** (+129% vấn đề chức năng). Những phát hiện này nhấn mạnh rằng việc tích hợp kinh nghiệm kỹ thuật phần mềm có thể cải thiện đáng kể hiệu suất của các hệ thống đánh giá mã nguồn tự động.
+
+Từ khóa: đánh giá mã nguồn tự động, kinh nghiệm người đánh giá, quyền sở hữu mã nguồn, mô hình học máy, kỹ thuật phần mềm
+
+CCS Concepts: • Software and its engineering → Software development process management; • Computing methodologies → Machine learning approaches.
+
+1 GIỚI THIỆU
+
+Đánh giá mã nguồn hiện đại đã trở thành một thực tiễn quan trọng trong quá trình phát triển phần mềm [49, 63]. Nó bao gồm việc các nhà phát triển kiểm tra, thảo luận và đề xuất cải tiến cho những thay đổi mã nguồn được đề xuất bởi đồng nghiệp của họ [87]. Hoạt động này không chỉ giúp cải thiện chất lượng mã nguồn [50] mà còn tạo điều kiện cho việc chia sẻ kiến thức giữa các thành viên trong nhóm [49].
+
+Tuy nhiên, đánh giá mã nguồn hiệu quả đòi hỏi nỗ lực đáng kể và có thể dẫn đến độ trễ trong quá trình phát triển [12]. Để giải quyết những thách thức này, các nhà nghiên cứu đã khám phá các phương pháp để tự động hóa các khía cạnh khác nhau của quá trình đánh giá mã nguồn [31, 43, 76-78]. Một hướng nghiên cứu đầy hứa hẹn tập trung vào việc **tạo bình luận đánh giá mã nguồn** [40, 47], với mục tiêu tạo ra những bình luận có ý nghĩa và thông tin để hỗ trợ các nhà phát triển trong việc xem xét những thay đổi mã nguồn được đề xuất.
+
+Các phương pháp tạo bình luận đánh giá mã nguồn hiện tại chủ yếu tập trung vào việc cải thiện kiến trúc mô hình học máy và kỹ thuật huấn luyện [40, 43, 47, 77]. Những phương pháp này đã đạt được những cải tiến đáng chú ý, nhưng chúng thường bỏ qua việc tích hợp các khái niệm quan trọng từ kỹ thuật phần mềm có thể nâng cao hiệu suất.
+
+Một khái niệm quan trọng như vậy là **kinh nghiệm của người đánh giá**. Nghiên cứu đã chỉ ra rằng kinh nghiệm của người đánh giá có tác động đáng kể đến chất lượng và hiệu quả của đánh giá mã nguồn [29, 37, 60]. Những người đánh giá có kinh nghiệm có khả năng cung cấp những bình luận sâu sắc và có giá trị hơn, xác định những vấn đề tiềm ẩn mà những người mới có thể bỏ qua, và đưa ra những gợi ý xây dựng để cải thiện [36, 37]. Quan sát này gợi ý rằng việc tận dụng kinh nghiệm người đánh giá có thể nâng cao chất lượng của các hệ thống tạo bình luận đánh giá mã nguồn tự động.
+
+Trong nghiên cứu này, chúng tôi đề xuất một phương pháp mới để tích hợp kinh nghiệm người đánh giá vào quá trình huấn luyện các mô hình tạo bình luận đánh giá mã nguồn. Phương pháp của chúng tôi giới thiệu **Hàm Mất Mát Nhận Biết Kinh Nghiệm (ELF)**, tăng trọng số cho dữ liệu huấn luyện dựa trên kinh nghiệm của người đánh giá.
+
+Để đo lường kinh nghiệm người đánh giá, chúng tôi sử dụng các chỉ số **quyền sở hữu mã nguồn** [59, 69, 71, 72], đã được chứng minh là có khả năng dự đoán tốt về hiểu biết và kinh nghiệm của nhà phát triển. Cụ thể, chúng tôi xem xét hai loại quyền sở hữu:
+
+1. **Quyền Sở Hữu Mã Nguồn Tác Giả (ACO)**: thể hiện mức độ đóng góp của người đánh giá vào việc viết mã nguồn hiện có
+2. **Quyền Sở Hữu Cụ Thể Đánh Giá (RSO)**: phản ánh kinh nghiệm trước đó của người đánh giá trong việc đánh giá các thay đổi tương tự
+
+Chúng tôi tính toán các chỉ số này tại ba cấp độ granularity khác nhau: cấp độ kho lưu trữ, cấp độ hệ thống con và cấp độ gói, để nắm bắt các khía cạnh khác nhau của kinh nghiệm người đánh giá.
+
+Để đánh giá phương pháp ELF, chúng tôi tiến hành một nghiên cứu thực nghiệm toàn diện trên một tập dữ liệu lớn gồm 826 kho lưu trữ GitHub. Chúng tôi so sánh hiệu suất của ELF với các phương pháp baseline tiên tiến sử dụng cả đánh giá tự động và đánh giá nhân công. Đánh giá của chúng tôi tập trung vào ba khía cạnh quan trọng của chất lượng bình luận đánh giá:
+
+1. **Tính ứng dụng**: liệu bình luận có áp dụng được cho thay đổi mã nguồn hay không
+2. **Tính thông tin**: liệu bình luận có cung cấp thông tin có giá trị hay không
+3. **Phát hiện vấn đề**: liệu bình luận có xác định được các vấn đề thực tế hay không
+
+Kết quả của chúng tôi cho thấy ELF cải thiện đáng kể chất lượng của các bình luận đánh giá được tạo. So với các phương pháp baseline, ELF tăng 29% số lượng bình luận ứng dụng được, tăng 56% số lượng gợi ý có thông tin, và tăng 129% khả năng phát hiện vấn đề chức năng.
+
+**Đóng góp**: Nghiên cứu này đóng góp như sau:
+
+1. **Phương pháp mới**: Chúng tôi giới thiệu Hàm Mất Mát Nhận Biết Kinh Nghiệm (ELF), một kỹ thuật huấn luyện mới tích hợp kinh nghiệm người đánh giá thông qua các chỉ số quyền sở hữu mã nguồn.
+
+2. **Đánh giá toàn diện**: Chúng tôi tiến hành đánh giá toàn diện trên 826 kho lưu trữ GitHub, thể hiện hiệu quả của phương pháp đề xuất.
+
+3. **Hiểu biết sâu sắc**: Chúng tôi cung cấp những hiểu biết sâu sắc về tác động của kinh nghiệm người đánh giá đối với tạo bình luận đánh giá mã nguồn tự động.
+
+4. **Tài nguyên cho cộng đồng**: Chúng tôi phát hành các tập dữ liệu mở rộng với các chỉ số quyền sở hữu để hỗ trợ nghiên cứu trong tương lai.
+
+**Cấu trúc bài báo**: Phần còn lại của bài báo được tổ chức như sau. Phần 2 trình bày nghiên cứu liên quan. Phần 3 mô tả phương pháp đề xuất của chúng tôi. Phần 4 trình bày thiết kế nghiên cứu thực nghiệm. Phần 5 báo cáo kết quả và phân tích. Phần 6 thảo luận về những phát hiện và ý nghĩa. Phần 7 thảo luận về các mối đe dọa đối với tính hợp lệ. Cuối cùng, Phần 8 kết luận nghiên cứu.
+
+2 NGHIÊN CỨU LIÊN QUAN
+
+### 2.1 Đánh Giá Mã Nguồn Tự Động
+
+Đánh giá mã nguồn tự động đã thu hút sự chú ý đáng kể từ cộng đồng nghiên cứu kỹ thuật phần mềm. Các nghiên cứu đầu tiên tập trung vào việc tự động hóa các khía cạnh khác nhau của quá trình đánh giá mã nguồn, chẳng hạn như gợi ý người đánh giá [72, 87] và xác định những thay đổi cần được đánh giá [68].
+
+Gần đây, các nhà nghiên cứu đã chuyển sự chú ý sang việc **tạo bình luận đánh giá mã nguồn tự động** [40, 43, 47, 77, 78]. Xu hướng này được thúc đẩy bởi tiềm năng cung cấp phản hồi ngay lập tức cho các nhà phát triển và giảm gánh nặng cho những người đánh giá có kinh nghiệm.
+
+**Tufano và cộng sự** [78] là những người tiên phong trong lĩnh vực này, đề xuất một phương pháp dựa trên mạng nơ-ron để tạo bình luận đánh giá từ các diff mã nguồn. Công trình của họ đã thiết lập nền tảng cho nghiên cứu tiếp theo trong lĩnh vực này.
+
+**Li và cộng sự** [40] giới thiệu AUGER, một hệ thống sử dụng các mô hình được huấn luyện trước để tạo bình luận đánh giá. Họ chứng minh rằng việc tận dụng kiến thức từ các mô hình ngôn ngữ lớn có thể cải thiện đáng kể chất lượng của các bình luận được tạo.
+
+**Li và cộng sự** [43] phát triển một phương pháp sử dụng các mô hình được huấn luyện trước quy mô lớn để tự động hóa các hoạt động đánh giá mã nguồn. Họ tập trung vào việc cải thiện hiệu suất của mô hình thông qua các kỹ thuật huấn luyện tiên tiến.
+
+**Lu và cộng sự** [47] đề xuất LLaMA-Reviewer, sử dụng điều chỉnh hiệu quả tham số với các mô hình ngôn ngữ lớn để cải thiện tự động hóa đánh giá mã nguồn. Công trình của họ cho thấy các mô hình ngôn ngữ lớn có thể được điều chỉnh hiệu quả cho tác vụ cụ thể này.
+
+**Tufano và cộng sự** [77] nghiên cứu việc sử dụng các mô hình được huấn luyện trước để tăng cường tự động hóa đánh giá mã nguồn. Họ chứng minh rằng các mô hình này có thể cải thiện đáng kể chất lượng của các bình luận được tạo.
+
+Mặc dù những tiến bộ này, các phương pháp hiện tại chủ yếu tập trung vào cải tiến kỹ thuật mà ít chú ý đến việc tích hợp các khái niệm kỹ thuật phần mềm quan trọng như kinh nghiệm người đánh giá.
+
+### 2.2 Kinh Nghiệm Người Đánh Giá trong Đánh Giá Mã Nguồn
+
+Tầm quan trọng của kinh nghiệm người đánh giá trong đánh giá mã nguồn đã được thể hiện rõ trong một số nghiên cứu thực nghiệm.
+
+**Kononenko và cộng sự** [36] tiến hành một nghiên cứu định tính để hiểu cách các nhà phát triển nhận thức về chất lượng đánh giá mã nguồn. Họ phát hiện ra rằng kinh nghiệm của người đánh giá là một yếu tố quan trọng ảnh hưởng đến chất lượng đánh giá nhận thức.
+
+**Kononenko và cộng sự** [37] mở rộng nghiên cứu trước đó bằng cách điều tra tác động của các yếu tố con người và sự tham gia đối với chất lượng đánh giá mã nguồn. Họ phát hiện ra rằng kinh nghiệm của người đánh giá có tương quan đáng kể với chất lượng đánh giá.
+
+**Rahman và cộng sự** [60] nghiên cứu dự đoán tính hữu ích của bình luận đánh giá mã nguồn sử dụng các đặc trưng văn bản và kinh nghiệm nhà phát triển. Họ chứng minh rằng kinh nghiệm nhà phát triển là một yếu tố dự đoán quan trọng cho tính hữu ích của bình luận.
+
+**Hasan và cộng sự** [29] sử dụng scorecard cân bằng để xác định cơ hội cải thiện hiệu quả đánh giá mã nguồn trong môi trường công nghiệp. Họ nhấn mạnh tầm quan trọng của kinh nghiệm người đánh giá trong việc đạt được đánh giá hiệu quả.
+
+Những nghiên cứu này cung cấp bằng chứng thuyết phục rằng kinh nghiệm người đánh giá đóng vai trò quan trọng trong đánh giá mã nguồn hiệu quả. Tuy nhiên, chưa có nghiên cứu nào khám phá cách tích hợp kinh nghiệm này vào các hệ thống tạo bình luận đánh giá mã nguồn tự động.
+
+### 2.3 Quyền Sở Hữu Mã Nguồn
+
+Quyền sở hữu mã nguồn đã được nghiên cứu rộng rãi như một chỉ số để đo lường kiến thức và kinh nghiệm của nhà phát triển về codebase.
+
+**Rahman và Devanbu** [59] tiến hành một nghiên cứu chi tiết về quyền sở hữu, kinh nghiệm và lỗi. Họ chứng minh rằng quyền sở hữu mã nguồn có tương quan mạnh với kiến thức của nhà phát triển và có thể dự đoán khả năng xảy ra lỗi.
+
+**Thongtanunam và cộng sự** [69] xem xét lại quyền sở hữu mã nguồn và mối quan hệ của nó với chất lượng phần mềm trong bối cảnh đánh giá mã nguồn hiện đại. Họ phát hiện ra rằng quyền sở hữu mã nguồn vẫn là một yếu tố dự đoán quan trọng cho chất lượng phần mềm ngay cả trong môi trường phát triển cộng tác.
+
+**Fritz và cộng sự** [18] điều tra liệu hoạt động của lập trình viên có biểu thị kiến thức về mã nguồn hay không. Họ phát hiện ra rằng có mối tương quan mạnh giữa hoạt động của nhà phát triển và kiến thức của họ về codebase.
+
+**Thongtanunam và cộng sự** [72] đề xuất một phương pháp gợi ý người đánh giá mã nguồn dựa trên vị trí file cho đánh giá mã nguồn hiện đại. Họ sử dụng quyền sở hữu mã nguồn như một chỉ số chính để xác định những người đánh giá phù hợp.
+
+**Meng và cộng sự** [51] nghiên cứu khai thác kho lưu trữ phần mềm để xác định quyền tác giả chính xác. Công trình của họ cung cấp nền tảng cho việc đo lường quyền sở hữu mã nguồn một cách chính xác.
+
+Những nghiên cứu này thiết lập quyền sở hữu mã nguồn như một chỉ số đáng tin cậy để đo lường kinh nghiệm và kiến thức của nhà phát triển. Chúng tôi tận dụng những hiểu biết này để phát triển các chỉ số đo lường kinh nghiệm người đánh giá.
+
+### 2.4 Khoảng Cách Nghiên Cứu
+
+Mặc dù có nhiều tiến bộ trong đánh giá mã nguồn tự động và hiểu biết về tầm quan trọng của kinh nghiệm người đánh giá, vẫn tồn tại một khoảng cách đáng kể trong nghiên cứu hiện tại:
+
+1. **Thiếu tích hợp kinh nghiệm**: Các phương pháp tạo bình luận đánh giá mã nguồn hiện tại chủ yếu tập trung vào cải tiến kỹ thuật mà không tích hợp các khái niệm kỹ thuật phần mềm như kinh nghiệm người đánh giá.
+
+2. **Thiếu đo lường kinh nghiệm hệ thống**: Mặc dù tầm quan trọng của kinh nghiệm người đánh giá đã được thừa nhận, không có phương pháp hệ thống nào để đo lường và tích hợp kinh nghiệm này vào các mô hình học máy.
+
+3. **Đánh giá hạn chế**: Hầu hết các nghiên cứu trước đó dựa vào các chỉ số tự động để đánh giá, có thể không nắm bắt đầy đủ chất lượng thực tế của các bình luận được tạo.
+
+Nghiên cứu của chúng tôi nhằm giải quyết những khoảng cách này bằng cách đề xuất một phương pháp hệ thống để tích hợp kinh nghiệm người đánh giá vào việc tạo bình luận đánh giá mã nguồn tự động và tiến hành đánh giá toàn diện bao gồm cả đánh giá nhân công.
+
+3 PHƯƠNG PHÁP
+
+Trong phần này, chúng tôi trình bày phương pháp đề xuất để tích hợp kinh nghiệm người đánh giá vào việc tạo bình luận đánh giá mã nguồn. Chúng tôi bắt đầu bằng cách mô tả tổng quan về phương pháp, sau đó đi vào chi tiết về việc đo lường kinh nghiệm người đánh giá và Hàm Mất Mát Nhận Biết Kinh Nghiệm (ELF).
+
+### 3.1 Tổng Quan Phương Pháp
+
+Hình 1 minh họa tổng quan về phương pháp đề xuất của chúng tôi. Phương pháp bao gồm ba giai đoạn chính:
+
+1. **Trích xuất dữ liệu**: Chúng tôi trích xuất dữ liệu đánh giá mã nguồn từ các kho lưu trữ GitHub, bao gồm các diff mã nguồn, bình luận đánh giá và thông tin người đánh giá.
+
+2. **Tính toán kinh nghiệm người đánh giá**: Chúng tôi tính toán các chỉ số kinh nghiệm người đánh giá dựa trên quyền sở hữu mã nguồn tại nhiều cấp độ granularity.
+
+3. **Huấn luyện nhận biết kinh nghiệm**: Chúng tôi huấn luyện các mô hình tạo bình luận sử dụng ELF, tăng trọng số cho dữ liệu huấn luyện dựa trên kinh nghiệm người đánh giá.
+
+### 3.2 Đo Lường Kinh Nghiệm Người Đánh Giá
+
+Để đo lường kinh nghiệm người đánh giá, chúng tôi sử dụng hai loại chỉ số quyền sở hữu mã nguồn:
+
+#### 3.2.1 Quyền Sở Hữu Mã Nguồn Tác Giả (ACO)
+
+ACO đo lường mức độ đóng góp của người đánh giá vào việc viết mã nguồn hiện có. Chúng tôi tính toán ACO tại ba cấp độ granularity:
+
+- **ACO cấp kho lưu trữ**: Tỷ lệ commit của người đánh giá trong toàn bộ kho lưu trữ
+- **ACO cấp hệ thống con**: Tỷ lệ commit của người đánh giá trong các hệ thống con được ảnh hưởng
+- **ACO cấp gói**: Tỷ lệ commit của người đánh giá trong các gói được ảnh hưởng
+
+Công thức tính ACO:
+
+```
+ACO_level = commits_reviewer_level / total_commits_level
+```
+
+#### 3.2.2 Quyền Sở Hữu Cụ Thể Đánh Giá (RSO)
+
+RSO phản ánh kinh nghiệm trước đó của người đánh giá trong việc đánh giá các thay đổi tương tự. Tương tự như ACO, chúng tôi tính toán RSO tại ba cấp độ:
+
+- **RSO cấp kho lưu trữ**: Tỷ lệ đánh giá của người đánh giá trong toàn bộ kho lưu trữ
+- **RSO cấp hệ thống con**: Tỷ lệ đánh giá của người đánh giá trong các hệ thống con được ảnh hưởng
+- **RSO cấp gói**: Tỷ lệ đánh giá của người đánh giá trong các gói được ảnh hưởng
+
+Công thức tính RSO:
+
+```
+RSO_level = reviews_reviewer_level / total_reviews_level
+```
+
+### 3.3 Hàm Mất Mát Nhận Biết Kinh Nghiệm (ELF)
+
+ELF sửa đổi hàm mất mát tiêu chuẩn bằng cách tăng trọng số cho các mẫu huấn luyện dựa trên kinh nghiệm của người đánh giá. Chúng tôi khám phá bốn chiến lược trọng số khác nhau:
+
+#### 3.3.1 Trọng Số Dựa Trên ACO (ω_aco)
+
+```
+ω_aco = e^(1 + aco)
+```
+
+Chiến lược này tăng trọng số cho các bình luận từ những người đánh giá có nhiều kinh nghiệm viết mã.
+
+#### 3.3.2 Trọng Số Dựa Trên RSO (ω_rso)
+
+```
+ω_rso = e^(1 + rso)
+```
+
+Chiến lược này tăng trọng số cho các bình luận từ những người đánh giá có nhiều kinh nghiệm đánh giá.
+
+#### 3.3.3 Trọng Số Trung Bình (ω_avg)
+
+```
+ω_avg = e^(1 + (aco + rso)/2)
+```
+
+Chiến lược này kết hợp cả hai loại kinh nghiệm bằng cách lấy trung bình.
+
+#### 3.3.4 Trọng Số Tối Đa (ω_max)
+
+```
+ω_max = e^(1 + max(aco, rso))
+```
+
+Chiến lược này sử dụng giá trị kinh nghiệm cao nhất giữa ACO và RSO.
+
+### 3.4 Hàm Mất Mát Có Trọng Số
+
+Hàm mất mát có trọng số được định nghĩa như sau:
+
+```
+L_weighted = (1/N) * Σ(i=1 to N) ω_i * L(y_i, ŷ_i)
+```
+
+Trong đó:
+- N là số lượng mẫu huấn luyện
+- ω_i là trọng số kinh nghiệm cho mẫu thứ i
+- L(y_i, ŷ_i) là mất mát giữa nhãn thực tế y_i và dự đoán ŷ_i
+
+### 3.5 Thực Hiện
+
+Chúng tôi thực hiện phương pháp ELF bằng cách sử dụng khung PyTorch. Quá trình huấn luyện bao gồm:
+
+1. **Tiền xử lý dữ liệu**: Làm sạch và chuẩn bị dữ liệu đánh giá mã nguồn
+2. **Tính toán trọng số**: Tính toán các trọng số kinh nghiệm cho từng mẫu huấn luyện
+3. **Huấn luyện mô hình**: Huấn luyện mô hình sử dụng hàm mất mát có trọng số
+4. **Đánh giá**: Đánh giá mô hình trên tập kiểm tra
+
+4 THIẾT KẾ NGHIÊN CỨU THỰC NGHIỆM
+
+Trong phần này, chúng tôi trình bày thiết kế nghiên cứu thực nghiệm để đánh giá phương pháp ELF đề xuất.
+
+### 4.1 Câu Hỏi Nghiên Cứu
+
+Chúng tôi định hình nghiên cứu thực nghiệm xung quanh ba câu hỏi nghiên cứu chính:
+
+**RQ1: ELF có cải thiện chất lượng tổng thể của các bình luận đánh giá được tạo không?**
+Câu hỏi này đánh giá hiệu quả tổng thể của phương pháp ELF sử dụng các chỉ số đánh giá tự động và nhân công.
+
+**RQ2: Chiến lược trọng số nào của ELF hiệu quả nhất?**
+Câu hỏi này so sánh bốn chiến lược trọng số khác nhau (ω_aco, ω_rso, ω_avg, ω_max) để xác định chiến lược tối ưu.
+
+**RQ3: Cấp độ granularity nào của quyền sở hữu mã nguồn hiệu quả nhất?**
+Câu hỏi này điều tra tác động của các cấp độ granularity khác nhau (kho lưu trữ, hệ thống con, gói) đối với hiệu suất.
+
+### 4.2 Tập Dữ Liệu
+
+Chúng tôi sử dụng một tập dữ liệu lớn bao gồm 826 kho lưu trữ GitHub với hơn 1.2 triệu mẫu đánh giá mã nguồn. Tập dữ liệu này được xây dựng từ:
+
+1. **Lựa chọn kho lưu trữ**: Chúng tôi chọn các kho lưu trữ GitHub phổ biến từ nhiều ngôn ngữ lập trình
+2. **Trích xuất dữ liệu**: Chúng tôi trích xuất các pull request, bình luận đánh giá và thông tin commit
+3. **Làm sạch dữ liệu**: Chúng tôi lọc ra các bot, spam và bình luận không có ý nghĩa
+4. **Phân chia dữ liệu**: Chúng tôi chia dữ liệu theo thời gian (80% huấn luyện, 10% xác thực, 10% kiểm tra)
+
+### 4.3 Chỉ Số Đánh Giá
+
+Chúng tôi sử dụng cả đánh giá tự động và nhân công:
+
+#### 4.3.1 Đánh Giá Tự Động
+
+- **BLEU-4**: Đo lường sự tương đồng n-gram giữa bình luận được tạo và tham chiếu
+- **ROUGE-L**: Đo lường khớp chuỗi con dài nhất chung
+- **METEOR**: Tính đến từ đồng nghĩa và stemming
+
+#### 4.3.2 Đánh Giá Nhân Công
+
+Chúng tôi thuê 3 chuyên gia phần mềm để đánh giá bình luận theo ba tiêu chí:
+
+1. **Tính ứng dụng**: Bình luận có áp dụng được với thay đổi mã nguồn không?
+2. **Tính thông tin**: Bình luận có cung cấp thông tin có giá trị không?
+3. **Phát hiện vấn đề**: Bình luận có xác định được vấn đề thực tế không?
+
+### 4.4 Phương Pháp Baseline
+
+Chúng tôi so sánh ELF với các phương pháp baseline sau:
+
+1. **Vanilla T5**: Mô hình T5 chuẩn không có trọng số
+2. **AUGER**: Phương pháp hiện đại sử dụng mô hình được huấn luyện trước
+3. **LLaMA-Reviewer**: Phương pháp sử dụng LLaMA với điều chỉnh tham số
+4. **CodeT5**: Mô hình T5 được huấn luyện trước trên mã nguồn
+
+### 4.5 Thiết Lập Thực Nghiệm
+
+- **Phần cứng**: Nvidia A100 GPU với 80GB VRAM
+- **Khung**: PyTorch 1.12, Transformers 4.21
+- **Tham số huấn luyện**: Learning rate 5e-5, batch size 16, epochs 10
+- **Đánh giá**: 5-fold cross-validation
+
+5 KẾT QUẢ VÀ PHÂN TÍCH
+
+Trong phần này, chúng tôi trình bày kết quả của nghiên cứu thực nghiệm và phân tích chi tiết các phát hiện.
+
+### 5.1 RQ1: Hiệu Quả Tổng Thể của ELF
+
+Bảng 1 trình bày kết quả đánh giá tự động cho phương pháp ELF so với các baseline.
+
+#### 5.1.1 Kết Quả Đánh Giá Tự Động
+
+| Phương pháp | BLEU-4 | ROUGE-L | METEOR |
+|-------------|--------|---------|--------|
+| Vanilla T5 | 0.142 | 0.234 | 0.189 |
+| AUGER | 0.156 | 0.251 | 0.203 |
+| LLaMA-Reviewer | 0.161 | 0.258 | 0.207 |
+| CodeT5 | 0.164 | 0.262 | 0.211 |
+| ELF (ω_avg) | **0.172** | **0.275** | **0.223** |
+
+ELF đạt được hiệu suất tốt nhất trên tất cả các chỉ số tự động, với cải thiện đáng kể so với các phương pháp baseline.
+
+#### 5.1.2 Kết Quả Đánh Giá Nhân Công
+
+Bảng 2 trình bày kết quả đánh giá nhân công về chất lượng bình luận.
+
+| Phương pháp | Tính Ứng Dụng (%) | Tính Thông Tin (%) | Phát Hiện Vấn Đề (%) |
+|-------------|-------------------|-------------------|---------------------|
+| Vanilla T5 | 42.3 | 28.7 | 15.2 |
+| AUGER | 48.1 | 34.2 | 18.6 |
+| LLaMA-Reviewer | 51.7 | 37.9 | 21.4 |
+| CodeT5 | 53.2 | 39.1 | 22.8 |
+| ELF (ω_avg) | **68.7** | **59.2** | **52.2** |
+
+ELF cho thấy cải thiện đáng kể:
+- **Tính ứng dụng**: +29% so với baseline tốt nhất
+- **Tính thông tin**: +56% so với baseline tốt nhất  
+- **Phát hiện vấn đề**: +129% so với baseline tốt nhất
+
+**Phản hồi**: ELF cải thiện đáng kể chất lượng của các bình luận đánh giá được tạo trên tất cả các khía cạnh được đánh giá.
+
+### 5.2 RQ2: So Sánh Chiến Lược Trọng Số
+
+Bảng 3 so sánh hiệu suất của các chiến lược trọng số khác nhau.
+
+| Chiến lược | BLEU-4 | Tính Ứng Dụng (%) | Tính Thông Tin (%) |
+|------------|--------|--------------------|-------------------|
+| ω_aco | 0.169 | 65.4 | 56.1 |
+| ω_rso | 0.167 | 63.8 | 54.7 |
+| ω_avg | **0.172** | **68.7** | **59.2** |
+| ω_max | 0.170 | 66.9 | 57.3 |
+
+**Phân tích**:
+- ω_avg đạt hiệu suất tốt nhất trên hầu hết các chỉ số
+- ω_aco hiệu quả hơn ω_rso, cho thấy tầm quan trọng của kinh nghiệm viết mã
+- ω_max cũng cho kết quả tốt nhưng không bằng ω_avg
+
+**Phản hồi**: Chiến lược trọng số trung bình (ω_avg) hiệu quả nhất, kết hợp cân bằng cả kinh nghiệm viết mã và đánh giá.
+
+### 5.3 RQ3: Tác Động của Cấp Độ Granularity
+
+Bảng 4 trình bày hiệu suất của ELF tại các cấp độ granularity khác nhau.
+
+| Cấp Độ | BLEU-4 | Tính Ứng Dụng (%) | Phát Hiện Vấn Đề (%) |
+|---------|--------|--------------------|---------------------|
+| Kho lưu trữ | 0.168 | 64.2 | 48.7 |
+| Hệ thống con | **0.172** | **68.7** | **52.2** |
+| Gói | 0.170 | 66.4 | 50.1 |
+
+**Phân tích**:
+- Cấp độ hệ thống con đạt hiệu suất tốt nhất
+- Cấp độ kho lưu trữ có thể quá thô, không nắm bắt được kinh nghiệm cụ thể
+- Cấp độ gói có thể quá chi tiết, dẫn đến dữ liệu thưa thớt
+
+**Phản hồi**: Cấp độ hệ thống con cung cấp sự cân bằng tối ưu giữa tính cụ thể và tính tổng quát.
+
+### 5.4 Phân Tích Chi Tiết
+
+#### 5.4.1 Phân Phối Trọng Số
+
+Hình 2 cho thấy phân phối trọng số kinh nghiệm trong tập dữ liệu:
+- 68% mẫu có trọng số thấp (ω < 2.0)
+- 24% mẫu có trọng số trung bình (2.0 ≤ ω < 4.0)
+- 8% mẫu có trọng số cao (ω ≥ 4.0)
+
+#### 5.4.2 Tương Quan Kinh Nghiệm-Chất Lượng
+
+Chúng tôi phân tích tương quan giữa kinh nghiệm người đánh giá và chất lượng bình luận:
+- Hệ số tương quan Pearson: r = 0.64 (p < 0.001)
+- Người đánh giá có kinh nghiệm cao tạo ra bình luận chất lượng tốt hơn đáng kể
+
+#### 5.4.3 Ví Dụ Định Tính
+
+**Ví dụ 1**: Bình luận từ người đánh giá có kinh nghiệm cao (ACO=0.34, RSO=0.28)
+```
+"Hàm validateInput() thiếu kiểm tra null cho tham số 'data'. 
+Điều này có thể dẫn đến NullPointerException khi runtime. 
+Đề xuất thêm if (data == null) return false; ở đầu hàm."
+```
+
+**Ví dụ 2**: Bình luận từ người đánh giá có kinh nghiệm thấp (ACO=0.02, RSO=0.01)
+```
+"Mã này trông không đúng."
+```
+
+ELF học cách ưu tiên các mẫu như Ví dụ 1, dẫn đến bình luận được tạo có thông tin và hữu ích hơn.
+
+### 5.5 Phân Tích Theo Loại Bình Luận
+
+Chúng tôi phân loại bình luận đánh giá thành các loại khác nhau và đánh giá hiệu suất của ELF:
+
+#### 5.5.1 Gợi Ý Cải Thiện
+
+| Phương pháp | Độ Chính Xác (%) | Tính Hữu Ích (%) |
+|-------------|------------------|-------------------|
+| Baseline | 34.2 | 28.7 |
+| ELF | **53.4** | **44.8** |
+| Cải thiện | +56.1% | +56.1% |
+
+#### 5.5.2 Phát Hiện Lỗi
+
+| Phương pháp | Precision (%) | Recall (%) | F1-Score (%) |
+|-------------|---------------|------------|--------------|
+| Baseline | 28.6 | 22.4 | 25.1 |
+| ELF | **41.3** | **35.7** | **38.3** |
+| Cải thiện | +44.4% | +59.4% | +52.6% |
+
+#### 5.5.3 Câu Hỏi Làm Rõ
+
+| Phương pháp | Câu Hỏi Có Ý Nghĩa (%) | Câu Hỏi Bối Rối (%) |
+|-------------|------------------------|---------------------|
+| Baseline | 42.1 | 31.8 |
+| ELF | **52.7** | **9.2** |
+| Cải thiện | +25.2% | -71.1% |
+
+### 5.6 Phân Tích Theo Ngôn Ngữ Lập Trình
+
+Bảng 5 trình bày hiệu suất của ELF trên các ngôn ngữ lập trình khác nhau.
+
+| Ngôn Ngữ | BLEU-4 Baseline | BLEU-4 ELF | Cải Thiện (%) |
+|----------|-----------------|------------|---------------|
+| Java | 0.154 | 0.168 | +9.1% |
+| Python | 0.161 | 0.175 | +8.7% |
+| JavaScript | 0.147 | 0.163 | +10.9% |
+| C++ | 0.139 | 0.156 | +12.2% |
+| Go | 0.152 | 0.169 | +11.2% |
+
+ELF cho thấy cải thiện nhất quán trên tất cả các ngôn ngữ, với cải thiện lớn nhất trên C++ và JavaScript.
+
+### 5.7 Phân Tích Hiệu Suất Tính Toán
+
+| Phương pháp | Thời Gian Huấn Luyện (giờ) | Thời Gian Suy Luận (ms) | Bộ Nhớ (GB) |
+|-------------|----------------------------|-------------------------|-------------|
+| Baseline | 24.3 | 127 | 8.2 |
+| ELF | 26.1 | 132 | 8.4 |
+| Overhead | +7.4% | +3.9% | +2.4% |
+
+ELF có overhead tính toán nhỏ, chấp nhận được cho cải thiện chất lượng đáng kể.
+
+6 THẢO LUẬN
+
+### 6.1 Ý Nghĩa Chính
+
+Nghiên cứu này có một số ý nghĩa quan trọng cho cộng đồng kỹ thuật phần mềm:
+
+#### 6.1.1 Tích Hợp Kiến Thức Kỹ Thuật Phần Mềm
+
+Kết quả cho thấy việc tích hợp các khái niệm kỹ thuật phần mềm như kinh nghiệm người đánh giá có thể cải thiện đáng kể hiệu suất của các hệ thống học máy. Điều này gợi ý một hướng nghiên cứu đầy hứa hẹn: thay vì chỉ tập trung vào cải tiến kỹ thuật, các nhà nghiên cứu nên khám phá cách tích hợp hiểu biết từ lĩnh vực cụ thể.
+
+#### 6.1.2 Tầm Quan Trọng của Chất Lượng Dữ Liệu
+
+ELF chứng minh rằng không phải tất cả dữ liệu huấn luyện đều có giá trị như nhau. Bằng cách tăng trọng số cho dữ liệu từ những người đánh giá có kinh nghiệm, chúng ta có thể cải thiện chất lượng mô hình mà không cần thêm dữ liệu.
+
+#### 6.1.3 Ứng Dụng Thực Tiễn
+
+Những cải thiện được chứng minh của ELF có ý nghĩa thực tiễn quan trọng:
+- Giảm gánh nặng cho những người đánh giá có kinh nghiệm
+- Cải thiện chất lượng mã nguồn thông qua phản hồi tốt hơn
+- Hỗ trợ đào tạo các nhà phát triển mới
+
+### 6.2 Khuyến Nghị cho Nhà Thực Hành
+
+Dựa trên kết quả, chúng tôi đưa ra các khuyến nghị sau:
+
+#### 6.2.1 Triển Khai ELF
+
+Các tổ chức muốn triển khai ELF nên:
+1. Thu thập dữ liệu lịch sử về commit và đánh giá
+2. Tính toán chỉ số quyền sở hữu tại cấp độ hệ thống con
+3. Sử dụng chiến lược trọng số trung bình (ω_avg)
+4. Đánh giá định kỳ và điều chỉnh trọng số
+
+#### 6.2.2 Tích Hợp với Quy Trình Hiện Tại
+
+ELF có thể được tích hợp vào các quy trình đánh giá mã nguồn hiện tại:
+- Hỗ trợ những người đánh giá mới với gợi ý bình luận
+- Cung cấp phản hồi tự động cho các thay đổi nhỏ
+- Giúp xác định các vấn đề tiềm ẩn trước khi đánh giá nhân công
+
+### 6.3 Hướng Nghiên Cứu Tương Lai
+
+#### 6.3.1 Mở Rộng Các Chỉ Số Kinh Nghiệm
+
+Nghiên cứu tương lai có thể khám phá:
+- Kinh nghiệm theo lĩnh vực cụ thể (bảo mật, hiệu suất, v.v.)
+- Kinh nghiệm tương tác xã hội (collaboration experience)
+- Kinh nghiệm động thay đổi theo thời gian
+
+#### 6.3.2 Các Nhiệm Vụ Khác
+
+ELF có thể được áp dụng cho:
+- Tạo commit message tự động
+- Gợi ý refactoring
+- Phát hiện code smell
+- Ước lượng effort
+
+#### 6.3.3 Học Máy Nâng Cao
+
+Các kỹ thuật học máy tiến tiến có thể được khám phá:
+- Meta-learning cho adaptability
+- Federated learning cho quyền riêng tư
+- Reinforcement learning cho phản hồi động
+
+### 6.4 Thách Thức và Hạn Chế
+
+#### 6.4.1 Cold Start Problem
+
+Đối với những người đánh giá mới hoặc kho lưu trữ mới, không có đủ dữ liệu lịch sử để tính toán các chỉ số kinh nghiệm. Các giải pháp có thể bao gồm:
+- Sử dụng thông tin từ các kho lưu trữ tương tự
+- Áp dụng transfer learning
+- Gradual learning khi tích lũy dữ liệu
+
+#### 6.4.2 Bias và Fairness
+
+ELF có thể vô tình gia tăng bias:
+- Ưu tiên các nhóm nhà phát triển có đặc quyền
+- Bỏ qua quan điểm đa dạng
+- Perpetuate existing inequalities
+
+Các biện pháp giảm thiểu:
+- Đánh giá fairness định kỳ
+- Diverse training data
+- Algorithmic auditing
+
+#### 6.4.3 Evolving Codebase
+
+Khi codebase phát triển, các chỉ số kinh nghiệm có thể trở nên lỗi thời. Cần có cơ chế:
+- Cập nhật liên tục
+- Decay factors cho dữ liệu cũ
+- Adaptive weighting
+
+7 MỐI ĐE DỌA ĐỐI VỚI TÍNH HỢP LỆ
+
+### 7.1 Tính Hợp Lệ Nội Tại
+
+#### 7.1.1 Thiên Lệch Lựa Chọn Dữ Liệu
+
+Chúng tôi sử dụng các kho lưu trữ GitHub công khai, có thể không đại diện cho tất cả môi trường phát triển phần mềm. Các dự án nội bộ hoặc các platform khác có thể có đặc điểm khác nhau.
+
+**Biện pháp giảm thiểu**: Chúng tôi chọn đa dạng các kho lưu trữ từ nhiều ngôn ngữ, lĩnh vực và quy mô khác nhau.
+
+#### 7.1.2 Đo Lường Kinh Nghiệm
+
+Các chỉ số quyền sở hữu mã nguồn có thể không hoàn toàn phản ánh kinh nghiệm thực tế. Một số yếu tố như chất lượng commit hoặc complexity của code không được tính đến.
+
+**Biện pháp giảm thiểu**: Chúng tôi sử dụng nhiều chỉ số và cấp độ granularity để nắm bắt các khía cạnh khác nhau của kinh nghiệm.
+
+#### 7.1.3 Tính Chủ Quan trong Đánh Giá
+
+Đánh giá nhân công có thể chứa tính chủ quan. Các đánh giá viên khác nhau có thể có quan điểm khác nhau về chất lượng bình luận.
+
+**Biện pháp giảm thiểu**: Chúng tôi sử dụng nhiều đánh giá viên và tính toán inter-rater reliability (Fleiss' κ = 0.68, substantial agreement).
+
+### 7.2 Tính Hợp Lệ Ngoại Tại
+
+#### 7.2.1 Khả Năng Khái Quát Hóa
+
+Kết quả có thể không khái quát hóa cho:
+- Các ngôn ngữ lập trình khác
+- Các loại dự án khác (embedded systems, scientific computing)
+- Các quy trình phát triển khác (waterfall, agile variants)
+
+**Biện pháp giảm thiểu**: Chúng tôi đánh giá trên nhiều ngôn ngữ và loại dự án, và cung cấp phân tích chi tiết theo từng nhóm.
+
+#### 7.2.2 Môi Trường Triển Khai
+
+Hiệu quả của ELF trong môi trường production có thể khác với môi trường thử nghiệm do:
+- Sự thay đổi của codebase theo thời gian
+- Tương tác với con người thực tế
+- Các ràng buộc về hiệu suất và tài nguyên
+
+### 7.3 Tính Hợp Lệ Cấu Trúc
+
+#### 7.3.1 Định Nghĩa Chất Lượng Bình Luận
+
+Định nghĩa của chúng tôi về chất lượng bình luận (tính ứng dụng, thông tin, phát hiện vấn đề) có thể không toàn diện. Có thể có các khía cạnh khác quan trọng như:
+- Tính pedagogical (giáo dục)
+- Cultural sensitivity
+- Long-term maintainability
+
+**Biện pháp giảm thiểu**: Chúng tôi dựa trên nghiên cứu trước đó về chất lượng đánh giá mã nguồn và xác thực định nghĩa với các chuyên gia.
+
+#### 7.3.2 Tính Nhân Quả
+
+Mặc dù chúng tôi quan sát được tương quan giữa kinh nghiệm người đánh giá và chất lượng bình luận, việc thiết lập mối quan hệ nhân quả vẫn là thách thức.
+
+### 7.4 Tính Hợp Lệ Kết Luận
+
+#### 7.4.1 Hiệu Ứng Hawthorne
+
+Trong đánh giá nhân công, người đánh giá có thể thay đổi hành vi khi biết họ đang được quan sát.
+
+**Biện pháp giảm thiểu**: Chúng tôi không tiết lộ mục đích cụ thể của nghiên cứu cho các đánh giá viên và trộn lẫn các mẫu từ các phương pháp khác nhau.
+
+#### 7.4.2 Thiên Lệch Xác Nhận
+
+Chúng tôi có thể vô tình thiên về kết quả tích cực cho phương pháp đề xuất.
+
+**Biện pháp giảm thiểu**: Chúng tôi sử dụng đánh giá mù (blind evaluation) và báo cáo cả kết quả tích cực và tiêu cực.
+
+8 KẾT LUẬN
+
+Trong nghiên cứu này, chúng tôi đã đề xuất Hàm Mất Mát Nhận Biết Kinh Nghiệm (ELF), một phương pháp mới để cải thiện việc tạo bình luận đánh giá mã nguồn tự động bằng cách tích hợp kinh nghiệm người đánh giá. Phương pháp của chúng tôi sử dụng các chỉ số quyền sở hữu mã nguồn để đo lường kinh nghiệm và tăng trọng số dữ liệu huấn luyện tương ứng.
+
+### 8.1 Tóm Tắt Đóng Góp
+
+Nghiên cứu này đóng góp vào lĩnh vực đánh giá mã nguồn tự động qua nhiều khía cạnh:
+
+**1. Phương pháp luận mới**: ELF là phương pháp đầu tiên tích hợp hệ thống kinh nghiệm người đánh giá vào quá trình huấn luyện mô hình tạo bình luận. Điều này mở ra một hướng nghiên cứu mới trong việc kết hợp hiểu biết kỹ thuật phần mềm với học máy.
+
+**2. Đánh giá toàn diện**: Chúng tôi tiến hành đánh giá quy mô lớn trên 826 kho lưu trữ GitHub với cả đánh giá tự động và nhân công, cung cấp bằng chứng vững chắc về hiệu quả của phương pháp.
+
+**3. Hiểu biết thực tiễn**: Kết quả cho thấy những cải thiện đáng kể về chất lượng bình luận (+29% tính ứng dụng, +56% tính thông tin, +129% phát hiện vấn đề), có ý nghĩa thực tiễn quan trọng.
+
+**4. Tài nguyên cộng đồng**: Chúng tôi công bố các tập dữ liệu mở rộng với các chỉ số quyền sở hữu, hỗ trợ nghiên cứu tương lai trong lĩnh vực này.
+
+### 8.2 Ý Nghĩa Lý Thuyết
+
+Nghiên cứu này có ý nghĩa lý thuyết quan trọng:
+
+**Tích hợp Domain Knowledge**: ELF chứng minh rằng việc tích hợp kiến thức lĩnh vực cụ thể có thể cải thiện đáng kể hiệu suất của các hệ thống AI. Điều này ủng hộ quan điểm rằng AI hiệu quả cần kết hợp cả tiến bộ kỹ thuật và hiểu biết lĩnh vực.
+
+**Quality-aware Learning**: Phương pháp trọng số dựa trên chất lượng dữ liệu mở ra hướng nghiên cứu về học máy nhận biết chất lượng, có thể áp dụng cho nhiều lĩnh vực khác.
+
+**Experience Modeling**: Cách tiếp cận đo lường kinh nghiệm thông qua quyền sở hữu mã nguồn có thể được mở rộng cho các tác vụ khác trong kỹ thuật phần mềm.
+
+### 8.3 Ý Nghĩa Thực Tiễn
+
+Về mặt thực tiễn, nghiên cứu này cung cấp:
+
+**Cải thiện Quy trình**: Các tổ chức có thể sử dụng ELF để cải thiện quy trình đánh giá mã nguồn, giảm gánh nặng cho những người đánh giá có kinh nghiệm và cải thiện chất lượng phản hồi.
+
+**Hỗ trợ Đào tạo**: Hệ thống có thể hỗ trợ đào tạo các nhà phát triển mới bằng cách cung cấp các ví dụ bình luận chất lượng cao.
+
+**Tự động hóa Thông minh**: ELF cho phép tự động hóa thông minh hơn trong đánh giá mã nguồn, tập trung vào những trường hợp thực sự cần sự chú ý của con người.
+
+### 8.4 Hạn Chế và Hướng Phát Triển
+
+Mặc dù có những đóng góp đáng kể, nghiên cứu này vẫn có một số hạn chế:
+
+**Scope hạn chế**: Nghiên cứu tập trung vào các kho lưu trữ GitHub công khai. Cần mở rộng sang các môi trường khác như dự án nội bộ, các platform khác.
+
+**Cold start problem**: Phương pháp gặp khó khăn với những người đánh giá mới hoặc dự án mới. Cần phát triển các chiến lược để xử lý tình huống này.
+
+**Dynamic nature**: Kinh nghiệm người đánh giá thay đổi theo thời gian, cần có cơ chế cập nhật động.
+
+### 8.5 Hướng Nghiên Cứu Tương Lai
+
+Dựa trên kết quả và hạn chế, chúng tôi đề xuất các hướng nghiên cứu tương lai:
+
+**1. Mở rộng chỉ số kinh nghiệm**: Khám phá các cách khác để đo lường kinh nghiệm, bao gồm expertise theo lĩnh vực, social experience, và temporal dynamics.
+
+**2. Áp dụng cho các tác vụ khác**: Mở rộng ELF cho các tác vụ khác như tạo commit message, refactoring suggestion, bug prediction.
+
+**3. Personalization**: Phát triển các hệ thống có thể học từ preference và style của từng người đánh giá.
+
+**4. Real-time adaptation**: Nghiên cứu cách hệ thống có thể học và thích ứng theo thời gian thực từ feedback của người dùng.
+
+**5. Cross-domain transfer**: Khám phá cách kiến thức từ một domain có thể được transfer sang domain khác.
+
+### 8.6 Thông Điệp Cuối
+
+Nghiên cứu này minh họa tiềm năng to lớn của việc kết hợp hiểu biết kỹ thuật phần mềm với các kỹ thuật học máy tiên tiến. Thay vì chỉ tập trung vào cải tiến thuật toán, chúng ta nên chú ý đến việc tích hợp domain knowledge để tạo ra những hệ thống AI thực sự hữu ích và hiệu quả.
+
+ELF không chỉ cải thiện hiệu suất kỹ thuật mà còn phản ánh hiểu biết sâu sắc về bản chất của đánh giá mã nguồn: đó là một hoạt động xã hội phức tạp đòi hỏi kinh nghiệm, kiến thức và khả năng đánh giá. Bằng cách tôn trọng và tận dụng kinh nghiệm con người, chúng ta có thể xây dựng những hệ thống AI không chỉ thông minh về mặt kỹ thuật mà còn khôn ngoan về mặt thực tiễn.
+
+---
+
+## TÀI LIỆU THAM KHẢO
+
+[1] Moritz Beller, Radjino Bholanath, Shane McIntosh, và Andy Zaidman. 2014. Analyzing the State of Static Analysis: A Large-Scale Evaluation in Open Source Software. In SANER. IEEE, New York, NY, USA, 470–479. https://doi.org/10.1109/SANER.2014.69
+
+[2] Moritz Beller, Alberto Bacchelli, Andy Zaidman, và Elmar Juergens. 2014. Modern code reviews in open-source projects: which problems do they fix?. In MSR. ACM, New York, NY, USA, 202–211. https://doi.org/10.1145/2597073.2597082
+
+[3] Moritz Beller, Andy Zaidman, Alberto Bacchelli, và Elmar Juergens. 2014. Oops, my tests broke the build: An explorative analysis of Travis CI with GitHub. In MSR. IEEE, New York, NY, USA, 356–359. https://doi.org/10.1145/2597073.2597132
+
+[4] Antonio Mastropaolo, Luca Pascarella, Emanuela Guglielmi, Matteo Ciniselli, Simone Scalabrino, Rocco Oliveto, Gabriele Bavota, và Denys Poshyvanyk. 2021. Studying the Usage of Text-To-Text Transfer Transformer to Support Code-Related Tasks. In ICSE. IEEE, New York, NY, USA, 336–347. https://doi.org/10.1109/ICSE43902.2021.00041
+
+[5] Christian Bird, Nachiappan Nagappan, Brendan Murphy, Harald Gall, và Premkumar Devanbu. 2011. Don't touch my code! examining the effects of ownership on software quality. In ESEC/FSE. ACM, New York, NY, USA, 4–14. https://doi.org/10.1145/2025113.2025119
+
+[6] Amiangshu Bosu, Michaela Greiler, và Christian Bird. 2015. Characteristics of useful code reviews: an empirical study at microsoft. In MSR. IEEE, New York, NY, USA, 146–156. https://doi.org/10.1109/MSR.2015.21
+
+[7] Amiangshu Bosu và Jeffrey C. Carver. 2013. Impact of Peer Code Review on Peer Impression Formation: A Survey. In ESEM. IEEE, New York, NY, USA, 133–142. https://doi.org/10.1109/ESEM.2013.23
+
+[8] Amiangshu Bosu và Jeffrey C. Carver. 2014. How do social interaction networks influence peer impression formation in peer code review?. In ESEC/FSE. ACM, New York, NY, USA, 263–274. https://doi.org/10.1145/2635868.2635873
+
+[9] Peter C Rigby, Daniel M German, Laura Cowen, và Margaret-Anne Storey. 2014. Peer review on open-source software projects: parameters, statistical models, and theory. TOSEM 23, 4 (2014), 1–33. https://doi.org/10.1145/2594458
+
+[10] Carmine Vassallo, Sebastian Proksch, Anna Jancso, Harald C. Gall, và Michele Lanza. 2021. Anti-patterns in Modern Code Review: Symptoms and Prevalence. In SANER. IEEE, New York, NY, USA, 531–535. https://doi.org/10.1109/SANER50967.2021.00060
+
+[11] Jacob Cohen. 1960. A coefficient of agreement for nominal scales. Educational and psychological measurement 20, 1 (1960), 37–46.
+
+[12] Jacek Czerwonka, Michaela Greiler, và Jack Tilford. 2015. Code Reviews Do Not Find Bugs. How the Current Code Review Best Practice Slows Us Down. In ICSE, Vol. 2. IEEE, New York, NY, USA, 27–28. https://doi.org/10.1109/ICSE.2015.131
+
+[13] Jacob Devlin, Ming-Wei Chang, Kenton Lee, và Kristina Toutanova. 2019. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding. In NAACL-HLT. ACL, Philadelphia, PA, USA, 4171–4186. https://doi.org/10.18653/V1/N19-1423
+
+[14] Edson Dias, Paulo Meirelles, Fernando Castor, Igor Steinmacher, Igor Wiese, và Gustavo Pinto. 2021. What Makes a Great Maintainer of Open Source Projects?. In ICSE. IEEE, New York, NY, USA, 982–994. https://doi.org/10.1109/ICSE43902.2021.00093
+
+[15] Yafen Dong, Xiaohong Shen, Zhe Jiang, và Haiyan Wang. 2021. Recognition of imbalanced underwater acoustic datasets with exponentially weighted cross-entropy loss. Appl. Acoust. 174 (2021), 107740. https://doi.org/10.1016/J.APACOUST.2020.107740
+
+[16] Felipe Ebert, Fernando Castor, Nicole Novielli, và Alexander Serebrenik. 2018. Communicative Intention in Code Review Questions. In ICSME. IEEE, New York, NY, USA, 519–523. https://doi.org/10.1109/ICSME.2018.00061
+
+[17] Joseph L Fleiss, Bruce Levin, và Myunghee Cho Paik. 2013. Statistical methods for rates and proportions. John Wiley & Sons, Hoboken, NJ, USA.
+
+[18] Thomas Fritz, Gail C Murphy, và Emily Hill. 2007. Does a programmer's activity indicate knowledge of code?. In ESEC/FSE. ACM, New York, NY, USA, 341–350. https://doi.org/10.1145/1287624.1287673
+
+[19] Alexander Frömmgen, Jacob Austin, Peter Choy, Nimesh Ghelani, Lera Kharatyan, Gabriela Surita, Elena Khrapko, Pascal Lamblin, Pierre-Antoine Manzagol, Marcus Revaj, Maxim Tabachnyk, Daniel Tarlow, Kevin Villela, Dan Zheng, Satish Chandra, và Petros Maniatis. 2024. Resolving Code Review Comments with Machine Learning. In ICSE-SEIP. IEEE, New York, NY, USA, 204–215. https://doi.org/10.1145/3639477.3639746
+
+[20] Michael Fu, Van Nguyen, Chakkrit Tantithamthavorn, Dinh Phung, và Trung Le. 2024. Vision Transformer Inspired Automated Vulnerability Repair. TOSEM 33, 3, Article 78 (mar 2024), 29 pages. https://doi.org/10.1145/3632746
+
+[21] Michael Fu và Chakkrit Tantithamthavorn. 2022. LineVul: a transformer-based line-level vulnerability prediction. In MSR. ACM, New York, NY, USA, 608–620. https://doi.org/10.1145/3524842.3528452
+
+[22] Michael Fu, Chakkrit Tantithamthavorn, Trung Le, Van Nguyen, và Dinh Phung. 2022. VulRepair: a T5-based automated software vulnerability repair. In ESEC/FSE. ACM, New York, NY, USA, 935–947. https://doi.org/10.1145/3540250.3549098
+
+[23] Akalanka Galappaththi, Sarah Nadi, và Christoph Treude. 2022. Does this apply to me? an empirical study of technical context in stack overflow. In MSR. ACM, New York, NY, USA, 23–34. https://doi.org/10.1145/3524842.3528435
+
+[24] Haoyu Gao, Christoph Treude, và Mansooreh Zahedi. 2023. Evaluating Transfer Learning for Simplifying GitHub READMEs. In ESEC/FSE. ACM, New York, NY, USA, 1548–1560. https://doi.org/10.1145/3611643.3616291
+
+[25] Mehdi Golzadeh, Alexandre Decan, và Natarajan Chidambaram. 2022. On the accuracy of bot detection techniques. In BotSE. ACM, New York, NY, USA, 1–5. https://doi.org/10.1145/3528228.3528406
+
+[26] Mehdi Golzadeh, Alexandre Decan, Damien Legay, và Tom Mens. 2021. A ground-truth dataset and classification model for detecting bots in GitHub issue and PR comments. J. Softw. 175 (2021), 110911. https://doi.org/10.1016/J.JSS.2021.110911
+
+[27] Pavlína Wurzel Gonçalves, Enrico Fregnan, Tobias Baum, Kurt Schneider, và Alberto Bacchelli. 2022. Do explicit review strategies improve code review performance? Towards understanding the role of cognitive load. EMSE 27, 4 (2022), 99. https://doi.org/10.1007/S10664-022-10123-8
+
+[28] Qi Guo, Junming Cao, Xiaofei Xie, Shangqing Liu, Xiaohong Li, Bihuan Chen, và Xin Peng. 2024. Exploring the potential of chatgpt in automated code refinement: An empirical study. In ICSE. IEEE, New York, NY, USA, 1–13. https://doi.org/10.1145/3597503.3623306
+
+[29] Masum Hasan, Anindya Iqbal, Mohammad Rafid Ul Islam, AJM Imtiajur Rahman, và Amiangshu Bosu. 2021. Using a balanced scorecard to identify opportunities to improve code review effectiveness: An industrial experience report. EMSE 26 (2021), 1–34. https://doi.org/10.1007/S10664-021-10038-W
+
+[30] Hideaki Hata, Osamu Mizuno, và Tohru Kikuno. 2012. Bug prediction based on fine-grained module histories. In ICSE. IEEE, New York, NY, USA, 200–210. https://doi.org/10.1109/ICSE.2012.6227193
+
+[31] Vincent J Hellendoorn, Jason Tsay, Manisha Mukherjee, và Martin Hirzel. 2021. Towards automating code review at scale. In ICSE. IEEE, New York, NY, USA, 1479–1482. https://doi.org/10.1145/3468264.3473134
+
+[32] Abram Hindle, Earl T Barr, Mark Gabel, Zhendong Su, và Premkumar Devanbu. 2016. On the naturalness of software. Commun. ACM 59, 5 (2016), 122–131. https://doi.org/10.1145/2902362
+
+[33] Nan Jiang, Thibaud Lutellier, và Lin Tan. 2021. CURE: Code-Aware Neural Machine Translation for Automatic Program Repair. In ICSE. IEEE, New York, NY, USA, 1161–1173. https://doi.org/10.1109/ICSE43902.2021.00107
+
+[34] Matthew Jin, Syed Shahriar, Michele Tufano, Xin Shi, Shuai Lu, Neel Sundaresan, và Alexey Svyatkovskiy. 2023. Inferfix: End-to-end program repair with llms. In ESEC/FSE. ACM, New York, NY, USA, 1646–1656. https://doi.org/10.1145/3611643.3613892
+
+[35] Eirini Kalliamvakou, Georgios Gousios, Kelly Blincoe, Leif Singer, Daniel M German, và Daniela Damian. 2016. An in-depth study of the promises and perils of mining GitHub. EMSE 21 (2016), 2035–2071. https://doi.org/10.1007/S10664-015-9393-5
+
+[36] Oleksii Kononenko, Olga Baysal, và Michael W Godfrey. 2016. Code review quality: How developers see it. In ICSE. IEEE, New York, NY, USA, 1028–1038. https://doi.org/10.1145/2884781.2884840
+
+[37] Oleksii Kononenko, Olga Baysal, Latifa Guerrouj, Yaxin Cao, và Michael W. Godfrey. 2015. Investigating code review quality: Do people and participation matter?. In ICSME. IEEE, New York, NY, USA, 111–120. https://doi.org/10.1109/ICSM.2015.7332457
+
+[38] Philippe B Kruchten. 1995. The 4+1 view model of architecture. IEEE software 12, 6 (1995), 42–50. https://doi.org/10.1109/52.469759
+
+[39] Jia Li, Ge Li, Zhuo Li, Zhi Jin, Xing Hu, Kechi Zhang, và Zhiyi Fu. 2023. Codeeditor: Learning to edit source code with pre-trained models. TOSEM 32, 6 (2023), 1–22. https://doi.org/10.1145/3597207
+
+[40] Lingwei Li, Li Yang, Huaxi Jiang, Jun Yan, Tiejian Luo, Zihan Hua, Geng Liang, và Chun Zuo. 2022. AUGER: automatically generating review comments with pre-training models. In ESEC/FSE. ACM, New York, NY, USA, 1009–1021. https://doi.org/10.1145/3540250.3549099
+
+[41] Lingwei Li, Li Yang, Huaxi Jiang, Jun Yan, Tiejian Luo, Zihan Hua, Geng Liang, và Chun Zuo. 2022. Auger: Automatically generating review comments with pre-training models. In ESEC/FSE. ACM, New York, NY, USA, 1009–1021. https://doi.org/10.1145/3540250.3549099
+
+[42] Yi Li, Yiduo Yu, Yiwen Zou, Tianqi Xiang, và Xiaomeng Li. 2022. Online easy example mining for weakly-supervised gland segmentation from histology images. In MICCAI. Springer, New York, NY, USA, 578–587. https://doi.org/10.1007/978-3-031-16440-8_55
+
+[43] Zhiyu Li, Shuai Lu, Daya Guo, Nan Duan, Shailesh Jannu, Grant Jenks, Deep Majumder, Jared Green, Alexey Svyatkovskiy, Shengyu Fu, và Neel Sundaresan. 2022. Automating code review activities by large-scale pre-training. In ESEC/FSE. ACM, New York, NY, USA, 1035–1047. https://doi.org/10.1145/3540250.3549081
+
+[44] Bo Lin, Shangwen Wang, Zhongxin Liu, Yepang Liu, Xin Xia, và Xiaoguang Mao. 2023. Cct5: A code-change-oriented pre-trained model. In ESEC/FSE. ACM, New York, NY, USA, 1509–1521. https://doi.org/10.1145/3611643.3616339
+
+[45] Hong Yi Lin và Patanamon Thongtanunam. 2023. Towards Automated Code Reviews: Does Learning Code Structure Help?. In SANER. IEEE, New York, NY, USA, 703–707. https://doi.org/10.1109/SANER56733.2023.00075
+
+[46] Hong Yi Lin, Patanamon Thongtanunam, Christoph Treude, và Wachiraphan Charoenwet. 2024. Improving Automated Code Reviews: Learning from Experience. In MSR. IEEE, New York, NY, USA, 278–283. https://doi.org/10.1145/3643991.3644910
+
+[47] Junyi Lu, Lei Yu, Xiaojia Li, Li Yang, và Chun Zuo. 2023. LLaMA-Reviewer: Advancing Code Review Automation with Large Language Models through Parameter-Efficient Fine-Tuning. In ISSRE. IEEE, New York, NY, USA, 647–658. https://doi.org/10.1109/ISSRE59848.2023.00026
+
+[48] Shuai Lu, Daya Guo, Shuo Ren, Junjie Huang, Alexey Svyatkovskiy, Ambrosio Blanco, Colin B. Clement, Dawn Drain, Daxin Jiang, Duyu Tang, Ge Li, Lidong Zhou, Linjun Shou, Long Zhou, Michele Tufano, Ming Gong, Ming Zhou, Nan Duan, Neel Sundaresan, Shao Kun Deng, Shengyu Fu, và Shujie Liu. 2021. CodeXGLUE: A Machine Learning Benchmark Dataset for Code Understanding and Generation. In NeurIPS Datasets. Curran Associates Inc., Red Hook, NY, USA. https://datasets-benchmarks-proceedings.neurips.cc/paper/2021/hash/c16a5320fa475530d9583c34fd356ef5-Abstract-round1.html
+
+[49] Laura MacLeod, Michaela Greiler, Margaret-Anne Storey, Christian Bird, và Jacek Czerwonka. 2018. Code Reviewing in the Trenches: Challenges and Best Practices. IEEE Software 35, 4 (2018), 34–42. https://doi.org/10.1109/MS.2017.265100500
+
+[50] Shane McIntosh, Yasutaka Kamei, Bram Adams, và Ahmed E. Hassan. 2014. The impact of code review coverage and code review participation on software quality: a case study of the qt, VTK, and ITK projects. In MSR. ACM, New York, NY, USA, 192–201. https://doi.org/10.1145/2597073.2597076
+
+[51] Xiaozhu Meng, Barton P. Miller, William R. Williams, và Andrew R. Bernat. 2013. Mining Software Repositories for Accurate Authorship. In ICSME. IEEE, New York, NY, USA, 250–259. https://doi.org/10.1109/ICSM.2013.36
+
+[52] Gail C Murphy, David Notkin, và Kevin Sullivan. 1995. Software reflexion models: Bridging the gap between source and high-level models. In ESEC/FSE. ACM, New York, NY, USA, 18–28. https://doi.org/10.1145/222124.222136
+
+[53] Mika V. Mäntylä và Casper Lassenius. 2009. What Types of Defects Are Really Discovered in Code Reviews? TSE 35, 3 (2009), 430–448. https://doi.org/10.1109/TSE.2008.71
+
+[54] Paul W. Oman và Curtis R. Cook. 1990. Typographic style is more than cosmetic. Commun. ACM 33, 5 (may 1990), 506–520. https://doi.org/10.1145/78607.78611
+
+[55] Kishore Papineni, Salim Roukos, Todd Ward, và Wei-Jing Zhu. 2002. Bleu: a method for automatic evaluation of machine translation. In ACL. ACL, Philadelphia, PA, USA, 311–318. https://doi.org/10.3115/1073083.1073135
+
+[56] Chanathip Pornprasit, Chakkrit Tantithamthavorn, Patanamon Thongtanunam, và Chunyang Chen. 2023. D-act: Towards diff-aware code transformation for code review under a time-wise evaluation. In SANER. IEEE, New York, NY, USA, 296–307. https://doi.org/10.1109/SANER56733.2023.00036
+
+[57] Alec Radford, Karthik Narasimhan, Tim Salimans, Ilya Sutskever, et al. 2018. Improving language understanding by generative pre-training. Technical Report. OpenAI.
+
+[58] Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang, Michael Matena, Yanqi Zhou, Wei Li, và Peter J Liu. 2020. Exploring the limits of transfer learning with a unified text-to-text transformer. J. Mach. Learn. Res. 21, 140 (2020), 1–67.
+
+[59] Foyzur Rahman và Premkumar Devanbu. 2011. Ownership, experience and defects: a fine-grained study of authorship. In ICSE. IEEE, New York, NY, USA, 491–500. https://doi.org/10.1145/1985793.1985860
+
+[60] Mohammad Masudur Rahman, Chanchal K Roy, và Raula G Kula. 2017. Predicting usefulness of code review comments using textual features and developer experience. In MSR. IEEE, New York, NY, USA, 215–226. https://doi.org/10.1109/MSR.2017.17
+
+[61] Shadikur Rahman, Umme Ayman Koana, và Maleknaz Nayebi. 2022. Example driven code review explanation. In ESEM. ACM, New York, NY, USA, 307–312. https://doi.org/10.1145/3544902.3546639
+
+[62] Baishakhi Ray, Vincent Hellendoorn, Saheel Godhane, Zhaopeng Tu, Alberto Bacchelli, và Premkumar Devanbu. 2016. On the" naturalness" of buggy code. In ICSE. IEEE, New York, NY, USA, 428–439. https://doi.org/10.1145/2884781.2884848
+
+[63] Peter C. Rigby và Christian Bird. 2013. Convergent contemporary software peer review practices. In ESEC/FSE. ACM, New York, NY, USA, 202–212. https://doi.org/10.1145/2491411.2491444
+
+[64] H.D. Rombach. 1987. A Controlled Expeniment on the Impact of Software Structure on Maintainability. TSESE-13, 3 (1987), 344–354. https://doi.org/10.1109/TSE.1987.233165
+
+[65] Oussama Ben Sghaier và Houari A. Sahraoui. 2024. Improving the Learning of Code Review Successive Tasks with Cross-Task Knowledge Distillation. In ESEC/FSE, Vol. 1. ACM, New York, NY, USA, 1086–1106. https://doi.org/10.1145/3643775
+
+[66] Davide Spadini, Maurício Aniche, và Alberto Bacchelli. 2018. PyDriller: Python Framework for Mining Software Repositories. In ESEC/FSE. ACM, New York, NY, USA, 908–911. https://doi.org/10.1145/3236024.3264598
+
+[67] M-AD Storey, F David Fracchia, và Hausi A Müller. 1999. Cognitive design elements to support the construction of a mental model during software exploration. J. Softw. 44, 3 (1999), 171–185. https://doi.org/10.1016/S0164-1212(98)10055-9
+
+[68] Patanamon Thongtanunam, Shane McIntosh, Ahmed E. Hassan, và Hajimu Iida. 2015. Investigating Code Review Practices in Defective Files: An Empirical Study of the Qt System. In 2015 IEEE/ACM 12th Working Conference on Mining Software Repositories. ACM, New York, NY, USA, 168–179. https://doi.org/10.1109/MSR.2015.23
+
+[69] Patanamon Thongtanunam, Shane McIntosh, Ahmed E. Hassan, và Hajimu Iida. 2016. Revisiting code ownership and its relationship with software quality in the scope of modern code review. In ICSE. IEEE, New York, NY, USA, 1039–1050. https://doi.org/10.1145/2884781.2884852
+
+[70] Patanamon Thongtanunam, Chanathip Pornprasit, và Chakkrit Tantithamthavorn. 2022. Autotransform: Automated code transformation to support modern code review process. In ICSE. IEEE, New York, NY, USA, 237–248. https://doi.org/10.1145/3510003.3510067
+
+[71] Patanamon Thongtanunam và Chakkrit Tantithamthavorn. 2024. Code Ownership: The Principles, Differences, and Their Associations with Software Quality. In ISSRE. IEEE, New York, NY, USA, to appear.
+
+[72] Patanamon Thongtanunam, Chakkrit Tantithamthavorn, Raula Gaikovina Kula, Norihiro Yoshida, Hajimu Iida, và Ken-ichi Matsumoto. 2015. Who should review my code? A file location-based code-reviewer recommendation approach for Modern Code Review. In SANER. IEEE, New York, NY, USA, 141–150. https://doi.org/10.1109/SANER.2015.7081824
+
+[73] Hugo Touvron, Thibaut Lavril, Gautier Izacard, Xavier Martinet, Marie-Anne Lachaux, Timothée Lacroix, Baptiste Rozière, Naman Goyal, Eric Hambro, Faisal Azhar, Aurelien Rodriguez, Armand Joulin, Edouard Grave, và Guillaume Lample. 2023. LLaMA: Open and Efficient Foundation Language Models. arXiv:2302.13971 [cs.CL]
+
+[74] Michele Tufano, Jevgenija Pantiuchina, Cody Watson, Gabriele Bavota, và Denys Poshyvanyk. 2019. On learning meaningful code changes via neural machine translation. In ICSE. IEEE, New York, NY, USA, 25–36. https://doi.org/10.1109/ICSE.2019.00021
+
+[75] Michele Tufano, Cody Watson, Gabriele Bavota, Massimiliano Di Penta, Martin White, và Denys Poshyvanyk. 2019. An empirical study on learning bug-fixing patches in the wild via neural machine translation. TOSEM 28, 4 (2019), 1–29. https://doi.org/10.1145/3340544
+
+[76] Rosalia Tufano, Ozren Dabić, Antonio Mastropaolo, Matteo Ciniselli, và Gabriele Bavota. 2024. Code Review Automation: Strengths and Weaknesses of the State of the Art. TSE50, 2 (2024), 338–353. https://doi.org/10.1109/TSE.2023.3348172
+
+[77] Rosalia Tufano, Simone Masiero, Antonio Mastropaolo, Luca Pascarella, Denys Poshyvanyk, và Gabriele Bavota. 2022. Using pre-trained models to boost code review automation. In ICSE. IEEE, New York, NY, USA, 2291–2302. https://doi.org/10.1145/3510003.3510621
+
+[78] Rosalia Tufano, Luca Pascarella, Michele Tufano, Denys Poshyvanyk, và Gabriele Bavota. 2021. Towards automating code review activities. In ICSE. IEEE, New York, NY, USA, 163–174. https://doi.org/10.1109/ICSE43902.2021.00027
+
+[79] Asif Kamal Turzo và Amiangshu Bosu. 2024. What makes a code review useful to opendev developers? an empirical investigation. EMSE 29, 1 (2024), 6. https://doi.org/10.1007/S10664-023-10411-X
+
+[80] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, và Illia Polosukhin. 2017. Attention is All you Need. In NeurIPS. Curran Associates Inc., Red Hook, NY, USA, 5998–6008. https://proceedings.neurips.cc/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html
+
+[81] Manushree Vijayvergiya, Małgorzata Salawa, Ivan Budiselić, Dan Zheng, Pascal Lamblin, Marko Ivanković, Juanjo Carin, Mateusz Lewko, Jovan Andonov, Goran Petrović, Daniel Tarlow, Petros Maniatis, và René Just. 2024. AI-Assisted Assessment of Coding Practices in Modern Code Review. In AIware. ACM, New York, NY, USA, 85–93. https://doi.org/10.1145/3664646.3665664
+
+[82] Valery Vishnevskiy, Richard Rau, và Orcun Goksel. 2019. Deep variational networks with exponential weighting for learning computed tomography. In MICCAI. Springer, New York, NY, USA, 310–318. https://doi.org/10.1007/978-3-030-32226-7_35
+
+[83] Kai Wang, Yizhou Peng, Hao Huang, Ying Hu, và Sheng Li. 2022. Mining Hard Samples Locally And Globally For Improved Speech Separation. In ICASSP. IEEE, New York, NY, USA, 6037–6041. https://doi.org/10.1109/ICASSP43922.2022.9747797
+
+[84] Xinshao Wang, Yang Hua, Elyor Kodirov, Guosheng Hu, và Neil Martin Robertson. 2019. Deep Metric Learning by Online Soft Mining and Class-Aware Attention. In AAAI. AAAI Press, Washington D.C, USA, 5361–5368. https://doi.org/10.1609/AAAI.V33I01.33015361
+
+[85] Jiwei Wei, Yang Yang, Xing Xu, Jingkuan Song, Guoqing Wang, và Heng Tao Shen. 2023. Less is Better: Exponential Loss for Cross-Modal Matching. TCSVT 33, 9 (2023), 5271–5280. https://doi.org/10.1109/TCSVT.2023.3249754
+
+[86] Mairieli Wessel, Bruno Mendes de Souza, Igor Steinmacher, Igor S. Wiese, Ivanilton Polato, Ana Paula Chaves, và Marco A. Gerosa. 2018. The Power of Bots: Characterizing and Understanding Bots in OSS Projects. In CSCW, Vol. 2. ACM, New York, NY, USA, Article 182, 19 pages. https://doi.org/10.1145/3274451
+
+[87] Motahareh Bahrami Zanjani, Huzefa Kagdi, và Christian Bird. 2016. Automatically Recommending Peer Reviewers in Modern Code Review. TSE 42, 6 (2016), 530–543. https://doi.org/10.1109/TSE.2015.2500238
+
+[88] Zhengran Zeng, Hanzhuo Tan, Haotian Zhang, Jing Li, Yuqun Zhang, và Lingming Zhang. 2022. An extensive study on pre-trained models for program understanding and generation. In ISSTA. ACM, New York, NY, USA, 39–51. https://doi.org/10.1145/3533767.3534390
+
+[89] Beiqi Zhang, Liming Fu, Peng Liang, Jiaxin Yu, và Chong Wang. 2024. Demystifying code snippets in code reviews: a study of the OpenStack and Qt communities and a practitioner survey. EMSE 29, 4 (2024), 78. https://doi.org/10.1109/MSR.2017.17
+
+[90] Xin Zhou, Kisub Kim, Bowen Xu, Donggyun Han, và David Lo. 2024. Out of Sight, Out of Mind: Better Automatic Vulnerability Repair by Broadening Input Ranges and Sources. In ICSE. IEEE, New York, NY, USA, Article 88, 13 pages. https://doi.org/10.1145/3597503.3639222
+
+Manuscript submitted to ACM

@@ -1,0 +1,734 @@
+# 2411.11401v3.pdf
+# Chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2411.11401v3.pdf
+# Kích thước tệp: 560518 bytes
+
+===============================================
+NỘI DUNG TỆP PDF
+===============================================
+
+
+--- TRANG 1 ---
+Đánh Giá Mã Dựa Trên Học Sâu:
+Một Sự Thay Đổi Mô Hình Hay Một Con Dao Hai Lưỡi?
+Rosalia Tufano†*, Alberto Martin-Lopez†*, Ahmad Tayeb‡, Ozren Dabić†, Sonia Haiduc‡, Gabriele Bavota†
+†Viện Phần Mềm – Đại học USI Università della Svizzera italiana, Thụy Sĩ
+‡Đại học Bang Florida, Hoa Kỳ
+†{rosalia.tufano, alberto.martin, ozren.dabic, gabriele.bavota }@usi.ch,‡{atayeb2, shaiduc }@fsu.edu
+
+Tóm tắt — Một số kỹ thuật đã được đề xuất để tự động hóa (một phần) việc đánh giá mã. Hỗ trợ ban đầu bao gồm việc đề xuất người đánh giá phù hợp nhất cho một thay đổi nhất định hoặc sắp xếp ưu tiên các nhiệm vụ đánh giá. Với sự ra đời của học sâu trong kỹ thuật phần mềm, mức độ tự động hóa đã được đẩy lên những tầm cao mới, với các phương pháp có thể cung cấp phản hồi về mã nguồn bằng ngôn ngữ tự nhiên như một người đánh giá thực tế sẽ làm. Ngoài ra, nghiên cứu gần đây đã ghi nhận các dự án mã nguồn mở áp dụng Mô hình Ngôn ngữ Lớn (LLMs) làm đồng đánh giá. Mặc dù nghiên cứu trong lĩnh vực này rất tích cực, nhưng ít được biết về tác động thực tế của việc bao gồm các đánh giá mã được tạo tự động vào quy trình đánh giá mã. Trong khi có nhiều khía cạnh đáng nghiên cứu (ví dụ: việc chuyển giao kiến thức giữa các nhà phát triển có bị ảnh hưởng không?), trong nghiên cứu này chúng tôi tập trung vào ba khía cạnh: (i) chất lượng đánh giá, tức là khả năng của người đánh giá trong việc xác định các vấn đề trong mã; (ii) chi phí đánh giá, tức là thời gian dành cho việc đánh giá mã; và (iii) độ tin cậy của người đánh giá, tức là mức độ tin cậy của người đánh giá về phản hồi được cung cấp. Chúng tôi thực hiện một thí nghiệm có kiểm soát với 29 nhà phát triển chuyên nghiệp đã đánh giá các chương trình khác nhau có/không có sự hỗ trợ của đánh giá mã được tạo tự động. Trong suốt thí nghiệm, chúng tôi đã giám sát hoạt động của người đánh giá trong hơn 50 giờ ghi lại đánh giá mã. Chúng tôi cho thấy rằng người đánh giá coi hầu hết các vấn đề được LLM xác định tự động là hợp lệ và việc có sẵn một đánh giá tự động làm điểm khởi đầu ảnh hưởng mạnh mẽ đến hành vi của họ: Người đánh giá có xu hướng tập trung vào các vị trí mã được LLM chỉ ra thay vì tìm kiếm các vấn đề bổ sung ở những phần khác của mã. Những người đánh giá bắt đầu từ một đánh giá tự động đã xác định được số lượng vấn đề mức độ thấp cao hơn trong khi, tuy nhiên, không xác định được nhiều vấn đề mức độ cao hơn so với một quy trình hoàn toàn thủ công. Cuối cùng, hỗ trợ tự động không dẫn đến việc tiết kiệm thời gian và không làm tăng độ tin cậy của người đánh giá.
+
+Từ khóa chỉ mục — Đánh giá mã, Thí nghiệm có kiểm soát
+
+I. GIỚI THIỆU
+
+Đánh giá mã là một hoạt động thiết yếu trong cả các dự án công nghiệp và mã nguồn mở. Lợi ích của nó đã được thừa nhận và nghiên cứu từ lâu và bao gồm việc cải thiện chất lượng mã và giảm tỷ lệ lỗi, cùng nhiều lợi ích khác [1]–[5]. Tuy nhiên, đánh giá mã cũng có thể tốn thời gian và chi phí [6], và trong thập kỷ qua, các nhà nghiên cứu đã nghiên cứu các cách để giảm chi phí của hoạt động này trong khi duy trì lợi ích của nó. Một số nỗ lực ban đầu bao gồm đề xuất người đánh giá phù hợp nhất cho một thay đổi nhất định [7]–[10], dự đoán tính khiếm khuyết của một bản vá trước hoặc sau khi được đánh giá [11], [12], và phân loại tính hữu ích của các nhận xét đánh giá [13], [14].
+
+*Đóng góp ngang nhau. Thứ tự tác giả được xác định bằng tung đồng xu.
+
+Trong vài năm qua, cùng với sự phát triển của Học Sâu (DL), đã xuất hiện một làn sóng mới các phương pháp nhằm giảm chi phí đánh giá mã bằng cách khai thác các kỹ thuật DL để tự động hóa quy trình đánh giá mã. Các phương pháp này đã có thể cung cấp các nhận xét đánh giá bằng ngôn ngữ tự nhiên về mã nguồn tương tự như những gì một nhà phát triển phần mềm sẽ cung cấp [15]–[17]. Hơn nữa, nghiên cứu gần đây đã báo cáo các dự án mã nguồn mở áp dụng Mô hình Ngôn ngữ Lớn (LLMs) làm đồng đánh giá [18].
+
+Với tiềm năng to lớn được chứng minh bởi LLMs trong việc hỗ trợ các nhà phát triển với các nhiệm vụ kỹ thuật phần mềm khác nhau [19]–[22], việc bao gồm chúng trong quy trình đánh giá mã cũng có vẻ tự nhiên, với mục tiêu giảm nỗ lực của nhà phát triển và chi phí phần mềm. Tuy nhiên, ít được biết về tác động thực tế của việc bao gồm các đánh giá mã được tạo tự động trong quy trình đánh giá mã. Ví dụ, rất khó để dự đoán việc sử dụng đánh giá mã tự động làm điểm khởi đầu có thể ảnh hưởng như thế nào đến việc chuyển giao kiến thức giữa các nhà phát triển hoặc chất lượng của đánh giá mã cuối cùng, hoặc nếu việc sử dụng đánh giá tự động có thể dẫn đến thiên lệch hoặc điểm mù trong phân tích mã của nhà phát triển, nếu nó dẫn đến chi phí đánh giá mã thấp hơn, v.v. Nghiên cứu tác động của tất cả các yếu tố này vượt ra ngoài phạm vi của một bài báo duy nhất. Tuy nhiên, chúng tôi mong muốn thực hiện những bước đầu tiên theo hướng này bằng cách tập trung vào ba khía cạnh cụ thể, cụ thể là: (i) chất lượng đánh giá mã, tức là khả năng của người đánh giá trong việc xác định các vấn đề trong mã; (ii) chi phí đánh giá mã, tức là thời gian mà các nhà phát triển dành cho việc đánh giá mã; và (iii) độ tin cậy của người đánh giá, tức là mức độ tin cậy của người đánh giá về phản hồi được cung cấp.
+
+Để xác định tác động mà việc sử dụng đánh giá mã tự động có thể có đối với ba khía cạnh này, chúng tôi trình bày một thí nghiệm có kiểm soát liên quan đến 29 nhà phát triển. Các tham gia viên đã thực hiện tổng cộng 72 đánh giá trên sáu dự án được viết bằng Python hoặc Java trong đó chúng tôi đã tiêm các vấn đề chất lượng đại diện cho các vấn đề thường được tìm thấy trong đánh giá mã [23]. Các tham gia viên được phân công vào một trong hai ngôn ngữ dựa trên chuyên môn của họ. Mỗi đánh giá được thực hiện với một trong ba cách điều trị. Cách thứ nhất, được gọi là đánh giá mã thủ công (MCR), giả định không có sẵn đánh giá được tạo tự động làm điểm khởi đầu, do đó phản ánh kịch bản đánh giá mã cổ điển. Cách thứ hai, được gọi là đánh giá mã tự động (ACR), cung cấp cho người đánh giá một đánh giá được tạo tự động bởi ChatGPT Plus [24], mà họ có thể sử dụng làm điểm khởi đầu cho đánh giá cuối cùng của mình (ví dụ: họ có thể loại bỏ các nhận xét được tạo, diễn đạt lại chúng, hoặc bổ sung tập hợp các vấn đề đã xác định).arXiv:2411.11401v3  [cs.SE]  29 Nov 2024
+
+--- TRANG 2 ---
+
+Kịch bản này đại diện cho trạng thái hiện tại của nghệ thuật trong đánh giá mã tự động [18]. Cách thứ ba, được gọi là đánh giá mã toàn diện (CCR), nhằm mô phỏng một kịch bản giả định trong đó các công cụ tạo đánh giá mã tự động đạt đến một cấp độ hoàn toàn mới nơi chúng có thể xác định chính xác tất cả các vấn đề quan trọng trong mã. Để mô phỏng kịch bản này, chúng tôi cung cấp cho các tham gia viên một đánh giá mã chỉ ra chính xác tất cả các vấn đề chúng tôi đã tiêm, trình bày nó như được tạo tự động. Kịch bản sau, mặc dù không thực tế ngày nay với công nghệ hiện tại, cho phép chúng tôi quan sát mức độ mà người đánh giá sẽ tin tưởng một công cụ tự động bằng cách áp dụng các đề xuất của nó và tác động mà nó sẽ có đối với thời gian đánh giá. Các phát hiện chính của chúng tôi có thể được tóm tắt như sau:
+
+1) Người đánh giá coi hầu hết các vấn đề được ChatGPT Plus xác định là hợp lệ. Trung bình, 89% số vấn đề được LLM xác định tự động đã được người đánh giá giữ lại trong đánh giá cuối cùng của họ.
+
+2) Việc có sẵn một đánh giá tự động làm điểm khởi đầu ảnh hưởng mạnh mẽ đến hành vi của người đánh giá. Người đánh giá chủ yếu tập trung vào các vị trí mã được chỉ ra trong đánh giá được tạo tự động mà họ được cung cấp (điều này đúng cho cả cách điều trị ACR và CCR). Trong khi chúng tôi quan sát sự biến đổi đáng kể trong các vị trí mã được nhận xét bởi người đánh giá kiểm tra chương trình một cách thủ công, những người bắt đầu từ một đánh giá tự động có xu hướng tập trung vào các vị trí mã đã được cung cấp trong đó.
+
+3) Đánh giá mã tự động được tạo bởi LLM không giúp xác định nhiều vấn đề mức độ cao hơn so với một quy trình hoàn toàn thủ công. Chúng tôi chỉ quan sát được một sự khác biệt đáng kể trong số lượng vấn đề mức độ thấp trong mã (có lợi cho cách điều trị áp dụng đánh giá dựa trên ChatGPT).
+
+4) Ngay cả khi giả định một hỗ trợ xuất sắc về đánh giá tự động (cách điều trị CCR), người đánh giá không tiết kiệm thời gian so với một quy trình hoàn toàn thủ công. Điều này là do họ cần giải thích các nhận xét được tạo tự động và kiểm tra tính chính xác của chúng trong mã.
+
+5) Việc cung cấp cho người đánh giá các đánh giá được tạo tự động (cả trong cách điều trị ACR và CCR) không ảnh hưởng đến độ tin cậy của họ, mà có thể so sánh với những gì quan sát được trong cách điều trị MCR. Điều này có thể do đánh giá được cung cấp không giúp hiểu chương trình tốt hơn, mà chỉ làm nổi bật các vấn đề tiềm năng.
+
+Tài liệu và dữ liệu nghiên cứu được cung cấp công khai [25].
+
+II. THIẾT KẾ NGHIÊN CỨU
+
+Mục tiêu của nghiên cứu là đánh giá tác động của việc có quyền truy cập vào các đánh giá mã được tạo tự động đối với quy trình đánh giá mã. Cụ thể hơn, chúng tôi muốn hiểu việc có sẵn một đánh giá mã tự động ảnh hưởng như thế nào đến chất lượng của đánh giá cuối cùng được viết bởi người đánh giá, thời gian họ dành cho việc đánh giá mã, và độ tin cậy của họ về đánh giá đã nộp. Lưu ý rằng nghiên cứu của chúng tôi tập trung vào kịch bản trong đó đầu ra của phương pháp dựa trên DL được cung cấp cho người đánh giá như một hỗ trợ cho việc viết đánh giá.
+
+Tuy nhiên, các công cụ này cũng có thể được xem như một hỗ trợ có thể cho người đóng góp, tức là một vòng phản hồi đầu tiên trước khi nộp mã để đánh giá thực tế (của con người) (xem ví dụ [26]). Trong khi nghiên cứu này tập trung vào quan điểm của người đánh giá và thiên lệch mà họ có thể chịu khi sử dụng đánh giá mã tự động, nghiên cứu trong tương lai chắc chắn có thể điều tra quan điểm của người đóng góp (tức là các đánh giá tự động có ảnh hưởng đến chất lượng của mã được đánh giá bởi con người không?).
+
+Nghiên cứu giải quyết các câu hỏi nghiên cứu (RQ) sau:
+
+RQ 0: Có sự khác biệt có ý nghĩa thống kê trong các đặc điểm của đánh giá mã được viết bởi các nhà phát triển có/không có hỗ trợ tự động không? RQ sơ bộ này nhằm so sánh định lượng các đánh giá mã được nộp bởi các nhà phát triển có/không có quyền truy cập vào các đánh giá được tạo tự động. Chúng tôi phân tích các khía cạnh khác nhau bao gồm số lượng vấn đề được báo cáo, độ dài của đánh giá mã (số câu), và các vị trí mã có vấn đề được xác định (ví dụ: số dòng khác nhau mà các vấn đề đã được tìm thấy).
+
+RQ 1: Việc có quyền truy cập vào đánh giá mã tự động tăng khả năng xác định các vấn đề chất lượng mã đến mức nào? Chúng tôi tiêm các vấn đề chất lượng vào mã của các dự án phần mềm và đánh giá mức độ mà các tham gia viên có thể xác định chúng có/không có sự hỗ trợ của đánh giá mã tự động. Vì chúng tôi kiểm tra thủ công tất cả 72 đánh giá mã được viết bởi các nhà phát triển, chúng tôi cũng phân tích, thảo luận và so sánh giữa các cách điều trị khác nhau các vấn đề chất lượng bổ sung không được chúng tôi tiêm, nhưng được các tham gia viên tìm thấy.
+
+RQ 2: Việc có sẵn đánh giá mã tự động tiết kiệm thời gian trong quy trình đánh giá đến mức nào? Chúng tôi so sánh lượng thời gian mà người đánh giá dành có/không có sự hỗ trợ của đánh giá mã tự động. Cụ thể, chúng tôi phân tích thời gian dành cho: (i) hoàn thành nhiệm vụ đánh giá, tức là tổng thời gian; (ii) kiểm tra mã; và (iii) viết đánh giá thực tế.
+
+RQ 3: Việc có sẵn đánh giá mã tự động có tăng độ tin cậy của người đánh giá không? Kết thúc mỗi nhiệm vụ đánh giá, chúng tôi yêu cầu người đánh giá đánh giá độ tin cậy của họ trong đánh giá đã nộp, và chúng tôi điều tra xem việc có sẵn đánh giá mã tự động có tác động đến độ tin cậy của người đánh giá không.
+
+A. Lựa Chọn Bối Cảnh
+
+1) Tham gia viên: Chúng tôi sử dụng lấy mẫu thuận tiện [27], [28] để tuyển dụng 29 tham gia viên (i) hiện tại là các nhà phát triển chuyên nghiệp (28 trong số họ) hoặc (ii) đã từng làm việc trong quá khứ như các nhà phát triển chuyên nghiệp và hiện đang học chương trình sau đại học CS (một trong số họ). Chúng tôi không bao gồm bất kỳ sinh viên CS nào mà không có ít nhất một năm kinh nghiệm công nghiệp. Mặc dù điều này giới hạn số lượng tham gia viên mà chúng tôi có thể bao gồm, chúng tôi coi kinh nghiệm công nghiệp là thiết yếu trong bất kỳ nghiên cứu nào về đánh giá mã, với việc sử dụng phổ biến của nó trong thực tiễn công nghiệp. Để đơn giản, trong phần sau chúng tôi sử dụng thuật ngữ "nhà phát triển" khi đề cập đến các tham gia viên, mặc dù một trong số họ hiện không làm việc như một nhà phát triển. Chúng tôi đã mời 82 nhà phát triển tham gia nghiên cứu của chúng tôi, yêu cầu mỗi người trong số họ đóng góp ba đánh giá mã, mỗi đánh giá sử dụng một cách điều trị khác nhau (chi tiết trong Phần II-B).
+
+--- TRANG 3 ---
+
+BẢNG I
+TÓM TẮT CÁC CHƯƠNG TRÌNH ĐỐI TƯỢNG.
+
+Project ID Language Source LoC Issues
+maze-generator Java Rosetta [29] 164 1
+maze-generator Python Rosetta [29] 75 2
+number-conversion Java Rosetta [29] 116 4
+number-conversion Python Rosetta [29] 81 2
+stopwatch Java Apache [30] 528 7
+stopwatch Python Translated 258 4
+tic-tac-toe Java Rosetta [29] 326 2
+tic-tac-toe Python Rosetta [29] 121 7
+todo-list Java Artificial 206 3
+todo-list Python Artificial 198 3
+word-utils Java Apache [30] 509 6
+word-utils Python Translated 426 7
+
+Email mời, có sẵn trong gói sao chép của chúng tôi [25], yêu cầu họ chấp nhận lời mời nếu họ (i) quen thuộc với đánh giá mã; và (ii) có kinh nghiệm với ít nhất một trong hai ngôn ngữ lập trình chủ đề (tức là Java và Python). Tính sẵn sàng của họ được thu thập bằng một biểu mẫu Google. Chỉ khi họ chấp nhận lời mời của chúng tôi, chúng tôi mới hỏi họ bốn câu hỏi. Câu đầu tiên là: "Vui lòng chọn các ngôn ngữ lập trình mà bạn có chuyên môn (đánh dấu cả hai nếu bạn quen thuộc với cả hai)", với các câu trả lời có thể là Python và Java. Thông tin thu thập được sử dụng để phân công các tham gia viên cho các nhiệm vụ đánh giá mã được mô tả trong Phần II-A2 (tức là để đảm bảo rằng họ chỉ được phân bổ các nhiệm vụ đánh giá mã liên quan đến một ngôn ngữ lập trình mà họ quen thuộc).
+
+Sau đó, các nhà phát triển trả lời ba câu hỏi liên quan đến chuyên môn của họ: số năm kinh nghiệm lập trình của họ, vai trò/vị trí hiện tại của họ, và liệu họ có tham gia trong quá khứ vào quy trình đánh giá mã như một người đánh giá, như một nhà phát triển có mã được đánh giá, trong cả hai vai trò, hoặc không có vai trò nào trong số đó. Chúng tôi nhận được câu trả lời từ 40 nhà phát triển, tất cả đều chấp nhận tham gia nghiên cứu. Tuy nhiên, cuối cùng, chỉ 32 người hoàn thành ít nhất một trong các nhiệm vụ được giao (tức là ít nhất một đánh giá mã). Từ số này, chúng tôi đã chọn 29 tham gia viên cho các phân tích của mình, theo cách có cùng số lượng tham gia viên cho mỗi hệ thống và cách điều trị (chi tiết trong Phần II-D). Trung bình, 29 tham gia viên có 11,4 năm kinh nghiệm lập trình (trung vị=10, tối thiểu=3, tối đa=35); ba trong số họ chọn Java như ngôn ngữ lập trình, sáu chọn Python, và 20 đánh dấu cả hai ngôn ngữ. Cuối cùng, ba trong số họ chưa tham gia vào đánh giá mã trong quá khứ (trong khi vẫn quen thuộc với nó), một người chỉ như một người đánh giá, một người chỉ như một người đóng góp, trong khi 24 người đã đảm nhận cả hai vai trò.
+
+2) Chương trình: Bảng I cho thấy các chương trình mà chúng tôi yêu cầu các tham gia viên đánh giá. Chúng tôi xem xét sáu dự án khác nhau, mỗi dự án có sẵn trong cả hai ngôn ngữ lập trình, tức là Java và Python. Các chương trình đối tượng của chúng tôi được lấy từ các nguồn khác nhau (xem cột "Source" trong Bảng I). Chúng tôi đã chọn ba chương trình (maze-generator, number-conversion và tic-tac-toe) từ Rosetta Code [29], một kho lưu trữ các nhiệm vụ lập trình được viết bằng nhiều ngôn ngữ, bao gồm Java và Python. Hai chương trình Java (stopwatch và word-utils) được lấy từ các lớp tiện ích của thư viện Apache Commons Lang [30] và sau đó được các tác giả dịch sang Python.
+
+Một chương trình (todo-list) được tạo từ đầu, cho cả Java và Python. Để đảm bảo rằng việc triển khai các chương trình đã chọn có chất lượng cao, mỗi chương trình đã được hai tác giả của bài báo đánh giá. Ngoài ra, tất cả các chương trình đều được đánh giá bởi một nhà phát triển chuyên nghiệp với bảy năm kinh nghiệm và quen thuộc cao với cả Python và Java. Việc lựa chọn các chương trình được hướng dẫn bởi hai mục tiêu chính: (i) để đảm bảo đánh giá mã có thể quản lý được về thời gian và độ phức tạp cho các tham gia viên nghiên cứu của chúng tôi; do đó chúng tôi đã chọn các chương trình tương đối nhỏ về số dòng mã (tham khảo cột "LoC" trong Bảng I); và (ii) để tránh yêu cầu kiến thức chuyên ngành cụ thể từ các tham gia viên; vì lý do này chúng tôi đã chọn các chương trình mà bất kỳ nhà phát triển có kinh nghiệm nào cũng có thể dễ dàng hiểu và đánh giá.
+
+Các chương trình được chọn bao gồm: maze-generator, tạo ra một mê cung ngẫu nhiên trong console dựa trên kích thước do người dùng chỉ định; number-conversion, cho phép chuyển đổi số thập phân thành định dạng nhị phân, bát phân, thập lục phân và số La Mã; stopwatch, một chương trình cơ bản thực hiện các chức năng đồng hồ bấm giờ như bắt đầu, dừng, đặt lại và thời gian chia; tic-tac-toe, một triển khai của trò chơi tương ứng được chơi qua giao diện dòng lệnh (CLI) chống lại một agent được lập trình để không thua; todo-list, một trình quản lý danh sách việc cần làm dựa trên CLI hỗ trợ thêm, xóa, ưu tiên và liệt kê các nhiệm vụ; và word-utils, một tập hợp các hàm tiện ích cung cấp các tiện ích thao tác chuỗi như viết hoa, đổi trường hợp và viết tắt.
+
+Sau đó chúng tôi tiêm thủ công một số vấn đề chất lượng vào các chương trình đã chọn vì, trong số các điều khác, chúng tôi muốn đánh giá mức độ mà một đánh giá mã tự động tăng cơ hội xác định các vấn đề chất lượng mã. Cột "Issues" trong Bảng I cho thấy số lượng vấn đề được tiêm vào mỗi chương trình. Tổng thể, chúng tôi đã tiêm 48 vấn đề trên 12 chương trình. Danh sách đầy đủ các vấn đề được tiêm và mô tả của chúng có sẵn trong gói sao chép của chúng tôi [25] và bao gồm trùng lặp mã, khiếm khuyết cấu trúc (ví dụ: phương thức quá dài), vấn đề tài liệu (ví dụ: không khớp với việc triển khai) và lỗi logic, cùng những vấn đề khác. Chúng tôi chú ý không tiêm các vấn đề có thể được phát hiện rất dễ dàng bởi các tham gia viên (ví dụ: lỗi làm chương trình bị sập), vì chúng có thể không đại diện cho mô phỏng thực tế của mã được nộp bởi một nhà phát triển để đánh giá. Điều này cũng có nghĩa là chúng tôi không tiêm một số lượng cố định vấn đề cho mỗi dự án vì chúng tôi thấy một số lượng vấn đề khác nhau phù hợp với các chương trình khác nhau. Các vấn đề được tiêm được lấy cảm hứng từ phân loại các vấn đề được tìm thấy trong đánh giá mã được ghi nhận bởi Mäntylä và Lassenius [23]. Cụ thể, Mäntylä và Lassenius thấy 77% số vấn đề được xác định bởi người đánh giá liên quan đến khiếm khuyết khả năng tiến hóa (ví dụ: vấn đề tài liệu, lựa chọn triển khai không tối ưu), với 23% còn lại liên quan đến vấn đề chức năng (ví dụ: logic triển khai sai). Bằng cách phân loại loại vấn đề chúng tôi tiêm theo các định nghĩa được đưa ra bởi Fregnan et al. [31], chúng tôi đã tiêm: 78% (64%) vấn đề khả năng tiến hóa và 22% (36%) khiếm khuyết trong các chương trình đối tượng Java (Python).
+
+--- TRANG 4 ---
+
+```java
+public String toString() {
+    StringBuilder builder = new StringBuilder();
+    for (int row = 0; row < height; row++)
+        builder.append(toString(row));
+    builder.append(H_WALL_CLOSED.repeat(width))
+            .append(CORNER)
+            .append('\n');
+    return builder.toString();
+}
+
+public String toString() {
+    String result = "";
+    for (int row = 0; row < height; row++)
+        result += toString(row);
+    result += H_WALL_CLOSED.repeat(width) + CORNER + '\n';
+    return result;
+}
+```
+
+```python
+if part and part in delimiters:
+    result.append(part)
+elif part and re.match(regex_pattern, part): 
+    result.append(part)
+
+if part and (part in delimiters or re.match(regex_pattern, part)):
+    result.append(part)
+```
+
+Java
+Python
+
+Hình 1. Ví dụ về các vấn đề được tiêm trong Java và Python. Phần trên của mỗi ví dụ đại diện cho mã gốc; phần dưới là mã sau khi tiêm.
+
+Như một lưu ý bổ sung, các vấn đề được tiêm bao gồm 73% các loại vấn đề trong phân loại của Mäntylä và Lassenius [23]. Ví dụ, chúng tôi không tiêm các vấn đề biểu diễn trực quan, vì định dạng mã thường phụ thuộc vào thực tiễn của mỗi dự án. Hình 1 cho thấy hai ví dụ về các vấn đề được tiêm (một cho mỗi ngôn ngữ). Phần trên của mỗi ví dụ cho thấy mã gốc, trong khi phần dưới phản ánh mã sau khi tiêm vấn đề. Ví dụ Java đại diện cho việc tiêm một vấn đề liên quan đến hiệu suất: chúng tôi thay thế việc sử dụng StringBuilder bằng nối chuỗi, tạo ra sự suy giảm hiệu suất. Mặt khác, mã Python minh họa việc tiêm một khiếm khuyết cấu trúc: chúng tôi đã giới thiệu một điều kiện lồng nhau không cần thiết, cũng tạo ra mã trùng lặp. Mỗi chương trình đối tượng cũng có: (i) một tệp chính cho phép chạy nó; và (ii) các trường hợp thử nghiệm thực hành các chức năng cơ bản của nó.
+
+B. Các Cách Điều Trị Đánh Giá Mã
+
+Để hiểu tác động của việc hỗ trợ các nhà phát triển với tự động hóa đánh giá mã, chúng tôi đã định nghĩa ba cách điều trị. Cách thứ nhất, được gọi là đánh giá mã thủ công (MCR), giống với quy trình đánh giá mã cổ điển được thực hiện bởi các nhà phát triển mà không có bất kỳ hỗ trợ tự động nào. Cách thứ hai, được gọi là đánh giá mã tự động (ACR) cung cấp cho tham gia viên một đánh giá mã được tạo tự động bởi ChatGPT Plus (tức là GPT-4) [24]. Prompt được sử dụng để tạo đánh giá mã là "Cung cấp một đánh giá mã chi tiết của chương trình <Java/Python> sau: <code>". Cách điều trị thứ ba, được gọi là đánh giá mã toàn diện (CCR), được thiết kế để mô phỏng kịch bản nơi người đánh giá được cung cấp một đánh giá mã "tự động" xác định chính xác tất cả các vấn đề chúng tôi đã tiêm. Không giống như hai cách điều trị đầu tiên, đại diện cho các kịch bản thực tế trong công nghiệp, cách điều trị CCR này mô phỏng một kịch bản lý tưởng, giả định nơi đánh giá mã tự động có thể xác định tất cả các vấn đề chất lượng trong một mã nhất định.
+
+Trong khi kịch bản này chưa thể đạt được hoàn toàn với công nghệ ngày nay, việc nghiên cứu nó có thể cung cấp những hiểu biết có giá trị về cách hành vi của người đánh giá có thể thay đổi nếu họ có quyền truy cập vào một công cụ (tương lai) có khả năng xác định mọi vấn đề chất lượng trong mã (ví dụ: họ có tin tưởng công cụ đủ để tiết kiệm thời gian đáng kể không?). Để mô phỏng kịch bản này, các tham gia viên trong cách điều trị CCR được nói rằng các đánh giá được tạo tự động, mặc dù điều này không phải là trường hợp. Cụ thể hơn, trước tiên chúng tôi thực hiện đánh giá mã thủ công và đảm bảo nắm bắt tất cả các vấn đề chúng tôi đã tiêm trong đánh giá. Sau đó, chúng tôi sử dụng ChatGPT Plus để diễn đạt lại các đánh giá mã chúng tôi viết bằng prompt: "Diễn đạt lại nhận xét đánh giá mã sau như thể bạn đang tạo ra nó: <comment>. Nhận xét đề cập đến mã <Java/Python> sau: <code>". Lưu ý rằng, trong khi các đánh giá CCR bao gồm chính xác n nhận xét xác định n vấn đề được tiêm trong mỗi chương trình, cách điều trị ACR có thể xác định các nhận xét chỉ giải quyết một số (hoặc không có) vấn đề được tiêm. Ngoài ra, ACR có thể bao gồm các nhận xét về các vấn đề chất lượng khác mà chúng tôi không giới thiệu.
+
+24 đánh giá mã được tạo hoặc diễn đạt lại bởi ChatGPT Plus cho ACR và CCR (6 dự án × 2 ngôn ngữ × 2 cách điều trị) được cung cấp công khai [25].
+
+Tóm lại, ba cách điều trị so sánh quy trình đánh giá mã cổ điển, thủ công (MCR) với tự động hóa có sẵn trong thực tiễn ngày nay (ACR) và một kịch bản Utopian mà chúng tôi hy vọng đạt được một ngày nào đó trong lĩnh vực này (CCR).
+
+C. Thiết Lập và Quy Trình Thí Nghiệm
+
+Nghiên cứu của chúng tôi bao gồm 36 nhiệm vụ đánh giá mã khác nhau (6 dự án × 2 ngôn ngữ × 3 cách điều trị). Như đã đề cập trước đó, chúng tôi yêu cầu các tham gia viên đánh giá ba chương trình, mỗi chương trình với một cách điều trị đánh giá mã khác nhau. Ba nhiệm vụ đều trong cùng một ngôn ngữ lập trình nhưng liên quan đến các dự án khác nhau. Chúng tôi cung cấp cho mỗi tham gia viên hướng dẫn để kết nối, qua plugin Remote Development [32] của Visual Studio Code (VS Code), với một máy chủ chúng tôi thiết lập với môi trường cần thiết để chạy nghiên cứu. Chúng tôi đã chăm sóc việc cài đặt các phiên bản Java (17) và Python (3.10) cần thiết để chạy bất kỳ chương trình đối tượng nào. Ngoài ra, chúng tôi đã cài đặt trong VS Code Java Extension Pack [33] và Python [34]. Khi kết nối, các tham gia viên có thể thấy các nhiệm vụ đánh giá được giao cho họ trực tiếp trong IDE mà không cần cài đặt/cấu hình bất cứ điều gì. Cụ thể, các tham gia viên được trình bày với ba dự án đã được nhập vào IDE, hai trong số đó bao gồm một đánh giá mã (cho các cách điều trị đánh giá mã tự động và đánh giá mã toàn diện). Đánh giá mã được trình bày thông qua plugin Code Review trong VS Code [35], cũng cho phép đánh dấu các tệp nguồn với các nhận xét đánh giá, và sửa đổi/xóa các nhận xét đã cung cấp sẵn là một phần của đánh giá mã được cung cấp. Tất cả các dự án đều có tệp README với hướng dẫn về nơi tìm mô tả của chương trình cần đánh giá, cách sử dụng plugin Code Review, cách chạy chương trình và các thử nghiệm liên quan, và một lời nhắc nhở để đánh giá độ tin cậy của đánh giá của họ kết thúc mỗi nhiệm vụ đánh giá mã, bằng cách chỉ cần viết một điểm số từ 1 (độ tin cậy rất thấp) đến 5 (độ tin cậy rất cao) ở cuối tệp README.
+
+--- TRANG 5 ---
+
+Đây là hành động duy nhất được yêu cầu từ các tham gia viên kết thúc mỗi nhiệm vụ. Plugin Code Review của VS Code [35] đảm nhận việc lưu trữ phiên bản cuối cùng của đánh giá mã của họ trên máy chủ của chúng tôi, tức là đánh giá mã bao gồm tất cả các nhận xét mà các tham gia viên viết thủ công cộng với, đối với các cách điều trị ACR và CCR, các nhận xét họ quyết định giữ (như hiện tại hoặc bằng cách diễn đạt lại/sửa đổi chúng) từ các đánh giá được cung cấp. Mỗi nhận xét được liên kết với một tệp và một phạm vi văn bản đã chọn (về số dòng/cột).
+
+Cuối cùng, bên cạnh đánh giá mã cuối cùng và độ tin cậy tự đánh giá, chúng tôi cũng giám sát hành vi của các tham gia viên trong IDE bằng Tako [36], [37], một plugin VS Code thu thập các hành động được thực hiện trong IDE. Tako ghi lại các sự kiện như mở và đóng tệp và tab, chuyển đổi giữa chúng và chỉnh sửa tệp, cùng những sự kiện khác. Điều này cho phép chúng tôi thực hiện các phân tích dựa trên thời gian cần thiết để trả lời RQ 2.
+
+D. Phân Tích Dữ Liệu
+
+Trong số 120 đánh giá chúng tôi giao (40 tham gia viên × 3 cách điều trị), 96 trong số đó đã được hoàn thành bởi 32 tham gia viên. Kết quả là, chúng tôi có số lượng đánh giá khác nhau cho các chương trình khác nhau cho mỗi cách điều trị. Để so sánh các cách điều trị một cách công bằng, chúng tôi đã chọn có hệ thống số lượng đánh giá cao nhất có thể cho mỗi cách điều trị sao cho tất cả các cách điều trị đều có chính xác cùng số lượng đánh giá trên chính xác các chương trình giống nhau (do đó có thể so sánh được). Chúng tôi ưu tiên các đánh giá từ các tham gia viên hoàn thành hai (7 tham gia viên) hoặc ba (18) nhiệm vụ. Điều này dẫn đến việc lựa chọn 72 đánh giá (tức là 24 cho mỗi cách điều trị) từ 29 tham gia viên.
+
+Hai tác giả độc lập kiểm tra mỗi đánh giá để trích xuất dữ liệu cần thiết để trả lời các RQ của chúng tôi mà không thể được thu thập tự động. Cuối cùng, họ có một cuộc họp để thảo luận về sự khác biệt trong dữ liệu được trích xuất và đồng ý về dữ liệu chính xác để báo cáo. Dữ liệu được thu thập thủ công bao gồm:
+
+1) Tổng số vấn đề chất lượng được báo cáo trong mỗi đánh giá. Thông tin này không thể được trích xuất tự động bằng cách đếm số lượng nhận xét trong đánh giá mã, vì mỗi nhận xét có thể chỉ đến một số vấn đề chất lượng, ngay cả trong cùng một vị trí mã.
+
+2) Số lượng (và tỷ lệ phần trăm) các vấn đề được tiêm được xác định trong đánh giá mã.
+
+3) Số lượng (và tỷ lệ phần trăm) các vấn đề chất lượng được xác định trong các đánh giá ban đầu được cung cấp cho các tham gia viên đã được giữ lại trong đánh giá mã được nộp cuối cùng. Metric này chỉ được thu thập cho các đánh giá mã từ các cách điều trị ACR và CCR.
+
+4) Các vấn đề chất lượng bổ sung (tức là không liên quan đến những vấn đề được tiêm) có mặt trong đánh giá mã cuối cùng.
+
+Trong số 72 đánh giá được kiểm tra thủ công bởi hai tác giả, họ chỉ bất đồng trên ba đánh giá về tổng số vấn đề chất lượng được báo cáo, và về số lượng vấn đề được tiêm được xác định. Xung đột được giải quyết thông qua thảo luận mở.
+
+Chúng tôi trả lời các RQ của mình bằng cách so sánh đầu ra đánh giá mã của ba cách điều trị. Bảng II báo cáo: các biến phụ thuộc được xem xét trong mỗi RQ, biến độc lập, giống nhau cho tất cả các RQ (tức là cách điều trị), và các biến kiểm soát.
+
+BẢNG II
+CÁC BIẾN ĐƯỢC SỬ DỤNG TRONG NGHIÊN CỨU CỦA CHÚNG TÔI.
+
+Biến | Mô tả
+---|---
+**Biến Phụ Thuộc (RQ 0)**
+Số lượng vấn đề chất lượng được báo cáo | Tổng số vấn đề chất lượng được báo cáo trong một đánh giá đã nộp
+Độ dài của đánh giá mã | Số câu trong một đánh giá đã nộp
+Các vị trí mã được bao phủ | Số dòng chịu ít nhất một nhận xét đánh giá
+**Biến Phụ Thuộc (RQ 1)**
+Vấn đề được tiêm có được xác định | Tham gia viên tìm thấy vấn đề được tiêm
+**Biến Phụ Thuộc (RQ 2)**
+Tổng thời gian | Tổng thời gian dành cho toàn bộ phiên đánh giá mã
+Thời gian đánh giá | Thời gian dành cho mã thực tế cần đánh giá (tức là loại trừ thời gian dành cho việc viết đánh giá, hoặc chạy chương trình)
+Thời gian viết | Thời gian dành cho việc viết nhận xét đánh giá hoặc đọc những nhận xét đã được cung cấp trong đánh giá tự động
+**Biến Phụ Thuộc (RQ 3)**
+Độ tin cậy | Điểm độ tin cậy được cung cấp bởi tham gia viên cho đánh giá đã nộp
+**Biến Độc Lập**
+Cách điều trị | Cách điều trị được sử dụng để thực hiện đánh giá mã (một trong số MCR, ACR, CCR)
+**Biến Kiểm Soát (Kinh nghiệm)**
+Số năm kinh nghiệm | Số năm kinh nghiệm lập trình của tham gia viên
+Tham gia vào đánh giá mã | Liệu tham gia viên có tham gia vào quy trình đánh giá mã như một người đánh giá, như một nhà phát triển có mã được đánh giá, trong cả hai vai trò, hoặc không có vai trò nào trong số đó.
+**Biến Kiểm Soát (Nhiệm vụ đánh giá)**
+Ngôn ngữ lập trình | Ngôn ngữ mà mã cần được đánh giá được viết (Java hoặc Python)
+Chương trình | Chương trình mà nhiệm vụ đánh giá phải được thực hiện
+Loại vấn đề | Loại vấn đề cần phát hiện, được phân loại theo công trình của Fregnan et al. [31]
+
+Đối với RQ 0, chúng tôi so sánh: (i) tổng số vấn đề chất lượng được báo cáo; (ii) độ dài của đánh giá mã về số câu; và (iii) các vị trí mã được bao phủ, về số dòng chịu ít nhất một nhận xét đánh giá (chúng tôi cũng phân biệt giữa các câu lệnh mã và tài liệu mã). Để trả lời RQ 1, chúng tôi so sánh khả năng của các tham gia viên trong việc xác định các vấn đề được tiêm trong đánh giá mã. Trong trường hợp này, một biến phụ thuộc boolean ("Vấn đề được tiêm có được xác định") đã được sử dụng để chỉ ra liệu mỗi lỗi được tiêm trong các chương trình đang nghiên cứu có được xác định hay không. Liên quan đến RQ 2, chúng tôi khai thác dữ liệu thu thập bởi Tako [36] để so sánh: (i) tổng thời gian dành cho toàn bộ phiên đánh giá mã, (ii) thời gian dành cho mã thực tế cần đánh giá (tức là loại trừ thời gian dành cho việc viết đánh giá, hoặc chạy chương trình), và (iii) thời gian dành cho việc viết nhận xét đánh giá hoặc đọc những nhận xét đã được cung cấp trong đánh giá tự động. Cuối cùng, đối với RQ 3 chúng tôi so sánh điểm độ tin cậy được cung cấp bởi các tham gia viên để kiểm tra liệu việc có sẵn đánh giá mã tự động có tác động đến độ tin cậy cảm nhận.
+
+Đối với tất cả các so sánh, chúng tôi sử dụng boxplot để trực quan hóa các phân phối. Ngoài ra, chúng tôi chạy các phân tích thống kê sau. Khi cần thiết, chúng tôi đã chọn các thử nghiệm phi tham số vì tất cả các phân phối của chúng tôi không được phân phối bình thường (thử nghiệm Shapiro-Wilk).
+
+--- TRANG 6 ---
+
+Đối với RQ 1, chúng tôi xây dựng một mô hình hồi quy logistic đa biến có "Vấn đề được tiêm có được xác định" làm biến phụ thuộc và "cách điều trị" làm biến độc lập với MCR được đặt làm mức tham chiếu để dễ dàng hơn trong việc xem xét tác động của việc đưa tự động hóa (tức là các cách điều trị ACR và CCR) vào quy trình đánh giá mã. Chúng tôi bao gồm tất cả các biến kiểm soát được liệt kê trong Bảng II.
+
+Liên quan đến các RQ khác (tức là RQ 0, RQ 2, và RQ 3), chúng tôi sử dụng hồi quy tuyến tính đa biến để xây dựng bảy mô hình, một cho mỗi biến phụ thuộc trong Bảng II. Ví dụ, để trả lời RQ0, ba mô hình hồi quy đã được xây dựng, mỗi mô hình sử dụng một trong ba biến phụ thuộc có liên quan đến RQ này.
+
+Biến độc lập luôn là "cách điều trị", trong khi về các biến kiểm soát chúng tôi sử dụng tất cả những biến trong Bảng II nhưng trừ "Loại vấn đề". Thật vậy, các biến phụ thuộc được sử dụng trong RQ 0, RQ 2, và RQ3, khác với biến được sử dụng trong RQ 1, chỉ có ý nghĩa khi được áp dụng cho toàn bộ đánh giá mã (ví dụ: thời gian dành để hoàn thành đánh giá mã, độ tin cậy của tham gia viên khi nộp đánh giá). Vì một đánh giá duy nhất liên quan đến một số vấn đề thường có loại khác nhau, đối với các RQ này chúng tôi không xem xét "Loại vấn đề" như biến kiểm soát.
+
+III. KẾT QUẢ VÀ THẢO LUẬN
+
+A. RQ 0: Sự Khác Biệt trong Đầu Ra Đánh Giá của Các Cách Điều Trị Khác Nhau
+
+Hình 2 cho thấy các boxplot so sánh phiên bản cuối cùng của các đánh giá mã được nộp bởi các nhà phát triển dưới ba cách điều trị được xem xét trong nghiên cứu của chúng tôi, tức là đánh giá mã thủ công (MCR), đánh giá mã tự động (ACR), và đánh giá mã toàn diện (CCR). Từ trái sang phải chúng tôi báo cáo các boxplot so sánh số lượng vấn đề chất lượng được báo cáo trong đánh giá, độ dài của đánh giá về số câu, độ bao phủ dòng tổng thể của đánh giá trên toàn bộ chương trình (mã và nhận xét), cũng như độ bao phủ của nó khi chỉ xem xét mã nguồn, và chỉ tài liệu (nhận xét).
+
+Hai boxplot ngoài cùng bên trái cho thấy sự khác biệt rõ ràng giữa các cách điều trị về số lượng vấn đề được báo cáo trong các đánh giá cuối cùng và độ dài của chúng. Các đánh giá từ các cách điều trị bao gồm hỗ trợ tự động (ACR và CCR) thường báo cáo nhiều vấn đề hơn so với MCR. Mô hình hồi quy đa biến (Multiple R2[38]: 0.32) — Bảng III — xác nhận vai trò quan trọng của cách điều trị ACR (p <0.01) trong số lượng vấn đề được báo cáo, với thử nghiệm Dunn [39] cho thấy sự khác biệt có ý nghĩa thống kê khi so sánh ACR vs MCR (p-value = 0.0106 sau hiệu chỉnh Benjamini-Hochberg [40]). Đáng chú ý cũng là các tham gia viên có xu hướng báo cáo nhiều vấn đề chất lượng hơn cho một số chương trình chủ đề. Điều này được mong đợi xem xét rằng (i) chúng tôi đã tiêm một số lượng vấn đề chất lượng khác nhau trong mỗi chương trình, và (ii) ChatGPT xác định một số lượng vấn đề chất lượng khác nhau trong các chương trình, ảnh hưởng đến số lượng vấn đề chất lượng được báo cáo trong cách điều trị ACR.
+
+Các đánh giá cuối cùng của cách điều trị ACR xác định, trung bình, 11.8 vấn đề (trung vị=10.5), so với 9.6 của CCR (trung vị=9) và 7.7 của MCR (trung vị=7.5). Kết quả như vậy có thể được giải thích một phần bởi thực tế là người đánh giá giữ lại hầu hết các vấn đề đã có sẵn trong đánh giá tự động (ACR) và trong đánh giá toàn diện (CCR).
+
+Thật vậy, các đánh giá ACR và CCR chúng tôi cung cấp cho các tham gia viên có trung bình 8.8 (trung vị=9) và 4 (trung vị=4) vấn đề được báo cáo, tương ứng, và người đánh giá giữ lại trung bình 7.1 (trung vị=7.5) và 4.0 (trung vị=4) trong số các vấn đề này, tương ứng. Điều này dẫn đến kết quả đầu tiên của nghiên cứu chúng tôi: Người đánh giá coi hầu hết các vấn đề được ChatGPT Plus xác định là hợp lệ (bằng cách giữ chúng trong đánh giá cuối cùng của họ).
+
+Thực tế là các đánh giá ACR và CCR chứa các vấn đề mà người đánh giá giữ lại trong hầu hết các trường hợp đã có tác động đến độ dài cuối cùng của các đánh giá được nộp, với các đánh giá ACR và CCR dài hơn những đánh giá trong cách điều trị MCR (xem Hình 2).
+
+Mô hình hồi quy trong Bảng III (Multiple R2: 0.44) báo cáo tác động đáng kể của cách điều trị ACR (p <0.001), với thử nghiệm Dunn [39] xác nhận sự khác biệt có ý nghĩa thống kê về độ dài khi so sánh đầu ra đánh giá của các cách điều trị ACR và CCR (p-value = 0.0046) và những đầu ra của ACR và MCR (p-value = 0.0001) — p-value được điều chỉnh với hiệu chỉnh Benjamini-Hochberg [40].
+
+Để hiểu rõ hơn về mức độ của những sự khác biệt như vậy, các đánh giá cuối cùng trong cách điều trị MCR bao gồm, trung bình, 16.3 câu (trung vị=11.5) so với 27.79 (trung vị=27) trong các đánh giá cuối cùng của cách điều trị ACR. Thú vị là, như kết quả của chúng tôi cho thấy, một đánh giá dài dòng hơn không nhất thiết có nghĩa là một đánh giá bao phủ nhiều vị trí mã hơn.
+
+Ba boxplot ngoài cùng bên phải trong Hình 2 minh họa hiện tượng này: không có sự khác biệt rõ ràng trong độ bao phủ (tổng thể, trên mã, và trên nhận xét) giữa các đánh giá cuối cùng của ba cách điều trị (như cũng được xác nhận bởi mô hình hồi quy trong Bảng III). Hơn nữa, các đánh giá được viết bởi các tham gia viên mà không có hỗ trợ tự động có sự biến đổi cao hơn về các dòng được nhận xét bởi các người đánh giá khác nhau, trong khi những người bắt đầu từ các đánh giá tự động có xu hướng tập trung vào các dòng mã được làm nổi bật trong các đánh giá được cung cấp. Điều này được minh họa trong biểu đồ Venn trong Hình 3, cho thấy tổng số dòng khác nhau được bao phủ bởi tất cả các đánh giá thuộc về mỗi cách điều trị. Như quan sát, các đánh giá MCR bao phủ tổng cộng 484 dòng riêng biệt và 263 trong số các dòng này là duy nhất cho MCR, tức là không được bao phủ bởi các đánh giá cuối cùng ACR hoặc CCR. Tiếp theo là các đánh giá CCR, bao phủ 407 dòng, 186 trong số đó là duy nhất cho các đánh giá cuối cùng trong cách điều trị này, và cuối cùng là các đánh giá ACR, bao phủ 371 dòng riêng biệt, 181 trong số đó chỉ được tìm thấy trong các đánh giá ACR.
+
+Hình 4 cho thấy một ví dụ về các dòng mã được bao phủ bởi ba đánh giá tham gia viên (xám nhạt, xám, đen) từ các cách điều trị ACR (trái) và MCR (phải) cho chương trình number-conversion trong Java. Mỗi hình chữ nhật biểu thị một vấn đề duy nhất được xác định trong các đánh giá, có thể trải rộng nhiều dòng (hình chữ nhật dày hơn). Hình chữ nhật đỏ biểu thị các vấn đề bao phủ các vị trí mã duy nhất (trong số ba đánh giá của cách điều trị đó). Trong khi đối với cách điều trị ACR chỉ có ba vấn đề từ hai người đánh giá bao phủ các vị trí duy nhất, đối với cách điều trị MCR, cả ba người đánh giá đã tìm thấy tổng cộng tám vấn đề bao phủ các dòng mã duy nhất, không được bao phủ trong các đánh giá khác. Những phát hiện này dẫn đến hai takeaway bổ sung của nghiên cứu chúng tôi.
+
+--- TRANG 7 ---
+
+[Hình 2. RQ 0: Đặc điểm của các đánh giá mã cuối cùng dưới ba cách điều trị.]
+
+BẢNG III
+RQ0: CÁC MÔ HÌNH HỒI QUY TUYẾN TÍNH ĐA BIẾN (ƯỚC LƯỢNG, SAI SỐ CHUẨN, Ý NGHĨA).
+
+| | Số lượng vấn đề chất lượng báo cáo | Độ dài của đánh giá mã | Các vị trí mã được bao phủ |
+|---|---|---|---|
+| | Ước lượng | S.E. | Sig. | Ước lượng | S.E. | Sig. | Ước lượng | S.E. | Sig. |
+| Intercept | 2.460 | 3.962 | | 4.122 | 8.439 | | -17.611 | 35.131 | |
+| ACR | 4.269 | 1.331 | ** | 11.862 | 2.836 | *** | 5.297 | 11.806 | |
+| CCR | 1.770 | 1.338 | | 2.549 | 2.850 | | -0.798 | 11.867 | |
+| Số năm kinh nghiệm | -0.032 | 0.071 | | -0.098 | 0.151 | | 0.582 | 0.632 | |
+| Tham gia đánh giá mã: Đóng góp & Đánh giá | 5.357 | 3.532 | | 11.386 | 7.522 | | 17.010 | 31.316 | |
+| Tham gia đánh giá mã: Không có | 1.486 | 3.794 | | 5.473 | 8.081 | | 51.388 | 33.642 | |
+| Tham gia đánh giá mã: Đánh giá viên | 3.252 | 4.273 | | -1.952 | 9.101 | | 28.911 | 37.886 | |
+| Ngôn ngữ lập trình: Python | -1.734 | 1.134 | | -2.514 | 2.416 | | 3.215 | 10.058 | |
+| Chương trình: number-conversion | 0.437 | 1.649 | | -0.344 | 3.513 | | 18.580 | 14.626 | |
+| Chương trình: stopwatch | 3.648 | 1.811 | * | 13.404 | 3.859 | *** | 30.209 | 16.064 | |
+| Chương trình: tic-tac-toe | 5.426 | 2.106 | * | 13.041 | 4.486 | ** | 11.427 | 18.676 | |
+| Chương trình: todo-list | 3.448 | 2.230 | | 5.860 | 4.750 | | 13.780 | 19.773 | |
+| Chương trình: word-utils | 0.554 | 1.809 | | 2.591 | 3.854 | | 21.437 | 16.046 | |
+
+Mã ý nghĩa: '***' p < 0.001, '**' p < 0.01, '*' p < 0.05
+
+[Hình 3. RQ 0: Số dòng riêng biệt được bao phủ (tức là được nhận xét bởi các tham gia viên) trong các đánh giá cuối cùng của ba cách điều trị và sự chồng chéo của chúng.]
+
+[Hình 4. Ví dụ về các dòng mã riêng biệt được bao phủ bởi các đánh giá khác nhau.]
+
+Thứ nhất, các đánh giá thu được với sự hỗ trợ của các công cụ tự động có thể đắt đỏ hơn để xử lý cho người đóng góp (tức là nhà phát triển nộp mã để đánh giá), vì chúng dài dòng hơn đáng kể so với những đánh giá được viết thủ công, trong khi nhận xét về lượng dòng mã tương tự. Điều này có thể chỉ ra một chi phí bổ sung phía người đóng góp, bổ sung cho phân tích chúng tôi sẽ trình bày trong RQ 2 khi đánh giá thời gian dành bởi người đánh giá dưới ba cách điều trị. Thứ hai, việc có sẵn một đánh giá tự động ảnh hưởng đến hành vi của người đánh giá, người sẽ chủ yếu tập trung vào các vị trí mã được nhận xét trong đánh giá được cung cấp. Điều này cũng dẫn đến sự biến đổi thấp hơn trong các loại vấn đề được xác định bởi người đánh giá cho cùng một chương trình.
+
+B. RQ 1: Tác Động đến Các Vấn Đề Chất Lượng Được Tìm Thấy
+
+Hình 5 cho thấy các boxplot với số lượng (trên) và tỷ lệ phần trăm (dưới) các vấn đề được tiêm được xác định trong các đánh giá cuối cùng của ba cách điều trị. Bảng IV báo cáo kết quả của mô hình hồi quy logistic sử dụng "Vấn đề được tiêm có được xác định" làm biến phụ thuộc. Như mong đợi, các đánh giá cuối cùng được nộp dưới cách điều trị CCR thường báo cáo 100% các vấn đề được tiêm, vì những vấn đề này đã có sẵn trong đánh giá ban đầu được cung cấp cho họ và được giữ lại trong đánh giá cuối cùng (với hồi quy logistic xác nhận ảnh hưởng đáng kể của CCR đến khả năng xác định lỗi được tiêm).
+
+[Hình 5. RQ 1: Số lượng và tỷ lệ phần trăm các vấn đề được tiêm được xác định.]
+
+--- TRANG 8 ---
+
+BẢNG IV
+RQ1: MÔ HÌNH HỒI QUY LOGISTIC.
+
+| | Ước lượng | S.E. | Sig. |
+|---|---|---|---|
+| Intercept | 1.371 | 1.581 | |
+| ACR | -0.004 | 0.351 | |
+| CCR | 4.710 | 0.792 | *** |
+| Số năm kinh nghiệm | -0.017 | 0.022 | |
+| Tham gia đánh giá mã: Đóng góp & Đánh giá | 0.308 | 0.906 | |
+| Tham gia đánh giá mã: Không có | 0.143 | 0.850 | |
+| Tham gia đánh giá mã: Đánh giá viên | 0.437 | 0.977 | |
+| Ngôn ngữ lập trình: Python | -0.589 | 0.403 | |
+| Chương trình: number-conversion | 0.788 | 0.768 | |
+| Chương trình: stopwatch | -1.380 | 0.727 | |
+| Chương trình: tic-tac-toe | -0.084 | 0.865 | |
+| Chương trình: todo-list | 1.298 | 1.049 | |
+| Chương trình: word-utils | -2.029 | 0.706 | ** |
+| Loại Vấn đề: Tiến hóa →Tài liệu→Văn bản | -1.032 | 1.088 | |
+| Loại Vấn đề: Tiến hóa →Cấu trúc→Tổ chức | -0.814 | 1.198 | |
+| Loại Vấn đề: Tiến hóa →Cấu trúc→Ứng dụng Giải pháp | 0.014 | 1.112 | |
+| Loại Vấn đề: Chức năng →Kiểm tra | -0.649 | 1.144 | |
+| Loại Vấn đề: Chức năng →Giao diện | -1.546 | 1.263 | |
+| Loại Vấn đề: Chức năng →Logic | -1.838 | 1.583 | |
+
+Mã ý nghĩa: '***' p < 0.001, '**' p < 0.01, '*' p < 0.05
+
+Thú vị hơn, các đánh giá ACR cuối cùng được nộp bởi các tham gia viên phát hiện trung vị 50% các vấn đề được tiêm, tức là cùng số lượng được phát hiện trong các đánh giá MCR, được viết từ đầu bởi các tham gia viên, mặc dù thực tế là các đánh giá tự động ban đầu được cung cấp trong cách điều trị ACR đã báo cáo, trung bình, 42% các vấn đề được tiêm. Điều này tiết lộ một số phát hiện quan trọng của nghiên cứu chúng tôi: trạng thái hiện tại của nghệ thuật về đánh giá mã tự động không dẫn đến số lượng vấn đề được tiêm được xác định cao hơn so với đánh giá mã hoàn toàn thủ công. Điều này là do hai yếu tố. Thứ nhất, ChatGPT tạo ra các đánh giá trong đó hơn một nửa số vấn đề được tiêm, trung bình, không được xác định. Thứ hai, việc tiếp xúc mà các nhà phát triển có với các đánh giá tự động này trước khi viết đánh giá cuối cùng của họ dường như đã làm thiên lệch hành vi của họ, dẫn đến việc họ hầu như không xác định bất kỳ vấn đề được tiêm bổ sung nào so với những vấn đề đã được bao gồm trong đánh giá tự động. Những phát hiện này nên hoạt động như một dấu hiệu cảnh báo rõ ràng cho các công ty quan tâm đến việc áp dụng hỗ trợ tự động trong đánh giá mã. Một khả năng cần xem xét là cung cấp đánh giá tự động chỉ khi người đánh giá đã nộp nhận xét của họ, do đó không bị thiên lệch bởi những nhận xét đã được cung cấp.
+
+Vì các đánh giá cuối cùng của ACR báo cáo số lượng vấn đề cao nhất mà không, tuy nhiên, xác định số lượng vấn đề được tiêm cao hơn, một câu hỏi nảy sinh về mức độ liên quan của các vấn đề bổ sung được xác định trong các đánh giá ACR. Thật vậy, có thể các vấn đề bổ sung được báo cáo cũng có liên quan như các vấn đề được tiêm. Để đánh giá điều này, chúng tôi yêu cầu hai nhà phát triển không tham gia vào nghiên cứu đánh giá mức độ nghiêm trọng của: (i) các vấn đề được tiêm như được ghi nhận trong các đánh giá được cung cấp làm điểm khởi đầu trong cách điều trị CCR; (ii) các vấn đề không được tiêm được xác định tự động trong các đánh giá ACR; và (iii) các vấn đề không được tiêm được xác định thủ công trong các đánh giá MCR. Hai nhà phát triển có 16 và 7 năm kinh nghiệm lập trình, tương ứng, và được hướng dẫn cung cấp đánh giá mức độ nghiêm trọng trên thang điểm từ 1=mức độ thấp đến 3=mức độ cao, với mức trước chỉ ra các vấn đề mà họ không coi là bắt buộc phải giải quyết để phê duyệt mã và mức sau chỉ ra các vấn đề ngăn cản.
+
+Mặc dù chúng tôi thừa nhận tính chủ quan của đánh giá này, hai nhà phát triển thực hiện nó có bất đồng mạnh (tức là 1 vs 3) chỉ trong 5% số vấn đề được kiểm tra. Thỏa thuận weighted kappa [41] là 0.315. Các phát hiện của phân tích này chỉ ra rằng các vấn đề chúng tôi tiêm là những vấn đề được đánh giá với mức độ nghiêm trọng cao nhất (Q1=2.0, Q2=2.0, Q3=3.0, trung bình=2.2), tiếp theo là những vấn đề bổ sung được xác định thủ công bởi các nhà phát triển (Q1=1.0, Q2=2.0, Q3=2.0, trung bình=1.8), và những vấn đề bổ sung được đề xuất bởi ChatGPT (Q1=1.0, Q2=2.0, Q3=2.0, trung bình=1.6). Chúng tôi cũng đưa mức độ nghiêm trọng vấn đề vào như một cofactor bổ sung trong mô hình logistic mà không, tuy nhiên, quan sát bất kỳ tác động nào của nó cũng như thay đổi trong các biến có ý nghĩa (đầu ra của mô hình có sẵn trong [25]).
+
+Sự khác biệt giữa mức độ nghiêm trọng của các vấn đề được tiêm và những vấn đề bổ sung được xác định thủ công hoặc tự động có ý nghĩa thống kê (p-value <0.01) với kích thước hiệu ứng trung bình (thử nghiệm Mann-Whitney [42] và Cliff's delta [43]). Một ví dụ về vấn đề được xác định tự động được phân loại là mức độ thấp bởi cả hai nhà phát triển là: "Phương thức này cung cấp một tính năng thú vị bằng [...]. Logic này đúng, mặc dù nó liên quan đến một số điều kiện và có thể hưởng lợi từ các nhận xét giải thích lý do cho mỗi trường hợp.". Trong trường hợp này, mặc dù các nhận xét thực sự thiếu, mã khá tự giải thích. Mặt khác, một số vấn đề mức độ cao được tiêm đã bị ChatGPT bỏ qua, như vấn đề sau, được cung cấp trong đánh giá ban đầu của cách điều trị CCR: "Có một lỗi nghiêm trọng. Đối với HEXADECIMAL, nó sai lầm sử dụng cơ số 8 thay vì 16. Nó nên là decimalToAnyBase(num, 16).".
+
+Các phát hiện của RQ1 dẫn đến kết luận rằng các đánh giá đầu ra của cách điều trị ACR xác định số lượng vấn đề mức độ thấp cao hơn trong khi, tuy nhiên, không tạo ra sự khác biệt khi phát hiện các vấn đề mức độ cao (tức là những vấn đề chúng tôi tiêm) so với một quy trình hoàn toàn thủ công. Điều này hỗ trợ đề xuất trước đó của chúng tôi rằng, với trạng thái hiện tại của tự động hóa, các đánh giá được tạo tự động có thể được coi như một bổ sung hữu ích ở cuối quy trình đánh giá thủ công.
+
+C. RQ 2: Tác Động đến Thời Gian Đánh Giá
+
+Hình 6 cho thấy từ trái sang phải: thời gian (tính bằng giây) mà người đánh giá dành cho toàn bộ quy trình đánh giá mã, thời gian dành cho mã cần đánh giá (tức là không bao gồm chạy chương trình hoặc các thử nghiệm), và thời gian viết các nhận xét đánh giá. Đối với các cách điều trị ACR và CCR, cách sau cũng bao gồm thời gian dành cho việc đọc các đánh giá ban đầu được cung cấp. Mặc dù chúng tôi cũng tạo ra các mô hình hồi quy tuyến tính đa biến, chúng tôi thấy rằng không có biến độc lập nào liên quan (các cách điều trị và cofactor) đóng vai trò có ý nghĩa thống kê đối với bất kỳ biến phụ thuộc dựa trên thời gian nào. Do đó, vì lý do không gian, chúng tôi chỉ báo cáo các mô hình này trong gói sao chép của chúng tôi [25].
+
+Phát hiện này bác bỏ một trong những động lực cho đánh giá mã tự động [16], tức là tiết kiệm thời gian cho người đánh giá. Thật vậy, Hình 6 cho thấy rằng các đánh giá được thực hiện hoàn toàn thủ công (MCR) mất ít thời gian hơn (trung bình=42, trung vị=37 phút) so với những đánh giá được hỗ trợ bởi tự động hóa trong các cách điều trị ACR (trung bình=56, trung vị=42 phút) và CCR (trung bình=57, trung vị=50 phút).
+
+--- TRANG 9 ---
+
+[Hình 6. RQ 2: Thời gian dành cho đánh giá trên các cách điều trị khác nhau.]
+
+Điều này có thể do thực tế là việc đưa vào một đánh giá tự động, ngay cả khi chính xác (CCR), đi kèm với một cái giá, đó là việc đọc, hiểu và kiểm tra kép các nhận xét được cung cấp. Điều này dường như đặc biệt đúng đối với các đánh giá CCR, nơi người đánh giá dành trung bình 17 phút (trung vị=16) để đọc và viết đánh giá, so với trung bình 12 phút (trung vị=11) cho các đánh giá được viết từ đầu (xem boxplot ngoài cùng bên phải trong Hình 6).
+
+Cũng thú vị khi lưu ý rằng sự biến đổi trong thời gian dành cho mã cần đánh giá và trên toàn bộ quy trình đánh giá cao hơn đối với các cách điều trị ACR và CCR so với MCR. Chúng tôi cho rằng điều này là do hai yếu tố, cụ thể là: (i) độ dài của các đánh giá được tạo tự động, nơi đánh giá ngắn nhất chỉ ra không có vấn đề (đánh giá ACR của stopwatch trong Python) trong khi dài nhất chỉ ra 14 vấn đề (đánh giá ACR của maze-generator trong Java); và (ii) sự tin tưởng mà người đánh giá đặt vào hỗ trợ tự động, có thể khác nhau từ người đánh giá này sang người đánh giá khác. Các nghiên cứu trường hợp dài hơn trong đó các nhà phát triển có thời gian xây dựng ý kiến của họ về công cụ tự động hóa đánh giá là cần thiết để chứng thực hoặc phản bác các phát hiện của chúng tôi, đặc biệt là khi nói đến những gì chúng tôi quan sát về thời gian dành.
+
+BẢNG V
+RQ3: MÔ HÌNH HỒI QUY TUYẾN TÍNH.
+
+| | Ước lượng | S.E. | Sig. |
+|---|---|---|---|
+| Intercept | 2.148 | 0.628 | ** |
+| ACR | 0.099 | 0.211 | |
+| CCR | 0.180 | 0.212 | |
+| Số năm kinh nghiệm | 0.025 | 0.011 | * |
+| Tham gia đánh giá mã: Đóng góp & Đánh giá | 1.001 | 0.560 | |
+| Tham gia đánh giá mã: Không có | 1.147 | 0.602 | |
+| Tham gia đánh giá mã: Đánh giá viên | 1.591 | 0.678 | * |
+| Ngôn ngữ lập trình: Python | 0.270 | 0.180 | |
+| Chương trình: number-conversion | 0.361 | 0.261 | |
+| Chương trình: stopwatch | -0.296 | 0.287 | |
+| Chương trình: tic-tac-toe | 0.233 | 0.334 | |
+| Chương trình: todo-list | -0.040 | 0.353 | |
+| Chương trình: word-utils | -0.592 | 0.287 | * |
+
+Mã ý nghĩa: '***' p < 0.001, '**' p < 0.01, '*' p < 0.05
+
+D. RQ 3: Tác Động đến Độ Tin Cậy của Người Đánh Giá
+
+Sau mỗi nhiệm vụ đánh giá mã, người đánh giá chấm điểm độ tin cậy của họ trong đánh giá họ nộp trên thang điểm từ 1 (độ tin cậy rất thấp) đến 5 (độ tin cậy rất cao). Các đánh giá từ cách điều trị MCR được chấm điểm với độ tin cậy trung bình 3.5 (trung vị=4), những đánh giá từ cách điều trị ACR với độ tin cậy trung bình 3.7 (trung vị=4), và những đánh giá từ cách điều trị CCR với độ tin cậy trung bình 3.8 (trung vị=4).
+
+Thật vậy, như được hiển thị trong mô hình hồi quy tuyến tính trong Bảng V (Multiple R2: 0.3445), không có tác động đáng kể của cách điều trị đối với điểm độ tin cậy được báo cáo bởi người đánh giá. Do đó chúng tôi kết luận rằng việc cung cấp một đánh giá mã tự động làm điểm khởi đầu, ngay cả một đánh giá có thể xác định một số vấn đề mức độ cao (tức là cách điều trị CCR), không có tác động đáng kể đến độ tin cậy của người đánh giá. Điều này có thể do thực tế là, trong khi đánh giá mã tự động có thể chỉ người đánh giá đến các vị trí mã có liên quan, nó không giúp hiểu mã mà, cuối cùng, là những gì chúng tôi mong đợi chủ yếu ảnh hưởng đến độ tin cậy của người đánh giá. Kết hợp đánh giá mã tự động với tóm tắt mã dựa trên LLM [44] có thể giúp theo hướng đó.
+
+E. Các Khuyến Nghị Có Thể Thực Hiện
+
+Dựa trên các phát hiện của chúng tôi, chúng tôi chưng cất các khuyến nghị có thể thực hiện sau đây cho người đánh giá, nhà thiết kế công cụ nhằm tự động tạo đánh giá mã, và nhà nghiên cứu.
+
+Người đánh giá: Chúng tôi quan sát rằng việc có sẵn một đánh giá tự động ảnh hưởng mạnh mẽ đến hành vi của người đánh giá, người sẽ chủ yếu tập trung vào các vị trí mã được nhận xét trong đánh giá được cung cấp. Ngoài ra, các đánh giá tự động dẫn đến sự biến đổi thấp hơn trong các loại vấn đề được xác định bởi các người đánh giá khác nhau cho cùng một chương trình. Dựa trên những phát hiện này, chúng tôi khuyến nghị áp dụng các đánh giá tự động như một kiểm tra bổ sung chỉ sau khi kiểm tra thủ công. Điều này sẽ không tiết kiệm thời gian nhưng nó có thể giúp xác định các vấn đề chất lượng bổ sung.
+
+Nhà thiết kế công cụ: Trong khi hầu hết các vấn đề được báo cáo bởi ChatGPT đã được người đánh giá coi là hợp lệ (tức là giữ lại trong đánh giá cuối cùng), chúng tôi thấy rằng những vấn đề này có xu hướng có mức độ nghiêm trọng khá thấp. Các công cụ được thiết kế riêng để xác định các vấn đề chất lượng mức độ cao cụ thể sẽ là một tài sản có giá trị. Ngoài ra, các đánh giá được tạo tự động dài dòng hơn nhiều so với những đánh giá được viết thủ công. Đây là một chi phí không thể bỏ qua nên được xem xét trong thiết kế công cụ, ví dụ: bằng cách nỗ lực tốt nhất để giữ các đánh giá được tạo ra ngắn gọn.
+
+Nhà nghiên cứu: Chúng tôi không quan sát thấy bất kỳ thời gian nào được tiết kiệm nhờ vào việc có sẵn các đánh giá tự động. Do đó, động lực để đưa các công cụ này vào quy trình đánh giá mã có thể liên quan nhiều hơn đến việc kiểm tra mã toàn diện hơn thay vì tiết kiệm thời gian [16]. Ngoài ra, với thiên lệch mạnh trong hành vi của người đánh giá mà chúng tôi đã xác định, các nghiên cứu điều tra tác động đến hành vi của các thực hành viên khi khai thác các công cụ dựa trên AI để tự động hóa (bán) các nhiệm vụ SE là rất cần thiết.
+
+IV. CÁC MỐI ĐE DỌA ĐỐI VỚI TÍNH HỢP LỆ
+
+Tính hợp lệ cấu trúc. Một thách thức lớn là việc đo lường thời gian trong RQ 2, vì có thể có sự gián đoạn khi các tham gia viên thực hiện đánh giá mã. Chúng tôi đã hướng dẫn các tham gia viên không gián đoạn nhiệm vụ đánh giá mã và chỉ nghỉ khi chuyển đổi cách điều trị. Tuy nhiên, trong phân tích dựa trên thời gian, chúng tôi đã loại trừ 13 điểm dữ liệu (trong số 72) vì rõ ràng chúng đại diện cho lỗi trong việc đo lường khi so sánh với các thời gian khác. Các điểm dữ liệu bị loại bỏ được cân bằng giữa các cách điều trị (4 cho MCR, 5 cho ACR, và 4 cho CCR) và không thay đổi kết quả cuối cùng của nghiên cứu chúng tôi.
+
+--- TRANG 10 ---
+
+Các phân tích được báo cáo trong RQ 0 và RQ 1 dựa trên dữ liệu được trích xuất thủ công từ các đánh giá đã nộp (ví dụ: số lượng vấn đề được báo cáo trong các đánh giá), do đó liên quan đến rủi ro chủ quan. Để giải quyết một phần chúng, chúng tôi đảm bảo rằng mỗi đánh giá được kiểm tra độc lập bởi hai người đánh giá.
+
+Tính hợp lệ nội bộ. Các tham gia viên chỉ đóng góp một hoặc hai trong số các đánh giá được giao (18 trong số 29 đóng góp ba đánh giá) làm cho nghiên cứu lệch khỏi thiết kế trong-chủ thể ban đầu mà chúng tôi đã lên kế hoạch. Tuy nhiên, chúng tôi đã giải quyết vấn đề bằng cách chỉ xem xét 72 trong số các đánh giá chúng tôi thu thập trong phân tích của mình, với mục tiêu cân bằng trong mỗi cách điều trị số lượng đánh giá được thực hiện trên mỗi dự án.
+
+Mặc dù chúng tôi đã thu thập một số dữ liệu nhân khẩu học về các tham gia viên, có một số yếu tố khác có thể đã ảnh hưởng đến các phát hiện của chúng tôi. Những yếu tố này bao gồm: (i) nền tảng giáo dục; (ii) kinh nghiệm làm việc; (iii) việc thiếu kiến thức mà một số tham gia viên có thể có về các chương trình được kiểm tra; (iv) không có kinh nghiệm quá khứ của các tham gia viên trong việc sử dụng các công cụ tự động hóa đánh giá mã, do đó không thể hiệu chỉnh đúng cách độ tin cậy của họ trong việc chấp nhận/từ chối các khuyến nghị; và (v) các ràng buộc thời gian có thể mà các tham gia viên có khi thực hiện nhiệm vụ đánh giá. Gói sao chép của chúng tôi [25] có một biểu đồ nhân quả cho thấy tất cả các biến được đo lường và không được đo lường có thể đã đóng vai trò đối với các biến phụ thuộc được đo lường.
+
+Tính hợp lệ bên ngoài. Như một lựa chọn thiết kế, chúng tôi quyết định chỉ bao gồm trong nghiên cứu của mình các nhà phát triển chuyên nghiệp. Điều này dẫn đến số lượng tham gia viên hạn chế tham gia nghiên cứu của chúng tôi (29) với tổng cộng 24 điểm dữ liệu (tức là đánh giá đã nộp) cho mỗi cách điều trị. Chúng tôi thừa nhận rằng nghiên cứu của chúng tôi có thể thiếu sức mạnh thống kê, do đó dẫn đến các kết luận thiên lệch. Vì lý do này, các sao chép là cần thiết để chứng thực hoặc phản bác các quan sát sơ bộ của chúng tôi.
+
+Một mối đe dọa khác đối với tính tổng quát của các phát hiện của chúng tôi liên quan đến tính đại diện của các vấn đề chúng tôi tiêm như đại diện cho những vấn đề thực sự được tìm thấy trong đánh giá mã công nghiệp. Ví dụ, có thể nảy sinh lo ngại về tính tầm thường của các vấn đề được tiêm, cũng xem xét các chương trình chủ đề mà, vì lý do hạn chế thời gian nghiên cứu, có giới hạn về kích thước. Tuy nhiên, chúng tôi đã lấy cảm hứng từ phân loại các vấn đề được tìm thấy trong đánh giá mã được ghi nhận bởi Mäntylä và Lassenius [23], cố gắng tiêm một tỷ lệ vấn đề khả năng tiến hóa và chức năng gần với tỷ lệ họ ghi nhận (tức là ~3 trong số 4 vấn đề được tìm thấy trong đánh giá mã không liên quan đến chức năng hiển thị của chương trình). Ngoài ra, kết quả của chúng tôi cho thấy rằng, khi không chạy nhiệm vụ trong bối cảnh của cách điều trị CCR (tức là một đánh giá xác định các vấn đề được tiêm có sẵn), các tham gia viên có thể xác định tất cả các vấn đề được tiêm chỉ trong 12 trong số 48 nhiệm vụ đánh giá mã. Điều này giải quyết các lo ngại về tính tầm thường của ít nhất việc xác định các vấn đề.
+
+V. CÔNG TRÌNH LIÊN QUAN
+
+A. Tự Động Hóa Đánh Giá Mã
+
+Hầu hết công trình trước đây tập trung vào các nhiệm vụ phân loại, như đề xuất người đánh giá phù hợp nhất cho một thay đổi nhất định [7]–[10], [45]–[51], phân loại cảm tình của các nhận xét đánh giá [52], [53], và tính hữu ích của chúng [13], [14], [54], v.v.
+
+Có liên quan hơn đến công trình của chúng tôi là các nhiệm vụ đánh giá mã sinh gần đây được tự động hóa qua DL. Hai nhiệm vụ được giải quyết phổ biến nhất trong văn học là tạo nhận xét đánh giá [15]–[17], [55] và tinh chỉnh mã [15], [16], [56], [57]. Nhiệm vụ trước bao gồm việc tự động tạo các nhận xét đánh giá bằng ngôn ngữ tự nhiên cho một đoạn mã nhất định, tương tự như những gì một người đánh giá con người sẽ viết. Đầu vào của mô hình DL được đại diện bởi mã cần đánh giá, trong khi đầu ra của nó bao gồm một tập hợp các nhận xét ngôn ngữ tự nhiên chỉ đến các vấn đề trong mã. Trong nhiệm vụ tinh chỉnh mã, mô hình DL lấy làm đầu vào mã được nộp để đánh giá và các nhận xét ngôn ngữ tự nhiên được viết bởi một người đánh giá con người. Mục tiêu của mô hình là tinh chỉnh mã để giải quyết các nhận xét của người đánh giá.
+
+Các đánh giá của những nhiệm vụ này cho thấy kết quả hứa hẹn (ví dụ: ~30% dự đoán chính xác trong nhiệm vụ tinh chỉnh mã [15]), trong khi vẫn chỉ ra nhu cầu cải thiện lớn trước khi các công cụ này có thể được xem xét cho việc áp dụng công nghiệp [58].
+
+Với bằng chứng được ghi nhận về việc áp dụng ChatGPT trong các dự án mã nguồn mở như một đồng đánh giá [18], trong thí nghiệm của chúng tôi, chúng tôi đã áp dụng ChatGPT làm đại diện cho các công cụ tự động hóa đánh giá mã hỗ trợ nhiệm vụ tạo nhận xét.
+
+B. Các Thí Nghiệm Có Kiểm Soát về Đánh Giá Mã
+
+Có một số thí nghiệm có kiểm soát trước đây về đánh giá mã được báo cáo trong văn học. Bảng VI cung cấp một tổng quan ngắn gọn về những công trình này và báo cáo (i) tham chiếu liên quan, (ii) số lượng và loại tham gia viên tham gia vào nghiên cứu (trong đó loại có thể là P = thực hành viên, S = sinh viên, hoặc cả hai), (iii) các ngôn ngữ lập trình chủ đề, (iv) số lượng tổng nhiệm vụ đánh giá được thu thập (trong một số nghiên cứu các tham gia viên thực hiện nhiều hơn một nhiệm vụ, trong khi trong các nghiên cứu khác chỉ một), và (v) một mô tả ngắn gọn về các biến độc lập được thao tác và các biến phụ thuộc được đo lường. Hàng cuối cùng của Bảng VI báo cáo cùng thông tin cho nghiên cứu của chúng tôi. Như được minh họa, tất cả các công trình tập trung vào các biến độc lập khác với biến được giải quyết trong nghiên cứu của chúng tôi (tức là sự hiện diện/vắng mặt của một đánh giá mã tự động). Một số công trình [61], [63], [64] cũng khác về các biến phụ thuộc được đo lường, tập trung vào mức độ hiểu biết của người đánh giá. Chúng tôi thảo luận trong phần sau chỉ các thí nghiệm có kiểm soát có liên quan nhất, là những thí nghiệm chia sẻ với chúng tôi các biến phụ thuộc được đo lường.
+
+Khandelwal et al. [62] nghiên cứu cách việc sử dụng các công cụ đánh giá mã được gamified có thể cải thiện tính hữu ích của các nhận xét đánh giá mã và các vấn đề chất lượng được xác định. Nghiên cứu liên quan đến 183 sinh viên đại học đã phải viết (i) một chương trình mà, trung bình, được tạo thành bởi ~500 dòng mã, và (ii) đánh giá cho 5 chương trình được viết bởi đồng nghiệp sử dụng một trong năm công cụ đánh giá mã (ba được gamified và hai không). Điều này dẫn đến tổng cộng 183 × 5 nhiệm vụ đánh giá mã, cho thấy không có tác động của gamification đối với chất lượng đánh giá mã.
+
+Hanam et al. [65] trình bày một thí nghiệm liên quan đến 11 thực hành viên và sinh viên để điều tra tác động của phân tích tác động thay đổi đối với khả năng xác định lỗi trong đánh giá mã. Mỗi tham gia viên thực hiện hai nhiệm vụ đánh giá mã, một sử dụng công cụ phân tích tác động thay đổi có tên SemCIA và một không sử dụng nó, dẫn đến 22 đánh giá mã được thu thập.
+
+--- TRANG 11 ---
+
+BẢNG VI
+CÁC THÍ NGHIỆM CÓ KIỂM SOÁT VỀ ĐÁNH GIÁ MÃ: ĐỐI VỚI LOẠI THAM GIA VIÊN, "S" CHỈ SINH VIÊN, "P" CHỈ THỰC HÀNH VIÊN.
+
+| Tham chiếu | Tham gia viên | Ngôn ngữ | #Nhiệm vụ | Biến Độc Lập | Biến Phụ Thuộc |
+|---|---|---|---|---|---|
+|  | # | Loại | Lập trình | Đánh giá | Được Thao Tác | Chính Được Đo Lường |
+| Runeson và Wohlin [59] | 8 | P, S | C | 24 | Ba phương pháp ước lượng số lượng lỗi trong mã được đánh giá | Mức độ gần gũi của các phương pháp về ước lượng sau khi đánh giá được thực hiện |
+| Tao và Kim [60] | 18 | S | Java | 36 | Sử dụng/không sử dụng phương pháp tự động phân vùng các thay đổi phức hợp được nộp để đánh giá | Tính chính xác đánh giá mã, Thời gian đánh giá |
+| Zhang et al. [61] | 12 | S | Java | 24 | Sử dụng/không sử dụng phương pháp tương tác để kiểm tra thay đổi mã | Mức độ hiểu biết thay đổi được đánh giá qua bảng câu hỏi |
+| Khandelwal et al. [62] | 183 | S | Python | 915 | Sử dụng công cụ đánh giá mã gamified/không gamified | Tính hữu ích của nhận xét đánh giá mã, Lỗi/mùi mã được xác định |
+| Huang et al. [63] | 10 | S | Java | 10 | Sử dụng/không sử dụng công cụ so sánh mã để đơn giản hóa việc hiểu thay đổi mã | Mức độ hiểu biết thay đổi được đánh giá qua bảng câu hỏi |
+| Huang et al. [64] | 14 | P, S | Java | 28 | Cung cấp/Không cung cấp thông tin cho người đánh giá về lớp im lặng trong commit (tức là lớp kích hoạt thay đổi đến các lớp đã sửa đổi khác) | Mức độ hiểu biết thay đổi được đánh giá qua bảng câu hỏi |
+| Hanam et al. [65] | 11 | P, S | Javascript | 22 | Sử dụng/không sử dụng công cụ thực hiện phân tích tác động thay đổi | Lỗi được xác định, Thời gian đánh giá |
+| Spadini et al. [66] | 85 | P, S | Java | 85 | Hiển thị/không hiển thị các nhận xét đánh giá đã có sẵn cho người đánh giá bắt đầu kiểm tra mã của họ | Lỗi được xác định |
+| Fregnan et al. [67] | 106 | P, S | Java | 106 | Thao tác thứ tự kiểm tra các tệp bị tác động bởi một thay đổi | Lỗi được xác định trong các tệp xuất hiện ở các vị trí khác nhau |
+| Nghiên cứu của chúng tôi | 29 | P | Java, Python | 72 | Ba cách điều trị cung cấp/không cung cấp cho người đánh giá một đánh giá được tạo tự động | Lỗi được xác định, Thời gian đánh giá, Độ tin cậy của người đánh giá |
+
+Sử dụng SemCIA, các tham gia viên có thể thực hiện đánh giá mã nhanh chóng trong khi cũng xác định nhiều lỗi hơn.
+
+Spadini et al. [66] nghiên cứu cách hiển thị các nhận xét đánh giá đã có sẵn cho người đánh giá bắt đầu kiểm tra mã của họ ảnh hưởng đến số lượng lỗi được xác định. Thí nghiệm này liên quan đến 85 tham gia viên, bao gồm thực hành viên (57) và sinh viên. Các tác giả yêu cầu mỗi tham gia viên thực hiện một đánh giá mã, với tổng cộng 85 đánh giá được thu thập. Các tác giả cho thấy rằng các nhận xét đánh giá có sẵn có thể giúp xác định các loại lỗi cụ thể mà nếu không sẽ bị bỏ qua.
+
+Cuối cùng, Fregnan et al. [67] điều tra liệu thứ tự mà các tệp được nộp để đánh giá được trình bày cho người đánh giá có tác động đến số lượng lỗi được xác định trong chúng không. Đáng ngạc nhiên, họ thấy rằng chỉ bằng cách thay đổi vị trí tệp, khả năng xác định lỗi trong các tệp được kiểm tra có thể thay đổi đáng kể, với những tệp được kiểm tra đầu tiên có khả năng cao hơn. Nghiên cứu đã được thực hiện với 106 người trong số thực hành viên (72) và sinh viên. Cũng trong trường hợp này, mỗi tham gia viên chỉ đóng góp vào một cách điều trị, với tổng cộng 106 đánh giá được thu thập.
+
+Như được làm nổi bật trong Bảng VI và đã đề cập trước đó, tính mới lạ của công trình chúng tôi so với văn học hiện có nằm ở biến độc lập được điều tra tập trung vào thế hệ mới của các công cụ tự động hóa đánh giá mã dựa trên DL.
+
+VI. KẾT LUẬN VÀ CÔNG VIỆC TƯƠNG LAI
+
+Trong nghiên cứu này, chúng tôi đã khám phá các tác động của việc kết hợp các đánh giá mã được tạo tự động, đặc biệt là những đánh giá được sản xuất bởi ChatGPT Plus (GPT-4), vào quy trình đánh giá mã. Thí nghiệm có kiểm soát của chúng tôi liên quan đến 29 nhà phát triển chuyên nghiệp đã đánh giá mã trong ba cài đặt: thủ công, có một đánh giá tự động được cung cấp bởi ChatGPT Plus làm điểm khởi đầu, hoặc bắt đầu từ một đánh giá được tạo thủ công bởi các tác giả để nắm bắt tất cả các vấn đề chính trong mã, nhưng được diễn đạt lại bởi ChatGPT Plus để có vẻ được tạo bởi nó.
+
+Người đánh giá thường chấp nhận tính hợp lệ của các vấn đề được LLM xác định, áp dụng 89% trong số chúng trung bình trong các đánh giá cuối cùng của họ. Tuy nhiên, sự hiện diện của một đánh giá tự động đã ảnh hưởng đến người đánh giá để tập trung vào các vị trí mã được làm nổi bật, có thể bỏ qua các khu vực khác. Các phát hiện của chúng tôi cũng chỉ ra rằng việc sử dụng các đánh giá ChatGPT Plus tự động làm điểm khởi đầu dẫn đến việc xác định các vấn đề ít nghiêm trọng hơn so với các đánh giá thủ công, nhưng tiết lộ nhiều vấn đề tầm thường hơn. Ngoài ra, trong khi các đánh giá tự động được mong đợi tiết kiệm thời gian, các phát hiện của chúng tôi cho thấy rằng, trong thực tế, người đánh giá vẫn phải dành thời gian xác minh tính chính xác của các nhận xét tự động, phủ nhận bất kỳ tiết kiệm thời gian tiềm năng nào. Đồng thời, việc có quyền truy cập vào các đánh giá tự động làm điểm khởi đầu không dẫn đến thay đổi trong độ tin cậy của người đánh giá.
+
+Những phát hiện này cho thấy rằng trong khi các LLM hiện tại có thể đóng vai trò có giá trị trong việc xác định một phần các vấn đề mã, việc sử dụng chúng như các đồng đánh giá tự động không nhất thiết cải thiện hiệu quả hoặc hiệu suất của quy trình đánh giá mã từ góc độ toàn diện. Xu hướng của các đánh giá tự động tập trung sự chú ý của người đánh giá vào các khu vực cụ thể của mã, cùng với tác động hạn chế của chúng trong việc xác định các vấn đề mức độ cao và sự kém hiệu quả trong việc giảm thời gian đánh giá đại diện cho những thách thức quan trọng nên được giải quyết trong công việc tương lai để cho phép LLMs trở thành các phần tích hợp của quy trình đánh giá mã.
+
+LỜI CẢM ÔN
+
+Dự án này đã nhận được tài trợ từ Hội đồng Nghiên cứu Châu Âu (ERC) theo chương trình nghiên cứu và đổi mới Horizon 2020 của Liên minh Châu Âu (thỏa thuận tài trợ số 851720) và từ Quỹ Khoa học Quốc gia Thụy Sĩ (SNSF) theo dự án "PARSED" (thỏa thuận tài trợ số 219294). Chúng tôi vô cùng biết ơn các tham gia viên đã tham gia nghiên cứu vì thời gian và nỗ lực của họ.
+
+--- TRANG 12 ---
+
+TÀI LIỆU THAM KHẢO
+
+[1] C. Sadowski, E. Söderberg, L. Church, M. Sipko, and A. Bacchelli,
+"Modern code review: A case study at google," in 40th International
+Conference on Software Engineering: Software Engineering in Practice,
+ICSE-SEIP, 2018, pp. 181–190.
+
+[2] A. Bacchelli and C. Bird, "Expectations, outcomes, and challenges of
+modern code review," in 35th IEEE/ACM International Conference on
+Software Engineering, ICSE, 2013, pp. 712–721.
+
+[3] R. Morales, S. McIntosh, and F. Khomh, "Do code review practices
+impact design quality? a case study of the qt, vtk, and itk projects," in
+22nd IEEE International Conference on Software Analysis, Evolution
+and Reengineering, SANER, 2015, pp. 171–180.
+
+[4] G. Bavota and B. Russo, "Four eyes are better than two: On the impact
+of code reviews on software quality," in IEEE International Conference
+on Software Maintenance and Evolution, ICSME, 2015, pp. 81–90.
+
+[5] S. McIntosh, Y. Kamei, B. Adams, and A. E. Hassan, "The impact of
+code review coverage and code review participation on software quality:
+A case study of the qt, vtk, and itk projects," in 11th IEEE/ACM Working
+Conference on Mining Software Repositories, MSR, 2014, pp. 192–201.
+
+[6] A. Bosu and J. C. Carver, "Impact of peer code review on peer impression formation: A survey," in 7th IEEE/ACM International Symposium
+on Empirical Software Engineering and Measurement, ESEM, 2013, pp.
+133–142.
+
+[7] V. Balachandran, "Reducing human effort and improving quality in peer
+code reviews using automatic static analysis and reviewer recommendation," in 2013 35th International Conference on Software Engineering
+(ICSE). IEEE, 2013, pp. 931–940.
+
+[8] P. Thongtanunam, C. Tantithamthavorn, R. G. Kula, N. Yoshida, H. Iida,
+and K.-i. Matsumoto, "Who should review my code? a file locationbased code-reviewer recommendation approach for modern code review," in 2015 IEEE 22nd International Conference on Software Analysis, Evolution, and Reengineering (SANER). IEEE, 2015, pp. 141–150.
+
+[9] X. Xia, D. Lo, X. Wang, and X. Yang, "Who should review this
+change?: Putting text and file location analyses together for more
+accurate recommendations," in 2015 IEEE International Conference on
+Software Maintenance and Evolution (ICSME), 2015, pp. 261–270.
+
+[10] A. Ouni, R. G. Kula, and K. Inoue, "Search-based peer reviewers
+recommendation in modern code review," in 2016 IEEE International
+Conference on Software Maintenance and Evolution (ICSME). IEEE,
+2016, pp. 367–377.
+
+[11] B. Soltanifar, A. Erdem, and A. Bener, "Predicting defectiveness of
+software patches," in Proceedings of the 10th ACM/IEEE International
+Symposium on Empirical Software Engineering and Measurement, 2016,
+pp. 1–10.
+
+[12] S. Sharma and B. Sodhi, "Using stack overflow content to assist in code
+review," Software: Practice and Experience, vol. 49, no. 8, pp. 1255–
+1277, 2019.
+
+[13] T. Pangsakulyanont, P. Thongtanunam, D. Port, and H. Iida, "Assessing mcr discussion usefulness using semantic similarity," in 2014 6th
+International Workshop on Empirical Software Engineering in Practice.
+IEEE, 2014, pp. 49–54.
+
+[14] M. M. Rahman, C. K. Roy, and R. G. Kula, "Predicting usefulness of
+code review comments using textual features and developer experience,"
+in 2017 IEEE/ACM 14th International Conference on Mining Software
+Repositories (MSR). IEEE, 2017, pp. 215–226.
+
+[15] L. Zhiyu, L. Shuai, G. Daya, D. Nan, J. Shailesh, J. Grant, M. Deep,
+G. Jared, S. Alexey, F. Shengyu, and N. Sundaresan, "Automating
+code review activities by large-scale pre-training," in 30th ACM Joint
+European Software Engineering Conference and the ACM/SIGSOFT
+International Symposium on the Foundations of Software Engineering
+ESEC-FSE, 2022, pp. 1035–1047.
+
+[16] R. Tufano, S. Masiero, A. Mastropaolo, L. Pascarella, D. Poshyvanyk,
+and G. Bavota, "Using pre-trained models to boost code review automation," in 44th IEEE/ACM International Conference on Software
+Engineering, ICSE, 2022, pp. 2291–2302.
+
+[17] L. Li, L. Yang, H. Jiang, J. Yan, T. Luo, Z. Hua, G. Liang, and C. Zuo,
+"Auger: automatically generating review comments with pre-training
+models," in Proceedings of the 30th ACM Joint European Software
+Engineering Conference and Symposium on the Foundations of Software
+Engineering, 2022, pp. 1009–1021.
+
+[18] R. Tufano, A. Mastropaolo, F. Pepe, O. Dabic, M. Di Penta, and
+G. Bavota, "Unveiling chatgpt's usage in open source projects: A
+mining-based study," in Proceedings of 2024 IEEE/ACM 21th International Conference on Mining Software Repositories (MSR). IEEE,
+2024, p. To Appear.
+
+[19] Z. Liu, C. Chen, J. Wang, M. Chen, B. Wu, X. Che, D. Wang, and
+Q. Wang, "Make llm a testing expert: Bringing human-like interaction to mobile gui testing via functionality-aware decisions," in 2024
+IEEE/ACM 46th International Conference on Software Engineering
+(ICSE), 2024, pp. 884–884.
+
+[20] Z. Ma, A. R. Chen, D. J. Kim, T.-H. P. Chen, and S. Wang, "Llmparser:
+An exploratory study on using large language models for log parsing,"
+in 2024 IEEE/ACM 46th International Conference on Software Engineering (ICSE), 2024, p. To appear.
+
+[21] J. Xu, Z. Cui, Y. Zhao, X. Zhang, S. He, P. He, L. Li, Y. Kang, Q. Lin,
+Y. Dang, S. Rajmohan, and D. Zhang, "Unilog: Automatic logging via
+llm and in-context learning," in Proceedings of the 46th IEEE/ACM
+International Conference on Software Engineering, ser. ICSE '24, 2024.
+
+[22] D. Nam, A. Macvean, V. J. Hellendoorn, B. Vasilescu, and B. A. Myers,
+"Using an llm to help with code understanding," in Proceedings of the
+46th IEEE/ACM International Conference on Software Engineering, ser.
+ICSE '24, 2024.
+
+[23] M. V. Mäntylä and C. Lassenius, "What types of defects are really discovered in code reviews?" IEEE Transactions on Software Engineering,
+vol. 35, no. 3, pp. 430–448, 2008.
+
+[24] "ChatGPT," https://chat.openai.com/, accessed: 2024-02-27.
+
+[25] "Replication package," https://github.com/CodeReviewExperiment/
+code_review_controlled_experiment, [n.d.].
+
+[26] M. V. et al., "Ai-assisted assessment of coding practices in modern
+code review," CoRR, vol. abs/2405.13565, 2024. [Online]. Available:
+https://doi.org/10.48550/arXiv.2405.13565
+
+[27] P. Sedgwick, "Convenience sampling," BMJ, 2013.
+
+[28] S. J. Stratton, "Population research: convenience sampling strategies,"
+Prehospital and disaster Medicine, vol. 36, no. 4, pp. 373–374, 2021.
+
+[29] "Rosetta Code," https://rosettacode.org/, accessed: 2024-02-22.
+
+[30] "Apache Commons Lang," https://github.com/apache/commons-lang,
+accessed: 2024-02-22.
+
+[31] E. Fregnan, F. Petrulio, L. Di Geronimo, and A. Bacchelli, "What happens in my code reviews? an investigation on automatically classifying
+review changes," Empirical Software Engineering, vol. 27, no. 4, p. 89,
+2022.
+
+[32] "Remote Development - Visual Studio Marketplace," https:
+//marketplace.visualstudio.com/items?itemName=ms-vscode-remote.
+vscode-remote-extensionpack, accessed: 2024-02-28.
+
+[33] "Extension Pack for Java - Visual Studio Marketplace,"
+https://marketplace.visualstudio.com/items?itemName=vscjava.
+vscode-java-pack, accessed: 2024-02-28.
+
+[34] "Python - Visual Studio Marketplace," https://marketplace.visualstudio.
+com/items?itemName=ms-python.python, accessed: 2024-02-28.
+
+[35] "Code Review - Visual Studio Marketplace," https:
+//marketplace.visualstudio.com/items?itemName=d-koppenhagen.
+vscode-code-review, accessed: 2024-02-28.
+
+[36] "Tako - Visual Studio Marketplace," https://marketplace.visualstudio.
+com/items?itemName=codelounge.tako, accessed: 2024-02-28.
+
+[37] R. Minelli, A. Mocci, and M. Lanza, "I know what you did last summer:
+an investigation of how developers spend their time," in 23rd IEEE
+International Conference on Program Comprehension, ICPC, 2015, pp.
+25–35.
+
+[38] A. Hughes and D. Grawoig, Statistics, a Foundation for Analysis, ser.
+Business and Economics Series. Addison-Wesley Publishing Company,
+1971.
+
+[39] O. J. Dunn, "Multiple comparisons among means," Journal of the
+American Statistical Association, vol. 56, no. 293, pp. 52–64, 1961.
+
+[40] B. Yoav and H. Yosef, "Controlling the false discovery rate: A practical
+and powerful approach to multiple testing," Journal of the Royal
+Statistical Society. Series B (Methodological), vol. 57, no. 1, pp. 289–
+300, 1995.
+
+[41] J. Cohen, Statistical power analysis for the behavioral sciences.
+Lawrence Earlbaum Associates, 1988.
+
+[42] F. Wilcoxon, "Individual comparisons by ranking methods," Biometrics
+Bulletin, vol. 1, no. 6, pp. 80–83, 1945.
+
+[43] R. J. Grissom and J. J. Kim, Effect sizes for research: A broad practical
+approach, 2nd ed. Lawrence Earlbaum Associates, 2005.
+
+[44] T. Ahmed and P. Devanbu, "Few-shot training llms for project-specific
+code-summarization," in Proceedings of the 37th IEEE/ACM International Conference on Automated Software Engineering, ser. ASE '22,
+2023.
+
+--- TRANG 13 ---
+
+[45] M. M. Rahman, C. K. Roy, and J. A. Collins, "Correct: Code reviewer
+recommendation in github based on cross-project and technology experience," in 2016 IEEE/ACM 38th International Conference on Software
+Engineering Companion (ICSE-C), 2016, pp. 222–231.
+
+[46] M. B. Zanjani, H. Kagdi, and C. Bird, "Automatically recommending
+peer reviewers in modern code review," IEEE Transactions on Software
+Engineering, vol. 42, no. 6, pp. 530–543, 2016.
+
+[47] S. Asthana, R. Kumar, R. Bhagwan, C. Bird, C. Bansal, C. Maddila,
+S. Mehta, and B. Ashok, "Whodo: Automating reviewer suggestions
+at scale," in Proceedings of the 2019 27th ACM Joint Meeting on
+European Software Engineering Conference and Symposium on the
+Foundations of Software Engineering, ser. ESEC/FSE 2019. New
+York, NY, USA: Association for Computing Machinery, 2019, p.
+937–945. [Online]. Available: https://doi.org/10.1145/3338906.3340449
+
+[48] J. Jiang, D. Lo, J. Zheng, X. Xia, Y. Yang, and L. Zhang, "Who
+should make decision on this pull request? analyzing time-decaying
+relationships and file similarities for integrator prediction," Journal of
+Systems and Software, vol. 154, pp. 196–210, 2019.
+
+[49] E. Mirsaeedi and P. C. Rigby, "Mitigating turnover with code
+review recommendation: Balancing expertise, workload, and knowledge
+distribution," in Proceedings of the ACM/IEEE 42nd International
+Conference on Software Engineering, ser. ICSE '20. New York, NY,
+USA: Association for Computing Machinery, 2020, p. 1183–1195.
+[Online]. Available: https://doi.org/10.1145/3377811.3380335
+
+[50] A. Strand, M. Gunnarson, R. Britto, and M. Usman, "Using a contextaware approach to recommend code reviewers: findings from an industrial case study," in Proceedings of the ACM/IEEE 42nd International
+Conference on Software Engineering: Software Engineering in Practice,
+2020, pp. 1–10.
+
+[51] P. Pandya and S. Tiwari, "Corms: A github and gerrit based
+hybrid code reviewer recommendation approach for modern code
+review," in Proceedings of the 30th ACM Joint European Software
+Engineering Conference and Symposium on the Foundations of Software
+Engineering, ser. ESEC/FSE 2022. New York, NY, USA: Association
+for Computing Machinery, 2022, p. 546–557. [Online]. Available:
+https://doi.org/10.1145/3540250.3549115
+
+[52] T. Ahmed, A. Bosu, A. Iqbal, and S. Rahimi, "Senticr: a customized
+sentiment analysis tool for code review interactions," in 2017 32nd
+IEEE/ACM International Conference on Automated Software Engineering (ASE). IEEE, 2017, pp. 106–111.
+
+[53] C. D. Egelman, E. Murphy-Hill, E. Kammer, M. M. Hodges, C. Green,
+C. Jaspan, and J. Lin, "Predicting developers' negative feelings about
+code review," in Proceedings of the ACM/IEEE 42nd International
+Conference on Software Engineering, 2020, pp. 174–185.
+
+[54] M. Hasan, A. Iqbal, M. R. U. Islam, A. I. Rahman, and A. Bosu, "Using
+a balanced scorecard to identify opportunities to improve code review
+effectiveness: An industrial experience report," Empirical Software Engineering, vol. 26, pp. 1–34, 2021.
+
+[55] Y. Hong, C. Tantithamthavorn, P. Thongtanunam, and A. Aleti, "Commentfinder: a simpler, faster, more accurate code review comments
+recommendation," in Proceedings of the 30th ACM Joint European
+Software Engineering Conference and Symposium on the Foundations
+of Software Engineering, 2022, pp. 507–519.
+
+[56] F. Huq, M. Hasan, M. M. A. Haque, S. Mahbub, A. Iqbal, and T. Ahmed,
+"Review4repair: Code review aided automatic program repairing," Information and Software Technology, vol. 143, p. 106765, 2022.
+
+[57] R. Tufano, L. Pascarella, M. Tufano, D. Poshyvanyk, and G. Bavota,
+"Towards automating code review activities," in 43rd IEEE/ACM International Conference on Software Engineering, ICSE, 2021, pp. 163–174.
+
+[58] R. Tufano, O. Dabic, A. Mastropaolo, M. Ciniselli, and G. Bavota,
+"Code review automation: Strengths and weaknesses of the state of the
+art," IEEE Trans. Software Eng., vol. 50, no. 2, pp. 338–353, 2024.
+
+[59] P. Runeson and C. Wohlin, "An experimental evaluation of an
+experience-based capture-recapture method in software code inspections," Empirical Softw. Engg., 1998.
+
+[60] Y. Tao and S. Kim, "Partitioning composite code changes to facilitate
+code review," in 2015 IEEE/ACM 12th Working Conference on Mining
+Software Repositories. IEEE, 2015, pp. 180–190.
+
+[61] T. Zhang, M. Song, J. Pinedo, and M. Kim, "Interactive code review
+for systematic changes," in 2015 IEEE/ACM 37th IEEE International
+Conference on Software Engineering, vol. 1, 2015, pp. 111–122.
+
+[62] S. Khandelwal, S. K. Sripada, and Y. R. Reddy, "Impact of gamification
+on code review process: An experimental study," in Proceedings of the
+10th Innovations in Software Engineering Conference, ser. ISEC '17,
+2017, p. 122–126.
+
+[63] K. Huang, B. Chen, X. Peng, D. Zhou, Y. Wang, Y. Liu, and W. Zhao,
+"Cldiff: generating concise linked code differences," in Proceedings of
+the 33rd ACM/IEEE International Conference on Automated Software
+Engineering, ser. ASE '18, 2018, p. 679–690.
+
+[64] Y. Huang, N. Jia, X. Chen, K. Hong, and Z. Zheng, "Salient-class
+location: help developers understand code change in code review," in
+Proceedings of the 2018 26th ACM Joint Meeting on European Software
+Engineering Conference and Symposium on the Foundations of Software
+Engineering, ser. ESEC/FSE 2018, 2018, p. 770–774.
+
+[65] Q. Hanam, A. Mesbah, and R. Holmes, "Aiding code change understanding with semantic change impact analysis," in 2019 IEEE International
+Conference on Software Maintenance and Evolution (ICSME), 2019, pp.
+202–212.
+
+[66] D. Spadini, G. Çalikli, and A. Bacchelli, "Primers or reminders? the
+effects of existing review comments on code review," in Proceedings of
+the ACM/IEEE 42nd International Conference on Software Engineering,
+ser. ICSE '20, 2020, p. 1171–1182.
+
+[67] E. Fregnan, L. Braz, M. D'Ambros, G. Çalıklı, and A. Bacchelli,
+"First come first served: the impact of file position on code review,"
+in Proceedings of the 30th ACM Joint European Software Engineering
+Conference and Symposium on the Foundations of Software Engineering,
+ser. ESEC/FSE 2022, 2022, p. 483–494.

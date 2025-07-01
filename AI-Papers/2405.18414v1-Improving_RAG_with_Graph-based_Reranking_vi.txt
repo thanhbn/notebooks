@@ -1,0 +1,214 @@
+# 2405.18414v1.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2405.18414v1.pdf
+# Kích thước file: 1142668 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+Đừng Quên Kết Nối!
+Cải Thiện RAG với Việc Xếp Hạng Lại Dựa trên Đồ Thị
+Jialin Dong
+UCLABahare Fatemi
+Google ResearchBryan Perozzi
+Google ResearchLin F. Yang
+UCLAAnton Tsitsulin
+Google Research
+
+Tóm tắt
+Sinh Tăng cường Truy xuất (RAG) đã cải thiện đáng kể hiệu suất của các mô hình ngôn ngữ lớn (LLM) bằng cách bổ sung thông tin từ các tài liệu hiện có vào quá trình sinh văn bản. Những hệ thống này hoạt động tốt khi các tài liệu có liên quan rõ ràng đến ngữ cảnh câu hỏi. Nhưng điều gì xảy ra khi một tài liệu chỉ có thông tin một phần, hoặc có các kết nối ít rõ ràng hơn với ngữ cảnh? Và chúng ta nên lập luận như thế nào về các kết nối giữa các tài liệu? Trong nghiên cứu này, chúng tôi tìm cách trả lời hai câu hỏi cốt lõi này về việc sinh RAG. Chúng tôi giới thiệu G-RAG, một bộ xếp hạng lại dựa trên mạng nơ-ron đồ thị (GNN) được đặt giữa bộ truy xuất và bộ đọc trong RAG. Phương pháp của chúng tôi kết hợp cả các kết nối giữa các tài liệu và thông tin ngữ nghĩa (qua đồ thị Biểu diễn Ý nghĩa Trừu tượng) để cung cấp một bộ xếp hạng có nhận thức về ngữ cảnh cho RAG. G-RAG vượt trội so với các phương pháp tiên tiến hiện tại trong khi có chi phí tính toán nhỏ hơn. Ngoài ra, chúng tôi đánh giá hiệu suất của PaLM 2 như một bộ xếp hạng lại và thấy rằng nó kém hiệu quả đáng kể so với G-RAG. Kết quả này nhấn mạnh tầm quan trọng của việc xếp hạng lại cho RAG ngay cả khi sử dụng các mô hình ngôn ngữ lớn.
+
+1 Giới thiệu
+Sinh Tăng cường Truy xuất (RAG) [35] đã mang lại những cải tiến cho nhiều bài toán trong sinh văn bản. Một ví dụ là Trả lời Câu hỏi Miền Mở (ODQA) [40] bao gồm việc trả lời các câu hỏi ngôn ngữ tự nhiên mà không giới hạn miền của các câu trả lời. RAG kết hợp các quá trình truy xuất và trả lời, điều này cải thiện khả năng thu thập kiến thức hiệu quả, trích xuất thông tin hữu ích và sinh câu trả lời. Mặc dù thành công trong việc lấy các tài liệu có liên quan, RAG không thể sử dụng các kết nối giữa các tài liệu. Trong bối cảnh ODQA, điều này dẫn đến việc mô hình bỏ qua các tài liệu chứa câu trả lời, tức là các tài liệu tích cực, với các kết nối ít rõ ràng hơn với ngữ cảnh câu hỏi. Chúng ta có thể xác định những tài liệu này nếu chúng ta kết nối chúng với các tài liệu tích cực có ngữ cảnh liên quan mạnh mẽ đến ngữ cảnh câu hỏi.
+
+Để tìm các kết nối giữa các tài liệu và chọn những tài liệu có liên quan cao, quá trình xếp hạng lại đóng vai trò quan trọng trong việc lọc hiệu quả hơn các tài liệu đã truy xuất. Một bộ xếp hạng lại mạnh mẽ cũng có lợi cho quá trình đọc bằng cách xác định hiệu quả các tài liệu tích cực và đưa chúng lên các vị trí xếp hạng nổi bật. Khi đầu ra của bộ đọc khớp hoàn hảo với một trong các câu trả lời chuẩn vàng, nó dẫn đến sự gia tăng trong các thông số hiệu suất khớp chính xác. Do bài báo của chúng tôi nhấn mạnh vào khía cạnh xếp hạng lại, các thông số hiệu suất của chúng tôi chủ yếu tập trung vào các nhiệm vụ xếp hạng, cụ thể là Mean Tied Reciprocal Ranking và MHits@10. Do đó, bài báo của chúng tôi tập trung vào việc sử dụng xếp hạng lại để cải thiện RAG – vì nó là cầu nối cơ bản giữa các quá trình truy xuất và đọc.
+
+Các mô hình ngôn ngữ được huấn luyện trước (LM) như BERT [6], RoBERTa [23], và BART [19] đã được sử dụng rộng rãi để nâng cao hiệu suất xếp hạng lại bằng cách ước tính điểm liên quan giữa câu hỏi và tài liệu. Gần đây, đồ thị Biểu diễn Ý nghĩa Trừu tượng (AMR) đã được tích hợp với LM để nâng cao khả năng hiểu ngữ nghĩa phức tạp của hệ thống [42]. Trong khi các bộ xếp hạng lại hiện tại thể hiện hiệu suất đáng ngưỡng mộ, một số hạn chế vẫn tồn tại.
+
+Preprint. Đang được xem xét.arXiv:2405.18414v1  [cs.CL]  28 May 2024
+
+--- TRANG 2 ---
+………
+…………
+…Q&PAMRs
+findconnectionsestablishGNNDocumentGraphReranker
+…Hình 1: G-RAG sử dụng hai đồ thị để xếp hạng lại tài liệu: Đồ thị Biểu diễn Ý nghĩa Trừu tượng (AMR) được sử dụng làm đặc trưng cho đồ thị cấp độ tài liệu. Đồ thị tài liệu sau đó được sử dụng để xếp hạng lại tài liệu.
+
+Thứ nhất, như đã đề cập ở trên, hầu hết các nghiên cứu hiện tại đều không nắm bắt được các kết nối quan trọng giữa các tài liệu truy xuất khác nhau. Một số nghiên cứu gần đây [46] cố gắng kết hợp các đồ thị tri thức bên ngoài để cải thiện hiệu suất của quá trình đọc trong RAG nhưng với chi phí sử dụng bộ nhớ đáng kể cho việc lưu trữ đồ thị tri thức. Kết nối giữa các tài liệu chưa được xem xét trong quá trình xếp hạng lại. Thứ hai, mặc dù đồ thị AMR cải thiện việc hiểu ngữ nghĩa phức tạp, công trình tiên tiến [42] tích hợp thông tin AMR dư thừa vào các mô hình ngôn ngữ được huấn luyện trước. Thông tin bổ sung này có thể gây ra overfitting tiềm ẩn, ngoài việc tăng thời gian tính toán và chi phí GPU. Thứ ba, các bài báo hiện tại sử dụng các mô hình ngôn ngữ được huấn luyện trước phổ biến làm bộ xếp hạng lại là không đủ do tốc độ phát triển nhanh chóng của LLM. Với những đột phá gần đây từ LLM, các nhà nghiên cứu tò mò về cách LLM thực hiện (mà không cần tinh chỉnh) trong nhiệm vụ xếp hạng lại.
+
+Để giải quyết những thách thức và hạn chế này, chúng tôi đề xuất một phương pháp dựa trên đồ thị tài liệu, trong đó mỗi nút đại diện cho một tài liệu, và mỗi cạnh đại diện cho việc có các khái niệm chung giữa hai tài liệu. Chúng tôi kết hợp thông tin kết nối giữa các tài liệu khác nhau vào các đặc trưng cạnh và cập nhật các đặc trưng cạnh thông qua cơ chế truyền thông điệp. Đối với các đặc trưng nút, mặc dù chúng tôi muốn thêm thông tin AMR để tạo ra sự hiểu biết phong phú hơn về ngữ nghĩa phức tạp, chúng tôi sẽ không thêm tràn lan tất cả các token liên quan đến AMR làm đặc trưng cấp độ nút. Thay vào đó, chúng tôi điều tra yếu tố quyết định giúp bộ xếp hạng lại xác định các tài liệu liên quan hơn và mã hóa yếu tố chính này vào các đặc trưng nút.
+
+Hơn nữa, thay vì sử dụng hàm mất mát cross-entropy trong quá trình huấn luyện, chúng tôi áp dụng mất mát xếp hạng cặp đôi với mục đích cốt lõi của việc xếp hạng. Chúng tôi cũng điều tra hiệu suất của một LLM có sẵn công khai, tức là PaLM 2 [9] với các phiên bản khác nhau, như một bộ xếp hạng lại trên ODQA. Dựa trên hiệu suất vừa phải của PaLM 2 trong các nhiệm vụ xếp hạng lại, chúng tôi cung cấp một số lý do tiềm ẩn và nhấn mạnh vai trò không thể thay thế của thiết kế mô hình xếp hạng lại để cải thiện RAG. Khung công tác xếp hạng lại dựa trên đồ thị trong G-RAG được đề xuất được minh họa trong Hình 1. Để cung cấp minh họa rõ ràng hơn về quy trình của phương pháp chúng tôi, vui lòng tham khảo Hình 4 trong Phụ lục.
+
+Các đóng góp của chúng tôi có thể được tóm tắt như sau:
+1. Để cải thiện RAG cho ODQA, chúng tôi đề xuất một bộ xếp hạng lại dựa trên đồ thị tài liệu tận dụng các kết nối giữa các tài liệu khác nhau. Khi các tài liệu chia sẻ thông tin tương tự với các nút lân cận của chúng, nó giúp bộ xếp hạng lại thành công xác định các tài liệu chứa ngữ cảnh câu trả lời chỉ có kết nối yếu với câu hỏi.
+
+2. Chúng tôi giới thiệu các thước đo mới để đánh giá một loạt các tình huống xếp hạng, bao gồm những tình huống có điểm xếp hạng bằng nhau. Các thước đo này đánh giá hiệu quả tình huống này bằng cách giảm thiểu hiệu ứng lạc quan được mang lại bởi các xếp hạng bằng nhau. Dựa trên các thước đo này, phương pháp được đề xuất của chúng tôi vượt trội so với tiên tiến và yêu cầu ít tài nguyên tính toán hơn.
+
+3. Chúng tôi đánh giá hiệu suất của một LLM có sẵn công khai (PaLM 2 [9]) như một bộ xếp hạng lại, khám phá các biến thể trên các kích thước mô hình khác nhau. Chúng tôi thấy rằng việc có quá nhiều điểm bằng nhau trong các điểm xếp hạng được tạo ra cản trở hiệu quả của các mô hình ngôn ngữ lớn được huấn luyện trước trong việc cải thiện RAG thông qua xếp hạng lại.
+
+2
+
+--- TRANG 3 ---
+2 Nghiên cứu Liên quan
+RAG trong ODQA. RAG [20,35] kết hợp truy xuất thông tin (qua Dense Passage Retrieval, DPR [16]) và một quá trình đọc theo cách có thể vi phân cho ODQA. Một dòng tài liệu tập trung vào việc phát triển các bộ xếp hạng lại để cải thiện thêm RAG. Các phương pháp như monoT5 [30] và monoELECTRA [34] sử dụng các mô hình được huấn luyện trước được đề xuất. Hơn nữa, Zhuang et al. [47] đề xuất một phiên bản T5 được tinh chỉnh như một bộ xếp hạng lại. Gần đây hơn, Park et al. [33] phát triển một mô-đun xếp hạng lại bằng cách tinh chỉnh các mạng nơ-ron của bộ đọc thông qua một phương pháp nhắc nhở. Tuy nhiên, các phương pháp trên bỏ qua việc điều tra các kết nối giữa các tài liệu và không tận dụng thông tin này trong quá trình xếp hạng lại. Những phương pháp này dễ bị thất bại trong việc xác định các tài liệu chứa câu trả lời vàng có thể không thể hiện các kết nối rõ ràng với ngữ cảnh câu hỏi. Để giải quyết vấn đề này, phương pháp được đề xuất của chúng tôi dựa trên đồ thị tài liệu và có nhiều khả năng xác định thông tin có giá trị chứa trong một tài liệu nếu hầu hết các nút tài liệu lân cận của nó trong đồ thị chia sẻ thông tin tương tự.
+
+Đồ thị trong ODQA. Đồ thị tri thức, đại diện cho các thực thể và mối quan hệ của chúng, đã được tận dụng trong ODQA [46,15,1,5] để cải thiện hiệu suất của RAG. Tuy nhiên, các phương pháp dựa trên KG yêu cầu các cơ sở tri thức bên ngoài lớn và ánh xạ thực thể từ tài liệu đến các thực thể trong đồ thị tri thức, điều này sẽ tăng chi phí bộ nhớ. Phương pháp được đề xuất của chúng tôi không phụ thuộc vào đồ thị tri thức bên ngoài. Trong khi nghiên cứu gần đây của Wang et al. [42] sử dụng đồ thị AMR được tạo từ câu hỏi và tài liệu để xây dựng các embedding, trọng tâm của họ vẫn là các mối quan hệ cấp độ văn bản trong tài liệu đơn lẻ. Ngược lại, phương pháp của chúng tôi tận dụng độc đáo đồ thị tài liệu để đặc trưng hóa các kết nối liên tài liệu, một ứng dụng mới trong quá trình xếp hạng lại RAG.
+
+Biểu diễn Ý nghĩa Trừu tượng (AMR). AMR [4] phục vụ như một công cụ hứa hẹn để đại diện cho ngữ nghĩa văn bản thông qua một đồ thị có hướng, có gốc. Trong đồ thị AMR, các nút đại diện cho các đơn vị ngữ nghĩa cơ bản như thực thể và khái niệm, trong khi các cạnh biểu thị các kết nối giữa chúng. Đồ thị AMR có thông tin ngữ nghĩa có cấu trúc hơn so với dạng chung của ngôn ngữ tự nhiên [2,29]. Một dòng tài liệu đã tích hợp đồ thị AMR vào các mô hình học tập. Gần đây, Wang et al. [42] đã áp dụng AMR cho ODQA để xử lý thông tin ngữ nghĩa phức tạp. Mặc dù hiệu suất của bộ xếp hạng lại và bộ đọc được cải thiện trong [42], phương pháp của họ cũng tăng thời gian tính toán và chi phí bộ nhớ GPU. Vấn đề này có thể phát sinh do tích hợp tất cả các token của các nút và cạnh AMR mà không lựa chọn có ý thức các yếu tố chính. Để giải quyết vấn đề này, phương pháp của chúng tôi nhằm điều tra cấu trúc đồ thị của đồ thị AMR và xác định các yếu tố chính cải thiện hiệu suất của bộ xếp hạng lại.
+
+LLMs trong Xếp hạng lại. LLMs như ChatGPT [31], PaLM 2 [9], LLaMA [38], và GPT4 [32], đã chứng minh khả năng cung cấp câu trả lời cho một phạm vi rộng các câu hỏi do kho tri thức rộng lớn và khả năng lập luận chuỗi suy nghĩ của chúng. Với đột phá này, các nhà nghiên cứu đang tìm cách khám phá những cải tiến tiềm năng mà LLMs có thể mang lại để cải thiện RAG trong ODQA, chẳng hạn như [12,26]. Đồng thời, một số nghiên cứu [41,37] đã xem xét kỹ lưỡng hiệu quả của LLMs trong Trả lời Câu hỏi. Wang et al. [41] chỉ ra sự vượt trội của phương pháp DPR [16] + FiD [13] so với LLM trong ODQA. Trong khi một số bài báo đã chứng minh cải thiện trong hiệu suất xếp hạng lại LLM, điều quan trọng cần lưu ý là những cải tiến này thường liên quan đến các kỹ thuật bổ sung như tạo truy vấn tăng cường [36] hoặc nhiệm vụ xếp hạng có điều kiện [11], có thể không trực tiếp phù hợp với cài đặt zero-shot của chúng tôi. Bài báo gần đây [28] chứng minh rằng LLM là một bộ xếp hạng lại few-shot tốt và điều tra các tình huống khác nhau nơi LLMs zero-shot hoạt động kém. Nó cũng cung cấp nỗ lực để giải quyết những thách thức này bằng cách kết hợp các kỹ thuật khác nhau, chẳng hạn như sử dụng các mô hình ngôn ngữ nhỏ hơn. Mặc dù có những điều tra này, tiềm năng của LLMs mà không cần tinh chỉnh như các bộ xếp hạng lại để cải thiện RAG vẫn chưa được khám phá, vì các nghiên cứu hiện tại thường lấy các mô hình ngôn ngữ được huấn luyện trước như BERT [6], RoBERTa [23], và BART [19] trong vai trò bộ xếp hạng lại.
+
+3 Phương pháp Đề xuất: G-RAG
+G-RAG tận dụng thông tin cấu trúc và ngữ nghĩa phong phú được cung cấp bởi các đồ thị AMR để nâng cao xếp hạng lại tài liệu. Phần 3.1 chi tiết cách chúng tôi sử dụng thông tin đồ thị AMR và xây dựng cấu trúc đồ thị giữa các tài liệu đã truy xuất. Phần 3.2 phác thảo thiết kế kiến trúc mạng nơ-ron đồ thị của chúng tôi để xếp hạng lại tài liệu.
+
+3
+
+--- TRANG 4 ---
+3.1 Thiết lập Đồ thị Tài liệu qua AMR
+Trong các bộ dữ liệu ODQA mà chúng tôi xem xét, một tài liệu là một khối văn bản gồm 100 từ đến từ kho văn bản. Đối với mỗi cặp câu hỏi-tài liệu, chúng tôi nối câu hỏi q và tài liệu p như "question:<question text><document text> " và sau đó khai thác AMRBART [3] để phân tích chuỗi thành một đồ thị AMR đơn lẻ. Đồ thị AMR cho câu hỏi q và tài liệu p được ký hiệu là Gqp = {V, E}, trong đó V và E là các nút và cạnh, tương ứng. Mỗi nút là một khái niệm, và mỗi cạnh được ký hiệu là e = (s, r, d) trong đó s, r, d đại diện cho nút nguồn, mối quan hệ, và nút đích, tương ứng. Bộ xếp hạng lại của chúng tôi nhằm xếp hạng trong số 100 tài liệu hàng đầu được truy xuất bởi DPR [16]. Do đó, với một câu hỏi q và các tài liệu {p1,···, pn} với n = 100, chúng tôi thiết lập đồ thị tài liệu không có hướng Gq = {V,E} dựa trên AMRs {Gqp1,···, Gqpn}. Đối với mỗi nút vi ∈ V, nó tương ứng với tài liệu pi. Đối với vi, vj ∈ V, i ≠ j, nếu các AMR tương ứng Gqpi và Gqpj có các nút chung, sẽ có một cạnh không có hướng giữa vi và vj (với một chút lạm dụng ký hiệu) được ký hiệu là eij = (vi, vj) ∈ E. Chúng tôi loại bỏ các nút cô lập trong Gq. Trong phần tiếp theo, chúng tôi sẽ xây dựng các mạng nơ-ron đồ thị dựa trên đồ thị tài liệu để dự đoán liệu tài liệu có liên quan đến câu hỏi hay không. Vui lòng tham khảo Phụ lục A để biết thống kê đồ thị AMR, tức là số lượng nút và cạnh trong đồ thị AMR, của các bộ dữ liệu phổ biến trong ODQA.
+
+3.2 Mạng Nơ-ron Đồ thị cho Xếp hạng lại
+Theo Phần 3.1, chúng tôi xây dựng một đồ thị giữa n = 100 tài liệu đã truy xuất được ký hiệu là Gq với câu hỏi q. Chúng tôi nhằm khai thác cả thông tin cấu trúc và thông tin ngữ nghĩa AMR để xếp hạng lại các tài liệu đã truy xuất. Để tích hợp thông tin ngữ nghĩa của tài liệu, các mô hình ngôn ngữ được huấn luyện trước như BERT [6], và RoBERTa [23] là những công cụ mạnh mẽ để mã hóa văn bản tài liệu như các đặc trưng nút trong mạng nơ-ron đồ thị. Mặc dù Wang et al. [42] tích hợp thông tin AMR vào LMs, nó tăng thời gian tính toán và sử dụng bộ nhớ GPU. Để giải quyết điều này, chúng tôi đề xuất các đặc trưng nút và cạnh cho mạng nơ-ron đồ thị, đồng thời khai thác thông tin cấu trúc và ngữ nghĩa của AMR nhưng tránh thêm thông tin dư thừa.
+
+3.2.1 Tạo Đặc trưng Nút
+Khung công tác của chúng tôi áp dụng một mô hình ngôn ngữ được huấn luyện trước để mã hóa tất cả n tài liệu đã truy xuất trong {p1, p2,···, pn} với câu hỏi q. Embedding tài liệu được ký hiệu là X̃ ∈ Rn×d trong đó d là chiều ẩn, và mỗi hàng của X̃ được cho bởi
+x̃i = Encode(pi) for i ∈ {1,2,···n}. (1)
+
+Vì AMR mang lại thông tin ngữ nghĩa phức tạp và hữu ích hơn, chúng tôi có ý định nối văn bản tài liệu và thông tin AMR tương ứng làm đầu vào của bộ mã hóa. Tuy nhiên, nếu chúng tôi tích hợp tất cả thông tin vào quá trình embedding như công trình trước đây [42] đã làm, nó sẽ mang lại chi phí tính toán cao và có thể dẫn đến overfitting. Để tránh điều này, chúng tôi điều tra yếu tố quyết định giúp bộ xếp hạng lại xác định các tài liệu liên quan hơn. Bằng cách nghiên cứu cấu trúc của AMRs cho các tài liệu khác nhau, chúng tôi lưu ý rằng hầu như mọi AMR đều có nút "question", trong đó từ "question" được bao gồm trong đầu vào của mô hình phân tích AMR, được cho bởi "question:<question text><document text> ". Do đó, chúng tôi có thể tìm đường đi ngắn nhất nguồn đơn bắt đầu từ nút "question". Khi liệt kê mọi đường đi, kết nối tiềm ẩn từ câu hỏi đến câu trả lời trở nên rõ ràng hơn nhiều. Bằng cách xem xét các nút được bao phủ trong mỗi đường đi, cả thông tin cấu trúc và ngữ nghĩa có thể được thu thập. Embedding cho phép chúng tôi sử dụng thông tin đó để xác định sự tương tự giữa ngữ cảnh câu hỏi và tài liệu.
+
+Để minh họa tốt hơn cấu trúc của đường đi ngắn nhất, chúng tôi cũng tiến hành một số thí nghiệm để hiển thị thống kê của đường đi ngắn nhất, xem Hình 3 trong Phụ lục. Chúng tôi nghiên cứu các đường đi nguồn đơn ngắn nhất (SSSPs) bắt đầu từ "question" trong đồ thị AMR của các tài liệu từ tập huấn luyện của Natural Question (NQ) [18] và TriviaQA (TQA) [14]. Phân tích cho thấy một số tài liệu tiêu cực không thể thiết lập kết nối đầy đủ với ngữ cảnh câu hỏi trong văn bản của chúng. Hơn nữa, các tài liệu tiêu cực gặp phải một tình huống cực đoan khác trong đó các đường đi chứa nhiều thông tin liên quan đến văn bản câu hỏi nhưng thiếu thông tin có giá trị như câu trả lời vàng. Mẫu độc đáo này cung cấp cái nhìn sâu sắc có giá trị có thể được sử dụng trong quá trình mã hóa để cải thiện hiệu suất bộ xếp hạng lại.
+
+4
+
+--- TRANG 5 ---
+Do đó, embedding tài liệu được đề xuất được cho bởi X ∈ Rn×d và mỗi hàng của X có thể được cho bởi, for i ∈ {1,2,···n}:
+xi = Encode(concat(pi, ai)), (2)
+trong đó ai là một chuỗi từ, đại diện cho thông tin AMR liên quan đến tài liệu pi. Có hai bước để có được biểu diễn của ai: 1) Xác định Đường đi: Đầu tiên, các đường đi nguồn đơn ngắn nhất (SSSPs) được xác định bắt đầu từ nút được gắn nhãn "question" trong đồ thị AMR Gqpi. Mỗi đường đi được xác định không nên là tập con của đường đi khác. Ví dụ, xem xét các đường đi sau được tạo thành từ các khái niệm nút: ['question', 'cross', 'world-region', 'crucifix', 'number', 'be-located-at', 'country', 'Spain'], ['question', 'cross', 'religion', 'Catholicism', 'belief', 'worship']; 2) Trích xuất Khái niệm Nút: Tiếp theo, các khái niệm nút dọc theo những đường đi được xác định này được trích xuất để xây dựng ai. Trong ví dụ được cung cấp, ai được hình thành như sau: "question cross world-region crucifix number be-located-at country Spain religion Catholicism belief worship". X ∈ Rn×d (2) sẽ là biểu diễn nút ban đầu của mạng nơ-ron đồ thị.
+
+3.2.2 Đặc trưng Cạnh
+Bên cạnh các đặc trưng nút, chúng tôi cũng tận dụng đầy đủ các đặc trưng cạnh liên quan đến các cạnh không có hướng trong AMR {Gqp1,···, Gqpn}. Cho Ê ∈ Rn×n×l biểu thị các đặc trưng cạnh của đồ thị. Sau đó, Êij· ∈ Rl đại diện cho vector đặc trưng l-chiều của cạnh giữa nút vi và nút vj i ≠ j, và Êijk biểu thị chiều thứ k của đặc trưng cạnh trong Êij·. Trong khung công tác của chúng tôi, l = 2 và Ê được cho bởi:
+
+Êij· = 0, không có kết nối giữa Gqpi và Gqpj,
+Êij1 = # nút chung giữa Gqpi và Gqpj,
+Êij2 = # cạnh chung giữa Gqpi và Gqpj. (3)
+
+Sau đó chúng tôi chuẩn hóa đặc trưng cạnh Ê để tránh quy mô bùng nổ của các đặc trưng nút đầu ra khi được nhân với đặc trưng cạnh trong các phép toán tích chập đồ thị. Do đó, đặc trưng E dẫn xuất của chúng tôi được chuẩn hóa trên chiều thứ nhất và thứ hai, tương ứng. Chuẩn hóa cạnh tương tự cũng đã được xem xét trong bài báo [8]. E ∈ Rn×n×l sẽ là biểu diễn cạnh ban đầu của mạng nơ-ron đồ thị.
+
+3.2.3 Cập nhật Biểu diễn
+Dựa trên các biểu diễn nút và cạnh ban đầu ở trên, chúng tôi đi đến việc cập nhật biểu diễn trong mạng nơ-ron đồ thị. Cho một đồ thị tài liệu G(V,E) với |V| = n, đặc trưng đầu vào của nút v ∈ V được ký hiệu là x⁰v ∈ Rd, và biểu diễn ban đầu của cạnh giữa nút v và u được cho bởi e⁰uv ∈ Rl với l = 2. Cho N(v) biểu thị các nút lân cận của nút v ∈ V. Biểu diễn của nút v ∈ V tại tầng ℓ có thể được dẫn xuất từ một mô hình GNN được cho bởi:
+xℓv = g(xℓ⁻¹v, [u∈N(v) f(xℓ⁻¹u, eℓ⁻¹uv)]), (4)
+trong đó f, S và g là các hàm để tính toán đặc trưng, tổng hợp dữ liệu, và cập nhật biểu diễn nút, tương ứng. Cụ thể, hàm f áp dụng các đặc trưng cạnh chiều khác nhau như trọng số cho các đặc trưng nút, được cho bởi
+f(xℓ⁻¹u, eℓ⁻¹uv) = Σm=1ˡ eℓ⁻¹uv(m)xℓ⁻¹u. (5)
+
+Chúng tôi chọn aggregator trung bình [17] như phép toán S. Hàm tham số g là một hàm có thể học phi tuyến tính tổng hợp biểu diễn của nút và các nút lân cận của nó. Đồng thời, biểu diễn của cạnh bắt đầu từ v ∈ V tại tầng ℓ được cho bởi:
+eℓv· = g(eℓ⁻¹v·, [u∈N(v) eℓ⁻¹u·]). (6)
+
+5
+
+--- TRANG 6 ---
+3.2.4 Điểm Xếp hạng lại và Mất mát Huấn luyện
+Cho một câu hỏi q và đồ thị tài liệu Gq = {V,E}, chúng tôi có các biểu diễn nút đầu ra của GNN, tức là xᴸv, trong đó L là số tầng GNN. Với cùng bộ mã hóa trong (2), câu hỏi q được embedding thành
+y = Encode(q). (7)
+
+Điểm xếp hạng lại cho mỗi nút vi ∈ V tương ứng với tài liệu pi được tính bởi
+si = y⊤xᴸvi, (8)
+for i = 1,···, n và |V| = n. Mất mát huấn luyện cross-entropy của xếp hạng tài liệu cho câu hỏi q được cho là:
+Lq = -Σi=1ⁿ yi log(exp(si)/Σj=1ⁿ exp(sj)) (9)
+trong đó yi = 1 nếu pi là tài liệu tích cực, và 0 cho tài liệu tiêu cực. Mất mát cross-entropy có thể thất bại trong việc xử lý dữ liệu không cân bằng trong ODQA trong đó số lượng tài liệu tiêu cực lớn hơn nhiều so với số lượng tài liệu tích cực. Bên cạnh hàm mất mát cross-entropy, hàm mất mát cặp đôi đã là một công cụ mạnh mẽ cho xếp hạng [21]. Cho một cặp điểm si và sj, mất mát xếp hạng được cho bởi:
+RLq(si, sj, r) = max(0, -r(si-sj) + 1), (10)
+trong đó r = 1 nếu tài liệu i nên được xếp hạng cao hơn tài liệu j, và ngược lại cho r = -1. Chúng tôi tiến hành thí nghiệm dựa trên cả hai hàm mất mát và nhấn mạnh lợi thế của mất mát xếp hạng (10) so với mất mát cross-entropy (9).
+
+4 Thí nghiệm
+4.1 Cài đặt
+Bộ dữ liệu. Chúng tôi tiến hành thí nghiệm trên hai bộ dữ liệu ODQA đại diện là Natural Questions (NQ) [18] và TriviaQA (TQA) [14]. NQ được dẫn xuất từ Google Search Queries và TQA bao gồm các câu hỏi từ các trang web trivia và quiz-league. Thống kê chi tiết bộ dữ liệu được trình bày trong Bảng 4 trong Phụ lục A. Lưu ý rằng danh sách câu trả lời vàng trong bộ dữ liệu NQ thường có ít phần tử hơn nhiều so với bộ dữ liệu TQA, dẫn đến số lượng tài liệu tích cực nhỏ hơn nhiều cho mỗi câu hỏi.
+
+Chúng tôi sử dụng DPR [16] để truy xuất 100 tài liệu cho mỗi câu hỏi và tạo đồ thị AMR cho mỗi cặp câu hỏi-tài liệu sử dụng AMRBART [3]. Bộ dữ liệu với đồ thị AMR được cung cấp bởi [42]¹. Vui lòng tham khảo Phụ lục A để biết thêm chi tiết về thông tin thống kê AMR. Chúng tôi tiến hành thí nghiệm trên Tesla A100 40GB GPU, chứng minh nhu cầu tính toán thấp của G-RAG.
+
+Chi tiết Mô hình. Đối với các mô hình xếp hạng lại dựa trên GNN, chúng tôi áp dụng Mạng Tích chập Đồ thị 2 tầng [17] với chiều ẩn được chọn từ {8,64,128} qua điều chỉnh siêu tham số. Tỷ lệ dropout được chọn từ {0.1,0.2,0.4}. Chúng tôi khởi tạo các đặc trưng nút GNN sử dụng các mô hình được huấn luyện trước, ví dụ, BERT [6], GTE [22], BGE [44], Ember [24]. Chúng tôi dựa việc triển khai mô hình embedding trên thư viện HuggingFace Transformers [43]. Để huấn luyện khung công tác của chúng tôi, chúng tôi áp dụng bộ tối ưu AdamW [25] với tỷ lệ học được chọn từ {5e-5,1e-4,5e-4}. Kích thước batch được đặt là 5. Chúng tôi đặt việc làm ấm tỷ lệ học với 1,000 bước. Số bước huấn luyện tổng cộng là 50k, và mô hình được đánh giá mỗi 10k bước.
+
+4.1.1 Thước đo
+Mặc dù độ chính xác Top-K, trong đó xếp hạng ground-truth dựa trên điểm DPR [16], thường được sử dụng trong đo lường xếp hạng lại [7,13], thước đo này không phù hợp để chỉ ra hiệu suất xếp hạng lại tổng thể cho tất cả các tài liệu tích cực. Hơn nữa, với sự phát triển hứa hẹn của LLM trong việc học mối liên quan giữa văn bản, điểm DPR có thể mất lợi thế và tính công bằng. Để giải quyết vấn đề này, các thước đo khác như Mean Reciprocal Rank (MRR) và Mean Hits@10 (MHits@10) được sử dụng để đo lường hiệu suất xếp hạng lại [42]. Cụ thể, điểm Mean Reciprocal Rank (MRR) của tài liệu tích cực được cho bởi MRR = 1/|Q| Σq∈Q (1/|P⁺| Σp∈P⁺ 1/rp), trong đó Q là tập câu hỏi từ bộ dữ liệu đánh giá, P⁺ là tập tài liệu tích cực, và rp là xếp hạng của tài liệu p được ước tính bởi bộ xếp hạng lại. MHits@10 chỉ ra tỷ lệ phần trăm của các tài liệu tích cực được xếp hạng trong Top 10, được cho bởi MHits@10 = 1/|Q| Σq∈Q (1/|P⁺| Σp∈P⁺ I(rp ≤ 10)), trong đó chỉ số I(A) = 1 nếu sự kiện A là đúng, ngược lại 0.
+
+Các thước đo trên hoạt động tốt cho hầu hết các trường hợp, tuy nhiên, chúng có thể thất bại trong việc đặc trưng hóa công bằng hiệu suất xếp hạng khi có sự bằng nhau trong điểm xếp hạng, điều này phổ biến trong điểm liên quan được tạo bởi LLMs như ChatGPT [31], PaLM 2 [9], LLaMA [38], và GPT4 [32]. Vui lòng tham khảo Hình 5 trong Phụ lục để biết prompt chi tiết và kết quả của điểm liên quan giữa câu hỏi và tài liệu. Để giải quyết sự bằng nhau trong điểm xếp hạng, chúng tôi đề xuất các biến thể của MRR và MHits@10. Ký hiệu r(t)p là xếp hạng của tài liệu p với t sự bằng nhau. Nói cách khác, điểm liên quan giữa câu hỏi và tài liệu p giống với t-1 tài liệu khác. Biến thể của MRR cho xếp hạng bằng nhau được đặt tên là Mean Tied Reciprocal Ranking (MTRR), được biểu diễn là
+MTRR = 1/|Q| Σq∈Q 1/|P⁺| Σp∈P⁺ [1/r(t)p I(t=1) + 2/(r(t)p + r(t)p + t - 1) I(t>1)]. (11)
+
+Thước đo MTRR giải quyết xếp hạng bằng nhau r(t)p được ước tính bởi bộ xếp hạng lại qua việc tính trung bình xếp hạng lạc quan r(t)p và xếp hạng bi quan r(t)p + t - 1. Các thước đo MRR và MTRR giống nhau khi không có sự bằng nhau trong xếp hạng. Biến thể của MHits@10 cho xếp hạng bằng nhau là Tied Mean Hits@10 (TMHit@10). Ký hiệu H(p) là tập bao gồm tất cả các xếp hạng {r(ti)pi} cao hơn xếp hạng của tài liệu p, tức là r(τ)p. Dựa trên các ký hiệu này, chúng tôi trình bày thước đo mới như:
+TMHits@10 = 1/|Q| Σq∈Q 1/|P⁺| Σp∈P⁺ Hits@10(p), (12)
+trong đó Hits@10(p) được định nghĩa là
+
+0, nếu Σi ti > 10 cho ∀r(ti)pi ∈ H(p),
+(10 - Σi ti)/τ, nếu 0 < Σi ti < 10 cho ∀r(ti)pi ∈ H(p) và τ > 1,
+10/τ, nếu H(p) = ∅ và τ > 10,
+1, nếu không.
+
+Nếu có sự bằng nhau trong xếp hạng Top-10, thước đo TMHit@10 giảm thiểu hiệu ứng lạc quan bằng cách chia số lần trúng (không lớn hơn 10) cho số lượng sự bằng nhau.
+
+6
+
+--- TRANG 7 ---
+4.2 So sánh Hệ thống Xếp hạng lại
+Chúng tôi so sánh thuật toán được đề xuất với các baseline như sau với siêu tham số cố định và không tinh chỉnh, trong đó chiều ẩn là 8, tỷ lệ dropout là 0.1, và tỷ lệ học là 1e-4.
+
+w/o reranker: Không có bộ xếp hạng lại bổ sung, điểm xếp hạng dựa trên điểm truy xuất được cung cấp bởi DPR [16].
+
+BART: Mô hình ngôn ngữ được huấn luyện trước BART [19] phục vụ như bộ xếp hạng lại.
+
+BART-GST: Phương pháp này tích hợp graph-as-token vào mô hình được huấn luyện trước [42]. Đối với mỗi bộ dữ liệu, chúng tôi sử dụng hiệu suất tốt nhất được cung cấp trong bài báo.
+
+RGCN-S [42] xếp chồng mô hình RGCN lên trên transformer. Mặc dù phương pháp này dựa trên mạng nơ-ron đồ thị, nó không dựa vào đồ thị tài liệu, mà xây dựng các nút trong mô hình đồ thị dựa trên việc căn chỉnh văn bản trong các cặp câu hỏi-tài liệu.
+
+MLP: Các đặc trưng nút ban đầu chỉ dựa trên văn bản tài liệu như được mô tả trong (1) với bộ mã hóa BERT [6]. Sau khi các đặc trưng nút đi qua MLP, chúng tôi có được điểm liên quan qua (8) và lấy hàm cross-entropy (9) làm mất mát huấn luyện.
+
+GCN: Bên cạnh việc cập nhật biểu diễn nút qua GCN, cài đặt còn lại giống như MLP. Chúng tôi cũng tiến hành thí nghiệm với các mô hình GNN khác nhau. Vui lòng tham khảo Phụ lục B để biết chi tiết.
+
+G-RAG: Các đặc trưng nút ban đầu dựa trên văn bản tài liệu và thông tin AMR như được mô tả trong (2). Phần còn lại của cài đặt giống như GCN.
+
+G-RAG-RL: Sử dụng hàm mất mát xếp hạng và giữ cài đặt khác giống như G-RAG.
+
+[THIS IS TABLE: Bảng 1 showing results for NQ and TQA datasets with various strategies and their MRR and MH scores]
+
+Kết quả về MRR và MHits@10 trên bộ dữ liệu NQ và TQA được cung cấp trong Bảng 1. Lưu ý rằng kết quả trên NQ luôn vượt trội so với kết quả trên TQA, điều này do số lượng tài liệu tích cực nhỏ hơn khiến việc đưa hầu hết các tài liệu tích cực vào Top 10 trở nên dễ dàng. Nói chung, TQA là một bộ dữ liệu phức tạp và mạnh mẽ hơn NQ. Các mô hình với phương pháp dựa trên đồ thị, như GCN và G-RAG, cho thấy hiệu suất cạnh tranh trên các thước đo. Những phương pháp này có lợi thế so với các mô hình baseline, tức là không có bộ xếp hạng lại và MLP. Kết luận, dựa trên kết quả mô phỏng, phương pháp được đề xuất G-RAG-RL nổi lên như một mô hình mạnh mẽ, cho thấy hiệu quả của các chiến lược dựa trên đồ thị và lợi ích của mất mát xếp hạng cặp đôi trong việc xác định các tài liệu tích cực. Để làm nổi bật lợi thế của G-RAG được đề xuất so với các benchmark tiên tiến, chúng tôi đã tiến hành thí nghiệm trên các mô hình embedding khác nhau với tham số tinh chỉnh trong phần tiếp theo.
+
+[THIS IS TABLE: Bảng 2 showing results of PaLM 2 as reranker comparing with other methods]
+
+7
+
+--- TRANG 8 ---
+4.3 Sử dụng các LLM khác nhau làm Mô hình Embedding
+Bộ mã hóa đặc trưng luôn đóng vai trò quan trọng trong các nhiệm vụ NLP. Các mô hình embedding tốt hơn có nhiều khả năng lấy được sự tương tự giữa các ngữ cảnh và giúp xác định ngữ cảnh có liên quan cao. Bên cạnh mô hình BERT được sử dụng trong bộ xếp hạng lại tiên tiến, nhiều mô hình embedding hứa hẹn đã được đề xuất gần đây. Để đánh giá hiệu quả của các mô hình embedding khác nhau, tức là BERT [6], GTE [22], BGE [44], Ember [24], chúng tôi tiến hành thí nghiệm dưới cùng cài đặt như G-RAG-RL. Kết quả được trình bày trong Bảng 3. Để thuận tiện, chúng tôi trực tiếp thêm hai kết quả từ Phần 4.2: BART-GST và BERT. Ember thực hiện nhất quán tốt trên tất cả các đánh giá. Kết luận, Ember dường như là mô hình có hiệu suất cao nhất, theo sát là GTE và BGE, trong khi BART-GST và BERT cho thấy hiệu suất hơi thấp hơn trên các thước đo được đánh giá. Do đó kết quả tinh chỉnh của chúng tôi dựa trên G-RAG-RL với Ember như mô hình embedding. Cài đặt tìm kiếm lưới cho siêu tham số được giới thiệu trong Phần 4.1. Chúng tôi chỉ chạy 10k lần lặp cho mỗi cài đặt và chọn cái có MRR tốt nhất. Kết quả với điều chỉnh siêu tham số, tức là Ember (HPs-T), được thêm vào Bảng 3. Mặc dù BART-GST chứng minh hiệu suất cạnh tranh trong một số tình huống, nó dễ bị overfitting đặc biệt về MRR trên bộ dữ liệu NQ. Tuy nhiên, các phương pháp được đề xuất, tức là Ember và Ember (HPs-T), có nhiều khả năng tránh overfitting và đạt điểm cao nhất trên tất cả các tập kiểm tra.
+
+[THIS IS TABLE: Bảng 3 showing G-RAG performance with different embedding models across NQ and TQA datasets]
+
+4.4 Điều tra Điểm PaLM 2
+Để đánh giá hiệu suất của các mô hình ngôn ngữ lớn trong nhiệm vụ xếp hạng lại, chúng tôi tiến hành thí nghiệm zero-shot trên tập dev & test của bộ dữ liệu NQ và TQA. Một ví dụ về điểm liên quan được tạo bởi LLM được minh họa trong Hình 5 trong Phụ lục.
+
+Nói chung, chúng tôi quan sát thấy rằng điểm được tạo bởi PaLM 2 là các số nguyên từ 0 đến 100 chia hết cho 5. Điều này thường dẫn đến sự bằng nhau trong xếp hạng tài liệu. Để giải quyết sự bằng nhau trong điểm xếp hạng, chúng tôi sử dụng các thước đo được đề xuất MTRR (Eq. 11) và TMHits@10 (Eq. 12) để đánh giá hiệu suất của bộ xếp hạng lại dựa trên PaLM 2 [9]. Để thuận tiện so sánh, chúng tôi sao chép kết quả w/o rerank, BART, và G-RAG từ Phần 4.2. Vì không có xếp hạng bằng nhau được cung cấp bởi w/o rerank và BART, MRR và MHits@10 có cùng giá trị như MTRR và TMhits@10, tương ứng.
+
+Kết quả hiệu suất được cung cấp trong Bảng 2. Kết quả chứng minh rằng LLMs với việc học zero-shot không thực hiện tốt trong các nhiệm vụ xếp hạng lại. Điều này có thể được gây ra bởi quá nhiều sự bằng nhau trong điểm liên quan, đặc biệt đối với LLM kích thước nhỏ nơi có nhiều hơn. Kết quả này nhấn mạnh tầm quan trọng của thiết kế mô hình xếp hạng lại trong RAG ngay cả trong kỷ nguyên LLM. Nhiều ví dụ định tính hơn dựa trên PaLM 2 được cung cấp trong Phụ lục C.
+
+Chúng tôi so sánh kết quả của cả hai phương pháp với G-RAG mang lại góc nhìn bổ sung cho những kết quả này. Tận dụng thông tin về kết nối của các thực thể qua các tài liệu và bản thân các tài liệu mang lại cải thiện đáng kể lên đến 7 điểm phần trăm.
+
+5 Kết luận
+Mô hình được đề xuất của chúng tôi, G-RAG, giải quyết các hạn chế trong các phương pháp ODQA hiện tại bằng cách tận dụng các kết nối ẩn giữa các tài liệu và tích hợp thông tin AMR một cách chiến lược. Phương pháp của chúng tôi xác định các tài liệu có thông tin có giá trị tốt hơn đáng kể ngay cả khi thông tin này chỉ có kết nối yếu với ngữ cảnh câu hỏi. Điều này xảy ra vì các tài liệu được kết nối bởi đồ thị tài liệu chia sẻ thông tin có liên quan cho câu trả lời cuối cùng. Chúng tôi tích hợp thông tin AMR chính để cải thiện hiệu suất mà không tăng chi phí tính toán. Chúng tôi cũng đề xuất hai thước đo để đánh giá công bằng hiệu suất của một loạt các tình huống xếp hạng bao gồm điểm xếp hạng bằng nhau. Hơn nữa, điều tra của chúng tôi về hiệu suất của PaLM 2 như một bộ xếp hạng lại nhấn mạnh tầm quan trọng của thiết kế mô hình xếp hạng lại trong RAG, vì ngay cả một LLM được huấn luyện trước tiên tiến cũng có thể gặp thách thức trong nhiệm vụ xếp hạng lại.
+
+Gần đây, các bài báo như [27,36] đã giới thiệu các phương pháp xếp hạng lại tài liệu theo danh sách sử dụng LLMs. Mặc dù vậy, thước đo MTRR được đề xuất của chúng tôi vẫn hợp lệ để so sánh với các phương pháp của họ được đo bằng MRR (được đề cập trong bài báo [27]). Do đó phương pháp của chúng tôi có tiềm năng được áp dụng rộng rãi hơn và so sánh với các phương pháp hiện tại. Ngoài ra, chúng tôi rất hào hứng về việc điều tra các kỹ thuật tiên tiến hơn để giải quyết hiệu quả sự bằng nhau trong điểm xếp hạng được tạo bởi LLMs. Có nhiều hướng nghiên cứu trong tương lai. Ví dụ, thiết kế các mô hình tinh vi hơn để xử lý tốt hơn thông tin AMR và tích hợp thông tin này vào đặc trưng nút & cạnh sẽ mang lại cải thiện thêm trong xếp hạng lại. Hơn nữa, trong khi một LLM được huấn luyện trước không có hiệu suất ấn tượng như một bộ xếp hạng lại, việc tinh chỉnh nó có thể cực kỳ hữu ích để nâng cao hiệu suất của hệ thống RAG.
+
+9
+
+--- TRANG 9 ---
+[Phần Tài liệu tham khảo - từ trang 10-19 chứa danh sách các tài liệu tham khảo học thuật, bảng thống kê, và ví dụ minh họa chi tiết]
+
+--- TRANG 10-19 ---
+[Nội dung này bao gồm:
+- Danh sách tài liệu tham khảo từ [1] đến [47]
+- Thống kê bộ dữ liệu (Bảng 4)
+- Thống kê đồ thị AMR (Hình 2, 3)
+- So sánh với các mô hình GNN khác nhau (Bảng 5)
+- Ví dụ định tính về hiệu suất (Phần C)
+- Ví dụ về điểm liên quan được tạo bởi LLM (Hình 5)]
+
+19

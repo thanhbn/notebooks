@@ -1,0 +1,358 @@
+# 1.6.2.Chain-of-Thought in Neural Code Generation-2312.05562v2.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\1.6.2.Chain-of-Thought in Neural Code Generation-2312.05562v2.pdf
+# Kích thước file: 4772732 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+IEEE TRANSACTIONS ON SOFTWARE ENGINEERING, VOL. 14, NO. 8, AUGUST 2015 1
+
+Chuỗi Suy Nghĩ trong Sinh Mã Neural:
+Từ và Cho các Mô hình Ngôn ngữ Nhẹ
+
+Guang Yang, Yu Zhou, Xiang Chen, Xiangyu Zhang, Terry Yue Zhuo, Taolue Chen
+
+Tóm tắt —Các Mô hình Ngôn ngữ Lớn (LLM) đã thể hiện tiềm năng đáng chú ý trong sinh mã. Việc tích hợp lý luận Chuỗi Suy nghĩ (CoT) có thể nâng cao hiệu suất của chúng. Tuy nhiên, các phương pháp CoT hiện tại thường yêu cầu viết thủ công hoặc LLM với hơn 100 tỷ tham số để tạo ra, cản trở khả năng áp dụng của chúng trong các tình huống hạn chế tài nguyên. Trong nghiên cứu này, chúng tôi điều tra các Mô hình Ngôn ngữ nhẹ (ℓLM), được định nghĩa có ít hơn 10 tỷ tham số. Thực nghiệm cho thấy, hầu hết ℓLM không thể tạo ra CoT chất lượng cao khi được nhắc bằng phương pháp few-shot, nhưng có thể tận dụng CoT chất lượng cao được tạo ở nơi khác để cải thiện hiệu suất sinh mã. Dựa trên những phát hiện này, chúng tôi thiết kế một phương pháp mới COTTON có thể tận dụng ℓLM để tự động tạo CoT cho sinh mã. Chúng tôi tổng hợp các tập dữ liệu mới và tiến hành thí nghiệm rộng rãi trên nhiều benchmark khác nhau. Kết quả cho thấy CoT được tạo bởi COTTON vượt trội hơn baseline về các số liệu đánh giá tự động và con người. Đặc biệt, CoT được tạo bởi COTTON giúp các ℓLM khác nhau đạt được mức tăng hiệu suất cao hơn so với những CoT được tạo bởi LLM như ChatGLM (130B), và có tính cạnh tranh với những CoT được tạo bởi Gemini và gpt-3.5-turbo. Kết quả cũng tiết lộ rằng COTTON không chỉ cải thiện hiệu suất của ℓLM mà còn nâng cao hiệu suất của LLM. Nghiên cứu của chúng tôi cho thấy tiềm năng của ℓLM trong các ứng dụng kỹ thuật phần mềm.
+
+Từ khóa chỉ mục —Sinh Mã, Chuỗi Suy nghĩ, Mô hình Ngôn ngữ Lớn, Mô hình Ngôn ngữ Nhẹ, Xử lý Ngôn ngữ Lập trình
+
+✦
+
+1 GIỚI THIỆU
+
+Sinh mã neural, có thể tự động tạo ra chương trình từ yêu cầu ngôn ngữ tự nhiên dựa trên học sâu, đã trở thành một phương pháp đầy hứa hẹn để đáp ứng những thách thức của độ phức tạp ngày càng tăng của phần mềm và giảm nhẹ gánh nặng cho các lập trình viên [1], [2]. Gần đây, các mô hình ngôn ngữ lớn (LLM), chẳng hạn như GPT4 [3], đã thể hiện hiệu suất ấn tượng trong các nhiệm vụ sinh mã [4]. Các LLM hiện đại thường có hơn 100 tỷ tham số, khiến việc triển khai chúng trở nên rất phức tạp. Những LLM này đặt ra thách thức về thời gian, chi phí tính toán và tài chính khi áp dụng cho sinh mã, khiến chúng không thực tế đối với hầu hết người dùng cá nhân, hoặc trong các tình huống hạn chế tài nguyên, chẳng hạn như truy cập hạn chế vào API LLM hoặc tính khả dụng GPU bị hạn chế [5], [6]. Đối với các ứng dụng kỹ thuật phần mềm, việc phát triển các kỹ thuật dựa trên mô hình ngôn ngữ nhẹ thân thiện hơn với người dùng (ví dụ, người dùng cuối cá nhân) là điều thiết yếu.
+
+•Guang Yang thuộc Khoa Khoa học và Công nghệ Máy tính, Đại học Hàng không Vũ trụ Nam Kinh, Nam Kinh, Trung Quốc.
+E-mail: novelyg@outlook.com
+•Yu Zhou (Tác giả liên hệ) thuộc Khoa Khoa học và Công nghệ Máy tính, Đại học Hàng không Vũ trụ Nam Kinh, Nam Kinh, Trung Quốc. E-mail: zhouyu@nuaa.edu.cn
+•Xiang Chen thuộc Trường Khoa học và Công nghệ Thông tin, Đại học Nam Thông, Trung Quốc. E-mail: xchencs@ntu.edu.cn
+•Xiangyu Zhang thuộc Khoa Khoa học và Công nghệ Máy tính, Đại học Hàng không Vũ trụ Nam Kinh, Nam Kinh, Trung Quốc.
+E-mail: zhangx1angyu@nuaa.edu.cn
+•Terry Yue Zhuo thuộc Đại học Monash và CSIRO's Data61. E-mail: terryzhuo25@gmail.com
+•Taolue Chen (Tác giả liên hệ) thuộc Trường Khoa học Máy tính và Toán học, Birkbeck, Đại học London, Vương quốc Anh. E-mail: t.chen@bbk.ac.uk
+
+Bản thảo nhận ngày 19 tháng 4, 2020; sửa đổi ngày xx tháng 8, xxxx.
+
+Fu et al. [7] định nghĩa các mô hình có tham số lớn hơn 100B là mô hình lớn và những mô hình có tham số ít hơn 10B là mô hình nhỏ. Thừa nhận rằng, định nghĩa chính xác về mô hình lớn và nhỏ có thể tranh luận và có thể thay đổi theo sự tiến bộ của công nghệ. Trong nghiên cứu này, chúng tôi định nghĩa các mô hình ngôn ngữ (được đào tạo trước) (LM) có ít hơn 10 tỷ tham số là Mô hình Ngôn ngữ nhẹ (ℓLM), lý do là những mô hình này có thể được triển khai trên một card đồ họa người dùng duy nhất (ví dụ, RTX 3090 hoặc RTX 4090) dựa trên công nghệ hiện tại. Mục tiêu chung là phát triển các kỹ thuật để giải quyết các thách thức kỹ thuật phần mềm dựa trên ℓLM nhưng với hiệu suất cạnh tranh như các LLM hiện đại, điều này sẽ cho phép các ứng dụng kỹ thuật phần mềm hiệu quả nhưng dễ tiếp cận hơn.
+
+Các nghiên cứu gần đây [8]–[11] đã làm nổi bật tầm quan trọng của việc nâng cao hiệu suất LLM bằng cách cung cấp thông tin đầy đủ trong các prompt. Để cải thiện LLM mà không cần đào tạo lại hoặc tinh chỉnh, các nhà nghiên cứu đã sử dụng các kỹ thuật Chuỗi Suy nghĩ (CoT) [12]. CoT, nói một cách ngắn gọn, là một chuỗi các bước lý luận ngôn ngữ tự nhiên trung gian dẫn đến đầu ra cuối cùng, cho phép LLM cung cấp câu trả lời đáng tin cậy hơn thông qua sự cân nhắc và giải thích chu đáo. Các kỹ thuật CoT đã cho thấy hiệu quả trong các nhiệm vụ lý luận logic bằng cách chia chúng thành các bước trung gian dễ hiểu, cho phép LLM xử lý từng bước riêng lẻ. Quá trình này không chỉ nâng cao hiệu suất mô hình mà còn cung cấp tiềm năng cho khả năng diễn giải mô hình.
+
+Được truyền cảm hứng từ sự thành công của các kỹ thuật CoT trong lý luận logic, các nhà nghiên cứu đã khám phá ứng dụng của chúng trong nhiệm vụ sinh mã. Ví dụ, Jiang et al. [13] đề xuất một phương pháp tự lập kế hoạch. Li et al. [14] giới thiệu một phương pháp CoT có cấu trúc để hỗ trợ các mô hình hiểu
+
+arXiv:2312.05562v2 [cs.SE] 4 Aug 2024
+
+--- TRANG 2 ---
+IEEE TRANSACTIONS ON SOFTWARE ENGINEERING, VOL. 14, NO. 8, AUGUST 2015 2
+
+(a) Đánh giá trên ℓLM không có chuỗi suy nghĩ
+(b) Đánh giá trên ℓLM có chuỗi suy nghĩ
+
+Hình 1. Các ví dụ động lực minh họa tiềm năng của việc sử dụng chuỗi suy nghĩ cho ℓLM trong sinh mã
+
+các ý định phức tạp và giảm khó khăn trong việc giải quyết vấn đề. Zhuo [15] giới thiệu một số liệu đánh giá cho sinh mã dựa trên LLM và chứng minh rằng CoT có thể nâng cao độ tin cậy của đánh giá.
+
+Nghiên cứu trước đây chủ yếu tập trung vào điều tra tác động của CoT đối với LLM, để lại các câu hỏi về việc liệu ℓLM cũng có thể được hưởng lợi từ sự hướng dẫn của CoT. Trong Hình 1, chúng tôi trình bày một ví dụ động lực để chứng minh tiềm năng của CoT cho ℓLM trong sinh mã. Cụ thể, trong Hình 1(a), nhiệm vụ lập trình là choose_num, nhận hai số dương x và y và trả về số nguyên chẵn lớn nhất nằm trong khoảng [x, y]. Ví dụ làm nổi bật rằng các prompt ban đầu cho ℓLM (CodeGen-350M, CodeGen-2B, và CodeGen-6B) không thể tạo ra giải pháp mã đúng. Tuy nhiên, bằng cách tận dụng CoT trong Hình 1(b), chúng tôi sửa đổi prompt ban đầu bằng cách sử dụng "How to solve:" và chia nhỏ vấn đề thành nhiều bước, nơi các giải thích ngôn ngữ tự nhiên hướng dẫn sự hiểu biết của mô hình về nhiệm vụ, bao gồm hướng dẫn về cấu trúc nhánh và vòng lặp. Với CoT mới, những ℓLM này có thể tạo ra giải pháp mã đúng.
+
+Hơn nữa, các nghiên cứu trước đây có những hạn chế nhất định vì các phương pháp hiện tại để tạo CoT phụ thuộc nhiều vào việc viết CoT thủ công hoặc sử dụng LLM [16], [17], dẫn đến chi phí cao. Những hạn chế này thúc đẩy chúng tôi điều tra hai câu hỏi chính sau. (1) ℓLM có thể độc lập tạo ra CoT chất lượng cao để hướng dẫn sinh mã không, và (2) ℓLM có thể được hưởng lợi từ CoT được tạo ra không? Ở đây, "độc lập" có nghĩa là không đào tạo mô hình hoặc cập nhật tham số mô hình.
+
+Quan sát thực nghiệm. Để giải quyết câu hỏi đầu tiên, chúng tôi tiến hành các nghiên cứu thực nghiệm về khả năng tạo CoT của 11 ℓLM khác nhau và hai LLM. Chúng tôi áp dụng phương pháp zero-shot [18] và một số phương pháp few-shot (chẳng hạn như Self-planning [13], SCoT [14], và self-cot mà chúng tôi đề xuất), cung cấp cho ℓLM một tập hợp các ví dụ để tạo ra CoT tương ứng. Phát hiện của chúng tôi cho thấy hầu hết ℓLM với quy mô tham số từ 0,3 đến 7 tỷ, thật không may, không thể hiện khả năng tạo ra CoT chất lượng cao một cách độc lập (xem Phần 5.1 để biết chi tiết). Để giải quyết câu hỏi thứ hai, chúng tôi so sánh hiệu suất của ℓLM trong sinh mã có và không có CoT. Phát hiện của chúng tôi cho thấy tất cả ℓLM đều có được cải thiện hiệu suất với CoT. Ví dụ, hiệu suất của mô hình CodeT5+ 6B trên tập dữ liệu HumanEval-plus [4] có thể được cải thiện từ 26,83% lên 43,90% với CoT được tạo bởi phương pháp của chúng tôi (xem Phần 5.3 để biết chi tiết).
+
+Hình 1 cung cấp một ví dụ động lực, nơi CodeGen [19] được sử dụng làm nghiên cứu trường hợp. Chúng tôi đánh giá hiệu suất của nó bằng cách xem xét các kích thước tham số khác nhau 350M, 2B, và 6B. Không có CoT, những mô hình này không tạo ra mã đúng (xem Hình 1(a)). Tuy nhiên, với CoT, chúng tôi phân tách yêu cầu người dùng thành ba bước trung gian. Trong bước đầu tiên, chúng tôi khởi tạo một biến max_even là -1; trong bước thứ hai, chúng tôi định nghĩa chi tiết của điều kiện vòng lặp và điều kiện phán đoán; trong bước thứ ba, chúng tôi trả về giá trị. Như vậy, chúng tôi có thể hướng dẫn hiệu quả các mô hình về các hành động cần thiết ở mỗi bước, và cuối cùng chúng tạo ra mã đúng về mặt ngữ nghĩa (mặc dù các biến này có tên khác nhau).
+
+Đóng góp kỹ thuật. Dựa trên các quan sát thực nghiệm, một câu hỏi tự nhiên là làm thế nào để cho phép ℓLM tạo ra CoT có ý nghĩa cho sinh mã. Vì vậy, chúng tôi thiết kế một phương pháp mới COTTON (Chain Of Thought cOde geNeration). Cụ thể, COTTON bao gồm các bước thu thập dữ liệu, đào tạo mô hình, và suy luận mô hình. Để xây dựng kho dữ liệu, trước tiên chúng tôi khai thác các tập dữ liệu nguồn mở được chia sẻ (chẳng hạn như TheVault [20]) để thu thập các cặp ngôn ngữ tự nhiên và ngôn ngữ lập trình. Sau đó, chúng tôi cải thiện chất lượng tập dữ liệu bằng cách sử dụng các quy tắc làm sạch heuristic được thiết kế cẩn thận. Để đảm bảo chất lượng của CoT trong kho dữ liệu, chúng tôi sử dụng ChatGPT làm tác nhân cơ sở và đề xuất một phương pháp căn chỉnh đa tác nhân để xây dựng CoT chất lượng cao (chi tiết trong Phần 3.1). Cuối cùng, CodeCoT-9k được thu thập của chúng tôi bao gồm 9.264 cặp dữ liệu.
+
+Để đào tạo mô hình, chúng tôi sử dụng CodeLlama-7b¹ làm mô hình cơ sở để tạo CoT tự động dựa trên prompt đã cho. CodeLlama-7b kết hợp các kỹ thuật tiên tiến (chẳng hạn như RMSNorm [21] và Group Query Attention [22]), nâng cao hiệu suất của nó vượt ra ngoài Transformer [23]. Bằng cách áp dụng những kỹ thuật này, chúng tôi có thể cải thiện thêm hiệu suất của COTTON. Để giảm chi phí đào tạo, chúng tôi áp dụng các kỹ thuật instruction-tuning và LoRA [24] để tinh chỉnh các tham số mô hình. Phương pháp này cho phép COTTON được đào tạo hiệu quả trên một card đồ họa tiêu dùng duy nhất trong khi duy trì hiệu suất của nó.
+
+1. https://github.com/facebookresearch/codellama
+
+--- TRANG 3 ---
+IEEE TRANSACTIONS ON SOFTWARE ENGINEERING, VOL. 14, NO. 8, AUGUST 2015 3
+
+Đánh giá. Chúng tôi tiến hành đánh giá toàn diện về chất lượng của CoT được tạo bởi COTTON trên benchmark HumanEval [25]. Để đảm bảo tính tổng quát của COTTON, chúng tôi cũng đã thu thập thêm một tập dữ liệu sinh mã mới OpenEval và đánh giá COTTON trên benchmark OpenEval. Cụ thể, chúng tôi đã chọn chín mô hình khác được sử dụng phổ biến làm mô hình cơ sở và so sánh kết quả với cùng một quy trình đào tạo. Chất lượng của CoT được tạo bởi COTTON vượt trội so với các phương pháp khác trong cả số liệu đánh giá tự động và con người. Hơn nữa, chúng tôi đánh giá hiệu suất trên ℓLM khi áp dụng CoT được tạo trên các benchmark sinh mã (chẳng hạn như HumanEval, HumanEval-plus, và OpenEval). Kết quả cho thấy, đối với các ℓLM khác nhau, CoT được tạo bởi COTTON đạt được mức tăng hiệu suất cao hơn so với những CoT được tạo bởi LLM như ChatGLM (130B) [26], và có tính cạnh tranh với những CoT được tạo bởi Gemini và gpt-3.5-turbo.
+
+Lấy mô hình CodeT5+ 6B làm ví dụ, chúng tôi quan sát thấy những cải thiện hiệu suất đáng kể trên các benchmark HumanEval, HumanEval-plus, và OpenEval bằng cách kết hợp COTTON. Đối với số liệu pass@1 trên HumanEval và HumanEval-plus, COTTON nâng cao hiệu suất của mô hình CodeT5+ 6B từ 26,22% và 26,83% lên 42,68% và 43,90% tương ứng. So sánh, LLM ChatGLM 130B chỉ đạt được cải thiện 36,59%. Tương tự, trên benchmark OpenEval, COTTON tăng số liệu pass@1 của mô hình CodeT5+ 6B từ 20,22% lên 35,39%. Trong khi đó, LLM ChatGLM 130B đạt được cải thiện chỉ khoảng 32,02%.
+
+Ngoài ra, để đánh giá thêm khả năng của COTTON, chúng tôi đã tiến hành thí nghiệm để đánh giá tác động của nó đối với LLM (chẳng hạn như gpt-3.5-turbo). Kết quả cho thấy gpt-3.5-turbo có thể cho thấy cải thiện hiệu suất đáng kể trong sinh mã khi được hướng dẫn bởi CoT được tạo bởi COTTON, nơi hiệu suất thậm chí vượt qua tình huống zero-shot của GPT-4 trên tập dữ liệu HumanEval.
+
+Cuối cùng, để chứng minh hiệu quả của COTTON so với tinh chỉnh, chúng tôi sử dụng các mô hình StarCoder-series làm ví dụ. Kết quả cho thấy sự kết hợp của StarCoder-7B với COTTON đã vượt qua hiệu suất của StarCoder-16B trong các tình huống zero-shot và thậm chí có thể đạt được kết quả tương đương với mô hình StarCoder-16B được tinh chỉnh. Hiệu quả của COTTON trong việc nâng cao hiệu suất trên nhiều mô hình mà không cần thiết phải tinh chỉnh từng mô hình riêng lẻ là đáng chú ý, vì nó không chỉ tiết kiệm thời gian và tài nguyên tính toán cho việc xây dựng mô hình mà còn mở ra một hướng hấp dẫn để tránh tinh chỉnh truyền thống trong việc thích ứng các mô hình ngôn ngữ.
+
+Tóm lại, những đóng góp chính của nghiên cứu chúng tôi có thể được tóm tắt như sau:
+
+• Chúng tôi chứng minh thực nghiệm rằng hầu hết ℓLM hiện tại thiếu khả năng tạo ra CoT chất lượng cao một cách độc lập.
+
+• Chúng tôi thiết kế một phương pháp mới COTTON để tạo ra CoT chất lượng cao cho việc hướng dẫn sinh mã, hiệu quả của nó đã được xác nhận bởi các thí nghiệm rộng rãi trên một tập hợp toàn diện các benchmark.
+
+• Chúng tôi xây dựng một tập dữ liệu mới về CoT chất lượng cao, tức là CodeCoT-9k, bằng cách khai thác các tập dữ liệu nguồn mở hiện có. Hơn nữa, chúng tôi cũng xây dựng OpenEval², một tập dữ liệu khác để benchmark hiệu suất sinh mã. Những tập dữ liệu này có thể được tái sử dụng trong các nhiệm vụ kỹ thuật phần mềm tương tự.
+
+Để tạo điều kiện cho việc tái tạo COTTON, chúng tôi công khai mã nguồn, các mô hình đã đào tạo, và tập dữ liệu trên GitHub.³
+
+Cấu trúc của bài báo. Phần còn lại của bài báo được tổ chức như sau. Phần 2 cung cấp kiến thức sơ bộ liên quan đến nghiên cứu của chúng tôi. Phần 3 mô tả khung của COTTON và các thành phần chính của nó. Phần 4 và 5 trình bày thiết kế thí nghiệm và phân tích kết quả tương ứng. Phần 6 thảo luận thêm về phương pháp của chúng tôi, tiếp theo là đánh giá công trình liên quan trong Phần 7. Phần 8 kết luận nghiên cứu của chúng tôi và phác thảo các hướng tương lai có thể.
+
+2 KIẾN THỨC SƠ BỘ
+
+Trong phần này, trước tiên chúng tôi công thức hóa nhiệm vụ sinh mã. Sau đó chúng tôi cung cấp các khái niệm cơ bản về mô hình cơ sở CodeLlama mà chúng tôi sử dụng.
+
+2.1 Công thức hóa Nhiệm vụ Sinh Mã
+
+Cho D = {(Xi, Yi)}|D|i=1 biểu thị một tập dữ liệu sinh mã, bao gồm |D| cặp (Xi, Yi). Ở đây, Xi đại diện cho mô tả chức năng, và Yi đại diện cho đoạn mã tương ứng. Mô hình sinh mã neural Mcode nhằm tạo ra Yi có điều kiện trên Xi. Quá trình tạo tự hồi quy này được tham số hóa bởi θcode, và có thể được biểu diễn như
+
+Pθcode(Yi|Xi) = ∏(k=1 to n) Pθcode(Yi,k|Xi, Yi,1:Yi,k−1)
+
+nơi Yi,1:Yi,k−1 đại diện cho chuỗi trước đó trước token thứ k của Yi, và n biểu thị số lượng token trong chuỗi mục tiêu Yi.
+
+Để cải thiện hiệu suất sinh mã, chúng tôi sử dụng một mô hình tạo CoT, ký hiệu là Mcot, tạo ra CoT chất lượng cao Ci dựa trên Xi. Sau đó chuỗi đầu vào ban đầu Xi sẽ được tăng cường bằng cách nối với CoT được tạo Ci, dẫn đến chuỗi đầu vào mới X̂i = Xi ⊕ Ci, nơi ⊕ biểu thị phép nối. Tiếp theo, chúng tôi xấp xỉ xác suất tạo ra đoạn mã Yi cho chuỗi đầu vào Xi như
+
+P(Yi|Xi) ∝ Pθcot(Ci|Xi)|{z} Mcot Pθcode(Yi|Xi, Ci)|{z} Mcode
+
+Trong nghiên cứu của chúng tôi, chúng tôi coi mô hình sinh mã neural hiện có Mcode như một hộp đen. Chúng tôi có ý định đào tạo một mô hình Mcot để tạo ra CoT, có thể được sử dụng để hướng dẫn sinh mã và cải thiện thêm hiệu suất của nhiệm vụ này.
+
+2. https://github.com/NTDXYG/open-eval
+3. https://github.com/NTDXYG/COTTON
+
+--- TRANG 4 ---
+IEEE TRANSACTIONS ON SOFTWARE ENGINEERING, VOL. 14, NO. 8, AUGUST 2015 4
+
+2.2 Mô hình Ngôn ngữ Mã CodeLlama
+
+CodeLlama [27] là một mô hình ngôn ngữ mã được xây dựng trên Llama-2 [28], nổi bật với hiệu suất xuất sắc trong các mô hình mở, khả năng đệm, hỗ trợ ngữ cảnh đầu vào lớn, và theo dõi hướng dẫn zero-sample cho các nhiệm vụ lập trình. Trong nghiên cứu của chúng tôi, chúng tôi sử dụng CodeLlama-7B làm mô hình cơ sở cho COTTON do khả năng hiểu và tạo mã đáng chú ý của nó.
+
+Lớp Embedding. CodeLlama token hóa mô tả chức năng đã cho X thành chuỗi token con {wi}(i=1 to N) sử dụng mã hóa cặp byte (BPE) và thuật toán SentencePiece [29]. Mỗi từ con wi sau đó được chuyển đổi thành một vector embedding (hàng) xi ∈ R^d, nơi d đại diện cho chiều của vector embedding. Những vector embedding này được kết hợp thành một ma trận X = {xi}(i=1 to N), đại diện cho mối quan hệ có ý nghĩa giữa các token trong chuỗi đầu vào. Bằng cách sử dụng ma trận embedding này, COTTON nắm bắt thông tin ngữ nghĩa của mô tả chức năng và chuẩn bị nó để xử lý thêm trong các lớp tiếp theo của mô hình.
+
+RMSNorm. CodeLlama sử dụng Root Mean Square Layer Normalization (RMSNorm) thay vì LayerNorm cho mục đích chuẩn hóa [21]. RMSNorm hoạt động bằng cách chuẩn hóa mỗi vector embedding xi bằng cách chia nó cho căn bậc hai của trung bình bình phương. Quá trình chuẩn hóa này giúp giảm tác động của nhiễu và cải thiện hiệu quả tính toán. Đối với mỗi vector embedding xi, công thức tính toán của RMSNorm được định nghĩa như sau.
+
+x̃i = xi / RMS(X) · gi
+
+nơi RMS(X) = √(1/n ∑(i=1 to n) xi²) đại diện cho căn bậc hai của trung bình bình phương của ma trận embedding X, và gi biểu thị hệ số tái chuẩn hóa.
+
+Group Query Attention (GQA). CodeLlama giới thiệu GQA [22] như một sửa đổi cho cơ chế multi-head attention tiêu chuẩn. Sửa đổi này tối ưu hóa hiệu suất của mô hình bằng cách chia các Query head thành các nhóm, với mỗi nhóm chia sẻ cùng ma trận Key và Value. Hơn nữa, mô hình kết hợp Rotary Position Embedding (RoPE) [30] và FlashAttention [31] để cải thiện thêm.
+
+Cụ thể, đối với ma trận X đã cho, mô hình tính toán ma trận Query, Key, và Value như sau.
+
+qi = fq(xi, i)
+kj = group(fk(xj, j))
+vj = group(fv(xj, j))
+
+nơi qi đại diện cho vector Query của vector embedding xi, kết hợp thông tin vị trí. kj và vj biểu thị các vector Key và Value của vector embedding xj, tương ứng, kết hợp thông tin vị trí j. Phép toán nhóm được áp dụng để đảm bảo rằng các Query head trong mỗi nhóm chia sẻ cùng ma trận Key và Value. Để tính toán đầu ra self-attention tương ứng với vector embedding thứ i xi, một điểm attention được tính toán giữa qi và các vector kj khác. Điểm attention này sau đó được nhân với các vector vj tương ứng và tổng hợp để thu được vector đầu ra.
+
+ai,j = exp(qi^T ki / √d) / ∑(m=1 to N) exp(qi^T km / √d)
+oi = ∑(j=1 to N) ai,j · vj
+
+nơi ai,j đại diện cho điểm attention và oi biểu thị vector đầu ra cho vector embedding thứ i.
+
+FFN. Feed Forward Network (FFN) trong CodeLlama bao gồm các lớp tuyến tính và một hàm kích hoạt. Nó hoạt động trên ma trận X để tính toán đầu ra sử dụng một công thức cụ thể.
+
+FFN(X) = fdown(fup(X) × SiLU(fgate(X)))
+
+nơi SiLU đại diện cho hàm kích hoạt, được định nghĩa là tích theo từng phần tử của hàm Sigmoid và đầu vào. Hàm kích hoạt này đưa tính phi tuyến vào mạng.
+
+Trong quá trình tổng thể, CodeLlama tạo ra xác suất đầu ra P cho một đầu vào X đã cho thông qua một chuỗi các phép toán, bao gồm Group Query Attention, RMSNorm, và FFN. Ban đầu, đầu vào X được chuẩn hóa sử dụng RMSNorm. Sau đó, GQA được áp dụng cho đầu vào đã chuẩn hóa và được thêm vào đầu vào ban đầu, dẫn đến Xhidden. Tiếp theo, Xhidden lại được chuẩn hóa sử dụng RMSNorm, và FFN được áp dụng cho nó, thu được Xfinal. Cuối cùng, Xfinal được chuẩn hóa sử dụng RMSNorm và được truyền qua hàm fvocab để ánh xạ nó vào không gian xác suất đầu ra, dẫn đến xác suất đầu ra cuối cùng P.
+
+P = fvocab(RMSNorm(Xfinal))
+
+3 PHƯƠNG PHÁP CỦA CHÚNG TÔI
+
+Quy trình làm việc của COTTON được đề xuất được hiển thị trong Hình 2. Có ba bước chính, tức là thu thập dữ liệu, đào tạo mô hình, và suy luận mô hình. Trong phần còn lại của phần này, chúng tôi trình bày chi tiết của ba bước này.
+
+Hình 2. Quy trình làm việc của phương pháp được đề xuất COTTON
+
+3.1 Thu thập Dữ liệu
+
+Việc xây dựng tập dữ liệu CoT CodeCoT-9k tuân theo quy trình được hiển thị trong Bước 1 trong Hình 2. Chúng tôi bắt đầu bằng cách chọn TheVault⁴, MBPP⁵ và LeetCode⁶ làm tập dữ liệu thô của chúng tôi.
+
+4. https://github.com/FSoft-AI4Code/TheVault
+5. https://huggingface.co/datasets/mbpp
+6. https://huggingface.co/datasets/mhhmm/leetcode-solutions-python
+
+--- TRANG 5 ---
+IEEE TRANSACTIONS ON SOFTWARE ENGINEERING, VOL. 14, NO. 8, AUGUST 2015 5
+
+Những tập dữ liệu này bao gồm các mô tả ngôn ngữ tự nhiên về yêu cầu chức năng được ghép đôi với các đoạn mã triển khai tương ứng. Chúng đã được sử dụng rộng rãi trong tài liệu [32].
+
+Tuy nhiên, sau phân tích thủ công của chúng tôi, chúng tôi thấy rằng một phần đáng kể của các đoạn mã trong những tập dữ liệu này không độc lập, yêu cầu các module hoặc file bên ngoài để hiểu chương trình [33], điều này gây ra thách thức cho việc tạo CoT. Ngoài ra, chúng tôi nhận thấy rằng một số đoạn mã bao gồm mã tầm thường hoặc mẫu (để định nghĩa hằng số, thiết lập tham số, cấu hình phần tử GUI, v.v.), không hữu ích cho việc tạo CoT. Kết quả là, để cải thiện chất lượng tập dữ liệu của chúng tôi, chúng tôi thiết kế hai phương pháp làm sạch dữ liệu, tức là làm sạch dựa trên quy tắc heuristic và làm sạch dựa trên căn chỉnh đa tác nhân.
+
+Làm sạch dựa trên quy tắc heuristic. Những quy tắc này được thiết kế để lọc dữ liệu chứa mã không chính xác về cú pháp và tài liệu không nhất quán với mã, ngoài việc tránh vấn đề rò rỉ dữ liệu. Chúng tôi định nghĩa ba quy tắc heuristic như dưới đây.
+
+R1 Lọc Mã. Chúng tôi sử dụng công cụ parser AST để trích xuất mã cấp phương thức và các bình luận chức năng tương ứng, bằng cách này mã không chính xác về cú pháp có thể được lọc.
+
+R2 Lọc Tài liệu. Chúng tôi sử dụng DocChecker [34] để xác định tính nhất quán giữa tài liệu và mã, có thể duy trì sự căn chỉnh chính xác giữa các bình luận và mã một cách hiệu quả. Sau đó chúng tôi loại bỏ các đoạn mã có tài liệu không nhất quán.
+
+R3 Lọc Tương tự. Để ngăn chặn rò rỉ dữ liệu trong tập đào tạo, chúng tôi sử dụng mô hình embedding codet5p⁷ để học biểu diễn mã. Sau đó chúng tôi loại bỏ các đoạn mã vượt quá ngưỡng tương tự ngữ nghĩa bằng cách xem xét tương tự cosine.
+
+Làm sạch dựa trên căn chỉnh đa tác nhân. Những tác nhân này được thiết kế để lọc dữ liệu chất lượng thấp, bao gồm các đoạn không có ý nghĩa giáo dục và CoT không nhất quán với ngữ nghĩa của mã. Chúng tôi tận dụng sức mạnh của đa tác nhân để căn chỉnh và làm sạch dữ liệu, nơi chúng dựa trên gpt-3.5-turbo.⁸ Cụ thể, chúng tôi thực hiện định nghĩa tác nhân bằng cách xây dựng prompt cụ thể [35]:
+
+A1 Kiểm tra Chất lượng. Tác nhân này đánh giá giá trị giáo dục của dữ liệu và loại bỏ các mục chất lượng thấp, đảm bảo rằng tập dữ liệu bao gồm các đoạn mã chất lượng cao.
+
+A2 Tạo CoT. Trước tiên chúng tôi chuyển đổi các đoạn mã và bình luận chức năng thành định dạng prompt và giải pháp được tiêu chuẩn hóa tương tự như HumanEval [25]. Tác nhân này sử dụng phương pháp one-shot, cung cấp một ví dụ để hỗ trợ tác nhân học kiểu đầu ra mong muốn và tạo CoT dựa trên đầu vào của người dùng. Quan trọng là, chúng tôi có ý định không tiết lộ chi tiết triển khai cụ thể của mã cho tác nhân, điều này khuyến khích tác nhân tạo ra các CoT đa dạng, vì việc triển khai mã có thể khác nhau rất nhiều.
+
+7. https://huggingface.co/Salesforce/codet5p-110m-embedding
+8. https://platform.openai.com/docs/models/gpt-3-5
+
+A3 Kiểm tra Tính nhất quán. Tác nhân này kiểm tra tính nhất quán giữa các hướng dẫn CoT được tạo bởi Tác nhân 2 và các đoạn mã. Nó loại bỏ các đoạn mã có sự không nhất quán, đảm bảo rằng các hướng dẫn CoT phản ánh chính xác hành vi của mã.
+
+Kiểm tra Chất lượng
+Cho bạn một đoạn mã, xác định giá trị giáo dục của nó đối với một học sinh có mục tiêu học các khái niệm mã hóa cơ bản.
+
+Nếu nó có giá trị giáo dục, chỉ trả về "Yes", ngược lại trả về "No".
+
+Kiểm tra Tính nhất quán
+Cho một đoạn mã và một chuỗi suy nghĩ, xác định liệu chúng có thể hiện chính xác cùng ngữ nghĩa chức năng hay không.
+
+Nếu nhất quán, chỉ trả về "Yes", ngược lại trả về "No".
+
+Tạo CoT
+### Cho một đoạn mã, đưa ra ý tưởng triển khai tương ứng.
+### Ví dụ:
+Đầu vào:
+from typing import List
+def below_zero(operations: List[int]) -> bool:
+    """ Bạn được cho một danh sách các phép toán gửi và rút tiền trên một tài khoản ngân hàng bắt đầu với số dư bằng không. Nhiệm vụ của bạn là phát hiện nếu tại bất kỳ thời điểm nào số dư của tài khoản rơi xuống dưới không, và tại thời điểm đó hàm nên trả về True. Ngược lại nó nên trả về False.
+    """
+Đầu ra:
+Cách giải quyết:
+Bước 1. Khởi tạo số dư tài khoản là 0.
+Bước 2. Lặp qua các phép toán.
+-thêm giá trị vào số dư tài khoản.
+-Nếu số dư tài khoản <0, trả về True.
+Bước 3. Trả về False.
+### Đầu vào: [X]
+### Đầu ra: [Y]
+
+3.2 Đào tạo Mô hình
+Để cho phép đào tạo ℓLM với tài nguyên hạn chế, các nhà nghiên cứu đã khám phá các phương pháp tinh chỉnh hiệu quả tham số vì việc tinh chỉnh tham số đầy đủ không thực tế trong tình huống này. Như đã chứng minh trong nghiên cứu trước [36], những phương pháp này đã được chứng minh đạt được hiệu suất cao bằng cách cung cấp hướng dẫn đầy đủ cho các mô hình ngôn ngữ. Trái ngược với các phương pháp prompt mềm dựa trên liên tục [37], [38], phương pháp của chúng tôi sử dụng một tập hợp các token rời rạc làm prompt hướng dẫn, có ý nghĩa và dễ diễn giải. Đối với nhiệm vụ tạo CoT của chúng tôi, chúng tôi thiết kế một template kết hợp các hướng dẫn cụ thể của nhiệm vụ, được minh họa như sau.
+
+--- TRANG 6 ---
+IEEE TRANSACTIONS ON SOFTWARE ENGINEERING, VOL. 14, NO. 8, AUGUST 2015 6
+
+Template Hướng dẫn
+### Cho một đoạn mã, đưa ra ý tưởng triển khai tương ứng.
+### Đầu vào: [X]
+### Đầu ra: [Y]
+
+Để giải quyết thách thức của các tham số quá mức trong mô hình cơ sở, chúng tôi sử dụng phương pháp LoRA [24] để tạo điều kiện tinh chỉnh hiệu quả với tài nguyên hạn chế. Không giống như các phương pháp tinh chỉnh truyền thống cập nhật tất cả trọng số của mô hình, LoRA giới thiệu các ma trận low-rank có thể đào tạo để xấp xỉ điều chỉnh trọng số. Phương pháp này tận dụng quan sát rằng quá trình thích ứng vốn dĩ thể hiện "intrinsic rank" thấp. Cho W0 ∈ R^(d×k) biểu thị ma trận đã được đào tạo trước. Xấp xỉ điều chỉnh trọng số từ W0 đến W0 + ΔW sử dụng LoRA có thể được biểu diễn như:
+
+W0 + ΔW = W0 + BA
+
+Ở đây, B ∈ R^(d×r) và A ∈ R^(r×k), nơi r ≪ min(d, k) đại diện cho rank. Trong quá trình tinh chỉnh, W0 không thay đổi, trong khi B và A trở thành các tham số có thể đào tạo. Cho một đầu vào X và đầu ra ban đầu liên quan H, đầu ra được điều chỉnh H̄ được tính như:
+
+H̄ = W0X + ΔWX = H + BAX
+
+Để khởi tạo các ma trận, Ma trận A được khởi tạo bằng các giá trị Gaussian ngẫu nhiên, trong khi B được khởi tạo bằng các số không. Điều này đảm bảo rằng giá trị ban đầu của ΔW = BA bằng không khi bắt đầu đào tạo. Để tăng số lượng tham số có thể đào tạo và cải thiện khả năng, chúng tôi áp dụng LoRA để thích ứng tất cả các lớp tuyến tính đồng thời.
+
+3.3 Suy luận Mô hình
+Trong giai đoạn suy luận, mô hình được đào tạo bởi COTTON có thể được triển khai hiệu quả trên một card đồ họa tiêu dùng duy nhất để tạo CoT. Lưu ý rằng COTTON là một công cụ độc lập và việc triển khai của nó không yêu cầu sử dụng LLM. Để tăng tốc quá trình giải mã, COTTON sử dụng thuật toán Greedy Search, về cơ bản, chọn token có xác suất cao nhất ở mỗi bước giải mã, dẫn đến đầu ra xác định hơn trong quá trình suy luận.
+
+CoT được tạo bởi COTTON phục vụ như một thông tin bổ sung được thêm vào prompt ban đầu trong các nhiệm vụ sinh mã. Trong các tình huống thực tế, để cải thiện trải nghiệm người dùng, chúng tôi khuyến nghị tạo CoT chỉ khi mô hình sinh mã không thể tạo ra mã đúng. Phương pháp này đảm bảo rằng CoT được sử dụng khi cần thiết để tránh overhead không cần thiết.
+
+4 THIẾT LẬP THÍ NGHIỆM
+
+Để đánh giá hiệu quả và lợi ích của phương pháp được đề xuất của chúng tôi, chúng tôi chủ yếu thiết kế ba câu hỏi nghiên cứu (RQ) sau:
+
+RQ1: ℓLM có thể tạo ra CoT chất lượng cao một cách độc lập không?
+Trong RQ này, chúng tôi muốn điều tra liệu ℓLM có khả năng tạo ra CoT chất lượng cao một cách độc lập hay không (tức là câu hỏi đầu tiên được đề cập trong Phần 1). Một phát hiện tiêu cực của RQ này có thể tạo thành động lực để thiết kế phương pháp COTTON của chúng tôi.
+
+RQ2: COTTON có thể tạo ra CoT chất lượng cao hơn không?
+Trong RQ này, chúng tôi muốn đánh giá hiệu quả của phương pháp COTTON của chúng tôi. Cụ thể, chúng tôi nhằm so sánh hiệu suất của nó với các mô hình cơ sở hiện đại. Vì chúng tôi là những người đầu tiên nghiên cứu tạo CoT tự động cho sinh mã, chúng tôi chọn các mô hình cơ sở liên quan từ các chủ đề nghiên cứu tương tự. Chúng tôi sử dụng các số liệu đánh giá tự động để đánh giá chất lượng của CoT được tạo từ nhiều góc độ khác nhau. Chúng tôi cũng tiến hành đánh giá con người để đánh giá hiệu quả của phương pháp của chúng tôi, vì các số liệu tự động có thể không nắm bắt đầy đủ sự tương tự ngữ nghĩa và giá trị giáo dục của CoT được tạo.
+
+RQ3: ℓLM có thể được hưởng lợi hiệu quả từ CoT không?
+Trong khi ℓLM có thể không thể tạo ra CoT chất lượng cao một cách độc lập, chúng có thể được hưởng lợi từ CoT được cung cấp để cải thiện hiệu suất sinh mã (tức là câu hỏi thứ hai được đề cập trong Phần 1). Trong RQ này, chúng tôi muốn xác thực hiệu quả của việc tận dụng CoT cho ℓLM.
+
+4.1 Tập dữ liệu
+
+4.1.1 Sinh Mã
+Để đánh giá hiệu suất của ℓLM có và không có CoT trong tình huống zero-shot, chúng tôi tiến hành thí nghiệm trên ba tập dữ liệu sinh mã.
+
+HumanEval/HumanEval-plus. Tập dữ liệu HumanEval [25] được phát triển và xuất bản bởi OpenAI, bao gồm 164 bài toán lập trình Python. Mỗi bài toán bao gồm trung bình 7,8 test case. có thể cung cấp đánh giá toàn diện về khả năng sinh mã. Tập dữ liệu HumanEval-plus [4] nhằm giảm thiểu hạn chế về độ bao phủ test case trong HumanEval, có thể dẫn đến tỷ lệ dương tính giả. Lưu ý rằng HumanEval và HumanEval-plus chỉ khác nhau về test case và không khác nhau về nhiệm vụ tạo CoT.
+
+OpenEval. Để đảm bảo tính công bằng và tổng quát, chúng tôi thu thập một tập dữ liệu sinh mã mới OpenEval. Tập dữ liệu này bao gồm 178 bài toán được chọn từ tập dữ liệu dịch mã cấp độ thi đấu AVATAR [39]. Đối với mỗi bài toán, chúng tôi đã thiết kế thêm test case theo cách thủ công có thể đánh giá hiệu quả chất lượng mã được tạo và giảm thiểu thiên vị và rò rỉ. Đặc biệt, chúng tôi đã thuê hai kỹ sư phần mềm với 2~3 năm kinh nghiệm phát triển mỗi người để xây dựng 5 test case cho mỗi đoạn mã để đảm bảo sự đa dạng của test case.
+
+4.1.2 Tạo CoT
+Theo phương pháp trong Phần 3.1, chúng tôi thu thập tổng cộng 9.264 mẫu được tạo CoT. Những mẫu này được chia ngẫu nhiên thành tập đào tạo gồm 9.000 mẫu và tập validation gồm 264 mẫu. Để đánh giá hiệu suất của COTTON, chúng tôi tạo CoT trên các tập dữ liệu HumanEval và OpenEval, sử dụng cùng phương pháp được mô tả trong Phần 3.1. Các tập dữ liệu được dẫn xuất là HumanEval-CoT và OpenEval-CoT tương ứng. Hơn nữa, chúng tôi sử dụng Agent 2 (xem Phần 3.1) làm Teacher Model. Một ví dụ trong các tập dữ liệu được sử dụng của chúng tôi được hiển thị trong Hình 3. Cuối cùng, Bảng 1 cung cấp thông tin thống kê về các tập dữ liệu được sử dụng để đánh giá của chúng tôi.
+
+--- TRANG 7 ---
+IEEE TRANSACTIONS ON SOFTWARE ENGINEERING, VOL. 14, NO. 8, AUGUST 2015 7
+
+Hình 3. Một ví dụ trong các tập dữ liệu được sử dụng của chúng tôi
+
+BẢNG 1
+Thông tin thống kê của các tập dữ liệu của chúng tôi
+
+Loại | Train | Valid | HumanEval-CoT | OpenEval-CoT
+Số lượng | 9,000 | 264 | 164 | 178
+Trung bình trong Prompt | 63.76 | 61.32 | 80.09 | 79.39
+Median trong Prompt | 41.00 | 39.50 | 64.50 | 64.50
+≤256 trong Prompt | 98.03% | 98.11% | 98.78% | 99.44%
+Trung bình trong CoT | 85.40 | 82.41 | 94.54 | 93.99
+Median trong CoT | 74.00 | 74.50 | 86.00 | 85.00
+≤256 trong CoT | 99.07% | 99.24% | 99.39% | 99.44%
+
+4.2 Các Mô hình Sinh Mã
+Dựa trên các đánh giá hiệu suất được tiến hành bởi Gunasekar et al. [33], chúng tôi chọn các ℓLM hiện đại sau đây cho các thí nghiệm của chúng tôi: CodeGen [19], StarCoder [40], và CodeT5+ [41]. Những mô hình này đã thể hiện hiệu suất đầy hứa hẹn trong nhiều nhiệm vụ sinh mã khác nhau [42].
+
+CodeGen. CodeGen [19] là một mô hình ngôn ngữ lớn mã nguồn mở được thiết kế đặc biệt cho sinh mã, với trọng tâm đặc biệt vào tổng hợp chương trình đa lượt. Nó nâng cao tổng hợp chương trình bằng cách chia nhỏ ý định phức tạp của người dùng thành nhiều bước, tạo điều kiện cho sự hiểu biết của mô hình. Đối với các thí nghiệm của chúng tôi, chúng tôi chọn ba mô hình có kích thước tham số khác nhau: 350M, 2B, và 6B.
+
+StarCoder. StarCoder [40] là một mô hình ngôn ngữ được đào tạo trên kho dữ liệu đa dạng của mã nguồn và văn bản ngôn ngữ tự nhiên. Dữ liệu đào tạo của nó bao phủ hơn 80 ngôn ngữ lập trình và bao gồm văn bản được trích xuất từ các issue, commit và notebook GitHub. Chúng tôi chọn ba mô hình có kích thước tham số khác nhau: 1B, 3B, và 7B.
+
+CodeT5+. CodeT5+ [41] là một mô hình ngôn ngữ lớn mã với kiến trúc encoder-decoder, có khả năng thực hiện nhiều nhiệm vụ hiểu và sinh mã khác nhau. Nó cung cấp tính linh hoạt bằng cách hỗ trợ các chế độ hoạt động khác nhau. Trong các thí nghiệm của chúng tôi, chúng tôi chọn bốn mô hình có kích thước tham số khác nhau: 220M, 770M, 2B, và 6B.
+
+4.3 Số liệu Đánh giá
+
+4.3.1 Sinh Mã
+Để đánh giá hiệu suất của các mô hình sinh mã, chúng tôi sử dụng số liệu Pass@1 và số liệu CoT-Pass@1.
+
+Pass@1. Số liệu Pass@1 đo tỷ lệ phần trăm của các đoạn mã được tạo vượt qua các test case tương ứng mà không xem xét CoT. Số liệu này đánh giá khả năng của mô hình sinh mã để tạo ra mã chức năng đúng.
+
+CoT-Pass@1. Khi mã được tạo bởi mô hình mà không có sự hướng dẫn của CoT không vượt qua các test case tương ứng, mô hình được cung cấp hướng dẫn CoT để tạo mã. Số liệu CoT-Pass@1 được sử dụng để đo tỷ lệ phần trăm của các đoạn mã được tạo thành công vượt qua test case sau khi xem xét CoT. Số liệu này đặc biệt đánh giá khả năng của mô hình để tạo ra mã vượt qua test case khi được hướng dẫn bởi CoT. Nó tập trung vào đánh giá khả năng của mô hình để cải thiện hiệu suất sinh mã bằng cách kết hợp hướng dẫn được cung cấp bởi CoT trong các trường hợp mà việc sinh mã ban đầu không có CoT không vượt qua test case.
+
+4.3.2 Tạo CoT
+Để đánh giá hiệu suất của CoT được tạo bởi COTTON, trước tiên chúng tôi sử dụng bốn số liệu đánh giá tự động thường được sử dụng trong các nhiệm vụ tạo tương tự (chẳng hạn như sinh mã [43], [44], tóm tắt mã [45], [46], và dịch mã [47]).
+
+BLEU (Bilingual Evaluation Understudy) [48] là một số liệu dịch máy đo sự tương tự từ vựng giữa hai văn bản bằng cách tính toán sự chồng lấp của n-gram. Trong đánh giá của chúng tôi, chúng tôi sử dụng BLEU-1, -2, -3, -4 để đánh giá chất lượng của CoT được tạo.
+
+METEOR (Metric for Evaluation of Translation with Explicit ORdering) [49] là một số liệu đánh giá tự động cải tiến dựa trên BLEU. Nó kết hợp thuật toán căn chỉnh dựa trên từ điển và kiến thức ngôn ngữ học, đặt trọng tâm lớn hơn vào thứ tự từ và khớp cấu trúc ngữ pháp.
+
+ROUGE-L (Recall-Oriented Understudy for Gisting Evaluation)-L [50] đo sự tương tự giữa CoT được tạo và CoT ground-truth bằng cách so sánh subsequence chung dài nhất của chúng. Số liệu này có lợi thế trong việc xử lý các chuỗi dài và không bị giới hạn bởi các mục từ vựng đơn lẻ.
+
+Tính nhất quán. Để đánh giá tự động thêm về tính đúng đắn ngữ nghĩa của CoT được tạo, chúng tôi sử dụng Agent 3 (xem Phần 3.1) để kiểm tra tính nhất quán giữa CoT và các đoạn mã.
+
+Giá trị của những số liệu hiệu suất này nằm trong khoảng từ 0 đến 1 và được hiển thị dưới dạng phần trăm. Giá trị cao hơn cho thấy sự khớp gần hơn giữa CoT được tạo và CoT ground-truth. Để tính toán BLEU, METEOR, và ROUGE-L, chúng tôi sử dụng thư viện nlg-eval.⁹
+
+4.4 Chi tiết Triển khai và Nền tảng Chạy
+Các siêu tham số được điều chỉnh theo hiệu suất thực tế. Chúng tôi hiển thị giá trị của những siêu tham số này trong Bảng 2. Để triển khai COTTON và các mô hình cơ sở khác, chúng tôi sử dụng các thư viện PyTorch¹⁰ và Transformers¹¹. Triển khai của chúng tôi dựa trên PyTorch 1.8, và các thí nghiệm được tiến hành trên một máy với CPU Intel(R) Xeon(R) Silver 4210 và GPU GeForce RTX 3090. Mất khoảng 6 giờ để hoàn thành đào tạo mô hình của COTTON.
+
+--- TRANG 8 ---
+IEEE TRANSACTIONS ON SOFTWARE ENGINEERING, VOL. 14, NO. 8, AUGUST 2015 8
+
+BẢNG 2
+Siêu tham số và giá trị của chúng
+
+Siêu tham số | Giá trị | Siêu tham số | Giá trị
+Optimizer | AdamW | Random Seed | 42
+Learning Rate | 1e-4 | Training batch size | 1
+Lora R | 8 | Lora alpha | 16
+Max input length | 256 | Max output length | 256
+Epoch | 20 | Early Stop | 5
+
+5 PHÂN TÍCH KẾT QUẢ THÍ NGHIỆM
+
+5.1 RQ1: ℓLM có thể tạo ra CoT chất lượng cao một cách độc lập không?
+
+Để điều tra liệu ℓLM có thể độc lập tạo ra CoT chất lượng cao cho sinh mã hay không, chúng tôi tiến hành thí nghiệm dựa trên các kỹ thuật học prompt few-shot như được mô tả trong Phần 3.1. Chúng tôi đánh giá hiệu suất của ℓLM với kích thước mô hình từ 0,35B đến 7B, mô hình cơ sở CodeLlama, và một số LLM đại diện (chẳng hạn như InternLM 123B [51], ChatGLM 130B [26], Gemini [52], gpt-3.5-turbo, và gpt-4 [53]). Trong số những LLM này, Gemini, gpt-3.5-turbo, và gpt-4 hiện đang được coi là những LLM đầy hứa hẹn nhất trong các nhiệm vụ sinh mã và đã cho thấy hiệu suất đầy hứa hẹn.
+
+Bảng 3 trình bày hiệu suất của ℓLM và LLM trên tất cả các số liệu đánh giá trên các tập dữ liệu HumanEval-CoT và OpenEval-CoT. Về mặt tương tự từ vựng, ℓLM nói chung hoạt động kém hơn LLM. Ví dụ, sử dụng số liệu METEOR, LLM như gpt-4 có thể đạt được điểm số khoảng 0,35 trên tập dữ liệu HumanEval-CoT và khoảng 0,37 trên tập dữ liệu OpenEval-CoT. Ngược lại, phần lớn ℓLM có điểm dưới 0,3 trên cả hai tập dữ liệu. Về mặt ngữ nghĩa, hầu hết ℓLM khó tạo ra CoT chất lượng cao, trong khi LLM thể hiện hiệu suất tốt hơn. Ví dụ, dựa trên số liệu Consistency, gpt-4 có thể đạt được điểm số trên 0,96 trên tập dữ liệu HumanEval-CoT và trên 0,87 trên tập dữ liệu OpenEval-CoT. Ngược lại, phần lớn ℓLM có điểm dưới 0,6 trong cả hai tập dữ liệu. Ngoài ra, về số liệu Consistency, gpt-3.5-turbo và gpt-4 đạt được kết quả tốt nhất trên các tập dữ liệu OpenEval và HumanEval, tương ứng, nhưng chi phí gọi gpt-4 cao gấp 20 lần so với gpt-3.5-turbo. Do đó, chúng tôi chọn gpt-3.5-turbo làm Teacher Model trong nghiên cứu của chúng tôi.
+
+Bằng cách phân tích thêm dựa trên các mô hình và kích thước tham số khác nhau, chúng tôi có thể đạt được những hiểu biết thú vị. Trong số các mô hình CodeGen, StarCoder, CodeT5+, và CodeLlama, StarCoder và CodeLlama cho thấy tiềm năng trong việc tạo ra CoT chất lượng cao để hướng dẫn sinh mã. Điều này có thể được quy cho tập dữ liệu pre-training của StarCoder và CodeLlama. Tập dữ liệu pre-training của StarCoder bao gồm thông tin từ commit và issue GitHub trong khi tập dữ liệu pre-training của CodeLlama bao gồm thông tin chứa 8% mẫu ngôn ngữ tự nhiên liên quan đến mã và 7% dữ liệu ngôn ngữ tự nhiên mục đích chung. Các nguồn thông tin ngôn ngữ tự nhiên bổ sung có thể đóng góp vào hiểu biết mã tốt hơn, dẫn đến
+
+9. https://github.com/Maluuba/nlg-eval
+10. https://pytorch.org/
+11. https://github.com/huggingface/transformers
+
+CoT chất lượng cao hơn. Ngược lại, mô hình encoder-decoder CodeT5+ thể hiện hiệu suất thấp nhất so với các mô hình decoder-only (tức là CodeGen và StarCoder). Sự khác biệt hiệu suất này có thể được quy cho kiến trúc của mô hình. Trong tình huống few-shot, mô hình encoder-decoder có thể hoạt động kém hơn mô hình decoder trong nhiệm vụ tạo CoT.
+
+Về quy mô tham số, chỉ có mô hình StarCoder thể hiện mối tương quan tích cực giữa quy mô tham số lớn hơn và hiệu suất tốt hơn. Hiệu suất của các mô hình CodeGen và CodeT5+ không phù hợp nghiêm ngặt với quy mô tham số. Chỉ có phiên bản 2B của những mô hình này thể hiện hiệu suất được cải thiện.
+
+Tóm tắt RQ1
+Phần lớn ℓLM gặp thách thức trong việc tạo ra CoT chất lượng cao để hướng dẫn sinh mã một cách độc lập.

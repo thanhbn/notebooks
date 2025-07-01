@@ -1,0 +1,444 @@
+# 2502.02757v2.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2502.02757v2.pdf
+# Kích thước file: 1044610 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+Quá Ồn Ạo Để Học: Nâng Cao Chất Lượng Dữ Liệu cho
+Tạo Bình Luận Đánh Giá Mã Nguồn
+Chunhua Liu
+Đại học Melbourne
+chunhua.liu1@unimelb.edu.auHong Yi Lin
+Đại học Melbourne
+holin2@student.unimelb.edu.auPatanamon Thongtanunam
+Đại học Melbourne
+patanamon.t@unimelb.edu.au
+
+Tóm tắt — Đánh giá mã nguồn là một thực hành quan trọng trong phát triển phần mềm, tuy nhiên nó tốn thời gian và đòi hỏi nỗ lực đáng kể. Trong khi các tập dữ liệu mã nguồn mở đã được sử dụng để huấn luyện các mô hình thần kinh cho việc tự động hóa các tác vụ đánh giá mã nguồn, bao gồm cả việc tạo bình luận đánh giá, những tập dữ liệu này chứa một lượng đáng kể các bình luận nhiễu (ví dụ: phản hồi mơ hồ hoặc không thể hành động) vẫn tồn tại mặc dù đã sử dụng các phương pháp làm sạch bằng heuristic và học máy. Những nhiễu còn lại này có thể khiến các mô hình tạo ra các bình luận đánh giá chất lượng thấp, tuy nhiên việc loại bỏ chúng đòi hỏi sự hiểu biết ngữ nghĩa phức tạp về cả các thay đổi mã nguồn và bình luận ngôn ngữ tự nhiên. Trong bài báo này, chúng tôi điều tra tác động của những nhiễu này đến việc tạo bình luận đánh giá và đề xuất một phương pháp mới sử dụng các mô hình ngôn ngữ lớn (LLMs) để làm sạch thêm những tập dữ liệu này. Dựa trên một nghiên cứu thực nghiệm trên một tập dữ liệu đánh giá mã nguồn quy mô lớn, phương pháp dựa trên LLM của chúng tôi đạt được độ chính xác 66-85% trong việc phát hiện các bình luận hợp lệ. Sử dụng các bình luận hợp lệ được dự đoán để tinh chỉnh các mô hình đánh giá mã nguồn tiên tiến (mô hình đã làm sạch) có thể tạo ra các bình luận đánh giá tương tự với các bình luận hợp lệ do con người viết nhiều hơn 13.0% - 12.4% so với các mô hình gốc. Chúng tôi cũng thấy rằng các mô hình đã làm sạch có thể tạo ra các bình luận nhiều thông tin và liên quan hơn so với các mô hình gốc. Các phát hiện của chúng tôi nhấn mạnh tác động quan trọng của chất lượng tập dữ liệu đến hiệu suất của việc tạo bình luận đánh giá. Chúng tôi khuyến khích nghiên cứu sâu hơn về việc làm sạch dữ liệu huấn luyện để nâng cao tính hữu ích thực tế và chất lượng của đánh giá mã nguồn tự động.
+
+Từ khóa chỉ mục — Đánh Giá Mã Nguồn Tự Động, Tạo Bình Luận Đánh Giá, Chất Lượng Tập Dữ Liệu
+
+I. GIỚI THIỆU
+Đánh giá mã nguồn là một thực hành quan trọng trong phát triển phần mềm, cung cấp nhiều lợi ích như xác định các lỗi logic [1, 2]. Cốt lõi của quá trình này là các bình luận của người đánh giá về các thay đổi mã nguồn, đóng vai trò là phương tiện chính để cung cấp phản hồi và đề xuất. Mặc dù có những ưu điểm, quá trình này thường tốn thời gian và đòi hỏi nỗ lực đáng kể từ những người đánh giá [3]. Để giảm bớt gánh nặng này, nghiên cứu gần đây đã tập trung vào việc tự động tạo bình luận đánh giá bằng cách huấn luyện các mô hình thần kinh trên các tập dữ liệu quy mô lớn được khai thác từ các nền tảng mã nguồn mở như GitHub và Gerrit. Trong khi những mô hình này cho thấy triển vọng trong việc tạo bình luận đánh giá mã nguồn bằng cách huấn luyện các mô hình thần kinh trên các tập dữ liệu quy mô lớn [4–6], khoảng cách giữa các bình luận được tạo bởi mô hình và các bình luận do con người viết vẫn còn đáng kể, hạn chế việc sử dụng thực tế của chúng.
+
+Mặc dù có sẵn các tập dữ liệu quy mô lớn, chất lượng của các bình luận đánh giá thay đổi do nhiều yếu tố khác nhau như kinh nghiệm của người đánh giá, thời gian đánh giá hạn chế [7, 8], ý định giao tiếp đa dạng [9], và các tiêu chuẩn khác nhau cho đánh giá mã nguồn giữa các dự án khác nhau. Các công trình trước đây đã cố gắng làm sạch những tập dữ liệu này bằng cách loại bỏ bot và lọc ra các bình luận nhiễu sử dụng heuristic [4, 10]. Gần đây hơn, Li và cộng sự đã cố gắng làm sạch benchmark CodeReviewer được sử dụng rộng rãi của họ bằng cách sử dụng các quy tắc heuristic và một bộ phân loại học máy (SVM) [5]. Tuy nhiên, những lo ngại về chất lượng dữ liệu vẫn tồn tại. Một công trình gần đây của Tufano và cộng sự [11] tiết lộ rằng một tỷ lệ đáng kể (32%) các bình luận trong tập kiểm tra của tập dữ liệu được sử dụng rộng rãi này vẫn chứa nhiễu. Nhiễu bao gồm các bình luận mơ hồ, khó hiểu, và các bình luận chỉ đơn thuần tìm kiếm làm rõ thay vì đề xuất cải thiện mã nguồn (xem Hình 1 Trên).
+
+@@ - 80,6 +80,7 @@ public  class  HoodieCreateHandle <T extends
+     HoodieRecordPayload > extends  HoodieIOH
+   String  partitionPath, String  fileId, Iterator <HoodieRecord <T>> 
+        recordIterator) {
+     this(config , commitT ime, hoodieT able, partitionPath , fileId );
+     this.recordIterator  = recordIterator;
++   this.useW riterSchema  = true;Bình luận của Người đánh giá: Tại sao chúng ta có cờ này?
+Nhãn: Bình luận Nhiễu
+@@ - 157,7 +157,7 @@ public  class  ProviderConfig  extends  
+AbstractServiceConfig  {
+     @ Deprecated
+     public  void setProtocol (String  protocol ) {
+-        this.protocols  = Arrays .asList (new ProtocolConfig []{ new 
+         ProtocolConfig (protocol)});
++       this.protocols  = new ArrayList <>(Arrays .asList (new 
+ ProtocolConfig []{ new ProtocolConfig (protocol)}));
+     }
+Bình luận của Người đánh giá: Điều này có thể được đơn giản hóa thành new ArrayList<>(
+Arrays.asList(new ProtocolConfig(protocol)))
+Nhãn: Bình luận Hợp lệ
+
+Hình 1: Ví dụ về các bình luận nhiễu (Trên) và hợp lệ (Dưới) 
+cho việc tạo bình luận đánh giá tự động.
+
+Chúng tôi lập luận rằng những bình luận nhiễu như vậy cũng có thể tồn tại trong tập huấn luyện. Các mô hình thần kinh được huấn luyện trên các tập dữ liệu nhiễu chắc chắn sẽ nội hóa và có khả năng lan truyền các đánh giá chất lượng thấp vào các bình luận đánh giá được tạo. Những đánh giá kém như vậy có thể được coi là ít hữu ích trong các bối cảnh thực tế [7, 12, 13] hoặc thậm chí tác động tiêu cực đến chất lượng phần mềm [14]. Để phát triển các mô hình tạo ra các bình luận đánh giá chất lượng cao—cung cấp các đề xuất rõ ràng để cải thiện mã nguồn nhằm hỗ trợ các tác giả mã nguồn và tinh chỉnh mã nguồn tự động—việc cải thiện chất lượng dữ liệu huấn luyện là rất quan trọng.arXiv:2502.02757v2  [cs.SE]  6 Feb 2025
+
+--- TRANG 2 ---
+Việc xác định và loại bỏ các bình luận nhiễu còn lại trong các tập dữ liệu đánh giá mã nguồn đặt ra những thách thức đáng kể do tính phức tạp của nhiệm vụ. Nó đòi hỏi sự hiểu biết về cả bối cảnh kỹ thuật của các thay đổi mã nguồn và các bình luận đánh giá được viết bằng ngôn ngữ tự nhiên. Do đó, việc diễn giải các bình luận đánh giá mã nguồn có thể rất mơ hồ và đòi hỏi nhiều suy luận [9, 15]. Các heuristic đơn giản như khớp từ khóa và độ dài câu được sử dụng trong các công trình trước [4, 10] không đủ để phân tích những phức tạp và sắc thái này trong các bình luận đánh giá, thúc giục nhu cầu về một phương pháp ngữ nghĩa và nhận thức ngữ cảnh hiệu quả hơn để làm sạch các tập dữ liệu đánh giá mã nguồn.
+
+Để giải quyết những thách thức này, công trình này khám phá một phương pháp mới để cải thiện chất lượng của các tập dữ liệu đánh giá và nghiên cứu tác động của nhiễu đến hiệu suất của việc tạo bình luận đánh giá tự động. Vì các mô hình ngôn ngữ lớn (LLMs) đã cho thấy hiệu suất đầy hứa hẹn trong việc hiểu cả mã nguồn và ngôn ngữ tự nhiên [16, 17], và tiềm năng trong các tác vụ chú thích dữ liệu trong các lĩnh vực khác [18, 19], chúng tôi điều tra tính khả thi của việc sử dụng LLMs để phân loại các bình luận nhiễu và hợp lệ, sau đó giữ lại những cái hợp lệ. Cuối cùng, chúng tôi đánh giá hiệu suất của các mô hình tiên tiến (ví dụ: CodeReviewer [5] và CodeT5 [20]) được huấn luyện trên các tập dữ liệu đã làm sạch.
+
+Thông qua một nghiên cứu thực nghiệm trên benchmark đánh giá mã nguồn được sử dụng rộng rãi (CodeReviewer [5]), chúng tôi thấy rằng chỉ có 64% các bình luận được lấy mẫu trong tập huấn luyện của benchmark CodeReviewer là hợp lệ. Phương pháp của chúng tôi sử dụng LLMs đạt được độ chính xác 66% - 85% trong việc xác định các bình luận hợp lệ và đạt được độ nhạy 51% - 89% trong việc xác định các bình luận nhiễu. Những kết quả này cho thấy rằng tỷ lệ các bình luận hợp lệ trong tập dữ liệu có thể được cải thiện từ 64% lên 85% bởi LLMs. Bằng cách chỉ giữ lại các bình luận hợp lệ được dự đoán bởi LLMs (tức là các tập dữ liệu đã làm sạch), kích thước huấn luyện nhỏ hơn 25% - 66% so với tập dữ liệu gốc. Tuy nhiên, dữ liệu nhỏ hơn không tác động tiêu cực đến hiệu suất của các mô hình tạo bình luận. Thay vào đó, các mô hình được tinh chỉnh trên các tập dữ liệu đã làm sạch đạt được điểm BLEU-4 cao hơn 7.5% - 13% so với những mô hình được huấn luyện trên tập dữ liệu gốc, với mức tăng 12.4% - 13.0% cụ thể trên các bình luận hợp lệ trong tập kiểm tra. Hơn nữa, chúng tôi cũng thấy rằng chất lượng của các bình luận được tạo từ các mô hình đã làm sạch được cải thiện đáng kể, với mức tăng lên đến 24% trong điểm thông tin và mức tăng 11% trong điểm liên quan. Những kết quả này làm nổi bật rằng các bình luận đánh giá hợp lệ và nhiễu có thể được phát hiện bởi LLMs và việc làm sạch dữ liệu đánh giá có thể cải thiện hiệu suất của các mô hình tạo bình luận đánh giá.
+
+Tính Mới và Đóng Góp. Theo hiểu biết của chúng tôi, chúng tôi là những người đầu tiên 1) trình bày một phương pháp tự động để làm sạch tập dữ liệu đánh giá quy mô lớn sử dụng LLMs, 2) chứng minh khả năng của LLMs để tự động phân loại các bình luận đánh giá hợp lệ và nhiễu, và 3) làm nổi bật tác động của chất lượng dữ liệu đến hiệu suất của việc tạo bình luận đánh giá tự động, 4) chứng minh sự cải thiện trong hiệu suất mô hình và chất lượng bình luận với tập dữ liệu đã làm sạch mặc dù kích thước của nó nhỏ hơn đáng kể so với dữ liệu gốc (ví dụ: 117K so với 39K), 5) sử dụng một phương pháp bán tự động để xấp xỉ chất lượng của các bình luận đánh giá được tạo ra ở quy mô lớn.
+
+Khoa Học Mở. Để tạo điều kiện cho tính tái tạo và công việc tương lai, chúng tôi cung cấp một gói tái tạo bao gồm các tập dữ liệu đã làm sạch, kết quả thực nghiệm và các script.¹
+
+Tổ Chức Bài Báo. Phần còn lại của bài báo này được cấu trúc như sau: Phần II thảo luận về các công trình liên quan. Phần III trình bày tổng quan về thiết kế nghiên cứu. Các phần IV - VI trình bày các phương pháp nghiên cứu và kết quả của từng câu hỏi nghiên cứu. Phần VII thảo luận về các phát hiện. Phần VIII giải quyết các mối đe dọa tiềm ẩn đối với tính hợp lệ. Cuối cùng, Phần IX đưa ra kết luận.
+
+II. BỐI CẢNH & CÔNG TRÌNH LIÊN QUAN
+Đánh Giá Mã Nguồn Tự Động. Để giúp giảm bớt gánh nặng nhận thức của quá trình đánh giá mã nguồn hiện đại [21, 22], nghiên cứu đánh giá mã nguồn tự động đã giới thiệu ba nhiệm vụ tuần tự trong 1) ước lượng chất lượng thay đổi mã nguồn [5], 2) tạo bình luận đánh giá [4] và 3) tinh chỉnh mã nguồn [23–25], phản ánh quá trình của con người trong 1) đánh giá liệu một thay đổi mã nguồn có vấn đề hay không, 2) cung cấp một bình luận đánh giá bằng ngôn ngữ tự nhiên mô tả chi tiết các vấn đề và các bản sửa lỗi liên quan và 3) giải quyết đánh giá bằng cách sửa đổi mã nguồn. Các nghiên cứu gần đây đã tận dụng các tập dữ liệu quy mô lớn từ các nền tảng mã nguồn mở để huấn luyện các mô hình thực hiện những nhiệm vụ này [5, 10, 23]. Mặc dù đã đạt được những tiến bộ, việc tự động hóa quá trình đánh giá mã nguồn vẫn còn thách thức, đặc biệt là trong nhiệm vụ tạo bình luận đánh giá [11].
+
+Tạo Bình Luận Đánh Giá. Việc tạo bình luận đánh giá được hình thành như một nhiệm vụ tạo ra chuỗi-to-chuỗi, nơi các mô hình tạo ra các bình luận đánh giá ngôn ngữ tự nhiên (RNL) dựa trên các thay đổi mã nguồn (CDIFF). Ban đầu, Tufano và cộng sự [4] huấn luyện một transformer T5 [26] trên các cặp Java (CDIFF,RNL), chứng minh rằng các bình luận đánh giá sở hữu các thuộc tính thống kê tiềm ẩn có thể được học. Li và cộng sự [5] giới thiệu một tập dữ liệu quy mô lớn gọi là CodeReviewer bao gồm chín ngôn ngữ lập trình cho việc tiền huấn luyện và tinh chỉnh cụ thể cho đánh giá mã nguồn. Các nghiên cứu tiếp theo sử dụng tập dữ liệu CodeReviewer đã khám phá nhiều giải pháp khác nhau, như huấn luyện chung trên nhiều tác vụ đánh giá mã nguồn [27] và prompting LLMs [11, 28]. Mặc dù những mô hình này cho thấy sự cải thiện so với công nghệ tiên tiến, các bình luận được tạo ra của chúng vẫn còn thiếu sót khi so sánh với các đánh giá của con người, làm dấy lên mối lo ngại về tính thực tiễn của chúng. Trong khi những nghiên cứu này tập trung vào việc phát triển các kỹ thuật mới, chất lượng của các tập dữ liệu cơ bản đã bị bỏ qua. Tầm quan trọng của chất lượng dữ liệu này thực sự được nhấn mạnh bởi một nghiên cứu tình huống tại Google [29], làm nổi bật tiềm năng xây dựng các công cụ đánh giá mã nguồn thực tế sử dụng dữ liệu chất lượng cao.
+
+Chất Lượng Bình Luận Đánh Giá. Các bình luận đánh giá phục vụ nhiều ý định giao tiếp, từ đề xuất thay đổi mã nguồn đến tìm kiếm thông tin thêm hoặc biểu đạt thái độ [9]. Bản chất đa diện như vậy của những bình luận này có thể cản trở việc đánh giá mã nguồn tự động. Các nghiên cứu gần đây [10, 30] đã làm nổi bật rằng không phải tất cả các bình luận đánh giá đều phù hợp để huấn luyện các mô hình học máy và trí tuệ nhân tạo. Vấn đề này được phức tạp hóa bởi thực tế là các tập dữ liệu được khai thác từ các nền tảng mã nguồn mở thường chứa nhiễu, như các bình luận không rõ ràng hoặc không thể thực hiện, ngay cả sau khi xử lý bằng các quy tắc heuristic hoặc loại bỏ các bình luận được đăng bởi bot [11]. Mặc dù tầm quan trọng của chất lượng dữ liệu đã được nhận ra, hầu hết các nghiên cứu không tập trung vào việc xác định và loại bỏ các bình luận đánh giá nhiễu ở quy mô lớn, và thay vào đó xây dựng trực tiếp trên chúng.
+
+¹https://zenodo.org/records/13150598
+
+--- TRANG 3 ---
+Các Phương Pháp Hiện Có cho Chất Lượng Tập Dữ Liệu. Các phương pháp hiện có để làm sạch các tập dữ liệu đánh giá mã nguồn chủ yếu dựa vào các quy tắc heuristic được tạo thủ công, thường là cụ thể cho tập dữ liệu và hạn chế về phạm vi. Công trình đầu tiên của [31] đã sử dụng từ khóa để phát triển các biểu thức chính quy cho C# nhằm loại bỏ các bình luận không thể thực hiện. Tương tự, Tufano và cộng sự [4, 10] thiết kế một tập hợp các quy tắc heuristic cho Java tập trung vào các đặc điểm bề mặt như độ dài bình luận và từ khóa (ví dụ: ít hơn 5 từ và chứa 'pr' được coi là nhiễu). Tuy nhiên, những phương pháp này thiếu sự hiểu biết ngữ nghĩa và khả năng tổng quát hóa giữa các ngôn ngữ.
+
+Những nỗ lực gần đây hơn đã cố gắng kết hợp các phương pháp dựa trên quy tắc với học máy có giám sát. Trong việc phát triển tập dữ liệu CodeReviewer, Li và cộng sự [5] đã áp dụng các quy tắc heuristic hiện có [4] và bổ sung chúng bằng một bộ phân loại học máy (SVM) được huấn luyện trên dữ liệu được gắn nhãn thủ công.² Mặc dù có những tiến bộ này, một phân tích thủ công gần đây [11] tiết lộ rằng nhiễu đáng kể vẫn tồn tại trong các tập dữ liệu benchmark hiện tại bao gồm CodeReviewer [5]. Đặc biệt, các bình luận nhiễu còn lại đòi hỏi sự hiểu biết ngữ nghĩa về cả thay đổi mã nguồn và bình luận đánh giá - một khả năng vượt quá các phương pháp hiện có.
+
+III. THIẾT KẾ NGHIÊN CỨU
+Nghiên cứu của chúng tôi nhằm khám phá một phương pháp tự động để tự động chưng cất các bình luận đánh giá mã nguồn của con người trước khi sử dụng chúng để huấn luyện các mô hình tạo bình luận tự động. Bằng cách tập trung vào các bình luận đóng góp trực tiếp vào việc cải thiện mã nguồn, chúng tôi có thể nâng cao chất lượng dữ liệu huấn luyện và do đó cải thiện hiệu suất của các mô hình tạo bình luận đánh giá mã nguồn tự động.
+
+Chúng tôi xem xét các bình luận hợp lệ và nhiễu sử dụng các định nghĩa sau, phù hợp với các định nghĩa của công trình trước [11].
+
+• Bình luận Hợp lệ đề cập đến các bình luận đánh giá nên cung cấp các đề xuất rõ ràng nhằm cải thiện mã nguồn. Với thay đổi mã nguồn được gửi (tức là code diff), bình luận hợp lệ nên thể hiện rõ ràng các vấn đề và nêu rõ các hành động cần thiết để cải thiện mã nguồn. Loại hành động được yêu cầu cũng nên rõ ràng, như tái cấu trúc mã nguồn để cải thiện chất lượng mã nguồn (liên quan đến tài liệu, phong cách, quy ước lập trình và nhiều hơn nữa), viết test, phù hợp với các nguyên tắc thiết kế hướng đối tượng tốt, sửa lỗi, nâng cao logging, hoặc giải quyết các nhu cầu cụ thể khác.
+
+• Bình luận Nhiễu đề cập đến các bình luận đánh giá không yêu cầu các hành động trực tiếp và có thể áp dụng để tinh chỉnh mã nguồn, hoặc thông điệp được thể hiện không rõ ràng và khó hiểu. Điều này bao gồm các bình luận không yêu cầu rõ ràng các thay đổi cụ thể, chỉ đơn thuần biện minh cho thay đổi mã nguồn được gửi, hoặc có chất lượng thấp do sự mơ hồ, không rõ ràng, hoặc các yếu tố khác cản trở sự hiểu biết.
+
+² Chi tiết được cung cấp trong tài liệu bổ sung của họ (Phần A.1 và A.2) tại https://arxiv.org/pdf/2203.09095v1.
+
+Định nghĩa này phù hợp với các đặc điểm của các bình luận hữu ích được nhận thức bởi các nhà thực hành [1, 12, 32], được áp dụng rộng rãi trong công trình trước [33, 34] và tương ứng với các phân loại đã được thiết lập cho việc phân loại loại bình luận [11, 35].
+
+A. Các Câu Hỏi Nghiên Cứu
+Mục tiêu của nghiên cứu này là kiểm tra tính khả thi của các Mô hình Ngôn ngữ Lớn (LLMs) để xác định các bình luận đánh giá hợp lệ và nhiễu và điều tra tác động của các bình luận nhiễu đến hiệu suất của các mô hình tạo bình luận đánh giá tự động. Để đạt được mục tiêu này, chúng tôi giải quyết ba câu hỏi nghiên cứu.
+
+RQ1: Các mô hình ngôn ngữ lớn có thể làm sạch ngữ nghĩa các bình luận đánh giá mã nguồn đến mức độ nào? Trong khi heuristic đã được áp dụng để làm sạch các tập dữ liệu đánh giá [4, 10, 31], chúng đã bỏ lỡ các bình luận nhiễu đòi hỏi sự hiểu biết sâu hơn về ngữ nghĩa [10]. Mặc dù có sự tiến bộ gần đây của LLMs trong nhiều tác vụ liên quan đến mã nguồn [36], khả năng xác định chất lượng của các bình luận đánh giá mã nguồn của chúng vẫn chưa được điều tra. RQ1 của chúng tôi nhằm thu hẹp khoảng cách này bằng cách đánh giá thực nghiệm hiệu quả của LLMs trong việc phân loại các bình luận đánh giá mã nguồn hợp lệ và nhiễu, làm sáng tỏ một cách hiệu quả để cải thiện chất lượng dữ liệu đánh giá mã nguồn.
+
+RQ2: Việc làm sạch dữ liệu ngữ nghĩa có tác động đến độ chính xác của các mô hình tạo bình luận đánh giá mã nguồn không? Công trình gần đây [11] đã quan sát thấy rằng một tỷ lệ đáng kể (32%) các bình luận vẫn còn nhiễu. Trong khi việc chỉ giữ lại các bình luận hợp lệ được dự đoán có thể cải thiện chất lượng dữ liệu, nó cũng giảm kích thước huấn luyện, có thể ảnh hưởng đến hiệu suất mô hình. Do đó, chúng tôi thiết lập RQ2 để kiểm tra tác động của việc làm sạch dữ liệu đến hiệu suất của các mô hình tạo bình luận. Cụ thể, chúng tôi đánh giá lại độ chính xác của các mô hình tạo đánh giá mã nguồn khi được huấn luyện trên các tập dữ liệu gốc so với đã làm sạch.
+
+RQ3: Việc làm sạch dữ liệu ngữ nghĩa có cải thiện chất lượng của các mô hình tạo bình luận đánh giá mã nguồn không? Khi chất lượng dữ liệu huấn luyện được cải thiện (tức là tỷ lệ cao hơn của các bình luận hợp lệ), các mô hình tạo bình luận đánh giá sẽ học nhiều hơn trên các ví dụ hợp lệ, do đó chúng có nhiều khả năng tạo ra các bình luận đánh giá chất lượng cao hơn. Tuy nhiên, vẫn chưa rõ chất lượng của các bình luận đánh giá được tạo ra có thể được cải thiện đến mức độ nào bằng cách sử dụng các tập dữ liệu đã làm sạch. Do đó, trong RQ3, chúng tôi nhằm kiểm tra sự cải thiện trong chất lượng của các bình luận được tạo từ các mô hình được huấn luyện trên các tập dữ liệu gốc và đã làm sạch. Chúng tôi đánh giá chất lượng trong hai khía cạnh chính, tức là thông tin và liên quan sử dụng cả phân tích thủ công và bán tự động.
+
+B. Tập Dữ Liệu
+Trong nghiên cứu này, chúng tôi sử dụng tập dữ liệu CodeReviewer [5] làm đối tượng nghiên cứu. Chúng tôi chọn tập dữ liệu này vì nó là tập dữ liệu đánh giá mã nguồn thực tế lớn nhất và được sử dụng rộng rãi, đại diện cho dữ liệu đánh giá mã nguồn điển hình được khai thác từ các nền tảng công khai như GitHub. Tập dữ liệu này thể hiện một số đặc điểm chính: (a) nó có quy mô lớn, bao gồm khoảng 116K mẫu trong tập huấn luyện, cùng với khoảng 10K mẫu mỗi tập trong
+
+--- TRANG 4 ---
+Lấy Mẫu Dữ Liệu
+Gắn Nhãn LLMs RQ1
+Làm Sạch Dữ Liệu Ngữ Nghĩa Tinh Chỉnh 
+Mô Hình Tạo 
+Bình Luận Mô Hình Đã Làm Sạch RQ2
+Lấy Mẫu Đánh Giá Thủ Công Chất Lượng Bình Luận Được Tạo Ra Được Lấy Mẫu RQ3 Tập Dữ Liệu 
+CodeReviewer
+Gốc
+Tập Dữ Liệu 
+CodeReviewer
+Đã Làm Sạch Tạo Ra
+Bình Luận Được Tạo Ra
+Mô Hình Chủ Đề Đánh Giá Tổng Thể Chất Lượng Bình Luận Được Tạo Ra Tập Kiểm Tra Phân Loại Bình Luận Nhiễu qua LLMs
+Thiết Kế Prompt Prompting LLMs
+
+Hình 2: Tổng quan về quy trình nghiên cứu của chúng tôi.
+
+các tập validation và test; (b) nó đa dạng, chứa các dự án từ hơn 1,000 repository phần mềm và bao gồm chín ngôn ngữ lập trình được sử dụng phổ biến.
+
+C. Tổng Quan Nghiên Cứu
+Hình 2 trình bày tổng quan về nghiên cứu của chúng tôi. Để điều tra mức độ mà các bình luận hợp lệ và nhiễu có thể được phân loại tự động bởi LLMs, RQ1 đánh giá độ chính xác của các prompt khác nhau và LLMs dựa trên các mẫu được chú thích thủ công. Phương pháp hiệu quả nhất (chiến lược prompt và LLM) sẽ được chọn để làm sạch toàn bộ tập dữ liệu huấn luyện.
+
+RQ2 và RQ3 nhằm nghiên cứu tác động của việc làm sạch dữ liệu ngữ nghĩa đến hiệu suất của các mô hình tạo bình luận. Chúng tôi sử dụng LLM để làm sạch dữ liệu huấn luyện bằng cách (a) gắn nhãn tất cả các instance là hợp lệ hoặc nhiễu, và (b) chỉ giữ lại các instance được dự đoán là hợp lệ cho một tập dữ liệu sạch. Tiếp theo, chúng tôi tinh chỉnh các mô hình tạo bình luận trên cả tập dữ liệu đã làm sạch và gốc. Sau đó chúng tôi so sánh hiệu suất của chúng về mặt độ chính xác và chất lượng. RQ2 đánh giá độ chính xác của các bình luận được tạo ra bằng cách so sánh chúng với các bình luận đánh giá thực tế được viết bởi những người đánh giá con người. RQ3 đánh giá chất lượng của các bình luận được tạo ra bằng cách kiểm tra thông tin mà chúng cung cấp và tính liên quan của chúng đối với code diff tương ứng. Chúng tôi thực hiện phân tích thủ công trên một tập con các bình luận được lấy mẫu và thực hiện phân tích bán tự động để ước lượng chất lượng cho toàn bộ tập kiểm tra. Dưới đây, chúng tôi mô tả chi tiết thiết kế thực nghiệm và trình bày kết quả thực nghiệm cho từng RQ (Phần IV - VI).
+
+IV. LÀM SẠCH DỮ LIỆU NGỮ NGHĨA QUA LLMs (RQ1)
+Để đánh giá hiệu quả của các mô hình ngôn ngữ lớn (LLMs) trong việc phân loại các bình luận hợp lệ và nhiễu, chúng tôi khung nghiên cứu này như một tác vụ phân loại nhị phân. Với một bình luận đánh giá ngôn ngữ tự nhiên RNL và một thay đổi mã nguồn CDIFF, một LLM phân loại liệu bình luận đó có hợp lệ hay nhiễu dựa trên các định nghĩa được mô tả trong Phần III. Do thiếu một tập đánh giá, chúng tôi lấy mẫu ngẫu nhiên một tập con từ dữ liệu huấn luyện và phân loại thủ công nó với các nhãn hợp lệ và nhiễu (Phần IV-A). Sử dụng tập dữ liệu được gắn nhãn này, sau đó chúng tôi đánh giá một số LLMs với nhiều prompt khác nhau để đánh giá hiệu suất của chúng trong việc phân loại bình luận (Phần IV-B - IV-D).
+
+A. Gắn Nhãn Dữ Liệu
+Để giải quyết RQ1, chúng tôi gắn nhãn thủ công một tập con gồm 270 mẫu được chọn ngẫu nhiên từ tập dữ liệu huấn luyện, tạo thành một kích thước mẫu có ý nghĩa thống kê với mức độ tin cậy 90% và biên sai lỗi ±5%.
+
+Việc gắn nhãn được thực hiện bởi hai người chú thích (tức là các tác giả của bài báo) có nền tảng về khoa học máy tính và kỹ thuật phần mềm với hơn năm năm kinh nghiệm lập trình và phát triển phần mềm. Trong giai đoạn gắn nhãn ban đầu, Người chú thích 1 và 2 độc lập chú thích 50 trong số 270 mẫu dựa trên các định nghĩa về hợp lệ và nhiễu được mô tả trong Phần III. Việc chú thích ban đầu dẫn đến hệ số kappa của Cohen là 0.57, cho thấy sự đồng ý vừa phải. Sau khi thảo luận về các trường hợp không đồng ý, hệ số kappa của Cohen cải thiện lên 0.83, biểu thị sự đồng ý gần như hoàn hảo. Những bất đồng còn lại được giải quyết bằng cách mời Người chú thích 3, một nhà nghiên cứu cao cấp với chuyên môn sâu rộng về kỹ thuật phần mềm.
+
+Sau giai đoạn ban đầu, các định nghĩa của các bình luận hợp lệ được chi tiết hóa để trở thành các hướng dẫn xác định các bình luận hợp lệ dựa trên sự hiểu biết chung của hai người chú thích.³ Theo hướng dẫn này, Người chú thích 1 tiến hành gắn nhãn 220 mẫu còn lại, tham khảo ý kiến với Người chú thích 2 và 3 về các trường hợp mơ hồ để hoàn thiện các nhãn. Hình 1 cung cấp các ví dụ về các bình luận đánh giá hợp lệ và nhiễu mà chúng tôi đã chú thích.
+
+Cuối cùng, trong số 270 bình luận đánh giá trong tập dữ liệu huấn luyện, mẫu bao gồm 172 bình luận hợp lệ và 98 bình luận nhiễu. Tỷ lệ bình luận nhiễu (36%) tương tự với việc chú thích thủ công trong tập kiểm tra của CodeReviewer bởi Tufano và cộng sự [11], tức là 32%,⁴ cho thấy rằng việc chú thích thủ công của chúng tôi phù hợp với công trình trước.
+
+B. Phân Loại Bình Luận Đánh Giá
+Các Mô hình Ngôn ngữ Lớn (LLMs). Chúng tôi tập trung vào các LLMs tiên tiến với khả năng làm theo hướng dẫn và tiếp xúc với các tác vụ liên quan đến mã nguồn, vì điều này cho phép các mô hình làm theo các hướng dẫn phân loại của chúng tôi và hiểu thay đổi mã nguồn. Chúng tôi chọn một mô hình thương mại (GPT-3.5) và hai mô hình mã nguồn mở (CodeLlama [38] và Llama 3 [39]).
+
+• GPT-3.5 là một LLM đã được tiền huấn luyện trên các corpus ngôn ngữ tự nhiên và mã nguồn rộng lớn. Nó đã được sử dụng rộng rãi trong nhiều tác vụ liên quan đến mã nguồn [40, 41]. Chúng tôi sử dụng gpt-3.5-turbo-0125 trong các thực nghiệm của mình.
+
+• CodeLlama là một biến thể của mô hình mã nguồn mở Llama2 [42], được điều chỉnh cho việc tạo và hiểu mã nguồn. Chúng tôi chọn phiên bản CodeLlama-34b-Instruct được tinh chỉnh để làm theo hướng dẫn của con người, cho phép nhiều tác vụ khác nhau trên nhiều ngôn ngữ lập trình mà không cần huấn luyện cụ thể cho tác vụ.
+
+• Llama3 là một mô hình mã nguồn mở lớn gần đây. Mặc dù không được huấn luyện cụ thể cho mã nguồn như CodeLlama, hiệu suất của Llama3 được tối ưu hóa cho việc lập trình và lý luận, phù hợp cho tác vụ phân loại của chúng tôi. Chúng tôi sử dụng phiên bản Llama-3-8B-Instruct để cho phép làm theo hướng dẫn trong các thực nghiệm của mình.
+
+³ Hướng dẫn đầy đủ có sẵn trong gói tái tạo [37].
+⁴ Trong khi Tufano và cộng sự báo cáo tỷ lệ nhiễu tổng thể 25% trên tất cả ba benchmark trong nghiên cứu của họ, 32% của chúng tôi cụ thể đề cập đến benchmark CodeReviewer, được lấy từ gói tái tạo của họ.
+
+--- TRANG 5 ---
+Prompt Hệ Thống (Hướng Dẫn Tác Vụ)
+Ngữ Cảnh: Thay Đổi Mã Nguồn
+Đầu Vào: Bình Luận Đánh Giá
+Định Dạng Trả Lời Gán Vai Trò
+Định Nghĩa 
+Bình luận hợp lệ là những bình luận yêu cầu các thay đổi mã nguồn trực tiếp và rõ ràng nhằm cải thiện mã nguồn.  ...
+Một bình luận được coi là nhiễu nếu nó không yêu cầu các hành động trực tiếp và có thể áp dụng để tinh chỉnh mã nguồn,  ...
+@@ - 86,6 +86,7 @@ type PipelineManifest  struct  {
+    Version  PipelineSchemaMajorV ersion  `yaml:"version"`
+    Source   *Source                     `yaml:"source"`
+    Stages   []PipelineStage             `yaml:"stages"`
++   // ArtifactBuckets?
+ }
+Các bucket được tạo qua stackset, khách hàng không cần cung cấp chúng. Dưới đây là một code diff và bình luận đánh giá. 
+Vui lòng đánh giá liệu bình luận này là Hợp lệ hay Nhiễu. Tiêu Chí
+Đánh giá của bạn nên được hướng dẫn bởi các tiêu chí sau:
+1. Liên Quan đến Thay Đổi Mã Nguồn:  ...
+2. Tính Rõ Ràng và Tính Xây Dựng: ...
+3. Tập Trung vào Cải Thiện: ... Nhiệm vụ của bạn, với tư cách là một người đánh giá mã nguồn có kinh nghiệm, là đánh giá các bình luận đánh giá được tạo ra bởi các nhà phát triển khác được gửi trong quá trình đánh giá mã nguồn. Mục tiêu của bạn là phân biệt giữa các bình luận nhiễu và những bình luận hợp lệ.
+Trả về câu trả lời dưới dạng một dict với label và explanation làm keys. Prompt Người Dùng
+
+Hình 3: Mẫu prompt cho việc phân loại nhiễu sử dụng PDEFINITION với ngữ cảnh.
+
+Việc lựa chọn mô hình của chúng tôi xem xét (a) mã nguồn mở và đóng nguồn; (b) kích thước mô hình; (c) tổng quát so với tập trung vào mã nguồn. Mặc dù CodeLLama và Llama3 thuộc cùng một họ, chúng được huấn luyện cho các mục đích khác nhau, tức là CodeLLama đại diện cho LLMs tập trung vào mã nguồn và Llama3 đại diện cho LLMs đa mục đích.
+
+Thiết Kế Prompt. Một prompt được sử dụng để hướng dẫn LLMs thực hiện các tác vụ cụ thể [43]. Thông thường, một prompt bao gồm hai thành phần: system prompt, hướng dẫn hành vi tổng thể của các mô hình, và user prompt, cung cấp đầu vào cụ thể cho mỗi truy vấn. Các prompt được tạo ra tốt và có thông tin trong cả hai thành phần có thể hiệu quả gợi ra các phản hồi liên quan và chính xác từ LLMs. Cho tác vụ phân loại bình luận đánh giá của chúng tôi, chúng tôi phát triển một mẫu prompt toàn diện dựa trên các chiến lược từ gpt-best-practices của OpenAI [44] và những chiến lược đã được chứng minh hiệu quả trong các tác vụ kỹ thuật phần mềm như phát hiện lỗ hổng phần mềm [45] và đánh giá mã nguồn bảo mật [46]. System prompt của chúng tôi kết hợp chi tiết hướng dẫn tác vụ bao gồm gán vai trò, định nghĩa chính và tiêu chí phân loại. User prompt cung cấp ngữ cảnh của thay đổi mã nguồn, bình luận đánh giá cụ thể cần được phân loại và định dạng có cấu trúc cho phản hồi của mô hình. Hình 3 cung cấp một ví dụ về mẫu prompt của chúng tôi.
+
+Để điều tra hiệu quả của các thành phần khác nhau của các prompt trong tác vụ phân loại bình luận đánh giá, chúng tôi thiết kế bốn prompt bằng cách thay đổi hướng dẫn tác vụ trong system prompt và user prompt. Đối với hướng dẫn tác vụ, chúng tôi thay đổi giữa (a) PDEFINITION: một prompt bao gồm các định nghĩa của các bình luận hợp lệ và nhiễu như chúng tôi đã sử dụng trong việc chú thích thủ công, và (b) PAUXILIARY: một prompt bổ sung cho PDEFINITION với bảy quy tắc phụ trợ cụ thể hóa cùng các tiêu chí trong Hình 3. Những quy tắc phụ trợ này được phát triển dựa trên các cuộc thảo luận và sự hiểu biết chung của chúng tôi trong giai đoạn gắn nhãn ban đầu, và được sử dụng nhất quán để hướng dẫn việc chú thích trong suốt cả RQ1 và RQ2. Các prompt đầy đủ cho PDEFINITION và PAUXILIARY cho các thực nghiệm của chúng tôi có trong gói tái tạo của chúng tôi [37]. Đối với user prompt, chúng tôi thay đổi giữa (a) chỉ cung cấp bình luận đánh giá RNL làm đầu vào, và (b) cung cấp cả code diff patch CDIFF và bình luận tương ứng RNL cùng nhau làm đầu vào. Chúng tôi thử nghiệm với những prompt này trên ba LLMs, dẫn đến 12 thực nghiệm. Đối với tất cả các mô hình, chúng tôi đặt temperature ở giá trị thấp là 0.1 để đảm bảo tính nhất quán.
+
+C. Đánh Giá
+Để đánh giá hiệu suất của LLMs trong việc phân loại các bình luận hợp lệ và nhiễu, chúng tôi sử dụng các chỉ số precision, recall và F1. Để cung cấp cái nhìn toàn diện về hiệu suất phân loại, chúng tôi báo cáo các chỉ số theo từng lớp, coi cả hợp lệ và nhiễu làm nhãn dương trong các đánh giá riêng biệt. Đánh giá này cung cấp thông tin chi tiết về khả năng của mỗi LLM trong việc xác định các bình luận hợp lệ và nhiễu. Chúng tôi cũng đo lường hiệu suất tổng quan xem xét cả hai lớp hợp lệ và nhiễu. Cho bản chất không cân bằng của tập dữ liệu của chúng tôi giữa các lớp hợp lệ và nhiễu, chúng tôi báo cáo các chỉ số hiệu suất tổng quan có trọng số, trong đó trọng số tỷ lệ với kích thước mẫu của mỗi lớp.
+
+Baseline. Chúng tôi sử dụng phương pháp làm sạch của Li và cộng sự [5] làm baseline. Khi xây dựng tập dữ liệu CodeReviewer, họ đã áp dụng các phương pháp làm sạch rộng rãi sử dụng cả quy tắc heuristic [4] và bộ phân loại SVM.⁵ Do đó, tất cả các instance trong tập dữ liệu CodeReviewer được coi là hợp lệ theo phương pháp của Li và cộng sự, có nghĩa là bất kỳ instance được lấy mẫu nào cũng được coi là hợp lệ bởi phương pháp của họ. Baseline này phù hợp vì các phương pháp làm sạch tiên tiến đã được áp dụng; do đó, các bình luận nhiễu còn lại đại diện cho các trường hợp mà các kỹ thuật trước không thể phát hiện, phản ánh hiệu suất giới hạn trên của các phương pháp trước.
+
+⁵ Phương pháp làm sạch dữ liệu được mô tả trong phụ lục của họ: https://arxiv.org/pdf/2203.09095v1
+
+--- TRANG 6 ---
+BẢNG I: Kết quả thực nghiệm về phân loại nhiễu.
+Prompt Mô hình Đầu vào Tổng thể (có trọng số) Hợp lệ (172) Nhiễu (98)
+Prec Rec F1 Prec Rec F1 # Prec Rec F1 #
+Baseline [5] - 40.6 63.7 49.6 63.7 100 77.8 270 0 0 0 0
+
+PDEFINITION GPT-3.5 RNL 70.3 54.1 55.7 85.1 36.6 51.2 74 44.4 88.8 59.2 196
+CodeLlama RNL 64.1 65.6 58.0 66.0 94.8 77.8 247 60.9 14.3 23.1 23
+Llama3 RNL 71.8 72.6 71.7 75.3 84.9 79.8 194 65.8 51 57.5 76
+GPT-3.5 RNL+CDIFF 65.6 61.5 62.2 75.8 58.1 65.8 132 47.8 67.3 55.9 138
+CodeLlama RNL+CDIFF 54.2 62.2 52.3 63.8 94.2 76.1 254 37.5 6.1 10.5 16
+Llama3 RNL+CDIFF 62.6 65.2 59.8 66.7 90.7 76.8 234 55.6 20.4 29.9 36
+
+PAUXILIARY GPT-3.5 RNL 66.8 59.2 59.5 49.7 60.6 54.6 107 46.2 76.3 57.6 160
+CodeLlama RNL 71.0 71.7 70.1 73.2 87.7 79.8 205 67.2 43.9 53.1 64
+Llama3 RNL 71.0 71.9 70.6 74.0 86.0 79.6 200 65.7 46.9 54.8 70
+GPT-3.5 RNL+CDIFF 60.4 55.9 56.7 70.5 52.9 60.5 129 42.6 61.2 50.2 141
+CodeLlama RNL+CDIFF 47.0 62.2 55.7 64.1 92.4 75.7 248 40.9 9.2 15.0 22
+Llama3 RNL+CDIFF 63.3 65.6 62.2 68.0 86.6 76.2 219 54.9 28.6 37.6 51
+
+Kết quả cao nhất và cao thứ hai được in đậm và gạch chân. # đại diện cho số lượng instance được dự đoán trong mỗi lớp.
+
+Các kỹ thuật khác [10, 12] không phù hợp vì chúng hoặc yêu cầu thông tin bổ sung không có sẵn trong tập dữ liệu CodeReviewer [12], hoặc bị giới hạn trong bối cảnh cụ thể [10]. Ví dụ, chúng tôi áp dụng các quy tắc heuristic của Tufano và cộng sự [10], và không có bình luận nào trong tập dữ liệu CodeReviewer được xác định là nhiễu.
+
+D. Kết Quả Thực Nghiệm
+Bảng I trình bày kết quả thực nghiệm của chúng tôi về tác vụ phân loại bình luận nhiễu. Độ chính xác của baseline trên các bình luận hợp lệ cho thấy rằng tập dữ liệu gốc có tỷ lệ bình luận hợp lệ là 63.7%.
+
+Bảng I cho thấy rằng LLMs đạt được F1 tổng thể lên đến 71.7%. Trong số các LLMs được nghiên cứu, Llama3 và GPT-3.5 đạt được độ chính xác tổng thể tương đương (71.8% và 70.3% tương ứng), với Llama3 và CodeLlama cho thấy hiệu suất tương tự về recall (72.6% và 65.6%). Đối với việc xác định các bình luận hợp lệ, GPT-3.5 và Llama3 đạt được độ chính xác lần lượt là 85.1% và 75.3%. Điều này cho thấy rằng bằng cách chỉ giữ lại các instance được dự đoán là hợp lệ, tỷ lệ bình luận hợp lệ được cải thiện 21.4 và 11.6 điểm phần trăm từ tập dữ liệu gốc (63.7%). Những phát hiện này cho thấy rằng LLMs có thể phân biệt giữa các bình luận đánh giá mã nguồn hợp lệ và nhiễu.
+
+Bảng I cho thấy rằng prompt chỉ với bình luận đánh giá (RNL) làm đầu vào thường hoạt động tốt nhất trên các lớp hợp lệ và nhiễu. Nó đạt được độ chính xác cao nhất trên tổng thể và hợp lệ, và độ chính xác cao thứ hai cho nhiễu. Cụ thể, đối với Llama3, hiệu suất vẫn tương tự cho dù sử dụng prompt PDEFINITION hay PAUXILIARY. Đối với CodeLlama, chúng tôi quan sát sự cải thiện hiệu suất khi chỉ cung cấp bình luận đánh giá (RNL) với prompt PAUXILIARY. Tương tự, việc cung cấp ngữ cảnh mã nguồn bổ sung (CDIFF) cùng với các bình luận đánh giá (RNL) không cải thiện hiệu suất mô hình. Ví dụ, CodeLlama có sự giảm độ chính xác 9.9% - 24% khi CDIFF được cung cấp. Điều này có thể là do các chi tiết bổ sung của PAUXILIARY và ngữ cảnh mã nguồn tăng độ dài prompt và làm phân tâm các mô hình, có thể khiến chúng bỏ qua các tiêu chí quan trọng trong các prompt dài hơn [47]. Ví dụ, chúng tôi quan sát thấy rằng GPT-3.5 trả về các nhãn không mong đợi hoặc phản hồi trống cho ba mẫu với ngữ cảnh dài. Những phát hiện này làm nổi bật tầm quan trọng của các đầu vào ngắn gọn, tập trung cho hiệu suất LLM tối ưu.
+
+Trả lời cho RQ1: LLMs cho thấy tiềm năng đầy hứa hẹn trong việc phân loại các bình luận đánh giá mã nguồn, với F1 tổng thể lên đến 71.7%. Độ chính xác trong việc xác định các bình luận hợp lệ làm nổi bật rằng tỷ lệ bình luận hợp lệ có thể được cải thiện từ 64% trên tập dữ liệu gốc lên 85% trên các tập dữ liệu đã làm sạch của chúng tôi.
+
+V. TÁC ĐỘNG ĐẾN ĐỘ CHÍNH XÁC TẠO BÌNH LUẬN (RQ2)
+Để điều tra tác động của việc làm sạch dữ liệu ngữ nghĩa đến các mô hình tạo bình luận, chúng tôi sử dụng các LLMs từ RQ1 để làm sạch tập dữ liệu. Sau đó, chúng tôi tinh chỉnh các mô hình đã được tiền huấn luyện với tập dữ liệu đã làm sạch và đánh giá hiệu suất của các mô hình trong việc tạo bình luận đánh giá.
+
+A. Làm Sạch Dữ Liệu Ngữ Nghĩa
+Để làm sạch tập dữ liệu, chúng tôi sử dụng các LLMs để dự đoán các lớp hợp lệ và nhiễu và giữ lại các instance hợp lệ (tức là loại bỏ các instance nhiễu). Chúng tôi sử dụng (1) GPT-3.5 và (2) Llama3 sử dụng prompt PDEFINITION với RNL vì hai mô hình này thể hiện hiệu suất mạnh trong việc giữ lại tỷ lệ cao các bình luận hợp lệ (với độ chính xác 85.1% và 75.3% tương ứng) trong khi thể hiện các đặc điểm bổ sung trong recall. Điều này cho phép chúng tôi có được các tập dữ liệu đã làm sạch với các mức độ khác nhau của tỷ lệ bình luận hợp lệ và kích thước huấn luyện.
+
+Chúng tôi sử dụng các LLMs để làm sạch tập huấn luyện và validation của tập dữ liệu được nghiên cứu. Bảng II cho thấy tóm tắt thống kê của kích thước tập huấn luyện và validation đã làm sạch với các LLMs khác nhau. Hàng ORIGINAL cho thấy kích thước của tập huấn luyện và validation gốc của CodeReviewer [5]. Các hàng CLEANED cho thấy kích thước của tập huấn luyện và validation được làm sạch bởi GPT-3.5 và Llama3 sử dụng prompt PDEFINITION với RNL.
+
+--- TRANG 7 ---
+BẢNG II: Thống kê Tập Dữ Liệu cho Tạo Bình Luận.
+Tập dữ liệu Tập huấn luyện Tập validation Tập test
+ORIGINAL 117,739 10,319
+10,169CLEANED GPT-3.5 39,625 3,395
+CLEANED LLAMA 3 87,872 7,571
+CONTROLLED GPT-3.5 39,625 3,395
+CONTROLLED LLAMA 3 87,872 7,571
+
+CONTROLLED là các tập huấn luyện và validation được lấy mẫu ngẫu nhiên để có cùng số lượng instance như hai tập dữ liệu đã làm sạch. Những nhóm kiểm soát này được thiết kế để tính đến tác động của việc giảm dữ liệu trong các tập dữ liệu sạch đến hiệu suất, vì việc loại bỏ dữ liệu nhiễu dẫn đến ít instance hơn để huấn luyện và validation.
+
+B. Mô Hình Tạo Bình Luận
+Để giải quyết RQ2, chúng tôi tập trung vào các mô hình có thể tạo bình luận đánh giá mã nguồn. Nghiên cứu của chúng tôi yêu cầu các mô hình đánh giá mã nguồn có tính tái tạo để so sánh công bằng hiệu suất mô hình giữa các tập dữ liệu gốc và đã làm sạch dưới cùng các cài đặt. Cụ thể, chúng tôi cần các mô hình cung cấp các checkpoint và script tinh chỉnh có sẵn công khai. Trong khi các công trình trước đã tinh chỉnh nhiều mô hình mã nguồn [5, 6, 27, 48] và LLMs [28] cho tác vụ này, nhiều mô hình không đáp ứng tiêu chí của chúng tôi. Do đó, chúng tôi chọn hai mô hình được biết đến rộng rãi cho tự động hóa đánh giá mã nguồn, tức là CodeT5 [20] và CodeReviewer [5] đáp ứng tiêu chí của chúng tôi.
+
+CodeT5 là một mô hình Transformer encoder-decoder đa mục đích được tiền huấn luyện trên cả ngôn ngữ lập trình và ngôn ngữ tự nhiên, đã chứng minh hiệu quả trên nhiều tác vụ downstream. CodeReviewer là một mô hình tiên tiến được tiền huấn luyện trên các tác vụ liên quan đến thay đổi mã nguồn. Nó tận dụng các trọng số đã được tiền huấn luyện từ CodeT5 để khởi tạo mô hình và tiếp tục tiền huấn luyện trên các tập dữ liệu liên quan đến đánh giá mã nguồn. Việc tiền huấn luyện chuyên biệt này cho phép CodeReviewer chứng minh hiệu suất vượt trội trong tác vụ tạo bình luận.
+
+Chúng tôi chọn CodeT5 và CodeReviewer làm các mô hình đại diện vì chúng tôi nhằm so sánh tác động của chất lượng dữ liệu giữa một mô hình được tiền huấn luyện mã nguồn tổng quát (CodeT5) và một mô hình được tiền huấn luyện cụ thể cho đánh giá mã nguồn (CodeReviewer). So sánh này cho phép chúng tôi hiểu liệu lợi ích của việc làm sạch dữ liệu có tổng quát hóa qua các mô hình và dữ liệu huấn luyện khác nhau hay không. Chúng tôi chọn CodeT5 thay vì các lựa chọn khác như CodeBERT vì CodeT5 đã liên tục chứng minh hiệu suất vượt trội trên nhiều tác vụ liên quan đến mã nguồn [20]. Đối với CodeReviewer, các nghiên cứu gần đây đã xác nhận tính cạnh tranh liên tục của nó trong lĩnh vực đánh giá mã nguồn. Ví dụ, một nghiên cứu gần đây của các nhà nghiên cứu Google [30] làm nổi bật CodeReviewer là "có lẽ kết quả gần đây nhất" với trợ lý đánh giá mã nguồn của họ được huấn luyện trên các tập dữ liệu công nghiệp chất lượng cao của họ. Hơn nữa, Fan và cộng sự [49] thấy rằng việc tinh chỉnh các mô hình ngôn ngữ lớn gần đây hơn như Llama2 và CodeLlama đôi khi không vượt trội hơn CodeReviewer, với sự khác biệt điểm BLEU-4 từ -1.28 đến 0.42. Những phát hiện này chứng minh rằng CodeReviewer vẫn là một baseline cạnh tranh cho tự động hóa đánh giá mã nguồn, làm cho nó trở thành một lựa chọn phù hợp để đánh giá tác động của chất lượng dữ liệu đến hiệu suất mô hình.
+
+Tinh chỉnh: Chúng tôi tinh chỉnh các mô hình CodeReviewer và CodeT5 sử dụng các tập dữ liệu gốc, đã làm sạch và được kiểm soát. Tất cả các thực nghiệm được thực hiện trên bốn GPU NVIDIA H100-80GB. Chúng tôi làm theo các siêu tham số được chỉ định trong CodeReviewer gốc, với một ngoại lệ: chúng tôi điều chỉnh kích thước batch từ 64 xuống 32, dẫn đến cải thiện điểm BLEU từ 5.3 lên 5.7 và cải thiện hiệu quả huấn luyện. Để tránh over-fitting, chúng tôi sử dụng tiêu chí dừng sớm kết thúc huấn luyện sau 5 epoch mà không có cải thiện trên tập validation.
+
+C. Đánh Giá
+Chúng tôi đánh giá các mô hình đã tinh chỉnh sử dụng tập test gốc. Chúng tôi không làm sạch tập test vì mục tiêu của chúng tôi là đánh giá tác động của các tập huấn luyện khác nhau đến việc tạo bình luận. Tuy nhiên, có thể có các bình luận nhiễu trong tập test. Do đó, chúng tôi đánh giá hiệu suất của các mô hình trên các mẫu hợp lệ và nhiễu. Để nhất quán với RQ1, chúng tôi gắn nhãn thủ công một tập con các bình luận đánh giá từ tập test là hợp lệ hoặc nhiễu sử dụng các hướng dẫn được mô tả trong Phần IV-A. Chúng tôi lấy mẫu ngẫu nhiên 371 bình luận đánh giá, đảm bảo kích thước mẫu có ý nghĩa với mức độ tin cậy 95% và biên sai lỗi ±5%. Việc chú thích được thực hiện bởi Người chú thích 1, với các trường hợp mơ hồ được thảo luận với Người chú thích 2 để đạt được sự đồng thuận. Kết quả là, mẫu này bao gồm 223 mẫu hợp lệ và 148 mẫu nhiễu. Để tăng thêm tính tổng quát của kết quả, chúng tôi lấy một tập con được gắn nhãn thủ công được lấy mẫu từ tập test bởi Tufano và cộng sự [11], bao gồm 234 bình luận hợp lệ và 135 bình luận nhiễu được lấy mẫu ngẫu nhiên từ cùng tập test CodeReviewer mà chúng tôi đã sử dụng. Chúng tôi kết hợp hai tập test được gắn nhãn, dẫn đến tổng cộng 726 mẫu, bao gồm 452 bình luận hợp lệ và 274 bình luận nhiễu.
+
+Để đánh giá chất lượng của các bình luận được tạo ra, chúng tôi thực hiện đánh giá tự động sử dụng chỉ số BLEU (Bilingual Evaluation Understudy) [50], định lượng sự trùng lặp từ vựng n-gram giữa các bình luận được tạo ra và các bình luận ground truth từ những người đánh giá con người. Theo các công trình trước [5], chúng tôi sử dụng biến thể BLEU-4 để tính toán sự trùng lặp của tối đa 4-gram giữa các bình luận được tạo ra và ground truth. Chúng tôi đánh giá hiệu suất mô hình trên toàn bộ tập test và trên các tập con hợp lệ và nhiễu được gắn nhãn thủ công. Chúng tôi sử dụng kiểm định Wilcoxon signed-rank một phía để kiểm tra thống kê sự khác biệt trong BLEU-4 giữa các mô hình gốc và đã làm sạch.
+
+D. Kết Quả Thực Nghiệm
+Bảng III trình bày kết quả thực nghiệm của chúng tôi. Nhìn chung, mặc dù có sự giảm đáng kể trong dữ liệu huấn luyện (tức là nhỏ hơn 66% khi sử dụng GPT-3.5 và nhỏ hơn 25% khi sử dụng LLAMA3), hiệu suất của các mô hình tạo bình luận không bị tác động tiêu cực. Thay vào đó, khi huấn luyện sử dụng các tập dữ liệu CLEANED, BLEU-4 tăng 4.2%-5.4% cho các mô hình CodeReviewer và 6.7%-9.2% cho các mô hình CodeT5 so với tập dữ liệu ORIGINAL. Các kiểm định Wilcoxon signed rank cũng xác nhận rằng BLEU-4 của các mô hình đã làm sạch cao hơn về mặt thống kê
+
+--- TRANG 8 ---
+BẢNG III: Hiệu Suất Mô Hình (BLEU-4) trên Các Mô Hình Tạo Bình Luận.
+M Tập dữ liệu Test Hợp lệ Our&Tufano Nhiễu Our&Tufano Hợp lệ Our Nhiễu Our Hợp lệ Tufano Nhiễu Tufano
+
+CodeReviewer ORIGINAL 5.73 6.17 5.41 5.45 5.17 7.12 5.60
+CLEANED GPT-3.5 6.04 5.4% ↑∗6.97 13.0% ↑∗5.02 7.2% ↓ 5.93 8.8% ↑ 5.19 0.4% ↑7.99 12.2% ↑∗4.83 13.8% ↓
+CONTROLLED GPT-3.5 5.63 6.20 5.43 5.21 5.13 7.39 5.70
+CLEANED LLAMA 3 5.97 4.2% ↑∗6.63 7.5% ↑∗5.18 4.3% ↓ 5.64 3.5% ↑ 5.11 1.2% ↓7.71 8.3% ↑∗5.14 8.2% ↓
+CONTROLLED LLAMA 3 5.63 6.18 5.66 5.12 5.36 7.45 5.86
+
+CodeT5 ORIGINAL 5.19 5.34 5.04 4.84 5.09 5.85 6.03
+CLEANED GPT-3.5 5.67 9.2% ↑∗6.00 12.4% ↑∗5.23 3.8% ↑∗5.88 21.5% ↑∗5.27 3.5% ↑6.06 3.6% ↑ 5.15 14.6% ↓
+CONTROLLED GPT-3.5 5.20 5.34 5.30 5.17 5.39 5.45 5.41
+CLEANED LLAMA 3 5.54 6.7% ↑∗5.74 7.5% ↑∗5.33 5.8% ↑ 5.32 9.9% ↑∗5.14 1.0% ↑6.09 4.1% ↑ 5.46 9.5% ↓
+CONTROLLED LLAMA 3 5.21 5.19 5.12 4.95 5.26 5.38 5.01
+
+Kết quả cao nhất và cao thứ hai được in đậm và gạch chân tương ứng. ∗ cho thấy ý nghĩa thống kê (p-value <0.05).
+
+so với các mô hình gốc cho tất cả các instance test. Sự cải thiện phù hợp với công trình trước; ví dụ: ∆BLEU(CodeReviewer, CodeT5) = 0.49 [5], và việc tinh chỉnh LLMs cũng chứng minh những cải thiện tương tự, ví dụ: ∆BLEU(Llama-Reviewer, CodeReviewer) = 0.4 [28]. Tuy nhiên, việc chỉ giảm dữ liệu huấn luyện không cải thiện hiệu suất, như được chứng minh bởi kết quả của các nhóm CONTROLLED. Điều này cho thấy rằng chất lượng dữ liệu huấn luyện cũng quan trọng như số lượng dữ liệu.
+
+Các mô hình được huấn luyện trên các tập dữ liệu đã làm sạch thể hiện sự cải thiện nhất quán trong các tập con hợp lệ. Khi xem xét cả các tập con hợp lệ của chúng tôi và của Tufano (Hợp lệ Our&Tufano), CodeReviewer thể hiện những cải thiện đáng kể, với mức tăng từ 7.5% đến 13.0% trong điểm BLEU-4. Tương tự, CodeT5 đạt được mức tăng từ 7.5% và 12.4%. Bảng III cũng cho thấy sự tăng nhất quán trong BLEU-4 cho Hợp lệ Our và Hợp lệ Tufano độc lập. Những kết quả này mạnh mẽ cho thấy rằng các mô hình được huấn luyện trên dữ liệu đã làm sạch tạo ra các bình luận phù hợp hơn với các bình luận đánh giá hợp lệ của con người. Mặt khác, hiệu suất của các mô hình CLEANED trên các tập con nhiễu không nhất quán. Tuy nhiên, những biến động điểm BLEU-4 này có thể không phản ánh chính xác chất lượng thực sự của các bình luận được tạo ra do bản chất nhiễu trong tập dữ liệu nhiễu. Do đó, chúng tôi thực hiện đánh giá thủ công trong RQ3.
+
+Trả lời cho RQ2: Mặc dù có sự giảm kích thước huấn luyện, hiệu suất của các mô hình tạo bình luận được cải thiện khi sử dụng các tập dữ liệu đã làm sạch. Cụ thể, các mô hình đã làm sạch hoạt động nhất quán tốt hơn trên các bình luận hợp lệ trong tập test, dẫn đến mức tăng thậm chí cao hơn trong điểm BLEU-4 là 13.0% - 12.4% so với các mô hình gốc.
+
+VI. TÁC ĐỘNG ĐẾN CHẤT LƯỢNG BÌNH LUẬN ĐƯỢC TẠO RA (RQ3)
+Trong khi BLEU-4 đánh giá độ chính xác về mặt tương ứng từ vựng, nó không tính đến sự đa dạng trong cách các ý định tương tự có thể được thể hiện [51]. Ngoài ra, chất lượng của các bình luận mở rộng vượt ra ngoài sự tương tự từ vựng với các đánh giá của con người, kết hợp các yếu tố như tính thông tin và tính liên quan ngữ cảnh đến các thay đổi mã nguồn là rất quan trọng cho đánh giá mã nguồn [7, 34]. Điều này đặc biệt quan trọng cho thấy tiềm năng nhiễu trong các bình luận đánh giá của con người. Do đó, trong RQ3, chúng tôi đánh giá chất lượng của các bình luận được tạo ra.
+
+Chúng tôi đánh giá chất lượng dựa trên mức độ thông tin mà một bình luận được tạo ra cung cấp, và mức độ liên quan của bình luận đến thay đổi mã nguồn CDIFF (Phần VI-A). Chúng tôi so sánh các thế hệ của các mô hình được huấn luyện bởi các tập dữ liệu ORIGINAL và CLEANED. Chúng tôi tập trung vào các mô hình CodeReviewer trong RQ này do hiệu suất vượt trội của chúng so với các mô hình CodeT5 trong việc tạo bình luận. Phân tích của chúng tôi tập trung vào các bình luận được tạo ra bởi ba biến thể mô hình, tức là được huấn luyện bởi tập dữ liệu ORIGINAL và hai phiên bản đã làm sạch —tập dữ liệu CLEANED GPT-3.5 và CLEANED LLAMA 3— để đánh giá chất lượng bình luận.
+
+Chúng tôi thực hiện đánh giá hai khía cạnh: (a) đánh giá thủ công một tập con được lấy mẫu của các bình luận được tạo ra (Phần VI-B); và (b) đánh giá chất lượng tổng thể của toàn bộ tập test (Phần VI-C).
+
+A. Các Thước Đo Chất Lượng Bình Luận
+Theo các định nghĩa được sử dụng trong bài báo CodeReviewer [5], chúng tôi đánh giá thông tin và tính liên quan của các bình luận được tạo ra như sau.
+
+Đối với thông tin, chúng tôi đánh giá mức độ thông tin của bình luận cho tác giả mã nguồn để sửa đổi thay đổi mã nguồn. Mỗi bình luận sẽ được gắn nhãn với điểm thông tin từ một đến năm, trong đó năm cho thấy rất nhiều thông tin. Ví dụ, các bình luận rõ ràng chỉ ra các vấn đề và cung cấp các đề xuất cụ thể (ví dụ: "Điều này không nên là một assert thay vì một throw?") sẽ có điểm thông tin cao hơn những bình luận chỉ đơn thuần tìm kiếm làm rõ (ví dụ: "Tại sao chúng ta cần thay đổi điều này?").
+
+Đối với tính liên quan, chúng tôi đánh giá mức độ mà bình luận đánh giá liên quan đến thay đổi mã nguồn tương ứng. Mỗi bình luận sẽ được gắn nhãn với điểm liên quan từ một đến ba, trong đó ba cho thấy tính liên quan cao. Các bình luận rõ ràng chỉ ra vị trí của các vấn đề trong các thay đổi mã nguồn sẽ nhận được điểm liên quan cao, trong khi các bình luận ngầm cho thấy vị trí vấn đề hoặc không liên quan đến các thay đổi mã nguồn sẽ nhận được điểm liên quan thấp. Lưu ý rằng chúng tôi không đánh giá tính đúng đắn logic của các bình luận trong chỉ số liên quan của chúng tôi. Khía cạnh này thường yêu cầu ngữ cảnh vượt ra ngoài thay đổi mã nguồn và thiếu một ground truth rõ ràng dễ bị không chắc chắn. Do đó, chúng tôi tập trung vào các yếu tố khách quan như tính rõ ràng của vị trí vấn đề trong thay đổi mã nguồn.
+
+B. Đánh Giá Thủ Công
+Chúng tôi thực hiện đánh giá thủ công trên một tập con được lấy mẫu của các bình luận được tạo ra. Chúng tôi lấy mẫu ngẫu nhiên 100 instance từ toàn bộ tập test được gắn nhãn của chúng tôi. Mỗi instance nhận được ba
+
+--- TRANG 9 ---
+BẢNG IV: Điểm Thông Tin và Liên Quan cho Các Tập Huấn Luyện Khác Nhau trên mô hình CodeReviewer.
+Tập huấn luyện Thủ công Tổng thể
+Thông tin Liên quan Thông tin Liên quan
+ORIGINAL 3.44 2.48 3.69 2.36
+CLEANED GPT-3.5 4.27∗ 2.77∗ 4.38∗ 2.63∗
+CLEANED LLAMA 3 4.08∗ 2.72∗ 3.85∗ 2.38
+
+Điểm thông tin từ 1-5; điểm liên quan từ 1-3. ∗ cho thấy rằng điểm từ mô hình đã làm sạch cao hơn đáng kể so với mô hình gốc (p-value <0.05 sử dụng kiểm định Wilcoxon signed rank).
+
+bình luận được tạo ra bởi ba biến thể mô hình (ORIGINAL, CLEANED GPT-3.5 và CLEANED LLAMA 3). Do đó, chúng tôi đánh giá tổng cộng 300 bình luận được tạo ra. Để đảm bảo đánh giá đáng tin cậy về chất lượng bình luận trên mẫu của chúng tôi, các đánh giá được thực hiện thủ công trong hai vòng. Ban đầu, Người chú thích 1 và 2 độc lập đánh giá 50 bình luận được tạo ra cho cả thông tin và liên quan theo các hướng dẫn với định nghĩa cho mỗi điểm.⁶ Vòng đầu tiên của việc chú thích đạt được hệ số kappa của Cohen là 0.71 (sự đồng ý đáng kể) cho thông tin và 0.42 (sự đồng ý vừa phải) cho liên quan. Sau một cuộc thảo luận để giải quyết những bất đồng, vòng thứ hai của việc chú thích độc lập của 50 bình luận khác được thực hiện cho liên quan, cải thiện hệ số kappa của Cohen lên 0.60 (sự đồng ý đáng kể). Người chú thích 1 và 2 chú thích 200 bình luận còn lại độc lập và sau đó thảo luận để giải quyết những bất đồng còn lại.
+
+C. Đánh Giá Tổng Thể
+Ngoài đánh giá thủ công chỉ khả thi cho một số lượng hạn chế các mẫu do bản chất tốn nhiều lao động, chúng tôi thực hiện một phương pháp bán tự động để ước lượng thông tin và tính liên quan của các bình luận được tạo ra cho toàn bộ tập test. Để làm điều này, chúng tôi sử dụng mô hình chủ đề để phân cụm các bình luận được tạo ra bởi mỗi mô hình, sau đó chúng tôi chú thích thủ công điểm thông tin và liên quan cho mỗi cụm.
+
+Mô hình Chủ đề. Chúng tôi sử dụng BERTopic [52], một kỹ thuật mô hình chủ đề được áp dụng rộng rãi vượt trội hơn các phương pháp truyền thống như LDA, để trích xuất các cụm có ý nghĩa từ các bình luận được tạo ra. BERTopic là một phương pháp dựa trên embedding tận dụng một mô hình dựa trên transformer để biểu diễn mỗi bình luận như một embedding ngữ cảnh và áp dụng phân cụm cho những embedding này. Phương pháp này hiệu quả nắm bắt sự tương tự ngữ nghĩa trong các bình luận và nhóm các bình luận tương tự trong các cụm. Để tạo ra embeddings, chúng tôi sử dụng mô hình mã nguồn gần đây, CodeT5+ [53], thực hiện các tác vụ biểu diễn bi-modal hiệu quả liên quan đến cả mã nguồn và ngôn ngữ tự nhiên. Đối với mô hình phân cụm, chúng tôi sử dụng phân cụm phân cấp agglomeration, gán mỗi bình luận vào cụm riêng của nó và lặp đi lặp lại hợp nhất các cặp cụm gần nhất cho đến khi đáp ứng tiêu chí dừng.
+
+Chúng tôi đo lường chất lượng cụm sử dụng điểm coherence trung bình [54], đo lường mức độ tương tự ngữ nghĩa của các bình luận trong một chủ đề với nhau. Chúng tôi đặt số lượng cụm là 50, đạt được điểm coherence trên 0.67 cho tất cả ba tập cụm bình luận. Coherence cao cho thấy rằng các cụm thường được hình thành tốt và nhất quán nội bộ, chỉ ra các cụm gắn kết cho phân tích thủ công.
+
+⁶ Xem định nghĩa thông tin và liên quan trong gói tái tạo của chúng tôi [37].
+
+Chú Thích Chất Lượng Bình Luận. Chúng tôi đánh giá chất lượng của các bình luận được tạo ra như sau. Đối với mỗi cụm, BERTopic xác định ba bình luận đại diện hàng đầu tương tự nhất về mặt ngữ nghĩa với biểu diễn cụm của nó, sử dụng cTF-IDF và cosine similarity [54]. Sau đó, chúng tôi chú thích điểm thông tin và liên quan theo các hướng dẫn đã thiết lập của chúng tôi (Phần VI-A). Tương tự như đánh giá thủ công, Người chú thích 1 và 2 độc lập thực hiện các đánh giá và giải quyết những bất đồng thông qua thảo luận. Cho điểm coherence tương đối cao của các cụm, chúng tôi coi điểm thông tin và liên quan trung bình của các bình luận đại diện làm điểm chất lượng xấp xỉ cho tất cả các bình luận trong cụm tương ứng.
+
+D. Kết Quả Thực Nghiệm
+Bảng IV cung cấp điểm thông tin và liên quan trung bình. Hình 4 minh họa phân bố của những điểm này. Dựa trên đánh giá thủ công của 100 instance được lấy mẫu, các mô hình CLEANED đạt được sự cải thiện đáng kể so với mô hình ORIGINAL. Ví dụ, CLEANED GPT-3.5 đạt được mức tăng 24% trong điểm thông tin và mức tăng 11% trong điểm liên quan. Hình 4 (a) và (b) cho thấy xu hướng rõ ràng hướng tới thông tin cao hơn và liên quan cao hơn cho các mô hình CLEANED so với mô hình ORIGINAL. Thay đổi đáng chú ý nhất là giảm 73-80% trong thông tin thấp (điểm 1 và 2) và giảm 61-72% trong liên quan thấp (điểm 1) cho cả hai tập dữ liệu đã làm sạch. Những kết quả này làm nổi bật sự cải thiện đáng kể trong chất lượng của các bình luận sau khi làm sạch.
+
+Chúng tôi quan sát thấy rằng các mô hình đã làm sạch có xu hướng tạo ra các bình luận bao gồm các token mã nguồn liên quan đến thay đổi mã nguồn, làm cho các bình luận cụ thể hơn và liên quan hơn đến mã nguồn đang được đánh giá. Các ví dụ trong Hình 5 cho thấy rằng một bình luận từ mô hình CLEANED GPT-3.5 chỉ ra một vấn đề liên quan trực tiếp hơn đến mã nguồn đã thay đổi, so với bình luận từ mô hình ORIGINAL. Tính liên quan được cải thiện có thể hưởng lợi từ các đặc điểm của các bình luận hợp lệ (tức là có thể hành động hơn và nhận thức ngữ cảnh hơn) trong dữ liệu huấn luyện.
+
+Kết quả của đánh giá tổng thể cho toàn bộ tập test phù hợp với kết quả đánh giá thủ công, như được hiển thị trong Bảng IV. Ví dụ, điểm thông tin và liên quan xấp xỉ tăng 18% và 11% cho CLEANED GPT-3.5. Tương tự như đánh giá thủ công của chúng tôi, chúng tôi quan sát giảm 35-66% trong thông tin thấp và giảm 55-88% trong liên quan thấp cho cả hai mô hình CLEANED. Kết quả cho thấy rằng các tập dữ liệu đã làm sạch cải thiện chất lượng của các bình luận được tạo ra về mặt thông tin và liên quan.
+
+Trả lời cho RQ3: Chất lượng của các bình luận đánh giá được tạo ra có thể được cải thiện khi sử dụng các tập dữ liệu đã làm sạch của chúng tôi. Đánh giá thủ công của chúng tôi cho thấy mức tăng lên đến 24% trong điểm thông tin và 11% trong điểm liên quan.
+
+--- TRANG 10 ---
+1 2 3 4 5 0 20 40 # Bình Luận Đánh Giá Tập huấn luyện
+Gốc
+Cleaned_Llama3
+Cleaned_GPT3.5 (a) Điểm thông tin (thủ công)
+1 2 3 0 20 40 60 80 # Bình Luận Đánh Giá (b) Điểm Liên Quan (thủ công)
+1 2 3 4 5 0 2000 4000 6000 # Bình Luận Đánh Giá (c) Điểm Thông Tin (tổng thể)
+1 2 3 0 2000 4000 6000 # Bình Luận Đánh Giá (d) Điểm Liên Quan (tổng thể)
+
+Hình 4: Phân bố điểm thông tin và liên quan trên các test qua các mô hình CodeReviewer được huấn luyện trên các tập huấn luyện khác nhau.
+
+Ground Truth: Vui lòng sử dụng camelCase thay vì underscor e_case
+Gốc: Mục đích của dòng này là gì?               Thông tin: 1  Liên quan: 1   
+CLEANED GPT3.5: Vui lòng đổi tên `$prev_ref` thành `$previousRef`.   Thông tin: 5  Liên quan: 3
+CLEANED LLAMA3: Tại sao không sử dụng `$event->getRef()`?                  Thông tin: 4  Liên quan: 2
+@@ -95,6 +95,8 @@ class  Product  extends BaseAction implements 
+EventSubscriberInterface
+             $con ->beginT ransaction();
+             try {
++                    $prev_ref  = $product ->getRef();
+                      $product
+                         ->setDispatcher( $event ->getDispatcher())
+                         ->setRef( $event ->getRef())   
+
+Hình 5: Ví dụ các bình luận được tạo ra bởi các mô hình gốc và đã làm sạch với điểm Thông tin (Info) và Liên quan (Rel).
+
+VII. THẢO LUẬN
+Trong phần này, chúng tôi thảo luận về lợi ích, hạn chế và chi phí của việc sử dụng LLMs để làm sạch tập dữ liệu đánh giá.
+
+Khả Năng của LLMs: LLMs có thể phân loại các bình luận đánh giá mã nguồn hợp lệ và nhiễu đến mức độ nào? RQ1 của chúng tôi đã cho thấy kết quả đầy hứa hẹn về việc tận dụng LLMs để phân loại các bình luận hợp lệ và nhiễu, mở đường cho một bước quan trọng hướng tới việc tự động hóa làm sạch tập dữ liệu. Tuy nhiên, LLMs đôi khi gặp khó khăn trong việc xác định các bình luận nhiễu. Chúng tôi quan sát thấy rằng LLMs thường phân loại sai các bình luận bao gồm các thuật ngữ cụ thể của lĩnh vực nhưng không cung cấp đề xuất cải thiện là hợp lệ. Ví dụ, "Tại sao 'preexec fn' không được đặt trong phiên bản trước?" bao gồm 'preexec fn'. Điều này có thể là do LLMs có xu hướng bảo tồn kiến thức đã học của chúng (tức là các token mã nguồn), do đó thất bại trong việc tuân thủ hướng dẫn phân loại rằng các bình luận hợp lệ phải rõ ràng giải quyết các thay đổi mã nguồn. Điều này nhấn mạnh tính phức tạp của các bình luận đánh giá nhiễu mà nghiên cứu tương lai có thể giải quyết để cải thiện hiệu suất loại bỏ nhiễu trong các tập dữ liệu đánh giá mã nguồn. Vì nghiên cứu hiện tại của chúng tôi kiểm tra các mô hình riêng lẻ, nghiên cứu tương lai có thể khám phá các phương pháp ensemble tận dụng các dự đoán chung qua nhiều mô hình để nâng cao độ chính xác phân loại.
+
+Đánh Đổi Chi Phí-Hiệu Suất: Chi phí loại bỏ các bình luận nhiễu sử dụng LLMs là gì, và nó có thể mang lại lợi ích gì? Chúng tôi đánh giá hiệu quả của phương pháp dựa trên LLM về mặt thời gian và chi phí, cũng như tác động của nó đến chất lượng của việc tạo bình luận. Về mặt chi phí, GPT-3.5 yêu cầu $50 USD và 39 giờ để làm sạch toàn bộ tập dữ liệu và Llama3 mã nguồn mở mất 15 giờ. Chi phí này thấp hơn việc chú thích thủ công, sẽ chi phí $25,600 USD dựa trên tỷ giá crowdsourcing ($8/giờ)⁷ giả định 2,000 giờ người (một phút/bình luận) để chú thích toàn bộ tập huấn luyện và validation.
+
+Cho chi phí của LLMs, lợi ích của các tập dữ liệu đã làm sạch là đáng kể. RQ2 cho thấy rằng các mô hình đã làm sạch đạt được mức tăng 13% và 12.4% trong BLEU-4 cho các bình luận hợp lệ và RQ3 cho thấy rằng chất lượng của các bình luận được tạo ra tăng đáng kể. Hơn nữa, chúng tôi quan sát thấy rằng mô hình CodeT5 đa mục đích với tập dữ liệu đã làm sạch đạt được hiệu suất tương đương (BLEU-4 của 5.67) với CodeReviewer gốc (BLEU-4 của 5.73) trong khi sử dụng ít tài nguyên hơn nhiều. CodeReviewer là một mô hình cụ thể cho đánh giá mã nguồn được tiền huấn luyện thêm trên CodeT5 với 463.2GB dữ liệu đánh giá mã nguồn với 2,481k bình luận qua 250k bước. Ngược lại, mô hình CodeT5 được huấn luyện trên CLEANED GPT-3.5 chỉ sử dụng 39k bình luận (ít hơn 98.4%) và 7k bước huấn luyện (ít hơn 97.2%). Điều này làm nổi bật lợi ích của dữ liệu chất lượng cao cho hiệu quả mô hình, có thể giảm chi phí tính toán và tác động môi trường trong huấn luyện quy mô lớn.
+
+⁷ https://www.prolific.com/calculator
+
+VIII. CÁC MỐI ĐE DỌA ĐỐI VỚI TÍNH HỢP LỆ
+Tính Hợp Lệ Cấu Trúc. Chúng tôi định nghĩa các bình luận 'hợp lệ' là những bình luận không nhiễu (tức là không mơ hồ, khó hiểu hoặc tìm kiếm làm rõ). Có thể những bình luận hợp lệ này có thể không chính xác về mặt kỹ thuật hoặc được coi là không hữu ích bởi các nhà thực hành. Tuy nhiên, việc đánh giá tính đúng đắn kỹ thuật như vậy đòi hỏi chuyên môn cụ thể cho dự án để xác thực các bình luận.
+
+Hiệu suất phân loại của LLMs có thể thay đổi với các prompt và cài đặt siêu tham số khác nhau. Các chiến lược prompt và LLMs khác nhau có thể mang lại kết quả khác nhau. Tuy nhiên, mục tiêu chính của chúng tôi không phải là tìm LLMs tốt nhất cũng không tối ưu hóa cài đặt siêu tham số của chúng, mà là điều tra tính khả thi của việc tự động làm sạch dữ liệu đánh giá sử dụng LLMs. Ngoài ra, chúng tôi chỉ đánh giá chất lượng của các bình luận được tạo ra về mặt thông tin và liên quan. Có thể có rủi ro về tính không chính xác, nơi các mô hình tạo ra các token mã nguồn không tồn tại bằng cách kết hợp những cái hiện có trong thay đổi mã nguồn. Tuy nhiên, việc đánh giá tính đúng đắn và ảo giác là một nhiệm vụ không tầm thường và tốn nhiều công sức thủ công đòi hỏi sự hiểu biết sâu sắc về hệ thống và thay đổi mã nguồn.
+
+--- TRANG 11 ---
+Tính Hợp Lệ Nội Bộ. Việc gắn nhãn và đánh giá thủ công có thể chịu ảnh hưởng của các thiên kiến nhận thức. Để giảm thiểu những điều này, các chú thích được thực hiện độc lập và sự đồng ý giữa các người đánh giá được đo lường. Ngoài ra, kết quả được xem xét một cách mù quáng mà không biết mô hình nào tạo ra các bình luận để đảm bảo rằng điểm chất lượng không cố ý ưu ái bất kỳ mô hình cụ thể nào. Trong khi việc chú thích các mẫu test bởi chúng tôi và Tufano và cộng sự có thể khác nhau, việc hợp nhất hai mẫu này là hợp lý vì (1) các định nghĩa nhiễu/hợp lệ và tiêu chí được rút ra từ cả công trình của Tufano và các công trình khác, và (2) chúng tôi đánh giá các mô hình riêng biệt trên mỗi tập test được gắn nhãn và trên tập kết hợp. Chúng tôi sử dụng mô hình chủ đề để phân cụm các bình luận được tạo ra, và sau đó gán điểm chất lượng dựa trên các tập con của mỗi cụm. Có thể các điểm không chính xác. Tuy nhiên, đánh giá tổng thể này phù hợp với đánh giá thủ công của các mẫu. Điều quan trọng cần lưu ý là đánh giá này chỉ là một xấp xỉ để bổ sung cho đánh giá thủ công của chúng tôi. LLMs được sử dụng để phân loại trong công trình này được huấn luyện trên dữ liệu GitHub. Do đó, chúng có thể dễ bị rò rỉ dữ liệu. Tuy nhiên, chúng không được huấn luyện cụ thể để phân loại các bình luận đánh giá mã nguồn nhiễu. Do đó, chúng tôi tin rằng tác động của rò rỉ dữ liệu tiềm ẩn đối với tác vụ phân loại của chúng tôi là tối thiểu.
+
+Tính Hợp Lệ Ngoại Bộ. Nghiên cứu của chúng tôi dựa trên hai mô hình được biết đến rộng rãi (tức là CodeT5 và CodeReviewer). Các phát hiện có thể không tổng quát hóa cho các mô hình và tập dữ liệu đánh giá mã nguồn khác. Thật không may, các mô hình đánh giá mã nguồn hiện có khác không phù hợp cho nghiên cứu của chúng tôi vì nhiều lý do khác nhau, ví dụ: một số mô hình [6, 27, 28] không thể tái tạo do thiếu checkpoint mô hình hoặc script tinh chỉnh, trong khi [48] chỉ được tiền huấn luyện với các ví dụ Java, không thể so sánh với tập dữ liệu đa ngôn ngữ của CodeReviewer. Mặc dù chúng tôi thừa nhận rằng các mô hình mới hơn tiếp tục xuất hiện, mục tiêu chính của chúng tôi là chứng minh tác động cơ bản của chất lượng dữ liệu đến việc tạo đánh giá mã nguồn, thay vì đạt được hiệu suất tiên tiến. Những cải thiện nhất quán mà chúng tôi quan sát qua cả hai mô hình cho thấy rằng phương pháp làm sạch dữ liệu của chúng tôi mang lại lợi ích có thể mở rộng vượt ra ngoài một mô hình cụ thể. Hơn nữa, nghiên cứu của chúng tôi về việc xác định các tập dữ liệu chất lượng cao vẫn có giá trị cho các hệ thống đánh giá mã nguồn dựa trên LLM mới nổi theo nhiều cách chính: (1) nâng cao việc tạo ra có tăng cường truy xuất bằng cách xác thực chất lượng của các ví dụ được truy xuất, và (2) cải thiện chất lượng tập dữ liệu benchmark bằng cách cung cấp các tập test đáng tin cậy hơn để đánh giá mô hình. Do đó, chúng tôi tin rằng phát hiện chính của chúng tôi — các tập dữ liệu chất lượng cao cải thiện các mô hình tạo bình luận — vẫn hợp lệ và có thể áp dụng cho một phạm vi rộng các bối cảnh đánh giá mã nguồn.
+
+IX. KẾT LUẬN
+Trong bài báo này, chúng tôi giải quyết vấn đề quan trọng về chất lượng dữ liệu trong tự động hóa đánh giá mã nguồn. Chúng tôi khám phá một phương pháp mới tận dụng các mô hình ngôn ngữ lớn (LLMs) để xác định và loại bỏ các bình luận nhiễu. Kết quả của chúng tôi cho thấy rằng LLMs có thể đạt được độ chính xác 66-85% trong việc xác định các bình luận hợp lệ, cải thiện tỷ lệ bình luận hợp lệ từ 64% trong tập dữ liệu gốc lên đến 85% trong các tập dữ liệu đã làm sạch của chúng tôi. Bằng cách huấn luyện các mô hình đánh giá mã nguồn trên các tập dữ liệu đã làm sạch, chúng tôi quan sát những cải thiện đáng kể trong chất lượng tạo bình luận đánh giá, với mức tăng lên đến 13% trong điểm BLEU-4 và cải thiện 24% về tính thông tin. Công trình của chúng tôi chứng minh tính khả thi của việc tự động làm sạch các tập dữ liệu đánh giá và cung cấp thông tin chi tiết về cách chất lượng dữ liệu ảnh hưởng đến hiệu suất mô hình trong đánh giá mã nguồn tự động. Nghiên cứu tương lai có thể điều tra các kỹ thuật làm sạch tiên tiến cho các bình luận phức tạp.
+
+X. LỜI CẢM ÉN
+Nghiên cứu này được hỗ trợ bởi Dịch vụ Máy tính Nghiên cứu của Đại học Melbourne và Sáng kiến Campus Petascale. Patanamon Thongtanunam được hỗ trợ bởi chương trình tài trợ Giải thưởng Nhà nghiên cứu Sự nghiệp Sớm Khám phá (DECRA) của Hội đồng Nghiên cứu Úc (DE210101091).
+
+TÀI LIỆU THAM KHẢO
+[1] A. Bacchelli and C. Bird, "Expectations, outcomes, and challenges of modern code review," in Proceedings of ICSE, 2013, pp. 712–721.
+[2] P. C. Rigby and C. Bird, "Convergent contemporary software peer review practices," in Proceedings of FSE, 2013, p. 202–212.
+[3] A. Bosu, J. C. Carver, C. Bird, J. Orbeck, and C. Chockley, "Process aspects and social dynamics of contemporary code review: Insights from open source development and industrial practice at microsoft," IEEE Transactions on Software Engineering, vol. 43, no. 1, pp. 56–75, 2017.
+[4] R. Tufano, S. Masiero, A. Mastropaolo, L. Pascarella, D. Poshyvanyk, and G. Bavota, "Using pre-trained models to boost code review automation," in Proceedings of ICSE, 2022, p. 2291–2302.
+[5] Z. Li, S. Lu, D. Guo, N. Duan, S. Jannu, G. Jenks, D. Majumder, J. Green, A. Svyatkovskiy, S. Fu, and N. Sundaresan, "Automating code review activities by large-scale pre-training," in Proceedings of ESEC/FSE, 2022, p. 1035–1047.
+[6] B. Lin, S. Wang, Z. Liu, Y. Liu, X. Xia, and X. Mao, "Cct5: A code-change-oriented pre-trained model," in Proceedings of ESEC/FSE. Association for Computing Machinery, 2023, p. 1509–1521.
+[7] O. Kononenko, O. Baysal, and M. W. Godfrey, "Code review quality: How developers see it," in Proceedings of ICSE, 2016, pp. 1028–1038.
+[8] H. Y. Lin, P. Thongtanunam, C. Treude, and W. Charoenwet, "Improving automated code reviews: Learning from experience," in Proceedings of MSR, 2024, p. 278–283.
+[9] F. Ebert, F. Castor, N. Novielli, and A. Serebrenik, "Communicative intention in code review questions," in Proceedings of ICSME, 2018, pp. 519–523.
+[10] R. Tufano, L. Pascarella, M. Tufano, D. Poshyvanyk, and G. Bavota, "Towards automating code review activities," in Proceedings of ICSE, 2021, pp. 163–174.
+[11] R. Tufano, O. Dabić, A. Mastropaolo, M. Ciniselli, and G. Bavota, "Code review automation: Strengths and weaknesses of the state of the art," IEEE Transactions on Software Engineering, 2024.
+[12] A. Bosu, M. Greiler, and C. Bird, "Characteristics of useful code reviews: An empirical study at microsoft," in Proceedings of MSR, 2015.
+[13] A. K. Turzo and A. Bosu, "What makes a code review useful to opendev developers? an empirical investigation," Empirical Software Engineering, vol. 29, no. 1, p. 6, 2024.
+[14] S. Mcintosh, Y. Kamei, B. Adams, and A. E. Hassan, "An empirical study of the impact of modern code review practices on software quality," Empirical Softw. Engg., vol. 21, no. 5, p. 2146–2189, oct 2016.
+[15] F. Ebert, F. Castor, N. Novielli, and A. Serebrenik, "An exploratory study on confusion in code reviews," Empirical Softw. Engg., vol. 26, no. 1, jan 2021.
+[16] M. Chen, J. Tworek, H. Jun, Q. Yuan, H. P. d. O. Pinto, J. Kaplan, H. Edwards, Y. Burda, N. Joseph, G. Brockman et al., "Evaluating large language models trained on code," arXiv preprint arXiv:2107.03374, 2021.
+[17] D. Hendrycks, C. Burns, S. Basart, A. Zou, M. Mazeika, D. Song, and J. Steinhardt, "Measuring massive multitask language understanding," 2020.
+[18] F. Gilardi, M. Alizadeh, and M. Kubli, "Chatgpt outperforms crowd workers for text-annotation tasks," Proceedings of the National Academy of Sciences, vol. 120, no. 30, 2023.
+[19] B. Ding, C. Qin, L. Liu, Y. K. Chia, B. Li, S. Joty, and L. Bing, "Is GPT-3 a good data annotator?" in Proceedings of ACL, 2023, pp. 11173–11195.
+[20] Y. Wang, W. Wang, S. Joty, and S. C. Hoi, "CodeT5: Identifier-aware unified pre-trained encoder-decoder models for code understanding and generation," in Proceedings of EMNLP, 2021, pp. 8696–8708.
+[21] Y. Tao and S. Kim, "Partitioning composite code changes to facilitate code review," in Proceedings of MSR, 2015, pp. 180–190.
+[22] T. Baum, K. Schneider, and A. Bacchelli, "Associating working memory capacity and code change ordering with code review performance," Empirical Software Engineering, vol. 24, pp. 1762–1798, 2019.
+[23] M. Tufano, J. Pantiuchina, C. Watson, G. Bavota, and D. Poshyvanyk, "On learning meaningful code changes via neural machine translation," in Proceedings of ICSE, 2019, p. 25–36.
+[24] P. Thongtanunam, C. Pornprasit, and C. Tantithamthavorn, "Autotransform: Automated code transformation to support modern code review process," in Proceedings of the IEEE/ACM International Conference on Software Engineering, 2022, pp. 237–248.
+[25] C. Pornprasit, C. Tantithamthavorn, P. Thongtanunam, and C. Chen, "D-act: Towards diff-aware code transformation for code review under a time-wise evaluation," in Proceedings of the IEEE International Conference on Software Analysis, Evolution and Reengineering. IEEE, 2023, pp. 296–307.
+[26] C. Raffel, N. Shazeer, A. Roberts, K. Lee, S. Narang, M. Matena, Y. Zhou, W. Li, and P. J. Liu, "Exploring the limits of transfer learning with a unified text-to-text transformer," Journal of machine learning research, vol. 21, no. 140, pp. 1–67, 2020.
+[27] O. Ben Sghaier and H. Sahraoui, "Improving the learning of code review successive tasks with cross-task knowledge distillation," Proc. ACM Softw. Eng., vol. 1, no. FSE, jul 2024.
+[28] L. Junyi, Y. Lei, L. Xiaojia, Y. Li, and Z. Chun, "Llama-reviewer: Advancing code review automation with large language models through parameter-efficient fine-tuning," in Proceedings of ISSRE, 2023, pp. 647–658.
+[29] M. Vijayvergiya, M. Salawa, I. Budiselić, D. Zheng, P. Lamblin, M. Ivanković, J. Carin, M. Lewko, J. Andonov, G. Petrovićet al., "Ai-assisted assessment of coding practices in modern code review," arXiv preprint arXiv:2405.13565, 2024.
+[30] A. Frömgen, J. Austin, P. Choy, N. Ghelani, L. Kharatyan, G. Surita, E. Khrapko, P. Lamblin, P.-A. Manzagol, M. Revaj et al., "Resolving code review comments with machine learning," in Proceedings of ICSE-SEIP, 2024, pp. 204–215.
+[31] A. Gupta and N. Sundaresan, "Intelligent code reviews using deep learning," in Proceedings of KDD, 2018.
+[32] A. K. Turzo and A. Bosu, "What makes a code review useful to opendev developers? an empirical investigation," Empirical Software Engineering, vol. 29, no. 1, p. 6, 2024.
+[33] B. S. Meyers, N. Munaiah, E. Prud'hommeaux, A. Meneely, J. Wolff, C. Ovesdotter Alm, and P. Murukannaiah, "A dataset for identifying actionable feedback in collaborative software development," in Proceedings of ACL, 2018, pp. 126–131.
+[34] M. M. Rahman, C. K. Roy, and R. G. Kula, "Predicting usefulness of code review comments using textual features and developer experience," in Proceedings of MSR, 2017, pp. 215–226.
+[35] M. V. Mäntylä and C. Lassenius, "What types of defects are really discovered in code reviews?" IEEE Transactions on Software Engineering, vol. 35, no. 3, pp. 430–448, 2009.
+[36] D. Zan, B. Chen, F. Zhang, D. Lu, B. Wu, B. Guan, W. Yongji, and J.-G. Lou, "Large language models meet NL2Code: A survey," in Proceedings of ACL, 2023, pp. 7443–7464.
+[37] "Replication package," https://zenodo.org/records/13150598.
+[38] B. Roziere, J. Gehring, F. Gloeckle, S. Sootla, I. Gat, X. E. Tan, Y. Adi, J. Liu, T. Remez, J. Rapin et al., "Code llama: Open foundation models for code," arXiv preprint arXiv:2308.12950, 2023.
+[39] Meta AI, "Introducing meta llama 3: The most capable openly available llm to date," 2023. [Online]. Available: https://ai.meta.com/blog/meta-llama-3/
+[40] Z. Zheng, K. Ning, Y. Wang, J. Zhang, D. Zheng, M. Ye, and J. Chen, "A survey of large language models for code: Evolution, benchmarking, and future trends," ACM Transactions on Software Engineering and Methodology, vol. 1, no. 1, p. 44, January 2024.
+[41] Q. Guo, J. Cao, X. Xie, S. Liu, X. Li, B. Chen, and X. Peng, "Exploring the potential of chatgpt in automated code refinement: An empirical study," in 2024 IEEE/ACM 46th International Conference on Software Engineering (ICSE). IEEE Computer Society, apr 2024, pp. 379–391.
+[42] H. Touvron, L. Martin, K. Stone, P. Albert, A. Almahairi, Y. Babaei, N. Bashlykov, S. Batra, P. Bhargava, S. Bhosaleet al., "Llama 2: Open foundation and fine-tuned chat models," arXiv preprint arXiv:2307.09288, 2023.
+[43] P. Liu, W. Yuan, J. Fu, Z. Jiang, H. Hayashi, and G. Neubig, "Pre-train, prompt, and predict: A systematic survey of prompting methods in natural language processing," ACM Comput. Surv., vol. 55, no. 9, jan 2023. [Online]. Available: https://doi.org/10.1145/3560815
+[44] OpenAI, "gpt-best-practices," 2023. [Online]. Available: https://platform.openai.com/docs/guides/gptbest-practices
+[45] C. Zhang, H. Liu, J. Zeng, K. Yang, Y. Li, and H. Li, "Prompt-enhanced software vulnerability detection using chatgpt," in Proceedings of ICSE (Companion), 2024, p. 276–277.
+[46] J. Yu, P. Liang, Y. Fu, A. Tahir, M. Shahin, C. Wang, and Y. Cai, "Security code review by large language models," 2024.
+[47] N. F. Liu, K. Lin, J. Hewitt, A. Paranjape, M. Bevilacqua, F. Petroni, and P. Liang, "Lost in the middle: How language models use long contexts," Transactions of the Association for Computational Linguistics, vol. 12, pp. 157–173, 2024.
+[48] L. Li, L. Yang, H. Jiang, J. Yan, T. Luo, Z. Hua, G. Liang, and C. Zuo, "Auger: automatically generating review comments with pre-training models," in Proceedings of ESEC/FSE, 2022, p. 1009–1021.
+[49] L. Fan, J. Liu, Z. Liu, D. Lo, X. Xia, and S. Li, "Exploring the capabilities of llms for code change related tasks," ACM Transactions on Software Engineering and Methodology, 2024.
+[50] K. Papineni, S. Roukos, T. Ward, and W.-J. Zhu, "Bleu: a method for automatic evaluation of machine translation," in Proceedings of ACL, Jul. 2002, pp. 311–318.
+[51] S. Stapleton, Y. Gambhir, A. LeClair, Z. Eberhart, W. Weimer, K. Leach, and Y. Huang, "A human study of comprehension and code summarization," in Proceedings of ICPC, 2020, p. 2–13.
+[52] M. Grootendorst, "Bertopic: Neural topic modeling with a class-based tf-idf procedure," arXiv preprint arXiv:2203.05794, 2022.
+[53] Y. Wang, H. Le, A. Gotmare, N. Bui, J. Li, and S. Hoi, "CodeT5+: Open code large language models for code understanding and generation," in Proceedings of EMNLP, 2023, pp. 1069–1088.
+[54] M. Röder, A. Both, and A. Hinneburg, "Exploring the space of topic coherence measures," in Proceedings of WSDM, 2015, p. 399–408.

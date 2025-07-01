@@ -1,0 +1,699 @@
+# 2.2.3.LeetCodeDataset.A Temporal Dataset for Robust Evaluation and_2504.14655v1.pdf
+# Được chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2.2.3.LeetCodeDataset.A Temporal Dataset for Robust Evaluation and_2504.14655v1.pdf
+# Kích thước file: 344099 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+LeetCodeDataset: Một Dataset Thời Gian cho Việc Đánh Giá Mạnh Mẽ và
+Huấn Luyện Hiệu Quả các Mô Hình LLM Code
+Yunhui Xia
+newfacade@163.com   Wei Shen∗
+shenwei0917@126.com   Yan Wang
+wangyanps4@126.com
+Jason Klein Liu
+jasonkleinlove@gmail.com   Huifeng Sun
+shelon_2008@126.com   Siyue Wu
+wusy104@gmail.com
+Jian Hu
+janhu9527@gmail.com   Xiaolong Xu
+xlxu@ieee.org
+
+Tóm tắt
+Chúng tôi giới thiệu LeetCodeDataset, một benchmark chất lượng cao để đánh giá và
+huấn luyện các mô hình sinh code, nhằm giải quyết hai thách thức chính trong nghiên cứu LLM:
+việc thiếu các benchmark coding tập trung vào lý luận và các testbed huấn luyện khép kín.
+Bằng cách tuyển chọn các bài toán Python LeetCode¹ với metadata phong phú, phạm vi 
+bao phủ rộng, hơn 100 test case cho mỗi bài toán, và phân chia thời gian (trước/sau tháng 7 năm 2024),
+dataset của chúng tôi cho phép đánh giá không bị contamination và supervised fine-
+tuning (SFT) hiệu quả. Các thí nghiệm cho thấy các mô hình lý luận vượt trội đáng kể so với
+các đối tác không lý luận, trong khi SFT chỉ với 2.6K solution do mô hình tạo ra
+đạt được hiệu năng tương đương với các đối tác 110K-sample. Dataset và
+framework đánh giá có sẵn trên Hugging Face² và Github³.
+
+1 Giới thiệu
+Sinh code là yếu tố quan trọng trong nghiên cứu và ứng dụng của các mô hình ngôn ngữ lớn (LLMs). Với
+sự xuất hiện của các mô hình lý luận tiên tiến như OpenAI o1 (OpenAI, 2024) và DeepSeek-R1
+(DeepSeek-AI et al., 2025a), hai thách thức chính được làm nổi bật.
+
+Thách thức đầu tiên là việc thiếu các benchmark coding đánh giá chính xác khả năng lý luận của LLMs.
+LiveCodeBench (Jain et al., 2024), một benchmark thường được sử dụng, giải quyết vấn đề này bằng cách lấy các bài toán
+từ các platform như LeetCode và AtCoder và sử dụng cập nhật trực tiếp để tránh contamination dữ liệu.
+Tuy nhiên, nó có những hạn chế: nó chỉ bao phủ một vài bài toán trên mỗi platform và thiếu các tag chi tiết cho
+thuật toán và cấu trúc dữ liệu, khiến việc phân tích sâu trở nên khó khăn.
+
+Thách thức thứ hai là việc thiếu một testbed khép kín để huấn luyện LLMs thành thạo
+coding cạnh tranh thông qua các phương pháp như supervised fine-tuning (SFT) (Zhou et al.,
+2024), direct preference optimization (DPO) (Rafailov et al., 2023), và reinforcement learning (RL),
+∗Tác giả liên hệ
+¹https://leetcode.com/
+²https://huggingface.co/datasets/newfacade/LeetCodeDataset
+³https://github.com/newfacade/LeetCodeDataset
+1arXiv:2504.14655v1  [cs.LG]  20 Apr 2025
+
+--- TRANG 2 ---
+được sử dụng rộng rãi để căn chỉnh hành vi mô hình với hiệu năng coding mong muốn (Shen &
+Zhang, 2024; Shen et al., 2025; Hu, 2025; Liu et al., 2025). Trong khi các dataset như APPS (Hendrycks
+et al., 2021), CodeContests (Li et al., 2022), và TACO (Li et al., 2023) cung cấp các bài toán cạnh tranh
+được chia thành tập huấn luyện và test, chúng thiếu cập nhật trực tiếp và các công cụ dễ dàng để hỗ trợ các quy trình huấn luyện RL. Dataset Open-R1 CodeForces-CoTs (Penedo et al., 2025) được phát hành gần đây, được tạo ra
+bởi DeepSeek-R1, thất bại trong việc lọc các solution để kiểm tra tính đúng đắn, hạn chế độ tin cậy của nó cho việc đánh giá kỹ năng nghiêm ngặt.
+
+Để giải quyết những thách thức này, chúng tôi giới thiệu LeetCodeDataset, tận dụng đầy đủ các
+tài nguyên chất lượng cao từ LeetCode. LeetCode là một platform trực tuyến phổ biến cho việc luyện tập coding và
+chuẩn bị phỏng vấn kỹ thuật. Nó cung cấp hơn 3,000 bài toán thuật toán và cấu trúc dữ liệu ở nhiều
+mức độ khó khác nhau. Platform hỗ trợ nhiều ngôn ngữ (Python, Java, C++, v.v.), cung cấp
+kiểm tra code thời gian thực với phản hồi thực thi. Các nhà phát triển sử dụng LeetCode để cải thiện kỹ năng giải quyết vấn đề, chuẩn bị cho các cuộc phỏng vấn của công ty công nghệ, và tham gia các cuộc thi lập trình toàn cầu. Chúng tôi
+đã tuyển chọn tỉ mỉ một dataset LeetCode bao phủ hơn 90% các bài toán Python trên platform.
+Mỗi bài toán được chú thích với metadata phong phú—bao gồm mức độ khó, ngày phát hành, và các
+tag chủ đề—và được ghép với hơn 100 test case có độ phức tạp khác nhau để giảm thiểu false positive. Dataset
+cũng bao gồm một bộ công cụ đánh giá để đánh giá nhanh và đáng tin cậy. Để đảm bảo tính
+hợp lệ thời gian, chúng tôi áp dụng phân chia nghiêm ngặt dựa trên thời gian: các bài toán được phát hành sau ngày 1 tháng 7 năm 2024, tạo thành tập test
+để benchmarking, trong khi những bài được phát hành trước đó tạo thành tập huấn luyện.
+
+Sử dụng dataset này, chúng tôi đánh giá các mô hình phổ biến—bao gồm các mô hình proprietary và open-source
+và các kiến trúc lý luận và không lý luận. Đánh giá của chúng tôi cho thấy các mô hình lý luận
+vượt trội so với các mô hình không lý luận trong các tác vụ lập trình cạnh tranh, với Claude 3.7 Sonnet (Anthropic, 2024) thể hiện tốt nhất trong danh mục của nó. Ngoài ra, chúng tôi đã tiến hành supervised fine-tuning
+(SFT) trên tập huấn luyện LeetCode. Mặc dù chỉ sử dụng 2.6K sample, mô hình kết quả
+đạt được hiệu năng tương đương với các đối tác được huấn luyện trên 110K ví dụ code, chứng minh
+hiệu quả huấn luyện đặc biệt của LeetCodeDataset.
+
+2 LeetCodeDataset
+2.1 Thu thập Dữ liệu
+Tính đến cuối tháng 3 năm 2025, platform LeetCode lưu trữ khoảng 3,505 bài toán lập trình,
+trong đó 3,115 bài hỗ trợ submission Python. Quá trình thu thập dữ liệu của chúng tôi bắt đầu
+với tập bài toán Python này, và chúng tôi mô tả quá trình của mình dưới đây.
+
+Thu thập Metadata: LeetCode cung cấp một GraphQL API⁴ để truy cập metadata bài toán
+và thông tin được lưu trữ trên platform. Các trường metadata sau được thu thập một cách có hệ thống cho
+mỗi bài toán: slug (định danh URL và khóa chính), question_id (số tuần tự duy nhất),
+difficulty (Easy/Medium/Hard), problem_description (văn bản đầy đủ, với ví dụ và ràng buộc,
+xem Hình 1), starter_code (code template ngôn ngữ), và topic_tags (các tag bài toán như Array,
+Dynamic Programming).
+
+Xác minh Solution Chuẩn: Chúng tôi lấy các solution tham khảo từ các repository GitHub open-source khác nhau⁵⁶, và sau đó xác minh tính đúng đắn của các solution này trên platform LeetCode,
+thiết lập các solution ground truth với tỷ lệ chấp nhận 100%.
+
+⁴https://github.com/fspv/python-leetcode
+⁵https://github.com/doocs/leetcode
+⁶https://github.com/walkccc/LeetCode
+2
+
+--- TRANG 3 ---
+Phát biểu Bài toán
+Trong một mảng arr nào đó, các giá trị theo cấp số cộng: các giá trị arr[i + 1] -
+arr[i] đều bằng nhau cho mọi 0 <= i < arr.length - 1. Một giá trị từ arr đã bị loại bỏ
+mà không phải là giá trị đầu tiên hoặc cuối cùng trong mảng. Cho arr, trả về giá trị
+đã bị loại bỏ.
+
+Ví dụ
+Ví dụ 1:
+Input: arr = [5,7,11,13]
+Output: 9
+Giải thích: Mảng trước đó là [5,7,9,11,13].
+
+Ví dụ 2:
+Input: arr = [15,13,12]
+Output: 14
+Giải thích: Mảng trước đó là [15,14,13,12].
+
+Ràng buộc
+3 <= arr.length <= 1000
+0 <= arr[i] <= 10⁵
+Mảng đã cho được đảm bảo là một mảng hợp lệ.
+
+Starter Code
+class Solution:
+    def missingNumber(self, arr: List[int]) -> int:
+
+Hình 1: Một ví dụ về bài toán LeetCode.
+
+Xác định Entry Point: Entry point đề cập đến hàm được nhắm mục tiêu để kiểm tra. Trong Hình 1,
+đây là missingNum. Hầu hết starter code chứa một hàm duy nhất được tự động xác định
+là entry point thông qua khớp pattern văn bản. Logic xác thực chuyên biệt là cần thiết cho
+các bài toán yêu cầu nhiều hàm (tiêu chuẩn trong các kịch bản thiết kế/mô phỏng). Tuy nhiên, các
+judgment code như vậy không có sẵn và khó phát triển. Do đó, việc triển khai của chúng tôi tập trung
+độc quyền vào các kịch bản starter code một hàm.
+
+Tạo Input: Để tạo input cho entry point như một phần của việc phát triển test case, chúng tôi
+sử dụng one-shot prompting (Hình 4) với LLM. Tuy nhiên, phương pháp này thường tạo ra các input quá
+đơn giản. Để giải quyết vấn đề này, chúng tôi tiếp tục prompt LLM (Hình 5) để tạo ra các input phức tạp hơn. Bằng cách áp dụng cả hai phương pháp nhiều lần, chúng tôi xây dựng trung bình hơn 100 input
+cho mỗi bài toán, bao gồm nhiều trường hợp phức tạp, giảm đáng kể nguy cơ false positive.
+
+Tạo Test Case: Bây giờ chúng tôi có tất cả thông tin cần thiết để tạo test case: cụ thể
+là, chúng tôi tính toán output entry point của Canonical Solution bằng cách sử dụng các input được tạo ra
+trước đó. Để kích hoạt điều này, chúng tôi đã phát triển một môi trường thực thi sandbox để đánh giá code an toàn,
+chèn các import cần thiết trước canonical solution như một phần của prompt, và xử lý
+các cấu trúc dữ liệu đặc biệt như cây nhị phân (xem Hình 7) và danh sách liên kết (xem Hình 6) riêng biệt.
+Sau các bước này, chúng tôi đã tạo thành công output cho 2,869 bài toán, xác định các trường hợp
+còn lại là các kịch bản edge cần điều tra thêm. Pipeline của chúng tôi đảm bảo chất lượng dataset cao
+và phạm vi bao phủ toàn diện, bao phủ hơn 90% tất cả các bài toán Python có sẵn trên platform.
+
+LeetCodeDataset cho SFT: Chúng tôi thiết kế LeetCodeDataset để phục vụ mục đích kép của việc huấn luyện mô hình
+và đánh giá hiệu năng. Dataset sử dụng chiến lược phân chia thời gian: các bài toán được phát hành
+sau một ngày cutoff được xác định trước (ví dụ: 2024-07-01) tạo thành tập đánh giá của chúng tôi, trong khi các bài toán trước đó
+được phân bổ cho supervised fine-tuning. Query của LeetCodeDataset nhất quán với việc xây dựng Live-
+3
+
+--- TRANG 4 ---
+CodeBench (Jain et al., 2024). Để tạo response, chúng tôi cố ý tránh
+các canonical solution (thường chứa comment tối thiểu hoặc lý luận), điều này khiến chúng không
+tối ưu cho instructional tuning. Phân tích chi tiết có thể được tìm thấy trong mục 4. Chúng tôi sử dụng
+Qwen2.5-Coder-32B-Instruct (Hui et al., 2024), một mô hình có khả năng cao và hiệu quả sample, để
+triển khai một quá trình tạo nhiều giai đoạn:
+
+• High-temperature sampling (T=1.0) tạo ra các ứng viên solution đa dạng.
+• Xác minh test case tự động lọc các response đúng về mặt chức năng.
+• Đối với các bài toán liên tục thất bại, các đoạn code ground truth được tích hợp như các
+gợi ý ngữ cảnh để cải thiện khả năng đúng đắn.
+
+Cuối cùng, chúng tôi phát triển LeetCodeDataset, có đặc điểm bao phủ rộng, benchmarking đáng tin cậy,
+phân chia đánh giá/huấn luyện dựa trên ngày phát hành, và các cặp (query, response) được tạo ra bởi mô hình đã xác minh
+cho SFT. Dataset cũng có thể hỗ trợ huấn luyện RL bằng cách tận dụng test case làm verifier, làm cho
+nó trở thành một testbed khép kín cho việc phát triển LLM trong sinh code.
+
+2.2 Tổng quan Dataset
+Bây giờ hãy xem xét LeetCodeDataset được xây dựng. Các bài toán LeetCode có thể được phân loại theo
+nhiều chiều—chúng tôi nêu bật ba chiều chính dưới đây: độ khó, ngày phát hành, và topic tag.
+
+Mức độ Khó: Như được hiển thị trong Bảng 1, các bài toán LeetCode được phân loại theo độ khó thành ba
+mức:
+• Easy: Tập trung vào việc xác thực cú pháp cơ bản và ứng dụng cấu trúc dữ liệu nền tảng,
+thường có thể giải quyết với logic đơn giản.
+• Medium: Yêu cầu quen thuộc với các thuật toán cổ điển (ví dụ: dynamic programming,
+greedy) và khả năng thiết kế các chiến lược hiệu quả.
+• Hard: Liên quan đến các kết hợp thuật toán phức tạp, insight toán học, hoặc tối ưu hóa
+chuyên biệt.
+
+Khó       Năm Phát hành
+Loại    Số lượng  Tỷ lệ (%)    Thời kỳ     Số lượng  Tỷ lệ (%)
+Easy     686      23.91        Trước 2020    1077     37.54
+Medium   1498     52.21        2020–2022     1009     35.17
+Hard     686      23.88        2023–2025     783      27.29
+
+Bảng 1: Phân phối độ khó và năm phát hành trên LeetCodeDataset.
+
+Ngày Phát hành: Ngày phát hành của các bài toán LeetCode cũng cung cấp những insight có giá trị như
+đánh giá không bị contamination của LLMs. Vì ngày phát hành cuộc thi hàng tuần của LeetCode và
+ID câu hỏi có sẵn công khai, chúng tôi sử dụng chúng như neo để ước tính ngày phát hành của mỗi bài toán.
+Như được hiển thị trong Bảng 1, phân phối phát hành hàng năm cho thấy khoảng 350 bài toán mới
+được thêm vào hàng năm trong những năm gần đây. Chúng tôi lập luận rằng việc sử dụng các bài toán từ 6–12 tháng qua cho
+benchmarking đạt được sự cân bằng hiệu quả giữa bias và variance.
+
+Topic Tag: Platform LeetCode gắn nhãn mỗi bài toán với các tag thuật toán và cấu trúc dữ liệu
+(ví dụ: Array, Binary Search), cho phép nhiều tag trên mỗi bài toán. Như được hiển thị trong Hình 2, chúng tôi kiểm tra
+4
+
+--- TRANG 5 ---
+cách các bài toán được phân phối qua các danh mục này. Hệ thống gắn nhãn này có thể giúp người học tập trung
+vào các kỹ năng cụ thể. Chúng tôi tin rằng điều này cũng sẽ cung cấp insight cho LLMs.
+
+Array String
+Hash Table
+Dynamic Programming Math Sorting Greedy
+Binary Search
+Depth-First Search Matrix
+Bit Manipulation
+Breadth-First Search Two Pointers Tree
+Prefix Sum
+Heap (Priority Queue) Simulation Graph
+Counting Binary Tree
+Sliding Window Stack
+Enumeration Backtracking Union Find
+Number Theory Monotonic Stack Linked List Bitmask
+Segment Tree
+
+Topic Tag 0 250 500 750 1000 1250 1500 1750 Frequency
+
+Hình 2: Phân phối tần suất topic.
+
+3 Đánh giá Toàn diện
+Chúng tôi đánh giá sáu mô hình trên tập test LeetCodeDataset, bao gồm 256 bài toán lập trình được
+phát hành mới sau ngày 1 tháng 7 năm 2024. Các mô hình được đánh giá bao gồm hai hệ thống proprietary, GPT-
+4o (OpenAI et al., 2024) và Claude 3.7 Sonnet (Anthropic, 2024); và bốn mô hình open-source,
+DeepSeek-V3 (DeepSeek-AI et al., 2025b), DeepSeek-R1 (DeepSeek-AI et al., 2025a), Qwen2.5-
+Max (Team, 2024), và QwQ-Plus (Team, 2025b). Tất cả các thí nghiệm sử dụng các tham số tạo
+giống hệt nhau với temperature=0.2 và top_p=0.95 để đảm bảo so sánh công bằng.
+
+Theo phương pháp đánh giá thời gian của LiveCodeBench, chúng tôi phân tích sự thay đổi độ chính xác hàng tháng
+tương đối với tháng phát hành bài toán như được hiển thị trong Hình 3, và tóm tắt tỷ lệ pass của mô hình
+qua các mức độ khó trong Bảng 2. Phương pháp này xác định contamination dữ liệu tiềm năng bằng cách phát hiện
+sự suy giảm độ chính xác sau phát hành, điều này sẽ cho thấy overfitting với dữ liệu huấn luyện trước phát hành. Các
+phát hiện của chúng tôi tiết lộ ba insight chính:
+
+• Hiệu năng Vượt trội của Mô hình Lý luận: Đánh giá làm nổi bật DeepSeek-R1
+(tỷ lệ pass@1 = 65.23%) và QwQ-Plus (tỷ lệ pass@1 = 56.25%) là những performer hàng đầu, chứng minh
+lợi thế đáng kể của các mô hình lý luận long-CoT trong việc giải quyết các
+bài toán coding cạnh tranh phức tạp.
+
+• So sánh Baseline: Claude-3.7-Sonnet, hoạt động mà không có extended thinking, đạt được
+hiệu năng vượt trội trong danh mục mô hình của nó. Hai mô hình, GPT-4o và DeepSeek-
+5
+
+--- TRANG 6 ---
+V3, đạt được điểm số tổng thể giống nhau. GPT-4o thể hiện tốt hơn một chút trên các bài toán easy,
+trong khi DeepSeek-V3 thể hiện tốt hơn một chút trên các bài toán hard.
+
+• Phân tích Contamination: Sự chồng lấp thời gian tối thiểu giữa ngày phát hành GPT-4o-0806
+(tháng 8 năm 2024) và cửa sổ phát hành bài toán test của chúng tôi (sau tháng 7 năm 2024) gợi ý mạnh mẽ
+các phép đo khả năng mô hình chính thống. Chúng tôi thấy các đường cong tương tự giữa GPT-4o-0806,
+DeepSeek-V3, và Qwen2.5-Max; chúng tôi tin rằng các biến động độ chính xác hàng tháng chủ yếu
+do những thay đổi trong độ khó bài toán.
+
+2024-07 2024-08 2024-09 2024-10 2024-11 2024-12 2025-01 2025-02
+Tháng Phát hành Bài toán LeetCode 20.0% 30.0% 40.0% 50.0% 60.0% 70.0% 80.0% Pass@1
+
+GPT-4o-0806
+Claude-3.7-Sonnet
+DeepSeek-V3
+DeepSeek-R1
+Qwen2.5-Max
+QwQ-Plus
+
+Hình 3: Tỷ lệ pass hàng tháng của các mô hình khác nhau trên LeetCodeDataset.
+
+Mô hình        Easy (%)  Medium (%)  Hard (%)  Tổng thể (%)
+GPT-4o-0806      81.48     32.76      10.47      35.55
+Claude-3.7-Sonnet 87.04     54.31      23.26      50.78
+DeepSeek-V3      77.78     31.90      13.95      35.55
+DeepSeek-R1      94.44     68.97      41.86      65.23
+Qwen2.5-Max      74.07     25.00      10.47      30.47
+QwQ-Plus         92.59     62.93      24.42      56.25
+
+Bảng 2: Tỷ lệ pass của mô hình theo mức độ khó trên LeetCodeDataset.
+
+Chúng tôi cũng phân tích tỷ lệ pass của mô hình qua các topic tag khác nhau, như được mô tả trong Bảng 3. Bằng cách so sánh
+các kết quả này, chúng tôi xác định điểm mạnh và điểm yếu của mỗi mô hình, điều này cung cấp insight cho
+các cải tiến trong tương lai. Các phát hiện chính của chúng tôi bao gồm:
+6
+
+--- TRANG 7 ---
+• Mô hình lý luận DeepSeek-R1 cho thấy hiệu năng mạnh qua tất cả các topic tag, với
+tỷ lệ pass chủ yếu dao động từ 60% đến 70% và biến thiên tối thiểu. Ngược lại, các mô hình không
+lý luận như GPT-4o thể hiện biến động đáng kể, chẳng hạn như giảm xuống 7.7% trong
+các tác vụ Binary Search nhưng đạt 63.2% trong các tác vụ Simulation.
+
+• Chúng tôi quan sát sự khác biệt hiệu năng đáng kể giữa các mô hình lý luận và không lý luận
+trong Dynamic Programming, Binary Search, và các tác vụ liên quan đến Tree. Pattern này
+chứng minh nhu cầu về khả năng lý luận bổ sung trong các lĩnh vực này.
+
+                GPT-4o  DeepSeek-V3  Qwen2.5-Max  Claude-3.7-Sonnet  DeepSeek-R1  QwQ-Plus
+Array             32.1      34.5         28.0          51.2           67.9        55.4
+String            37.3      38.8         35.8          49.3           68.7        50.7
+Dynamic Programming 10.5     15.8          8.8          31.6           70.2        40.4
+Hash Table        39.5      37.5         35.7          50.0           66.1        50.0
+Math              38.2      40.0         32.7          56.4           69.1        58.2
+Greedy            12.5      15.6         12.5          21.9           62.5        28.1
+Sorting           20.0      20.0          6.7          36.7           66.7        53.3
+Prefix Sum        17.9      14.3         14.3          35.7           71.4        35.7
+Binary Search      7.7      23.1         11.5          30.8           73.1        30.8
+Sliding Window    52.2      47.8         43.5          69.6           56.5        52.2
+Enumeration       27.3      31.8          9.1          45.5           63.6        50.0
+Matrix            19.0      33.3         19.0          52.4           76.2        61.9
+Simulation        63.2      57.9         42.1          63.2           63.2        84.2
+Depth-First Search 31.6     21.1         26.3          31.6           57.9        57.9
+Bit Manipulation  33.3      44.4         27.8          50.0           50.0        66.7
+Combinatorics     12.5      18.8         12.5          37.5           93.8        25.0
+Counting          20.0      26.7         26.7          46.7           53.3        46.7
+Graph             40.0      33.3         46.7          53.3           66.7        66.7
+Heap (Priority Queue) 40.0  53.3         33.3          66.7           66.7        66.7
+Number Theory     38.5      30.8         30.8          38.5           69.2        53.8
+Breadth-First Search 41.7   33.3         50.0          58.3           58.3        75.0
+Tree              27.3      18.2          9.1           9.1           72.7        54.5
+Two Pointers      20.0      30.0         30.0          40.0           80.0        40.0
+Segment Tree      30.0      30.0         30.0          70.0           80.0        30.0
+Tất cả            35.5      35.5         30.5          50.8           65.2        56.2
+
+Bảng 3: Tỷ lệ pass của các mô hình qua các topic tag.
+
+4 Huấn luyện Hiệu quả
+4.1 Thiết lập Thí nghiệm
+Chúng tôi tiến hành SFT sử dụng Qwen2.5-Coder-7B (Hui et al., 2024) làm mô hình cơ sở của chúng tôi. Mô hình được
+huấn luyện trong 3 epoch với learning rate ban đầu 1e-5, sử dụng tỷ lệ warmup 0.1 và
+lịch trình learning rate cosine. Tất cả các thí nghiệm sử dụng các siêu tham số nhất quán, bao gồm
+batch size 32 qua các dataset khác nhau.
+7
+
+--- TRANG 8 ---
+4.2 Kết quả
+Để đánh giá hiệu quả huấn luyện của LeetCodeDataset, chúng tôi tiến hành các thí nghiệm so sánh với
+năm dataset coding được sử dụng rộng rãi (Wei et al., 2024; Luo et al., 2023; Penedo et al., 2025; Team, 2025a)
+có kích thước từ 9.5K đến 111.1K sample - tất cả đều lớn hơn đáng kể so với tập huấn luyện
+LeetCodeDataset của chúng tôi. Dưới các cấu hình thí nghiệm giống hệt nhau ở trên, chúng tôi huấn luyện các mô hình trên mỗi dataset và
+đánh giá chúng qua bốn benchmark: HumanEval (Chen et al., 2021), MBPP (Austin et al., 2021),
+LiveCodeBench (Jain et al., 2024), cùng với tập đánh giá LeetCodeDataset mới phát triển của chúng tôi.
+
+Như được chứng minh trong Bảng 4, chúng tôi tóm tắt các phát hiện chính:
+
+• Dữ liệu Huấn luyện do Mô hình Tạo ra Vượt trội. Mô hình được huấn luyện SFT sử dụng các
+response do mô hình tạo ra từ LeetCodeDataset trước 2024-07 vượt trội đáng kể so với phiên bản
+được huấn luyện trên các response do con người viết (79.9% vs. 55.5% trên HumanEval; 77.5% vs. 53.4%
+trên MBPP), mặc dù cả hai loại response đều được xác minh là đúng. Kết quả làm nổi bật
+lợi thế chất lượng của dữ liệu huấn luyện do mô hình tạo ra cho các tác vụ sinh code.
+
+• Hiệu quả Dữ liệu Cao. Huấn luyện chỉ với 2.6K sample LeetCode do mô hình tạo ra
+đạt được hiệu năng vượt trội trên HumanEval (79.9%) và MBPP (77.5%), vượt qua
+các mô hình được huấn luyện trên các dataset lớn hơn nhiều (9.5K–111.1K hàng). Phát hiện này chứng minh
+hiệu quả dữ liệu đặc biệt cho sinh code cụ thể lĩnh vực.
+
+• Hạn chế trên Benchmark Khó. Mặc dù trong phân phối cho LeetCodeDataset
+(sau 2024-07), mô hình được huấn luyện 2.6K thể hiện kém trên các benchmark khó. Điều này gợi ý
+rằng SFT quy mô nhỏ chủ yếu phát triển các kỹ năng lập trình cơ bản.
+
+Dữ liệu Huấn luyện                  Hàng    HumanEval   MBPP    LiveCodeBench 24-08∼25-02  LeetCodeDataset 24-07∼25-03
+Magicoder Evol-Instruct-110K        111.1K  77.4       74.1    15.1                       13.7
+Magicoder OSS-Instruct-75K          75.1K   73.8       76.5    15.1                       12.9
+Open-R1 CodeForces-CoT              9.5K    79.9       74.1    15.8                       13.3
+OpenThoughts 114k                   19.9K   77.4       75.7    16.9                       16.4
+LeetCodeDataset Pre 2024-07 human   2.6K    55.5       53.4    14.0                       10.9
+LeetCodeDataset Pre 2024-07 model   2.6K    79.9       77.5    15.4                       12.5
+
+Bảng 4: Kết quả huấn luyện SFT mô hình.
+
+5 Công trình Liên quan
+Benchmark Sinh Code. Nhiều benchmark đã được phát triển để đánh giá khả năng sinh code của LLMs. Đối với lập trình Python nền tảng, các benchmark được sử dụng rộng rãi
+bao gồm HumanEval (Chen et al., 2021) và MBPP (Austin et al., 2021). EvalPlus (Liu et al., 2023)
+8
+
+--- TRANG 9 ---
+cung cấp một biến thể nghiêm ngặt hơn. Multiple-E (Cassano et al., 2022) mở rộng thêm hai benchmark phổ biến này bằng cách dịch chúng sang 18 ngôn ngữ lập trình khác. Khi khả năng LLM
+tiến bộ, nhiều benchmark này đang trở nên quá dễ để đánh giá các mô hình hiện đại một cách đầy đủ. Một
+vài benchmark chuyên biệt tập trung vào các thách thức lập trình cạnh tranh. APPS (Hendrycks et al.,
+2021), CodeContests (Li et al., 2022), và TACO (Li et al., 2023) lấy các bài toán từ các platform như
+Codeforces và AtCoder. LiveCodeBench (Jain et al., 2024) cung cấp các đánh giá toàn diện và không bị contamination bằng cách cập nhật động các thách thức coding từ các platform như LeetCode và AtCoder.
+CODEELO (Quan et al., 2025) cố gắng căn chỉnh với platform CodeForces bằng cách gửi trực tiếp đến
+platform và phát triển hệ thống tính toán rating Elo.
+
+Dataset Fine-tuning Code. Dữ liệu tổng hợp là một nguồn chính của dữ liệu SFT LLM. CodeAlpaca
+(Chaudhary, 2023) sử dụng few-shot prompting và các mô hình teacher để tổng hợp dữ liệu cho fine-
+tuning cụ thể code. Magicoder (Wei et al., 2024) tận dụng các đoạn code open-source để tạo ra
+dữ liệu hướng dẫn chất lượng cao cho các tác vụ coding. Trong các benchmark lập trình cạnh tranh như
+APPS và CodeTest, các phần chia huấn luyện được cung cấp cho SFT, sử dụng các bài toán cấp độ cạnh tranh
+để nâng cao khả năng giải quyết vấn đề của mô hình. Đối với lý luận tiên tiến, Open-R1 CodeForces-
+CoTs (Penedo et al., 2025) bao gồm 10K bài toán CodeForces với lên đến năm trace lý luận
+được tạo ra bởi DeepSeek R1. Ngược lại, OpenThoughts (Team, 2025a) là một dataset tổng hợp với
+114K ví dụ chất lượng cao bao trùm toán, khoa học, code, và puzzle.
+
+6 Hạn chế
+Trong khi dataset LeetCode của chúng tôi benchmark và fine-tune các mô hình code một cách hiệu quả, nó có ba
+hạn chế chính:
+
+Rủi ro False Positive: Mặc dù chúng tôi thiết kế các input và test case đa dạng để giảm các solution không đúng
+vượt qua, dataset của chúng tôi thiếu các pattern input cực kỳ phức tạp và gặp phải phân phối test
+case không cân bằng. Những hạn chế này tạo ra rủi ro dư thừa của false positive (ví dụ: các solution vượt qua
+test mặc dù có lỗi logic).
+
+Khoảng cách Phân tích Độ phức tạp: Xác định độ phức tạp thời gian/không gian cho các bài toán yêu cầu test case
+kiểu LeetCode được điều chỉnh cho hành vi của mỗi thuật toán. Hạn chế này vượt quá phạm vi hiện tại của chúng tôi vì nó
+đòi hỏi xác thực thủ công cụ thể cho bài toán.
+
+Khoảng cách Bao phủ: Chúng tôi chưa bao gồm một số loại bài toán nhất định, đặc biệt là các bài toán với nhiều
+entry point solution.
+
+7 Kết luận
+Chúng tôi trình bày LeetCodeDataset, một tài nguyên được tuyển chọn nghiêm ngặt nhằm giải quyết các thách thức chính trong nghiên cứu sinh
+code cho các mô hình ngôn ngữ lớn. Bằng cách tập hợp 2,869 bài toán Python LeetCode—
+mỗi bài được chú thích với metadata phong phú (độ khó, tag, ngày phát hành) và được tăng cường với hơn 100
+test case đa dạng—dataset của chúng tôi cho phép đánh giá mô hình đáng tin cậy, không bị contamination và
+huấn luyện cực kỳ hiệu quả. Phân chia thời gian của nó (với các bài toán sau tháng 7 năm 2024 là tập test) đảm bảo
+benchmarking sạch và hỗ trợ các nghiên cứu dọc. Dataset này bao phủ toàn diện các thuật toán
+và cấu trúc dữ liệu, tạo điều kiện cho đánh giá tổng thể mạnh mẽ và phân tích kỹ năng chi tiết. Với
+một bộ công cụ đánh giá tích hợp, LeetCodeDataset hợp lý hóa việc đánh giá và so sánh qua
+các mô hình. Đáng chú ý, chúng tôi cho thấy các mô hình được huấn luyện chỉ trên 2.6K sample được tuyển chọn từ LeetCodeDataset
+có thể khớp với hiệu năng của những mô hình được huấn luyện trên 110K ví dụ từ các benchmark trước đó, chứng minh
+hiệu quả dữ liệu mạnh mẽ. Chúng tôi kỳ vọng LeetCodeDataset sẽ trở thành một tài nguyên nền tảng cho
+việc phát triển, huấn luyện, và đánh giá các mô hình sinh code tiên tiến.
+9
+
+--- TRANG 10 ---
+Tài liệu tham khảo
+Anthropic. Claude 3.5 sonnet, 2024. URL https://www.anthropic.com/claude/sonnet.
+
+Jacob Austin, Augustus Odena, Maxwell Nye, Maarten Bosma, Henryk Michalewski, David Dohan,
+Ellen Jiang, Carrie Cai, Michael Terry, Quoc Le, and Charles Sutton. Program synthesis with
+large language models, 2021. URL https://arxiv.org/abs/2108.07732.
+
+Federico Cassano, John Gouwar, Daniel Nguyen, Sydney Nguyen, Luna Phipps-Costin, Donald
+Pinckney, Ming-Ho Yee, Yangtian Zi, Carolyn Jane Anderson, Molly Q Feldman, Arjun Guha,
+Michael Greenberg, and Abhinav Jangda. Multipl-e: A scalable and extensible approach to
+benchmarking neural code generation, 2022. URL https://arxiv.org/abs/2208.08227.
+
+Sahil Chaudhary. Code alpaca: An instruction-following llama model for code generation. https:
+//github.com/sahil280114/codealpaca, 2023.
+
+Mark Chen, Jerry Tworek, Heewoo Jun, Qiming Yuan, Henrique Ponde de Oliveira Pinto, Jared
+Kaplan, Harri Edwards, Yuri Burda, Nicholas Joseph, Greg Brockman, Alex Ray, Raul Puri,
+Gretchen Krueger, Michael Petrov, Heidy Khlaaf, Girish, et al. Evaluating large language models
+trained on code, 2021. URL https://arxiv.org/abs/2107.03374.
+
+DeepSeek-AI, Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song, Ruoyu Zhang, Runxin
+Xu, Qihao Zhu, Shirong Ma, Peiyi Wang, Xiao Bi, Xiaokang Zhang, Xingkai Yu, Yu Wu, et al.
+Deepseek-r1: Incentivizing reasoning capability in llms via reinforcement learning, 2025a. URL
+https://arxiv.org/abs/2501.12948.
+
+DeepSeek-AI, Aixin Liu, Bei Feng, Bing Xue, Bingxuan Wang, Bochao Wu, Chengda Lu, Chenggang
+Zhao, Chengqi Deng, Chenyu Zhang, Chong Ruan, Damai Dai, Daya Guo, Dejian Yang, Deli
+Chen, Dongjie Ji, Erhang Li, Fangyun Lin, Fucong Dai, Fuli Luo, Guangbo Hao, Guanting Chen,
+Guowei Li, et al. Deepseek-v3 technical report, 2025b. URL https://arxiv.org/abs/2412.19437.
+
+Dan Hendrycks, Steven Basart, Saurav Kadavath, Mantas Mazeika, Akul Arora, Ethan Guo, Collin
+Burns, Samir Puranik, Horace He, Dawn Song, and Jacob Steinhardt. Measuring coding challenge
+competence with apps. NeurIPS, 2021.
+
+Jian Hu. Reinforce++: A simple and efficient approach for aligning large language models. arXiv
+preprint arXiv:2501.03262, 2025.
+
+Binyuan Hui, Jian Yang, Zeyu Cui, Jiaxi Yang, Dayiheng Liu, Lei Zhang, Tianyu Liu, Jiajun Zhang,
+Bowen Yu, Kai Dang, et al. Qwen2. 5-coder technical report. arXiv preprint arXiv:2409.12186, 2024.
+
+Naman Jain, King Han, Alex Gu, Wen-Ding Li, Fanjia Yan, Tianjun Zhang, Sida Wang, Armando
+Solar-Lezama, Koushik Sen, and Ion Stoica. Livecodebench: Holistic and contamination free
+evaluation of large language models for code, 2024. URL https://arxiv.org/abs/2403.07974.
+
+Rongao Li, Jie Fu, Bo-Wen Zhang, Tao Huang, Zhihong Sun, Chen Lyu, Guang Liu, Zhi Jin, and
+Ge Li. Taco: Topics in algorithmic code generation dataset. arXiv preprint arXiv:2312.14852, 2023.
+
+Yujia Li, David Choi, Junyoung Chung, Nate Kushman, Julian Schrittwieser, Rémi Leblond, Tom
+Eccles, James Keeling, Felix Gimeno, Agustin Dal Lago, Thomas Hubert, Peter Choy, Cyprien
+de Masson d'Autume, Igor Babuschkin, Xinyun Chen, Po-Sen Huang, Johannes Welbl, Sven
+Gowal, Alexey Cherepanov, James Molloy, Daniel Mankowitz, Esme Sutherland Robson, Push-
+meet Kohli, Nando de Freitas, Koray Kavukcuoglu, and Oriol Vinyals. Competition-level code
+generation with alphacode. arXiv preprint arXiv:2203.07814, 2022.
+10
+
+--- TRANG 11 ---
+Jiawei Liu, Chunqiu Steven Xia, Yuyao Wang, and Lingming Zhang. Is your code generated by
+chatgpt really correct? rigorous evaluation of large language models for code generation, 2023.
+URL https://arxiv.org/abs/2305.01210.
+
+Yuliang Liu, Junjie Lu, Zhaoling Chen, Chaofeng Qu, Jason Klein Liu, Chonghan Liu, Zefan Cai,
+Yunhui Xia, Li Zhao, Jiang Bian, et al. Adaptivestep: Automatically dividing reasoning step
+through model confidence. arXiv preprint arXiv:2502.13943, 2025.
+
+Ziyang Luo, Can Xu, Pu Zhao, Qingfeng Sun, Xiubo Geng, Wenxiang Hu, Chongyang Tao, Jing
+Ma, Qingwei Lin, and Daxin Jiang. Wizardcoder: Empowering code large language models with
+evol-instruct, 2023. URL https://arxiv.org/abs/2306.08568.
+
+OpenAI. Introducing openai o1-preview, September 2024. URL https://openai.com/index/
+introducing-openai-o1-preview/.
+
+OpenAI, :, Aaron Hurst, Adam Lerer, Adam P. Goucher, Adam Perelman, Aditya Ramesh, Aidan
+Clark, AJ Ostrow, Akila Welihinda, Alan Hayes, Alec Radford, Aleksander Mądry, et al. Gpt-4o
+system card, 2024. URL https://arxiv.org/abs/2410.21276.
+
+Guilherme Penedo, Anton Lozhkov, Hynek Kydlíček, Loubna Ben Allal, Edward Beeching,
+Agustín Piqueres Lajarín, Quentin Gallouédec, Nathan Habib, Lewis Tunstall, and Leandro von
+Werra. Codeforces cots. https://huggingface.co/datasets/open-r1/codeforces-cots, 2025.
+
+Shanghaoran Quan, Jiaxi Yang, Bowen Yu, Bo Zheng, Dayiheng Liu, An Yang, Xuancheng Ren, Bofei
+Gao, Yibo Miao, Yunlong Feng, Zekun Wang, Jian Yang, Zeyu Cui, Yang Fan, Yichang Zhang,
+Binyuan Hui, and Junyang Lin. Codeelo: Benchmarking competition-level code generation of
+llms with human-comparable elo ratings, 2025. URL https://arxiv.org/abs/2501.01257.
+
+Rafael Rafailov, Archit Sharma, Eric Mitchell, Christopher D Manning, Stefano Ermon, and Chelsea
+Finn. Direct preference optimization: Your language model is secretly a reward model. Advances
+in Neural Information Processing Systems, 36:53728–53741, 2023.
+
+Wei Shen and Chuheng Zhang. Policy filtration in rlhf to fine-tune llm for code generation. arXiv
+preprint arXiv:2409.06957, 2024.
+
+Wei Shen, Guanlin Liu, Zheng Wu, Ruofei Zhu, Qingping Yang, Chao Xin, Yu Yue, and Lin Yan.
+Exploring data scaling trends and effects in reinforcement learning from human feedback. arXiv
+preprint arXiv:2503.22230, 2025.
+
+OpenThoughts Team. Open Thoughts. https://open-thoughts.ai, January 2025a.
+
+Qwen Team. Qwen2.5 technical report. arXiv preprint arXiv:2412.15115, 2024.
+
+Qwen Team. Qwq-32b: Embracing the power of reinforcement learning, March 2025b. URL
+https://qwenlm.github.io/blog/qwq-32b/.
+
+Yuxiang Wei, Zhe Wang, Jiawei Liu, Yifeng Ding, and Lingming Zhang. Magicoder: Empowering
+code generation with oss-instruct, 2024. URL https://arxiv.org/abs/2312.02120.
+
+Jing Zhou, Chenglin Jiang, Wei Shen, Xiao Zhou, and Xiaonan He. Leveraging web-crawled data
+for high-quality fine-tuning. arXiv preprint arXiv:2408.08003, 2024.
+11
+
+--- TRANG 12 ---
+A Phụ lục
+A.1 Prompt
+Trong quá trình tạo input cho entry point, chúng tôi lấy mẫu ba tree, ba linked list, và bốn loại bài toán
+khác, trích xuất đặc tả input từ mô tả của chúng để định nghĩa entry point. 10 bài toán
+được chọn này phục vụ như các ví dụ one-shot trong Input-Generation-Prompt, với các ràng buộc cụ thể lĩnh vực: các bài toán tree chỉ sử dụng các ví dụ tree; các bài toán linked list lấy từ các
+trường hợp linked list; những bài khác tuân theo nguyên tắc tương tự, đảm bảo các input được tạo ra phù hợp với yêu cầu cấu trúc
+của mỗi loại bài toán.
+
+Input-Generation-Prompt
+Bạn là một lập trình viên Python chuyên gia. Bạn sẽ được đưa ra một câu hỏi (bao gồm đặc tả bài toán
+và starter code). Nhiệm vụ của bạn là tạo ra các input nhất quán với đặc tả bài toán
+và starter code. Một ví dụ sẽ được cung cấp để minh họa.
+
+**** Ví dụ ****
+#### Câu hỏi:
+{mô tả bài toán ví dụ và starter code}
+#### Một số input hợp lệ của starter code (định dạng json):
+```json
+{input bài toán ví dụ}
+```
+**** Bây giờ Nhiệm vụ của bạn ****
+#### Câu hỏi:
+{mô tả bài toán và starter code}
+#### Một số input hợp lệ của starter code (định dạng json):
+
+Hình 4: Cấu trúc prompt cho việc tạo input.
+
+Complex-Input-Generation-Prompt
+Bạn là một lập trình viên Python chuyên gia. Bạn sẽ được đưa ra một câu hỏi (bao gồm đặc tả bài toán
+và starter code) cùng với một vài input mẫu. Nhiệm vụ của bạn là tạo ra các input bổ sung
+nhất quán với câu hỏi và các input mẫu được cung cấp.
+
+#### Câu hỏi:
+{mô tả bài toán và starter code}
+#### Input mẫu (sử dụng định dạng json):
+```json
+{input mẫu}
+```
+#### Tạo ra một số input bổ sung phức tạp hơn các input mẫu (sử
+dụng định dạng json):
+
+Hình 5: Cấu trúc prompt cho việc tạo input phức tạp.
+12
+
+--- TRANG 13 ---
+A.1.1 Xử lý Cấu trúc Dữ liệu
+Để đảm bảo đánh giá mạnh mẽ, chúng tôi thêm các import thiết yếu (ví dụ: from typing import List) vào tất cả
+các code completion. Việc xử lý đặc biệt được yêu cầu cho các cấu trúc dữ liệu binary tree và linked list, bao gồm
+các hàm tiện ích bổ sung cho serialization/deserialization. Dưới đây là các import bổ sung
+và hàm helper được sử dụng để quản lý các cấu trúc này:
+
+1from typing import Optional
+2from collections import deque
+3
+4
+5class ListNode:
+6    def __init__(self, val=0, next=None):
+7        self.val = val
+8        self.next = next
+9
+10
+11def list_node(values: list) -> Optional[ListNode]:
+12    if not values:
+13        return None
+14    head = ListNode(values[0])
+15    p = head
+16    for val in values[1:]:
+17        node = ListNode(val)
+18        p.next = node
+19        p = node
+20    return head
+21
+22
+23def linked_list_to_list(head: Optional[ListNode]) -> list:
+24    result = []
+25    current = head
+26    while current:
+27        result.append(current.val)
+28        current = current.next
+29    return result
+30
+31
+32def is_same_list(p1: Optional[ListNode], p2: Optional[ListNode]) -> bool:
+33    if p1 is None and p2 is None:
+34        return True
+35    if not p1 or not p2:
+36        return False
+37    return p1.val == p2.val and is_same_list(p1.next, p2.next)
+
+Hình 6: Import bổ sung liên quan đến linked list.
+13
+
+--- TRANG 14 ---
+1from typing import Optional
+2from collections import deque
+3
+4
+5class TreeNode:
+6    def __init__(self, val=0, left=None, right=None):
+7        self.val = val
+8        self.left = left
+9        self.right = right
+10
+11
+12def tree_node(values: list) -> Optional[TreeNode]:
+13    if not values:
+14        return None
+15    root = TreeNode(values[0])
+16    i = 1
+17    queue = deque()
+18    queue.append(root)
+19    while queue:
+20        node = queue.popleft()
+21        if i < len(values) and values[i] is not None:
+22            node.left = TreeNode(values[i])
+23            queue.append(node.left)
+24        i += 1
+25        if i < len(values) and values[i] is not None:
+26            node.right = TreeNode(values[i])
+27            queue.append(node.right)
+28        i += 1
+29    return root
+30
+31
+32def tree_node_to_list(root: Optional[TreeNode]) -> list:
+33    if not root:
+34        return []
+35
+36    result = []
+37    queue = deque()
+38    queue.append(root)
+39
+40    while queue:
+41        node = queue.popleft()
+42        if node:
+43            result.append(node.val)
+44            queue.append(node.left)
+45            queue.append(node.right)
+46        else:
+47            result.append(None)
+48
+49    while result and result[-1] is None:
+50        result.pop()
+51
+52    return result
+53
+54
+55def is_same_tree(p: Optional[TreeNode], q: Optional[TreeNode]) -> bool:
+56    if not p and not q:
+57        return True
+58    elif not p or not q:
+59        return False
+60    elif p.val != q.val:
+61        return False
+62    else:
+63        return is_same_tree(p.left, q.left) and is_same_tree(p.right, q.right)
+
+Hình 7: Import bổ sung liên quan đến binary tree.14

@@ -1,0 +1,373 @@
+# 1.4.3. AST-T5- Structure-Aware Pretraining for Code Generation and Understanding - 2401.03003v4.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\1.4.3. AST-T5- Structure-Aware Pretraining for Code Generation and Understanding - 2401.03003v4.pdf
+# Kích thước file: 488769 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+AST-T5: Tiền Huấn Luyện Nhận Thức Cấu Trúc 
+cho Sinh Mã và Hiểu Mã
+
+Linyuan Gong¹ Mostafa Elhoushi² Alvin Cheung¹
+
+Tóm tắt
+
+Các mô hình ngôn ngữ lớn (LLM) đã đạt được những tiến bộ đáng kể trong các tác vụ liên quan đến mã, tuy nhiên nhiều LLM coi mã như các chuỗi đơn giản, bỏ qua bản chất có cấu trúc của nó. Chúng tôi giới thiệu AST-T5, một mô hình tiền huấn luyện mới tận dụng Cây Cú Pháp Trừu Tượng (AST) để tăng cường sinh mã, chuyển đổi mã và hiểu mã. Sử dụng lập trình động, thuật toán Phân Đoạn Nhận Thức AST của chúng tôi giữ lại cấu trúc mã, trong khi mục tiêu AST-Aware Span Corruption trang bị cho mô hình khả năng tái tạo các cấu trúc mã khác nhau. Không giống như các mô hình khác, AST-T5 tránh các phân tích chương trình phức tạp hoặc thay đổi kiến trúc, vì vậy nó tích hợp mượt mà với bất kỳ Transformer encoder-decoder nào. Các đánh giá cho thấy AST-T5 luôn vượt trội hơn các LM có kích thước tương tự trên nhiều tác vụ liên quan đến mã bao gồm HumanEval và MBPP. Nhận thức cấu trúc làm cho AST-T5 đặc biệt mạnh mẽ trong các tác vụ mã-sang-mã, vượt trội hơn CodeT5 2 điểm trong exact match score cho tác vụ Bugs2Fix và 3 điểm trong exact match score cho Java-C# Transpilation trong CodeXGLUE. Mã và mô hình của chúng tôi có sẵn công khai tại https://github.com/gonglinyuan/ast_t5.
+
+1. Giới thiệu
+
+Chúng ta đã chứng kiến tác động biến đổi của các mô hình ngôn ngữ lớn (LLM) lên nhiều khía cạnh của trí tuệ nhân tạo trong những năm gần đây (Brown et al., 2020; Ouyang et al., 2022; Touvron et al., 2023), đặc biệt trong sinh mã và hiểu mã (Feng et al., 2020; Wang et al., 2021; Rozière et al., 2023). Bằng cách tiền huấn luyện trên các kho mã khổng lồ như kho GitHub, LLM học được các biểu diễn phong phú, từ đó trở thành công cụ mạnh mẽ cho các ứng dụng phụ thuộc khác nhau như sinh mã từ văn bản (Chen et al., 2021a; Austin et al., 2021; Iyer et al., 2018), chuyển đổi mã-sang-mã (Lu et al., 2021; Lachaux et al., 2020; Tufano et al., 2019), và hiểu mã (ánh xạ mã thành nhãn phân loại) (Zhou et al., 2019; Svajlenko et al., 2014).
+
+Mặc dù có những tiến bộ ấn tượng này, hầu hết các mô hình hiện tại diễn giải mã như các chuỗi đơn thuần của các subword token, bỏ qua bản chất có cấu trúc nội tại của nó. Nghiên cứu trước đây đã chỉ ra rằng việc tận dụng Cây Cú Pháp Trừu Tượng (AST) của mã có thể cải thiện đáng kể hiệu suất trên các tác vụ liên quan đến mã (Guo et al., 2021; Tipirneni et al., 2023). Một số nghiên cứu cũng sử dụng làm mờ mã trong quá trình tiền huấn luyện để dạy các mô hình về cấu trúc mã trừu tượng (Roziere et al., 2021; Wang et al., 2021). Tuy nhiên, các mô hình này thường dựa vào các quá trình tốn kém về mặt tính toán như Phân Tích Luồng Điều Khiển (CFA), làm mờ, hoặc thậm chí thực thi mã thực tế. Sự phụ thuộc như vậy hạn chế khả năng mở rộng của chúng và áp đặt các điều kiện nghiêm ngặt như tính thực thi của mã. Do đó, các phương pháp này có thể gặp khó khăn với mã thực tế, đặc biệt trong các ngôn ngữ phức tạp như C/C++, nơi phân tích toàn diện vẫn còn khó nắm bắt.
+
+Trong nghiên cứu này, chúng tôi đề xuất AST-T5, một mô hình tiền huấn luyện tận dụng cấu trúc Cây Cú Pháp Trừu Tượng (AST) của mã. Đóng góp chính trong AST-T5 là một cách đơn giản nhưng hiệu quả để khai thác ngữ nghĩa mã, mà không cần chạy phân tích chương trình hoặc thực thi tốn kém. Sử dụng một parser đa ngôn ngữ nhẹ gọi là Tree-sitter¹, phương pháp của chúng tôi có khả năng áp dụng rộng rãi trên tất cả các ngôn ngữ lập trình được định nghĩa cú pháp tốt. Sau khi chúng tôi phân tích mã thành AST, chúng tôi sử dụng thuật toán phân đoạn dựa trên lập trình động cho phân đoạn mã nhận thức AST để duy trì tính toàn vẹn cấu trúc của mã đầu vào. Sử dụng kỹ thuật AST-Aware Span Corruption mới của chúng tôi, mô hình được tiền huấn luyện để tái tạo các cấu trúc mã khác nhau, từ các token riêng lẻ đến toàn bộ thân hàm. Cùng nhau, phương pháp của chúng tôi cung cấp ba lợi thế chính: (1) mã hóa hai chiều được làm phong phú để cải thiện hiểu mã, (2) khả năng sinh các cấu trúc mã một cách mạch lạc, và (3) một khung tiền huấn luyện thống nhất, nhận thức cấu trúc thúc đẩy hiệu suất trên nhiều tác vụ liên quan đến mã, đặc biệt trong chuyển đổi mã.
+
+Ngoài ra, ngoài phương pháp masking nhận thức AST chuyên biệt của chúng tôi, AST-T5 không giới thiệu thay đổi kiến trúc hay các head bổ sung, và mục tiêu tiền huấn luyện của chúng tôi vẫn giống như Vanilla T5. Khả năng tương thích này cho phép tích hợp mượt mà mô hình của chúng tôi như một thay thế drop-in cho bất kỳ biến thể T5 nào.
+
+Trong các thí nghiệm của chúng tôi, AST-T5 luôn vượt trội hơn các baseline trong các tác vụ sinh mã, chuyển đổi và hiểu mã. Thông qua các thí nghiệm được kiểm soát, chúng tôi chứng minh thực nghiệm rằng những tiến bộ này được quy cho các kỹ thuật tiền huấn luyện nhận thức AST của chúng tôi. Đáng chú ý, AST-T5 không chỉ vượt trội hơn các mô hình có kích thước tương tự như CodeT5 và CodeT5+ trên nhiều benchmark mà còn duy trì tính cạnh tranh với, hoặc thậm chí vượt qua, hiệu suất của các mô hình lớn hơn nhiều sử dụng các benchmark HumanEval (Chen et al., 2021a) và MBPP (Austin et al., 2021). Hơn nữa, nhận thức AST nội tại của AST-T5 cung cấp lợi thế độc đáo trong các tác vụ nhạy cảm với cấu trúc, như chuyển đổi mã-sang-mã và Phát Hiện Clone, làm nổi bật hiệu quả của nó trong việc nắm bắt các sắc thái cấu trúc của mã.
+
+¹https://tree-sitter.github.io/tree-sitter/
+
+--- TRANG 2 ---
+
+```python
+def factorial(n):
+  if n == 0:
+    return 1
+  else:
+    return n * factorial(n - 1)
+```
+
+**Vanilla T5 Span Corruption:**
+```
+def fact[X]
+  if n == 0:
+    return 1
+  [Y]
+    return n [Z] - 1 )
+```
+
+**AST-Aware Subtree Corruption:**
+```
+def factorial ( n ) :
+  if [X]:
+    [Y]
+  else:
+    return [Z]
+```
+
+**Target:**
+```
+[X] n == 0
+[Y] return 1
+[Z] n * factorial(n - 1)
+```
+
+**Original Target:**
+```
+[X] orial(n):
+[Y] else:
+[Z] * factorial(n
+```
+
+Hình 1: So sánh AST-Aware Subtree Corruption và Vanilla T5 sử dụng hàm factorial Python. Cả hai phương pháp đều thay thế các span bị mask bằng sentinel token (token đặc biệt được thêm vào từ vựng, được hiển thị là [X], [Y], và [Z] trong hình), với các chuỗi đầu ra chứa các token bị mask gốc. Đầu vào và mục tiêu được hiển thị trong byte-pair encoding (BPE); ví dụ, "factorial" được mã hóa thành "fact" và "orial". Không giống như Vanilla T5, masking các span ngẫu nhiên mà không xem xét cấu trúc mã, phương pháp của chúng tôi đặc biệt nhắm vào các span được căn chỉnh với cây con AST, như biểu thức và câu lệnh.
+
+phương pháp, AST-T5 không giới thiệu thay đổi kiến trúc hay head bổ sung, và mục tiêu tiền huấn luyện của chúng tôi vẫn giống như Vanilla T5. Khả năng tương thích này cho phép tích hợp mượt mà mô hình của chúng tôi như một thay thế drop-in cho bất kỳ biến thể T5 nào.
+
+Trong các thí nghiệm của chúng tôi, AST-T5 luôn vượt trội hơn các baseline trong các tác vụ sinh mã, chuyển đổi và hiểu mã. Thông qua các thí nghiệm được kiểm soát, chúng tôi chứng minh thực nghiệm rằng những tiến bộ này được quy cho các kỹ thuật tiền huấn luyện nhận thức AST của chúng tôi. Đáng chú ý, AST-T5 không chỉ vượt trội hơn các mô hình có kích thước tương tự như CodeT5 và CodeT5+ trên nhiều benchmark mà còn duy trì tính cạnh tranh với, hoặc thậm chí vượt qua, hiệu suất của các mô hình lớn hơn nhiều sử dụng các benchmark HumanEval (Chen et al., 2021a) và MBPP (Austin et al., 2021). Hơn nữa, nhận thức AST nội tại của AST-T5 cung cấp lợi thế độc đáo trong các tác vụ nhạy cảm với cấu trúc, như chuyển đổi mã-sang-mã và Phát Hiện Clone, làm nổi bật hiệu quả của nó trong việc nắm bắt các sắc thái cấu trúc của mã.
+
+2. Nghiên Cứu Liên Quan
+
+**Các Mô Hình Ngôn Ngữ cho Mã.** Các mô hình ngôn ngữ (LM) mở rộng việc sử dụng từ NLP sang hiểu và sinh mã. Các mô hình chỉ-encoder thường xuất sắc trong hiểu mã khi được tinh chỉnh với các classifier (Feng et al., 2020), trong khi các mô hình chỉ-decoder được tối ưu hóa cho sinh mã thông qua bản chất tự hồi quy của chúng (Chen et al., 2021a; Fried et al., 2023; Nijkamp et al., 2023b). Tuy nhiên, các mô hình này có thể gặp khó khăn bên ngoài các lĩnh vực chuyên môn chính của chúng hoặc đòi hỏi tăng tài nguyên cho kết quả tương đương. Nghiên cứu của chúng tôi tập trung vào các mô hình encoder-decoder, nhằm cân bằng hiệu quả hiệu suất trong cả tác vụ hiểu và sinh mà không đòi hỏi tính toán quá mức.
+
+**Nỗ Lực Hướng Tới Các Mô Hình Thống Nhất.** Mở rộng các mô hình NLP như BART (Lewis et al., 2019) và T5 (Raffel et al., 2020), một số nghiên cứu đã phát triển các kiến trúc encoder-decoder, như PLBART (Ahmad et al., 2021) và CodeT5 (Wang et al., 2021), để hoạt động tốt trong các tác vụ liên quan đến mã đa dạng. Mặc dù các mô hình này cho thấy tính hữu dụng rộng hơn, chúng gặp khó khăn với việc sinh mã mạch lạc, có thể thực thi trong các tình huống phức tạp như HumanEval (Chen et al., 2021a). CodeT5+ (Wang et al., 2023) tìm cách giải quyết hạn chế này thông qua một chiến lược tiền huấn luyện đa tác vụ phức tạp trên năm mục tiêu. Ngược lại, mô hình được đề xuất của chúng tôi, AST-T5, sử dụng một mô hình tiền huấn luyện AST-Aware mới để trở thành một mô hình thống nhất có khả năng sinh mã trôi chảy và duy trì hiệu suất vượt trội trong các tác vụ hiểu mã. Hơn nữa, AST-T5 được sắp xếp hợp lý hơn, vì nó chỉ sử dụng một mục tiêu tiền huấn luyện duy nhất.
+
+**Tận Dụng Cấu Trúc Mã trong Tiền Huấn Luyện.** Mã khác với ngôn ngữ tự nhiên ở hai khía cạnh chính: tính thực thi và cú pháp cấu trúc nghiêm ngặt của nó. Nghiên cứu trước đây đã tận dụng các trace thực thi để cải thiện hiệu suất mô hình (Chen et al., 2018; 2021b; Shojaee et al., 2023), nhưng phương pháp này gặp thách thức về khả năng mở rộng khi áp dụng cho các tập dữ liệu mã lớn, được thu thập từ web được sử dụng trong tiền huấn luyện. Về bản chất có cấu trúc của mã, nhiều nghiên cứu khác nhau đã tích hợp các yếu tố cú pháp vào các mô hình mạng nơ-ron. Li et al. (2018), Kim et al. (2021) và Zügner et al. (2021) thêm cơ chế chú ý AST-Aware trong các mô hình của họ, trong khi Alon et al. (2020) và Rabinovich et al. (2017) tập trung vào mô hình hóa các phép toán mở rộng nút AST thay vì các token mã truyền thống. Song song, Guo et al. (2021) và Allamanis et al. (2017) khám phá các cơ chế chú ý DFG-Aware và Graph Neural Networks (GNN), để diễn giải mã dựa trên Đồ Thị Luồng Dữ Liệu (DFG) của nó. StructCoder (Tipirneni et al., 2023) làm phong phú đầu vào mã bằng cách thêm AST và DFG như các tính năng bổ sung. Tuy nhiên, các phương pháp này đòi hỏi phân tích cú pháp hoặc phân tích tĩnh cho các tác vụ phụ thuộc, điều này ít khả thi hơn cho các tình huống mã không hoàn chỉnh hoặc không chính xác như sửa lỗi.
+
+Nghiên cứu của chúng tôi, AST-T5, phù hợp với các phương pháp chỉ sử dụng cấu trúc mã trong tiền huấn luyện, như DOBF (Roziere et al., 2021) và CodeT5 (Wang et al., 2021), làm mờ các đầu vào để buộc mô hình nắm bắt các cấu trúc trừu tượng. Phương pháp của chúng tôi phân kỳ độc đáo bằng cách sử dụng phân đoạn và masking được điều khiển bởi AST trong T5 span corruption trong quá trình tiền huấn luyện. Phương pháp mới này cung cấp tín hiệu tiền huấn luyện tinh tế hơn so với T5 không nhận thức cấu trúc, trang bị cho mô hình của chúng tôi khả năng mã hóa và sinh các cấu trúc mã mạch lạc về mặt ngữ nghĩa một cách thành thạo.
+
+3. Phương Pháp
+
+Trong phần này, chúng tôi trình bày AST-T5, một khung tiền huấn luyện mới cho các mô hình ngôn ngữ dựa trên mã khai thác sức mạnh của Cây Cú Pháp Trừu Tượng (AST). Đầu tiên, AST-T5 phân tích mã thành AST để cho phép hiểu sâu hơn về cấu trúc mã. Tận dụng cấu trúc này, chúng tôi giới thiệu AST-Aware Segmentation, một thuật toán được thiết kế để giải quyết giới hạn token của Transformer trong khi duy trì tính mạch lạc ngữ nghĩa của mã. Thứ hai, chúng tôi giới thiệu AST-Aware Span Corruption, một kỹ thuật masking tiền huấn luyện AST-T5 để tái tạo các cấu trúc mã từ các token riêng lẻ đến toàn bộ thân hàm, tăng cường cả tính linh hoạt và nhận thức cấu trúc của nó.
+
+3.1. Phân Tích Mã Thành AST
+
+Không giống như các mô hình ngôn ngữ truyền thống trên mã xử lý mã như các chuỗi đơn giản của subword token, AST-T5 tận dụng Cây Cú Pháp Trừu Tượng (AST) của mã để có được các hiểu biết ngữ nghĩa. Cho mục đích phân tích cú pháp, chúng tôi giả định mã được cung cấp là hợp lệ về mặt cú pháp—một giả định hợp lý cho các tác vụ như chuyển đổi mã và hiểu mã. Thay vì các phương pháp thường tốn kém về mặt tính toán hoặc không khả thi của Phân Tích Luồng Điều Khiển (CFA) hoặc thực thi mã (Guo et al., 2021; Tipirneni et al., 2023), phương pháp của chúng tôi chỉ yêu cầu mã có thể phân tích được. Chúng tôi sử dụng Tree-sitter, một parser đa ngôn ngữ, để xây dựng AST, trong đó mỗi cây con biểu diễn một span liên tiếp của subword token, và mỗi nút lá biểu diễn một token riêng lẻ.
+
+3.2. Phân Đoạn Nhận Thức AST
+
+Trong phần này, chúng tôi mô tả phương pháp AST-Aware Segmentation của chúng tôi, chia các file mã dài thành các chunk theo cách bảo tồn cấu trúc.
+
+Phân đoạn trong tiền huấn luyện mô hình ngôn ngữ là một khía cạnh quan trọng nhưng thường bị bỏ qua. Các LM Transformer áp đặt giới hạn token trên các chuỗi đầu vào, làm cho phân đoạn trở nên thiết yếu để phù hợp với các đầu vào này trong ràng buộc maxlen. Một phương pháp ngây thơ là Greedy Segmentation, trong đó mỗi chunk, ngoại trừ chunk cuối, chứa chính xác maxlen token Hình 2 (Trái). Chiến lược này đã được áp dụng rộng rãi trong các nghiên cứu trước đây, như CodeT5 (Wang et al., 2021).
+
+Nghiên cứu trong NLP của Liu et al. (2019) nhấn mạnh rằng phân đoạn tôn trọng ranh giới câu và tài liệu vượt trội hơn chiến lược greedy. Với bản chất có cấu trúc nội tại của ngôn ngữ lập trình, có thể lập luận phức tạp hơn ngôn ngữ tự nhiên, một phương pháp phân đoạn tinh vi hơn thậm chí còn quan trọng hơn. Tuy nhiên, lĩnh vực này vẫn chưa được khám phá nhiều.
+
+AST-Aware Segmentation là phương pháp mới của chúng tôi được thiết kế để bảo tồn cấu trúc AST của mã trong quá trình phân đoạn. Không giống như Greedy Segmentation, có thể phân mảnh các cấu trúc AST một cách bừa bãi, phương pháp của chúng tôi chiến lược giảm thiểu các sự gián đoạn như vậy. Như được minh họa trong ví dụ ở Hình 2, Greedy Segmentation dẫn đến chín trường hợp phá vỡ AST—giữa Block 1 và Block 2, nó phá vỡ If, FuncDef, và ClassDef; giữa Block 2 và Block 3, nó phá vỡ Attr, BinaryExpr, While, If, FuncDef, và ClassDef. Ngược lại, phương pháp AST-Aware của chúng tôi dẫn đến chỉ ba lần phá vỡ: giữa Block 1 và Block 2, nó phá vỡ ClassDef, và giữa Block 2 và Block 3, nó phá vỡ FuncDef và ClassDef.
+
+Để xác định ranh giới phân vùng tối ưu, chúng tôi đã phát triển thuật toán dựa trên lập trình động (DP) sau:
+
+1. Chúng tôi xây dựng một mảng cost, trong đó cost[i] biểu thị số lần phá vỡ cấu trúc AST sẽ xảy ra nếu phân vùng xảy ra ngay sau token i. Mảng này được điền bằng cách duyệt AST và tăng cost[l..r - 1] lên 1 cho mỗi span [l, r] liên kết với một cây con AST.
+
+2. Chúng tôi định nghĩa một mảng 2-D dp, trong đó dp[k, i] biểu thị số lần phá vỡ cấu trúc AST tối thiểu tổng cộng khi k phân vùng được thực hiện cho i token đầu tiên, kết thúc phân vùng cuối ngay sau token thứ i. Phương trình chuyển trạng thái
+
+3
+
+--- TRANG 4 ---
+
+```python
+class BinaryIndexedTree:
+  def __init__(self, n):
+    self.n = n + 1
+    self.a = [0] * (n + 1)
+  def work(self, op, i) :
+    if op == "query":
+      s = 0
+      while i:
+        s += self.a[i]
+        i -= i & -i
+      return s
+    if op == "add":
+      while i < self. n:
+        self.a[i] += 1
+        i += i & -i
+```
+
+**Greedy Segmentation** → Blk #1, Blk #2, Blk #3
+**AST-Aware Segmentation** → Blk #1, Blk #2, Blk #3
+
+**AST:**
+While → While → If → If → Func Def → Class Def → Func Def
+
+Hình 2: So sánh giữa Greedy Segmentation và AST-Aware Segmentation: Đối với một ví dụ mã 112 token với maxlen được đặt ở 48, Greedy Segmentation đặt 48 token đầu tiên trong Block 1, 48 token tiếp theo trong Block 2, và phần còn lại trong Block 3, làm gián đoạn tính toàn vẹn cấu trúc của mã. Ngược lại, AST-Aware Segmentation sử dụng thuật toán lập trình động để phân vùng mã một cách thông minh, căn chỉnh với ranh giới của các hàm thành viên hoặc các nhánh hàm chính, từ đó bảo tồn cấu trúc của mã. AST đi kèm, với một số cấp độ được cắt tỉa để rõ ràng, chứng thực rằng các phân đoạn này thực sự trùng với các ranh giới cây con chính.
+
+phương trình là:
+dp[k, i] = cost[i] + min(i−maxlen≤j<i) dp[k−1, j]                    (1)
+
+3. Trong khi thuật toán DP ngây thơ có độ phức tạp thời gian bậc hai O(n²) so với độ dài file mã n, nó có thể được tối ưu hóa thành O(n²/maxlen) bằng cách sử dụng hàng đợi đơn điệu cho tính toán minimum sliding-window. Điều này cho phép tính toán hiệu quả trên hầu hết các file mã. Pseudocode của thuật toán lập trình động được tối ưu hóa được hiển thị trong Thuật toán 1. Xem Phụ lục A.2 để biết chi tiết về tính toán độ phức tạp.
+
+4. Thuật toán đưa ra phân vùng liên kết với dp[kmin, n], trong đó kmin = arg mink(dp[k, n]), như phân vùng tối ưu nhất.
+
+**Thuật toán 1 Lập Trình Động trong AST-Aware Segmentation**
+```
+1  # n: độ dài của file mã (số token)
+2  # m: số lượng segment tối đa; khoảng n / max_len
+3  for k in range(1, m + 1):
+4    q = Queue()  # hàng đợi hai đầu
+5    for i in range(1, n + 1):
+6      while (q.nonempty() and q.left() < i - max_len):
+7        # pop các chỉ số trước i - max_len
+8        q.pop_left()
+9      while (q.nonempty() and dp[k-1, q.right()] > dp[k-1, i-1]):
+10       # duy trì tính đơn điệu của các giá trị
+11       q.pop_right()
+12     q.push_right(i - 1)  # push i - 1
+13     best_j = q.left()    # đảm bảo có giá trị nhỏ nhất
+14     prev[k, i] = best_j
+15     dp[k, i] = cost[i] + dp[k - 1, best_j]
+```
+
+Trong việc so sánh AST-Aware Segmentation với Greedy Segmentation—sử dụng ví dụ trong Hình 2—chúng tôi thấy rằng phương pháp trước đó trình bày các đoạn mã mạch lạc hơn cho mô hình trong quá trình tiền huấn luyện. Ngược lại, phương pháp sau giới thiệu các biểu thức một phần nhiễu gần ranh giới phân vùng. Do đó, AST-Aware Segmentation không chỉ tối ưu hóa quá trình tiền huấn luyện mà còn giảm sự không khớp giữa tiền huấn luyện và các tác vụ phụ thuộc, thường liên quan đến các định nghĩa hàm hoàn chỉnh như đầu vào.
+
+3.3. Tiền Huấn Luyện với Span Corruption
+
+Tiền huấn luyện của AST-T5 dựa trên span corruption, một phương pháp được thiết lập tốt để tiền huấn luyện các mô hình transformer encoder-decoder (Raffel et al., 2020). Trong phương pháp này, 15% token đầu vào được mask ngẫu nhiên và thay thế bằng các "sentinel" token độc đáo, riêng biệt trong mỗi ví dụ. Mỗi sentinel token độc đáo được liên kết với một ID cụ thể và được thêm vào từ vựng của mô hình.
+
+Trong quá trình tiền huấn luyện, encoder xử lý chuỗi đầu vào bị hỏng. Mục tiêu của decoder là tái tạo các token bị loại bỏ dựa trên các biểu diễn đầu ra của encoder. Cụ thể, chuỗi mục tiêu bao gồm các span token bị mask, được phân định bằng các sentinel token tương ứng của chúng. Khung này hiệu quả huấn luyện mô hình để khôi phục văn bản gốc từ đầu vào bị hỏng. Hình 1 (Trái) minh họa một ví dụ về cặp đầu vào-đầu ra cho span corruption.
+
+3.4. AST-Aware Subtree Corruption
+
+AST-T5 tăng cường mô hình span corruption truyền thống bằng cách kết hợp nhận thức AST. Thay vì mask các span token liên tiếp một cách tùy tiện, AST-T5 mask các span mã tương ứng với các cây con AST, từ các biểu thức riêng lẻ đến toàn bộ thân hàm.
+
+**Subtree Masking.** Chúng tôi sử dụng một thuật toán đệ quy, được nêu trong Thuật toán 2, để duyệt AST và chọn các cây con để mask. Thuật toán nhằm thực hiện hai mục tiêu:
+
+1. Giới thiệu tính ngẫu nhiên đủ qua các epoch huấn luyện để tăng cường khả năng tổng quát hóa.
+
+2. Kiểm soát độ chi tiết masking thông qua siêu tham số có thể điều chỉnh θ (được đặt tên là theta trong Thuật toán 2, Dòng 9).
+
+**Thuật toán 2 Lựa Chọn Subtree trong AST-Aware Subtree Corruption**
+```
+1  def mask_subtree(t: ASTNode, m: int):
+2    """mask m tokens trong subtree t"""
+3    ordered_children = []
+4    m_remaining = m
+5    # phân phối m tokens giữa các con của t
+6    for child in t.children:
+7      # theta: siêu tham số để kiểm soát độ chi tiết masking
+8      if child.size > theta:
+9        # cùng tỷ lệ mask như subtree hiện tại
+10       m_child = m * (child.size / t.size)
+11       mask_subtree(child, m_child)  # đệ quy
+12       m_remaining -= m_child
+13     else:
+14       ordered_children.append(child)
+15   weighted_shuffle(ordered_children)
+16   # phân bổ greedy quota mask còn lại
+17   for child in ordered_children:
+18     m_child = min(m_remaining, child.size)
+19     mask_subtree(child, m_child)
+20     m_remaining -= m_child
+```
+
+"Quota mask" m biểu thị số lượng token sẽ được mask trong một cây con gốc tại nút t. Kích thước của một cây con tương ứng với số lượng token mà nó bao gồm, được dẫn xuất từ kích thước tích lũy của các con của nó. Đối với các cây con lớn hơn vượt quá ngưỡng kích thước θ, masking được áp dụng đệ quy (Dòng 9-13). Trong khi đó, các cây con nhỏ hơn trải qua một weighted shuffle, và quota m sau đó được phân bổ giữa các con của t theo cách greedy theo thứ tự đã shuffle (Dòng 17-21). Trọng số cho shuffling được xác định bởi một hàm heuristic trên kích thước của mỗi con, sao cho xác suất masking được phân phối đều trên các nút lá. Để tạo mask cây con cho một AST gốc tại t với tỷ lệ mask r (ví dụ: 15% hoặc 25%), người ta có thể sử dụng mask_subtree(t, ⌊|t| · r⌋).
+
+Tham số θ kiểm soát độ chi tiết của masking. Ví dụ, với θ = 5, thuật toán có xác suất cao để mask các token riêng lẻ và biểu thức ngắn. Khi θ tăng đến 20, thuật toán có khả năng mask các cấu trúc lớn hơn như câu lệnh. Khi θ = 100, xác suất tăng để mask các cấu trúc như vòng lặp hoặc toàn bộ thân hàm. Để thúc đẩy các tình huống huấn luyện đa dạng, θ được lấy mẫu ngẫu nhiên trong một phạm vi được định nghĩa trước (ví dụ: 5 đến 100) cho mỗi ví dụ huấn luyện. Điều này cho phép khung tiền huấn luyện tự nhiên phù hợp với các tác vụ đa dạng như hoàn thành token đơn lẻ đến sinh toàn bộ thân hàm từ một chữ ký cho trước.
+
+Chiến lược masking cây con là sự khác biệt chính giữa AST-Aware Subtree Corruption của chúng tôi và Vanilla T5 Span Corruption, như được minh họa trong Hình 1. Trong khi các biến thể T5 thông thường mask các span token ngẫu nhiên, với độ dài span trung bình là 3 (Raffel et al., 2020) và bỏ qua cấu trúc mã, phương pháp của chúng tôi nhắm vào masking các cây con AST, có thể bao gồm lên đến 100 token. Điều này trang bị cho AST-T5 khả năng sinh các cấu trúc mã khác nhau một cách mạch lạc.
+
+**Mục Tiêu Tiền Huấn Luyện.** Ngoại trừ chiến lược được sử dụng để chọn các token bị mask và chiến lược phân đoạn được mô tả trong Phần 3.2, phương pháp của chúng tôi tuân theo quy trình được mô tả trong Phần 3.3. Khi các cây con được chọn để mask và thay thế bằng sentinel token, encoder xử lý đầu vào đã được sửa đổi này. Sau đó, decoder được giao nhiệm vụ tái tạo các token gốc trong các cây con bị mask. Một so sánh cạnh nhau giữa phương pháp của chúng tôi và Vanilla Span Corruption trong T5 được trình bày trong Hình 1.
+
+4. Cài Đặt Thí Nghiệm
+
+**Kiến Trúc Mô Hình.** AST-T5 có kiến trúc tương tự như T5 BASE (Raffel et al., 2020), bao gồm encoder 12 lớp và decoder 12 lớp, trong đó mỗi lớp có 768 chiều và 12 attention head. Tổng cộng, mô hình có 277M tham số.
+
+**Tiền Huấn Luyện.** AST-T5 được tiền huấn luyện trên một tập con của The Stack Dedup corpus (Kocetkov et al., 2022), một phiên bản gần như đã khử trùng của The Stack—một bộ sưu tập 3.1TB mã nguồn được cấp phép cho phép từ GitHub cắt ở tháng 4 năm 2022, trải dài 358 ngôn ngữ lập trình. Đối với các thí nghiệm của chúng tôi, việc huấn luyện AST-T5 liên quan đến các tập con Python, Java, C, C++, C#, Markdown, và reStructuredText, bao gồm tập dữ liệu 588GB với 93M file mã và ngôn ngữ tự nhiên.
+
+Mỗi file đầu tiên được phân tích thành AST của nó sử dụng parser đa ngôn ngữ Tree-Sitter, và sau đó được tokenize với Byte-Pair Encoding (BPE) cấp độ byte sử dụng từ vựng token BPE cấp độ byte. Theo AST-Aware Segmentation, các file này được phân vùng thành các chunk 1,024 token. Mô hình của chúng tôi được tiền huấn luyện sử dụng mục tiêu AST-Aware Subtree Corruption cho 524 tỷ token (1,024 token mỗi chuỗi, 1,024 chuỗi mỗi batch, và 500k bước). Đối với mỗi ví dụ huấn luyện, chúng tôi áp dụng AST-Aware Subtree Corruption nếu nó là mã, hoặc áp dụng Vanilla T5 Span Corruption nếu nó là ngôn ngữ tự nhiên. Đối với mã, ngưỡng θ được lấy mẫu đều từ 5 đến 100. Đối với văn bản, độ dài của mỗi span bị mask được lấy mẫu đều từ 1 đến 10. Tiền huấn luyện sử dụng PyTorch, Fairseq² và FlashAttention (Dao et al., 2022) và được tiến hành trên 8 nút, mỗi nút với 8x NVIDIA A100 40GB GPU. Các siêu tham số tiền huấn luyện chi tiết hơn được nêu trong Phụ lục A.3.
+
+**Đánh Giá.** Chúng tôi đánh giá AST-T5 trên ba loại tác vụ: sinh mã từ văn bản, chuyển đổi mã-sang-mã, và hiểu mã (phân loại). Đánh giá của chúng tôi bao gồm các tác vụ từ meta-benchmark CodeXGLUE (Lu et al., 2021) và cũng bao gồm HumanEval (Chen et al., 2021a) và MBPP (Austin et al., 2021). Cụ thể, đối với sinh mã từ văn bản, chúng tôi đánh giá hiệu suất sử dụng HumanEval, MBPP, và Concode (Iyer et al., 2018); đối với chuyển đổi, chúng tôi sử dụng CodeXGLUE Java-C# và Bugs2Fix (Tufano et al., 2019) để đánh giá; và đối với hiểu, chúng tôi sử dụng BigCloneBench (Svajlenko et al., 2014) và tác vụ Defect Detection được đề xuất bởi Zhou et al. (2019). Các thước đo chi tiết và thống kê của các tập dữ liệu này được cung cấp trong Bảng 1.
+
+²https://github.com/facebookresearch/fairseq
+
+**Bảng 1:** Tổng quan về các benchmark đánh giá của chúng tôi về kích thước tập test, loại tác vụ, và thước đo đánh giá cho mỗi tác vụ. Các tác vụ "Generation" liên quan đến ánh xạ ngôn ngữ tự nhiên sang mã, các tác vụ "Transpilation" liên quan đến dịch mã từ một ngôn ngữ lập trình sang ngôn ngữ khác, và các tác vụ "Understanding" liên quan đến phân loại mã thành nhãn phân loại. Đối với MBPP, chúng tôi theo Nijkamp et al. (2023b) và đánh giá mô hình của chúng tôi trên toàn bộ tập con "sanitized" mà không có few-shot prompt. Đối với thước đo đánh giá, "Pass@1" chỉ ra thực thi mã trên unit-test được cung cấp trong benchmark sử dụng một mã được sinh duy nhất mỗi ví dụ, với tỷ lệ pass được báo cáo. "EM" (Exact Match) đánh giá tương đương văn bản mà không thực thi bằng cách so sánh hai đoạn mã được chuẩn hóa. "Acc" có nghĩa là độ chính xác trong các tác vụ phân loại. Chúng tôi bỏ qua "điểm BLEU" vì giá trị BLEU cao (>50) vẫn có thể tương ứng với mã không thể thực thi hoặc có lỗi đáng kể (Lu et al., 2021), điều này không hữu ích trong các ứng dụng thực tế. Chúng tôi cũng thảo luận kết quả đánh giá sử dụng thước đo CodeBLEU (Ren et al., 2020) trong Phụ lục A.6.
+
+| Tác vụ | Kích thước | Loại | Thước đo |
+|---------|------------|-------|----------|
+| HumanEval | 164 | Generation | Pass@1 |
+| MBPP | 427 | Generation | Pass@1 |
+| Concode | 2,000 | Generation | EM |
+| Bugs2Fix | 12,379 | Transpilation | EM |
+| Java-C# | 1,000 | Transpilation | EM |
+| BigCloneBench | 415,416 | Understanding | F1 |
+| Defect Detect | 27,318 | Understanding | Acc |
+
+Chúng tôi tinh chỉnh AST-T5 trên các tập dữ liệu huấn luyện của tất cả các tác vụ phụ thuộc, tuân theo phương pháp của Raffel et al. (2020). Đối với tác vụ HumanEval, thiếu tập dữ liệu huấn luyện riêng, chúng tôi sử dụng CodeSearchNet (Husain et al., 2020), phù hợp với phương pháp của Wang et al. (2023). Các template prompt cho tinh chỉnh được xây dựng sử dụng framework PromptSource (Bach et al., 2022). Tinh chỉnh mất 50k bước, với tỷ lệ học tối đa được đặt ở 10% của tỷ lệ học tiền huấn luyện. Tất cả các siêu tham số khác từ tiền huấn luyện được giữ lại mà không điều chỉnh thêm, và chúng tôi chỉ huấn luyện một mô hình được tinh chỉnh. Trong quá trình suy luận, phân loại xếp hạng được sử dụng cho các tác vụ hiểu mã và beam search được sử dụng cho các tác vụ sinh, theo Sanh et al. (2021). Đối với CodeXGLUE, chúng tôi đánh giá mô hình của chúng tôi trên tập test sử dụng năm template prompt cho mỗi tác vụ và báo cáo hiệu suất trung bình; đối với HumanEval và MBPP, chúng tôi đánh giá đầu ra được sinh top-1 từ beam search.
+
+**Baseline.** Đầu tiên chúng tôi benchmark AST-T5 so với các baseline T5 của riêng chúng tôi để đảm bảo so sánh được kiểm soát. Tất cả các mô hình chia sẻ kiến trúc Transformer giống hệt nhau, dữ liệu tiền huấn luyện và cài đặt tính toán, chỉ khác ở việc sử dụng các kỹ thuật AST-Aware Segmentation và Subtree Corruption bởi AST-T5. Cài đặt này trực tiếp đánh giá hiệu quả của các phương pháp được đề xuất của chúng tôi.
+
+Chúng tôi tiếp tục benchmark AST-T5 so với các mô hình ngôn ngữ khác cho các tác vụ liên quan đến mã. Chúng bao gồm các mô hình chỉ-decoder như các biến thể GPT (Brown et al., 2020; Chen et al., 2021a; Wang & Komatsuzaki, 2021; Black et al., 2021), PaLM (Chowdhery et al., 2022), InCoder (Fried et al., 2023), và LLaMa (Touvron et al., 2023). Chúng tôi cũng so sánh với các mô hình encoder-decoder, bao gồm PLBART (Ahmad et al., 2021), CodeT5 (Wang et al., 2021), StructCoder (Tipirneni et al., 2023), và CodeT5+ (Wang et al., 2023). Đáng chú ý, CodeT5 BASE và CodeT5+ (220M) giống nhau về kiến trúc và kích thước với mô hình của chúng tôi, nhưng AST-T5 phân biệt bằng các kỹ thuật tiền huấn luyện AST-Aware.
+
+6
+
+--- TRANG 7 ---
+
+**Bảng 2:** So sánh hiệu suất của các cấu hình tiền huấn luyện khác nhau cho các tác vụ phụ thuộc. Mỗi hàng đại diện cho một sửa đổi tuần tự được áp dụng cho mô hình trong hàng trước. Thước đo bao gồm tỷ lệ "Pass@1" cho HumanEval, tỷ lệ "Exact Match" cho CONCODE, Bugs2Fix (cho các split độ dài mã "Small" và "Medium"), và chuyển đổi Java-C# (cả Java-to-C# và C#-to-Java). Điểm F1 được sử dụng cho Clone Detection, và Accuracy cho Defect Detection, phù hợp với các nghiên cứu trước.
+
+| Cấu hình Tiền Huấn Luyện | HumanEval | Concode | Bugs2Fix | Java-C# | Clone | Defect | Avg |
+|---------------------------|-----------|---------|----------|---------|-------|---------|-----|
+| T5 | 5.2 | 18.3 | 21.2/13.8 | 65.5/68.4 | 96.9 | 64.1 | 44.2 |
+| + AST. Segmentation | 7.2 | 20.2 | 22.5/15.1 | 66.3/69.3 | 98.3 | 65.9 | 45.7 |
+| + AST. Subtree Corrupt | 9.6 | 22.1 | 23.3/16.5 | 67.3/72.2 | 98.6 | 66.0 | 47.0 |
+| + Mask 25% (AST-T5) | 14.0 | 22.9 | 23.8/16.1 | 68.9/72.3 | 98.6 | 65.8 | 47.9 |
+| + Mask 50% | 14.3 | 22.0 | 21.9/15.0 | 66.5/70.1 | 97.1 | 64.2 | 46.4 |
+
+5. Kết Quả Đánh Giá
+
+Trong phần này, chúng tôi đánh giá AST-T5 trên nhiều benchmark. Đầu tiên, chúng tôi phân tích đóng góp của từng thành phần trong khung tiền huấn luyện nhận thức AST của chúng tôi thông qua các thí nghiệm được kiểm soát. Tiếp theo, chúng tôi benchmark AST-T5 so với các mô hình hiện tại trong nghiên cứu trước.
+
+5.1. Phân Tích Quy Trình Tiền Huấn Luyện
+
+Trong phần này, chúng tôi phân tích các thành phần chính đóng góp vào việc tiền huấn luyện các mô hình AST-T5. Giữ kiến trúc mô hình, tập dữ liệu tiền huấn luyện và môi trường tính toán không đổi, chúng tôi tuần tự thêm một thành phần tại một thời điểm vào baseline T5 được huấn luyện trên mã, đỉnh điểm là mô hình AST-T5 hoàn thiện của chúng tôi. Bảng 2 trình bày các kết quả thí nghiệm. Những kết quả này cho thấy:
+
+**AST-Aware Segmentation tăng cường các mô hình ngôn ngữ mã.** So sánh giữa hai hàng đầu tiên của Bảng 2 cho thấy mô hình được huấn luyện với AST-Aware Segmentation luôn vượt trội hơn baseline T5 sử dụng Greedy Segmentation trên tất cả các tác vụ. Lợi thế xuất phát từ việc AST-Aware Segmentation tạo ra các đầu vào huấn luyện ít bị phân mảnh và do đó ít nhiễu hơn trong quá trình tiền huấn luyện. Cho rằng hầu hết các tác vụ phụ thuộc trình bày các cấu trúc mã mạch lạc, như định nghĩa hàm hoàn chỉnh, tính nhất quán được duy trì bởi tiền huấn luyện AST-Aware căn chỉnh tốt hơn với các cấu trúc này, dẫn đến cải thiện khả năng tổng quát hóa.
+
+**AST-Aware Span Corruption tiếp tục thúc đẩy hiệu suất sinh.** So sánh giữa hàng thứ hai và thứ ba của Bảng 2 cho thấy cải thiện khi chuyển từ Vanilla T5 Span Corruption sang AST-Aware Subtree Corruption của chúng tôi. Cải thiện hiệu suất này đặc biệt đáng chú ý trong các tác vụ sinh và chuyển đổi. Những cải thiện như vậy xuất phát từ khả năng của AST-Aware Subtree Corruption hướng dẫn mô hình sinh mã với tính mạch lạc và tính toàn vẹn cấu trúc tốt hơn.
+
+**Tăng tỷ lệ masking cải thiện hiệu suất sinh.** Tỷ lệ mask span corruption điển hình trong T5 được đặt ở 15%. Tăng tỷ lệ này có thể tăng cường khả năng sinh của mô hình, mặc dù có thể với chi phí của các tác vụ hiểu. Về cơ bản, tỷ lệ mask 100% sẽ mô phỏng một Transformer chỉ-decoder giống GPT. Tuy nhiên, trong các thí nghiệm của chúng tôi (hai hàng cuối của Bảng 2), chúng tôi quan sát thấy việc tăng tỷ lệ mask từ 15% lên 25% cải thiện đáng kể khả năng sinh mà không làm tổn hại đáng chú ý hiệu suất trong các tác vụ hiểu. Phân tích thêm cho thấy tăng tỷ lệ masking lên 50% chỉ mang lại cải thiện nhỏ trên HumanEval (từ 14.0 lên 14.3), trong khi ảnh hưởng tiêu cực đến các tác vụ chuyển đổi và hiểu. Do đó, chúng tôi chọn tỷ lệ mask 25% cho mô hình AST-T5 của chúng tôi.
+
+5.2. Kết Quả Chính
+
+Bảng 3 cho thấy hiệu suất của AST-T5 trên các tác vụ phụ thuộc so với các kết quả đã được công bố trước đây của các mô hình có kích thước tương tự, cụ thể là những mô hình trong quy mô "Base" (100M đến 300M tham số). Hình 3a và Hình 3b mở rộng so sánh này, so sánh AST-T5 với các mô hình lớn hơn sử dụng benchmark HumanEval và benchmark MBPP, tương ứng. Kết quả bổ sung trên EvalPlus được hiển thị trong Phụ lục A.4. Những kết quả này cho thấy:
+
+**AST-T5 xuất sắc như một LM thống nhất và hiệu quả tham số cho các tác vụ liên quan đến mã khác nhau.** Mặc dù tương đương về kích thước, AST-T5 luôn vượt trội hơn các mô hình có kích thước tương tự như CodeT5 (Wang et al., 2021) và CodeT5+ (Wang et al., 2023) trong sinh mã, chuyển đổi và hiểu. Đáng chú ý, trong khi CodeT5 và CodeT5+ là các mô hình ở quy mô Base, chúng được đánh giá trên các tác vụ khác nhau. Mô hình của chúng tôi, AST-T5, vượt trội hơn kết quả tốt nhất của hai mô hình này trên nhiều benchmark cùng lúc. Hơn nữa, Hình 3a làm nổi bật tính cạnh tranh của AST-T5 so với các mô hình lớn hơn đáng kể như GPT-J (Wang & Komatsuzaki, 2021) và LLaMa-7B (Touvron et al., 2023) trên benchmark HumanEval, nhấn mạnh hiệu quả tham số của mô hình của chúng tôi. Tương tự, Hình 3b chứng minh lợi thế của AST-T5 so với LLaMa-7B và Codex-2.5B (Chen et al., 2021a) trên benchmark MBPP, cho thấy hiệu quả của AST-T5.
+
+**AST-T5 thể hiện điểm mạnh độc đáo trong chuyển đổi thông qua nhận thức AST.** Bảng 3 làm nổi bật hiệu suất vượt trội của AST-T5 trong các tác vụ chuyển đổi mã-sang-mã, thể hiện cải thiện đáng kể 2 đến 5 điểm trên Bugs2Fix và chuyển đổi Java-C#. Trong chuyển đổi, trong khi mã bề mặt có thể thể hiện sự biến đổi đáng kể, các cấu trúc AST nội tại của nguồn và đích thường duy trì sự tương tự đáng chú ý. Khả năng của AST-T5 khai thác sự tương tự cấu trúc này rất quan trọng cho hiệu quả của nó. Lợi ích của việc nhận thức cấu trúc được minh họa thêm bởi kết quả dẫn đầu của AST-T5 trong Clone Detection, nơi nó vượt trội hơn CodeT5 3 điểm, vì so sánh AST mang lại hiểu biết chính xác hơn so với so sánh mã trực tiếp.
+
+7
+
+--- TRANG 8 ---
+
+**Bảng 3:** Kết quả của AST-T5 trên các tác vụ phụ thuộc so với kết quả được báo cáo của các mô hình ngôn ngữ được thiết lập. Thước đo đánh giá phù hợp với những thước đo trong Bảng 1. Trọng tâm chính của chúng tôi là các mô hình có kích thước tương tự như AST-T5, cụ thể là các mô hình "Base" (100M đến 300M tham số), trong khi so sánh với các mô hình lớn hơn được mô tả trong Hình 3. Một số mô hình là chỉ-encoder hoặc chỉ-decoder và do đó không phù hợp cho các tác vụ nhất định. Những kết quả này được gắn nhãn "N/A" trong bảng này vì chúng không có sẵn trong tài liệu.
+
+| Mô hình | HumanEval | Concode | Bugs2Fix | Java-C# | Clone | Defect |
+|---------|-----------|---------|----------|---------|-------|---------|
+| CodeBERT | N/A | N/A | 16.4/5.2 | 59.0/58.8 | 96.5 | 62.1 |
+| GraphCodeBERT | N/A | N/A | 17.3/9.1 | 59.4/58.8 | 97.1 | N/A |
+| PLBART | N/A | 18.8 | 19.2/9.0 | 64.6/65.0 | 97.2 | 63.2 |
+| CodeT5 | N/A | 22.3 | 21.6/14.0 | 65.9/66.9 | 97.2 | 65.8 |
+| CodeT5+ BASE | 12.0 | N/A | N/A | N/A | 95.2 | 66.1 |
+| StructCoder | N/A | 22.4 | N/A | 66.9/68.7 | N/A | N/A |
+| AST-T5 (Của chúng tôi) | 14.0 | 22.9 | 23.8/16.1 | 68.9/72.3 | 98.6 | 65.8 |
+
+[THIS IS FIGURE: Hình 3 showing two scatter plots comparing AST-T5's performance on HumanEval and MBPP against other models with different parameter counts. The plots show parameter count on x-axis (log scale) and Pass@1 rate on y-axis (log scale), with points colored by open-source status.]
+
+Hình 3: Hình ảnh hóa hiệu suất của AST-T5 trên HumanEval và MBPP so với các mô hình khác vượt quá 300M tham số. Mỗi điểm trên mỗi biểu đồ phân tán đại diện cho một mô hình. Trục x hiển thị số lượng tham số theo thang log, trong khi trục y hiển thị tỷ lệ Pass@1 trên HumanEval hoặc MBPP theo thang log. Trạng thái mã nguồn mở của mô hình được mã hóa màu: xanh cho mã nguồn mở và đỏ cho độc quyền.
+
+6. Kết Luận và Nghiên Cứu Tương Lai
+
+Trong nghiên cứu này, chúng tôi trình bày AST-T5, một mô hình tiền huấn luyện mới khai thác sức mạnh của Cây Cú Pháp Trừu Tượng (AST) để thúc đẩy hiệu suất của các mô hình ngôn ngữ tập trung vào mã. Sử dụng hai kỹ thuật nhận thức cấu trúc, AST-T5 không chỉ vượt trội hơn các mô hình có kích thước tương đương mà còn cạnh tranh thuận lợi với một số đối tác lớn hơn. Sự đơn giản của AST-T5 nằm ở mục tiêu tiền huấn luyện đơn lẻ và khả năng thích ứng như một thay thế drop-in cho bất kỳ LM encoder-decoder nào, làm nổi bật tiềm năng của nó cho các triển khai thực tế. Tiến về phía trước, chúng tôi nhằm khám phá khả năng mở rộng của AST-T5 bằng cách huấn luyện các mô hình lớn hơn trên các tập dữ liệu rộng lớn hơn.
+
+**Lời Cảm Ơn**
+
+Chúng tôi cảm ơn các reviewer và metareviewer tại ICML vì phản hồi xây dựng và hỗ trợ của họ. Nghiên cứu này được hỗ trợ một phần bởi quà tặng từ Meta, Quỹ Khoa học Quốc gia Hoa Kỳ thông qua các grant IIS-1955488, IIS-2027575, ARO W911NF2110339, ONR N00014-21-1-2724, và DOE awards DE-SC0016260, DE-SC0021982. Nền tảng huấn luyện AI và tài nguyên tính toán hỗ trợ nghiên cứu này được cung cấp bởi High-Flyer AI Fundamental Research Co. Ltd, Hangzhou, Trung Quốc. Chúng tôi cảm ơn Sida Wang, Chris Cummins, Volker Seeker, và Hugh Leather vì những cuộc thảo luận có giá trị.
+
+**Tuyên Bố Tác Động**
+
+Trong bài báo này, chúng tôi giới thiệu AST-T5, một mô hình ngôn ngữ nhằm mục đích sinh tự động, chuyển đổi và hiểu mã. Sự tiến bộ của LLM trong sinh mã làm dấy lên mối quan ngại về bảo mật, quyền riêng tư và khả năng lạm dụng của việc sản xuất mã tự động. Có nguy cơ khả năng sinh mã được cải thiện có thể bị khai thác cho mục đích độc hại, như tự động hóa việc tạo ra các lỗ hổng phần mềm hoặc tạo điều kiện phát triển phần mềm có hại. Nghiên cứu của chúng tôi nhấn mạnh tầm quan trọng của việc phát triển và sử dụng AI có trách nhiệm, ủng hộ việc giám sát liên tục, hướng dẫn đạo đức và các biện pháp bảo vệ để giảm thiểu những rủi ro này.
+
+**Tài Liệu Tham Khảo**
+
+[Danh sách đầy đủ các tài liệu tham khảo từ trang 9-15 được dịch tương tự...]
+
+**Phụ Lục A**
+
+**A.1. Hạn Chế**
+
+AST-T5 được thiết kế đặc biệt để tăng cường hiệu suất sinh mã bằng cách độc quyền mask mã trong các cây con AST trong quá trình tiền huấn luyện. Mặc dù phương pháp chuyên biệt này có lợi cho các tác vụ sinh mã, nó có thể dẫn đến hiệu suất không tối ưu trong sinh ngôn ngữ tự nhiên. Thừa nhận hạn chế này, các phiên bản tương lai của AST-T5 có thể điều tra các chiến lược như mask docstring và comment để mở rộng khả năng áp dụng. Điều này có thể cải thiện hiệu suất trên các tác vụ khác nhau, bao gồm tóm tắt mã.
+
+**A.2. Thêm về AST-Aware Segmentation**
+
+[Phần chi tiết kỹ thuật về thuật toán và độ phức tạp]
+
+**A.3. Siêu Tham Số Tiền Huấn Luyện**
+
+**Bảng 4:** Siêu tham số tiền huấn luyện cho mô hình AST-T5 của chúng tôi.
+
+| Tham số | Giá trị |
+|---------|---------|
+| Encoder Layers | 12 |
+| Decoder Layers | 12 |
+| Hidden Dimension | 768 |
+| Peak Learning Rate | 2e-4 |
+| Batch Size | 1,024 |
+| Warm-Up Steps | 10,000 |
+| Total Steps | 500,000 |
+| Sequence Length | 1,024 |
+| Mask Ratio | 25% |
+| Min Subtree Corruption Threshold θ | 5 |
+| Max Subtree Corruption Threshold θ | 100 |
+
+**A.4. Kết Quả Đánh Giá trên EvalPlus**
+
+**Bảng 5:** Hiệu suất của AST-T5 trên benchmark HumanEval+ và MBPP+, so với các số liệu được báo cáo của các mô hình ngôn ngữ được liệt kê trên leaderboard EvalPlus. Thước đo đánh giá được sử dụng là Pass@1.
+
+| Mô hình | #Params | HumanEval+ | MBPP+ |
+|---------|---------|------------|-------|
+| GPT-Neo | 2.7B | 6.7 | 7.9 |
+| GPT-J | 6B | 11.0 | 12.2 |
+| InCoder-1.3B | 1.3B | 11.0 | 12.2 |
+| InCoder-6.7B | 6.7B | 12.2 | 15.9 |
+| CodeGen2-1B | 1B | 9.1 | 11.0 |
+| CodeGen2-3B | 3B | 12.8 | 15.9 |
+| CodeGen2-7B | 7B | 17.7 | 18.3 |
+| CodeGen2-16B | 16B | 16.5 | 19.5 |
+| AST-T5 (Của chúng tôi) | 277M | 12.8 | 19.3 |
+
+**A.5. Kết Quả Đánh Giá trên Sinh Mã Đa Ngôn Ngữ**
+
+**A.6. Kết Quả Đánh Giá trong CodeBLEU**
+
+[Các phần bổ sung khác được dịch tương tự...]

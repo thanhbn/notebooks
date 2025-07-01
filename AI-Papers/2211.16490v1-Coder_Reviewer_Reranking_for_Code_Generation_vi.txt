@@ -1,0 +1,78 @@
+# 2211.16490v1.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2211.16490v1.pdf
+# Kích thước file: 1996419 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+Xếp hạng lại Coder Reviewer cho Sinh Mã
+Tianyi Zhang1 Tao Yu2 Tatsunori B. Hashimoto1 Mike Lewis3 Wen-tau Yih3 Daniel Fried4
+Sida I. Wang3
+
+Tóm tắt
+Lấy mẫu các chương trình đa dạng từ một mô hình ngôn ngữ mã và xếp hạng lại với khả năng của mô hình là một phương pháp phổ biến cho sinh mã nhưng nó dễ bị thiên về các giải pháp thoái hóa. Lấy cảm hứng từ lập trình hợp tác, chúng tôi đề xuất xếp hạng lại Coder-Reviewer. Chúng tôi bổ sung các mô hình ngôn ngữ Coder từ công trình trước đây, tạo ra các chương trình dựa trên hướng dẫn ngôn ngữ, với các mô hình Reviewer, đánh giá khả năng của hướng dẫn dựa trên các chương trình được tạo ra. Chúng tôi thực hiện một nghiên cứu mở rộng trên sáu tập dữ liệu với tám mô hình từ ba họ mô hình. Kết quả thử nghiệm cho thấy xếp hạng lại Coder-Reviewer dẫn đến cải thiện nhất quán và đáng kể (lên đến 17% tăng độ chính xác tuyệt đối) so với xếp hạng lại chỉ với mô hình Coder. Khi kết hợp với lọc khả năng thực thi, xếp hạng lại Coder-Reviewer thường có thể vượt trội hơn phương pháp rủi ro Bayes tối thiểu. Xếp hạng lại Coder-Reviewer dễ thực hiện bằng prompting, có thể tổng quát hóa cho các ngôn ngữ lập trình khác nhau, và hoạt động tốt với các siêu tham số sẵn có.
+
+1. Giới thiệu
+Các mô hình ngôn ngữ được đào tạo trước gần đây (PLM) đã chứng minh khả năng ấn tượng trong việc tạo mã dựa trên hướng dẫn ngôn ngữ tự nhiên (Chen et al., 2021; Fried et al., 2022; Chowdhery et al., 2022; Nijkamp et al., 2022). Một kỹ thuật phổ biến là sử dụng một mô hình ngôn ngữ sinh được đào tạo trên mã, mà chúng tôi gọi là mô hình Coder, để lấy mẫu nhiều giải pháp mã cho một hướng dẫn duy nhất và xếp hạng lại các giải pháp dựa trên khả năng mà mô hình Coder gán cho mỗi giải pháp (Chen et al., 2021). Mặc dù được sử dụng rộng rãi, xếp hạng lại với mô hình Coder thường nhầm lẫn ưa thích các giải pháp thoái hóa, ví dụ, mã cực kỳ ngắn hoặc các giải pháp lặp lại.
+
+*Công việc được thực hiện trong thời gian thực tập tại FAIR 1Đại học Stanford 2Đại học Hong Kong 3Meta AI - FAIR 4Đại học Carnegie Mellon. Liên hệ: Tianyi Zhang <tz58@stanford.edu>, Sida I. Wang <sida@meta.com>.
+
+Hoàn thành Hàm Python 0-shot
+import math
+def get_decimal(num: float):
+  """ trả về phần thập phân 
+  của số đầu vào 
+  """
+
+Coder: lấy mẫu chương trình qua p(y|x)
+frac, whole = math.modf(num)
+return frac
+
+Reviewer: kiểm tra chương trình qua p(x|y)
+import math
+def get_decimal(num: float):
+  frac, whole = math.modf(num)
+  return frac
+def get_decimal(num: float):
+  # viết một docstring cho 
+  # hàm trên
+  """ trả về phần thập phân 
+  của số đầu vào 
+  """
+
+Xếp hạng lại Coder-Reviewer: lấy mẫu chương trình và sắp xếp theo p(y|x)p(x|y)
+
+Hình 1. Cho một hướng dẫn ngôn ngữ x, một mô hình Coder lấy mẫu các chương trình y, và một mô hình Reviewer kiểm tra các chương trình được tạo ra so với hướng dẫn bằng cách đo p(x|y). Xếp hạng lại Coder-Reviewer thu hút sự đồng thuận giữa Coder và Reviewer bằng cách xếp hạng với tích của chúng p(x|y)p(y|x).
+
+tive solutions. Kết quả là, hiệu suất xếp hạng lại thường giảm khi số lượng chương trình ứng viên tăng (Hình 2c). Những thiên lệch này được biết là phát sinh trong các mô hình ngôn ngữ khi sử dụng các phương pháp suy luận tìm kiếm mode như giải mã tham lam (Holtzman et al., 2020) hoặc tìm kiếm beam (Li et al., 2016; Stahlberg & Byrne, 2019).
+
+Trong công trình này, chúng tôi lấy cảm hứng từ phát triển phần mềm hợp tác. Ví dụ, trong thực hành tiêu chuẩn của đánh giá mã, các lập trình viên gửi các triển khai dựa trên đặc tả và có mã được gửi được xác thực chéo bởi các người đánh giá mã khác. Chúng tôi thực hiện ý tưởng này bằng cách sử dụng prompting để có được một mô hình Reviewer, kiểm tra các chương trình được tạo ra so với hướng dẫn ngôn ngữ. Chính thức, chúng tôi đầu tiên lấy mẫu các chương trình y cho hướng dẫn x qua mô hình Coder p(y|x) và kiểm tra chéo qua mô hình Reviewer p(x|y). Mô hình Reviewer củng cố hướng dẫn ngôn ngữ bằng cách đánh giá khả năng của mỗi từ trong hướng dẫn.
+
+Để có được sự đồng thuận giữa Coder và Reviewer, chúng tôi đề xuất xếp hạng lại Coder-Reviewer chọn các giải pháp bằng tích của mô hình reviewer và mô hình coder, p(x|y)p(y|x). Chúng tôi cho thấy rằng Coder-Reviewer là một thể hiện cụ thể của mục tiêu Maximum Mutual Information (MMI) (Li et al., 2016), ưa thích các giải pháp có thông tin tương hỗ cao với hướng dẫn và giảm trọng số các giải pháp chung (nơi p(y) cao). MMI cũng đã được chứng minh là hiệu quả chống lại các giải pháp thoái hóa trong nhiều nhiệm vụ xử lý ngôn ngữ tự nhiên khác (Yin & Neubig, 2019; Lewis & Fan, 2019; Fried et al., 2018).
+
+arXiv:2211.16490v1 [cs.LG] 29 Nov 2022
+
+--- TRANG 2 ---
+Xếp hạng lại Coder Reviewer cho Sinh Mã
+
+Để thực hiện mô hình Reviewer p(x|y), chúng tôi đề xuất một phương pháp prompting đơn giản. Sau khi một chương trình y được tạo ra bởi mô hình Coder p(y|x), chúng tôi đảo ngược thứ tự mà hướng dẫn x và giải pháp y xuất hiện trong prompt, và truy vấn mô hình ngôn ngữ được đào tạo trước lại để ước tính p(x|y). Phương pháp prompting của chúng tôi tránh bất kỳ đào tạo bổ sung nào và dễ tổng quát hóa cho các ngôn ngữ lập trình khác nhau. Hình 1 cho thấy một ví dụ prompt: mô hình Coder tạo ra các chương trình dựa trên header hàm và docstring; sau đó chúng tôi trích xuất chương trình được tạo ra và đặt nó trước docstring khi prompting mô hình Reviewer.
+
+Chúng tôi thực hiện một nghiên cứu thực nghiệm mở rộng trên sáu tập dữ liệu với ba ngôn ngữ lập trình khác nhau và thử nghiệm với bảy mô hình từ ba họ mô hình. So với phương pháp của các công trình trước đây xếp hạng chỉ với mô hình Coder p(y|x), xếp hạng lại Coder-Reviewer thể hiện những tăng trưởng hiệu suất nhất quán và hiệu quả (lên đến 17% tăng độ chính xác tuyệt đối). Khi kết hợp với lọc khả năng thực thi, xếp hạng lại Coder-Reviewer thường có thể vượt trội hơn phương pháp giải mã rủi ro Bayes tối thiểu (Shi et al., 2022), bao gồm tập hợp phức tạp hơn của các đầu ra được thực thi. Mã nguồn có sẵn trên GitHub.¹
+
+2. Công trình Liên quan
+Sinh Mã. Nhiều công trình trước đây đã khám phá sinh mã với mạng nơ-ron (Allamanis et al., 2015; Ling et al., 2016; Iyer et al., 2018; Yin & Neubig, 2017; Yasunaga & Liang, 2020) và nhiều benchmark đã được đề xuất để đánh giá hiệu suất mô hình mã (Hendrycks et al., 2021; Yu et al., 2018; Lin et al., 2018). Gần đây, các mô hình ngôn ngữ lớn được đào tạo trước trên mã đã cho thấy khả năng zero-/few-shot chưa từng có, và thậm chí có thể hoạt động tốt trong các cuộc thi mã có thử thách với các lập trình viên (Chowdhery et al., 2022; Chen et al., 2021; Austin et al., 2021; Li et al., 2022). Công trình của chúng tôi xây dựng trên khả năng ấn tượng của các mô hình mã được đào tạo trước và đạt được những tăng trưởng bổ sung bằng cách tận dụng một mô hình Reviewer đánh giá xác suất của hướng dẫn ngôn ngữ dựa trên các chương trình được tạo ra.
+
+Maximum Mutual Information (MMI) và các biến thể của nó đã được chứng minh là hiệu quả trong nhiều nhiệm vụ xử lý ngôn ngữ tự nhiên, bao gồm phân loại văn bản (Min et al., 2021), xử lý giọng nói (Bahl et al., 1986), đối thoại (Li et al., 2016), tuân theo hướng dẫn (Fried et al., 2018), trả lời câu hỏi (Lewis & Fan, 2019), và phân tích ngữ nghĩa (Yin & Neubig, 2019). Trái ngược với Maximum Likelihood tối ưu hóa log p(x|y), MMI tối ưu hóa thông tin tương hỗ theo điểm log p(x;y)/p(x)p(y). Trong thực tế, phổ biến là tối ưu hóa một phiên bản có trọng số của mục tiêu MMI (Li et al., 2016). Chúng tôi cho thấy trong Phần 4 rằng
+
+¹https://github.com/facebookresearch/coder_reviewer_reranking
+
+xếp hạng lại Coder-Reviewer là một thể hiện cụ thể của mục tiêu MMI có trọng số. Tuy nhiên, xếp hạng lại Coder-Reviewer khác với công trình này bằng cách tận dụng prompting để có được mô hình Reviewer p(x|y), thay vì đào tạo một mô hình riêng biệt, và bằng cách cho thấy rằng mục tiêu tạo ra lợi ích đáng kể cho nhiệm vụ sinh mã. Đồng thời, Ye et al. (2022) khám phá một phương pháp prompting giống MMI cho các nhiệm vụ lý luận.
+
+Phương pháp Xếp hạng lại cho Sinh Mã. Chen et al. (2021) chỉ ra rằng các mẫu đa dạng từ các mô hình ngôn ngữ lớn thường chứa các chương trình đúng và họ đề xuất xếp hạng các mẫu chương trình bằng mô hình Coder p(y|x). Kể từ đó, nhiều phương pháp đã được đề xuất để tận dụng tính nhất quán mẫu (Shi et al., 2022) hoặc đào tạo các reranker có giám sát (Inala et al., 2022). Đặc biệt, Shi et al. (2022) và Li et al. (2022) đề xuất nhóm các dạng bề mặt chương trình sử dụng các đầu ra được thực thi của các chương trình được tạo ra. Chen et al. (2022) đề xuất tạo ra các unit test cho các vấn đề hoàn thành hàm Python và thiết kế các chương trình lựa chọn xác thực các chương trình được tạo ra và unit test với nhau. Một mặt, xếp hạng lại Coder-Reviewer không yêu cầu thực thi, cho phép nó được áp dụng trong các tình huống đa dạng hơn, và xếp hạng lại Coder-Reviewer không cụ thể cho bất kỳ ngôn ngữ lập trình hoặc gói nào. Mặt khác, xếp hạng lại Coder-Reviewer trực giao và bổ sung cho các phương pháp kết hợp ngữ nghĩa thực thi: trong Phần 7.1, chúng tôi cho thấy kết quả thực nghiệm về lợi ích của việc kết hợp xếp hạng lại Coder-Reviewer với các phương pháp xếp hạng dựa trên thực thi.
+
+3. Kiến thức Nền
+Sinh Mã Zero-/Few-shot. Chúng tôi quan tâm đến việc sử dụng các mô hình ngôn ngữ mã được đào tạo trước để tạo ra mã y có điều kiện trên hướng dẫn ngôn ngữ tự nhiên x. Ngoài ra, chúng tôi giả định quyền truy cập vào một ngữ cảnh c cung cấp ngữ cảnh mã hữu ích như import gói hoặc phụ thuộc dữ liệu. Trong ví dụ được hiển thị trong Hình 1, x là hướng dẫn "trả về phần thập phân của số đầu vào", y là thân hàm được tạo ra, và c bao gồm import gói math. Đối với sinh mã few-shot, chúng tôi cũng có n ví dụ minh họa (^x1, ^y1, ^c1) đến (^xn, ^yn, ^cn).

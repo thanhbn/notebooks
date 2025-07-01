@@ -1,0 +1,172 @@
+# 1.3.4. StarCoder 2 và The Stack v2- Thế hệ tiếp theo. 2402.19173v1.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\1.3.4. StarCoder 2 and The Stack v2- The Next Generation. 2402.19173v1.pdf
+# Kích thước tệp: 1114300 bytes
+
+===============================================
+NỘI DUNG TỆP PDF
+===============================================
+
+
+--- TRANG 1 ---
+Đang được xem xét để gửi đến TMLR
+StarCoder2 và The Stack v2: Thế hệ tiếp theo
+Anton Lozhkov¹ Raymond Li² Loubna Ben Allal¹ Federico Cassano⁴ Joel Lamy-Poirier²
+Nouamane Tazi¹ Ao Tang³ Dmytro Pykhtar³ Jiawei Liu⁷ Yuxiang Wei⁷ Tianyang Liu²⁵
+Max Tian² Denis Kocetkov² Arthur Zucker¹ Younes Belkada¹ Zijian Wang⁵ Qian Liu¹²
+Dmitry Abulkhanov⁵ Indraneil Paul³² Zhuang Li¹⁴ Wen-Ding Li²⁶ Megan Risdal²⁴ Jia
+Li⁵ Jian Zhu¹⁶ Terry Yue Zhuo¹⁴,¹⁵ Evgenii Zheltonozhskii¹³ Nii Osae Osae Dade²⁸
+Wenhao Yu²⁰ Lucas Krauß⁵ Naman Jain²⁷ Yixuan Su³⁰ Xuanli He²³ Manan Dey³¹
+Edoardo Abati⁵ Yekun Chai³³ Niklas Muennighoff²⁹ Xiangru Tang³⁴ Muhtasham
+Oblokulov¹⁸ Christopher Akiki⁹,¹⁰ Marc Marone⁸ Chenghao Mou⁵ Mayank Mishra¹⁹
+Alex Gu¹⁷ Binyuan Hui⁵ Tri Dao²¹ Armel Zebaze¹ Olivier Dehaene¹ Nicolas Patry¹
+Canwen Xu²⁵ Julian McAuley²⁵ Han Hu¹⁴ Torsten Scholak² Sebastien Paquet² Jennifer
+Robinson⁶ Carolyn Jane Anderson²² Nicolas Chapados² Mostofa Patwary³ Nima
+Tajbakhsh³ Yacine Jernite¹ Carlos Muñoz Ferrandis¹ Lingming Zhang⁷ Sean Hughes⁶
+Thomas Wolf¹ Arjun Guha⁴,¹¹ Leandro von Werra¹,⋆ Harm de Vries²,⋆
+
+¹Hugging Face ²ServiceNow Research ³Nvidia ⁴Northeastern University ⁵Independent ⁶ServiceNow
+⁷University of Illinois Urbana-Champaign ⁸Johns Hopkins University ⁹Leipzig University ¹⁰ScaDS.AI
+¹¹Roblox ¹²Sea AI Lab ¹³Technion – Israel Institute of Technology ¹⁴Monash University ¹⁵CSIRO's
+Data61 ¹⁶University of British Columbia ¹⁷MIT ¹⁸Technical University of Munich ¹⁹IBM Research
+²⁰University of Notre Dame ²¹Princeton University ²²Wellesley College ²³University College London
+²⁴Kaggle ²⁵UC San Diego ²⁶Cornell University ²⁷UC Berkeley ²⁸Mazzuma ²⁹Contextual AI
+³⁰Cohere ³¹Salesforce ³²Technical University of Darmstadt ³³Baidu ³⁴Yale University
+
+Tác giả liên hệ (⋆) có thể được liên lạc tại contact@bigcode-project.org
+
+Tóm tắt
+Dự án BigCode,¹ một sự hợp tác khoa học mở tập trung vào việc phát triển có trách nhiệm
+các Mô hình Ngôn ngữ Lớn cho Mã (Code LLM), giới thiệu StarCoder2. Hợp tác
+với Software Heritage (SWH),² chúng tôi xây dựng The Stack v2 dựa trên kho tài sản chung kỹ thuật số của
+kho lưu trữ mã nguồn của họ. Bên cạnh các repository SWH trải rộng 619 ngôn ngữ lập trình,
+chúng tôi cẩn thận chọn lọc các nguồn dữ liệu chất lượng cao khác, như GitHub pull request, Kaggle
+notebook, và tài liệu mã. Điều này dẫn đến một tập training lớn hơn 4× so với
+bộ dữ liệu StarCoder đầu tiên. Chúng tôi train các mô hình StarCoder2 với 3B, 7B, và 15B tham số trên
+3.3 đến 4.3 nghìn tỷ token và đánh giá kỹ lưỡng chúng trên một tập hợp toàn diện các
+benchmark Code LLM.
+
+Chúng tôi nhận thấy rằng mô hình nhỏ của chúng tôi, StarCoder2-3B, vượt trội hơn các Code LLM khác có kích thước
+tương tự trên hầu hết các benchmark, và cũng vượt trội hơn StarCoderBase-15B. Mô hình lớn của chúng tôi, StarCoder2-
+15B, vượt trội đáng kể so với các mô hình khác có kích thước tương đương. Ngoài ra, nó ngang bằng hoặc
+vượt trội hơn CodeLlama-34B, một mô hình lớn hơn gấp đôi kích thước của nó. Mặc dù DeepSeekCoder-
+33B là mô hình hoạt động tốt nhất trong việc hoàn thành mã cho các ngôn ngữ tài nguyên cao, chúng tôi thấy
+rằng StarCoder2-15B vượt trội hơn nó trên các benchmark lý luận toán học và mã, cũng như
+một số ngôn ngữ tài nguyên thấp. Chúng tôi cung cấp trọng số mô hình dưới giấy phép OpenRAIL
+và đảm bảo minh bạch hoàn toàn về dữ liệu training bằng cách phát hành các
+định danh bền vững SoftWare Heritage (SWHID) của dữ liệu mã nguồn.
+
+¹https://www.bigcode-project.org
+²https://www.softwareheritage.org/
+1arXiv:2402.19173v1 [cs.SE] 29 Feb 2024
+
+--- TRANG 2 ---
+Đang được xem xét để gửi đến TMLR
+
+1 Giới thiệu
+Các Mô hình Ngôn ngữ Lớn cho Mã (Code LLM; Chen và cộng sự, 2021; Nijkamp và cộng sự, 2023; Rozière và cộng sự, 2023;
+Guo và cộng sự, 2024) đã nhanh chóng nổi lên như những trợ lý mạnh mẽ để viết và chỉnh sửa mã. Tính đến ngày 30 tháng 1
+năm 2024, GitHub CoPilot đã thu hút hơn 1.3 triệu người đăng ký trả phí, với hơn 50,000 tổ chức lựa chọn
+phiên bản doanh nghiệp (MSFT Q2 Earning Call, 2024), được ước tính tăng năng suất của nhà phát triển lên đến
+56% cũng như sự hài lòng của nhà phát triển (Peng và cộng sự, 2023; Ziegler và cộng sự, 2024). ServiceNow gần đây tiết lộ
+rằng giải pháp "text-to-code" của họ, được xây dựng từ việc fine-tune các mô hình StarCoderBase (Li và cộng sự, 2023), dẫn đến
+tăng 52% năng suất của nhà phát triển (Yahoo Finance, 2024). Mặc dù ban đầu tập trung vào việc tạo
+đoạn mã từ hướng dẫn ngôn ngữ tự nhiên hoặc các đoạn mã khác, Code LLM thể hiện tiềm năng
+để nâng cao tất cả các giai đoạn của chu kỳ phát triển phần mềm (Hou và cộng sự, 2023; Fan và cộng sự, 2023; Wang và cộng sự,
+2024; Zhuo và cộng sự, 2023b; Chai và cộng sự, 2023). Điều này bao gồm tăng tốc việc triển khai các dự án mới,
+cải thiện đảm bảo chất lượng cho phần mềm được phát triển, giúp phát hiện và sửa lỗi, đơn giản hóa các tác vụ
+bảo trì, và dễ dàng di chuyển sang phần mềm mới hơn.
+
+Quá trình phát triển LLM có thể thể hiện các mức độ mở khác nhau (Solaiman, 2023; Ding và cộng sự,
+2022; Akiki và cộng sự, 2022). Các mô hình độc quyền như GPT-4 của OpenAI (OpenAI và cộng sự, 2023) và
+Gemini của Google (Gemini Team và cộng sự, 2023) cung cấp quyền truy cập vào mô hình thông qua API trả phí nhưng không tiết lộ
+chi tiết phát triển. Mặt khác, các mô hình mở trọng số như Code LLaMa (Rozière và cộng sự, 2023),
+Mistral (Jiang và cộng sự, 2023), và DeepSeekCoder (Guo và cộng sự, 2024) đã phát hành trọng số mô hình. Điều này
+cho phép cộng đồng mã nguồn mở chạy những mô hình này cục bộ, kiểm tra các biểu diễn mô hình, và fine-
+tune chúng trên các tác vụ của họ. Tuy nhiên, các nhà phát triển mô hình đã không tiết lộ dữ liệu training của họ. Do đó,
+các nhà tạo nội dung không biết liệu dữ liệu của họ có được sử dụng để training không, các nhà khoa học xã hội không thể xem xét kỹ bộ dữ liệu
+về thiên lệch và độc hại, và các nhà phát triển LLM thiếu thông tin về mức độ tập training bị ô nhiễm
+với các benchmark test. Rộng hơn, thực hành này cản trở tiến bộ khoa học vì các nhóm nghiên cứu khác không thể
+dễ dàng tái sử dụng dữ liệu training của nhau. Các dự án phát triển LLM khác, như OLMo của Allen AI (Groeneveld
+và cộng sự, 2024), Pythia của Eleuther AI (Biderman và cộng sự, 2023), và BLOOM của BigScience (BigScience Workshop,
+2022; Scao và cộng sự, 2022a), đã áp dụng phương pháp phát triển hoàn toàn mở bằng cách phát hành dữ liệu training, framework
+training, và bộ đánh giá.
+
+Dự án BigCode được thành lập vào tháng 9 năm 2022 như một sự hợp tác khoa học mở tập trung vào việc
+phát triển mở và có trách nhiệm các Code LLM. BigCode được quản lý bởi ServiceNow và Hugging Face trong
+tinh thần quản trị mở (BigCode collaboration và cộng sự, 2023) và đã tập hợp hơn 1,100
+thành viên từ các viện học thuật và phòng thí nghiệm công nghiệp đa dạng. Cộng đồng trước đây đã phát hành The Stack
+v1 (Kocetkov và cộng sự, 2023), một bộ dữ liệu 6.4 TB mã nguồn được cấp phép cho phép trong 384 ngôn ngữ lập trình.
+The Stack v1 bao gồm một công cụ quản trị có tên "Am I in The Stack," được thiết kế để các nhà phát triển xác minh xem
+mã nguồn của họ có được bao gồm trong bộ dữ liệu không. Nó cũng cung cấp quy trình opt-out cho những ai muốn loại trừ
+mã của họ khỏi bộ dữ liệu. Vào tháng 12 năm 2022, cộng đồng BigCode đã phát hành SantaCoder (Ben Allal và cộng sự,
+2023), một mô hình 1.1B tham số hiệu suất mạnh được train trên mã Java, JavaScript, và Python từ The
+Stack v1. Xây dựng dựa trên thành công này, cộng đồng tiếp tục mở rộng nỗ lực và phát hành StarCoder vào
+ngày 4 tháng 5 năm 2023 (Li và cộng sự, 2023). Tại thời điểm phát hành, mô hình StarCoder 15B tham số là LLM
+truy cập mở tốt nhất cho mã.
+
+Báo cáo kỹ thuật này mô tả quá trình phát triển của The Stack v2 và StarCoder2. The Stack v2 xây dựng
+dựa trên nền tảng của kho lưu trữ mã nguồn rộng lớn của Software Heritage, trải rộng hơn 600 ngôn ngữ
+lập trình. Ngoài các repository mã, chúng tôi tuyển chọn các nguồn dữ liệu mở chất lượng cao khác, bao gồm Github
+issues, pull request, Kaggle và Jupyter notebook, tài liệu mã, và các bộ dữ liệu ngôn ngữ tự nhiên khác
+liên quan đến toán học, lập trình, và lý luận. Để chuẩn bị dữ liệu cho training, chúng tôi thực hiện khử trùng lặp, tạo
+bộ lọc để loại bỏ mã chất lượng thấp, che giấu Thông tin Nhận dạng Cá nhân (PII), loại bỏ mã độc hại,
+và xử lý opt-out từ các nhà phát triển yêu cầu loại bỏ mã của họ khỏi bộ dữ liệu. Với
+tập training mới này có 900B+ token duy nhất, lớn hơn 4× so với bộ dữ liệu StarCoder đầu tiên, chúng tôi phát triển thế
+hệ tiếp theo của các mô hình StarCoder. Chúng tôi train Code LLM với 3B, 7B, và 15B tham số sử dụng quy trình
+training hai giai đoạn (Rozière và cộng sự, 2023; Guo và cộng sự, 2024). Chúng tôi bắt đầu training mô hình cơ sở với cửa sổ ngữ cảnh
+4k và sau đó fine-tune mô hình với cửa sổ ngữ cảnh 16k. Chúng tôi đảm bảo rằng quá trình training
+không vượt quá 5 epoch trên bộ dữ liệu (Muennighoff và cộng sự, 2023). Tuy nhiên, chúng tôi đẩy
+2
+
+--- TRANG 3 ---
+Đang được xem xét để gửi đến TMLR
+
+số lượng token training vượt xa số lượng tối ưu về mặt tính toán được đề xuất bởi Chinchilla (luật Harm's;
+de Vries, 2023) và train các mô hình tương đối nhỏ trong phạm vi 3.3 đến 4.3 nghìn tỷ token. Chúng tôi đánh giá
+kỹ lưỡng và so sánh hiệu suất của những mô hình này trên một bộ benchmark code LLM (Cassano và cộng sự,
+2023b; Austin và cộng sự, 2021; Chen và cộng sự, 2021; Liu và cộng sự, 2023a; Lai và cộng sự, 2023; Muennighoff và cộng sự, 2024a;
+Cassano và cộng sự, 2024; Liu và cộng sự, 2023b; Ding và cộng sự, 2023; Gu và cộng sự, 2024; Cobbe và cộng sự, 2021; Pearce và cộng sự,
+2022; Dhamala và cộng sự, 2021; Nozza và cộng sự, 2021; Gehman và cộng sự, 2020), nhận thấy rằng:
+
+• Mô hình StarCoder2-3B vượt trội hơn các Code LLM khác có kích thước tương tự (StableCode-3B và
+DeepSeekCoder-1.3B) trên hầu hết các benchmark. Hơn nữa, nó ngang bằng hoặc vượt qua hiệu suất của
+StarCoderBase-15B.
+
+• Mô hình StarCoder2-15B vượt trội đáng kể so với các mô hình khác có kích thước tương đương (CodeLlama-
+13B), và ngang bằng hoặc vượt trội hơn CodeLlama-34B. DeepSeekCoder-33B là mô hình tốt nhất tại
+các benchmark hoàn thành mã cho các ngôn ngữ tài nguyên cao. Tuy nhiên, StarCoder2-15B ngang bằng hoặc
+vượt trội hơn DeepSeekCoder-33B trên các ngôn ngữ lập trình tài nguyên thấp (ví dụ, D, Julia, Lua,
+và Perl). Hơn nữa, khi chúng tôi xem xét các benchmark yêu cầu mô hình lý luận về việc thực thi mã
+(Gu và cộng sự, 2024) hoặc toán học (Cobbe và cộng sự, 2021), chúng tôi thấy rằng StarCoder2-15B
+vượt trội hơn DeepSeekCoder-33B.
+
+• Mô hình StarCoder2-7B vượt trội hơn CodeLlama-7B nhưng thua DeepSeekCoder-6.7B. Không
+rõ đối với các tác giả của báo cáo này tại sao StarCoder2-7B không hoạt động tốt như StarCoder2-3B và
+StarCoder2-15B cho kích thước của chúng.
+
+2 Nguồn dữ liệu
+Trong phần này, chúng tôi trình bày chi tiết về quá trình thu thập dữ liệu training, bao gồm không chỉ dữ liệu
+có nguồn gốc từ Software Heritage (§2.1) mà còn GitHub issues (§2.2), pull request (§2.3), Jupyter và Kaggle
+notebook (§2.4), tài liệu (§2.5), biểu diễn trung gian (§2.6), bộ dữ liệu toán học và lập trình nhỏ
+(§2.7), và các bộ dữ liệu ngôn ngữ tự nhiên khác (§2.8).
+
+2.1 Mã nguồn
+Software Heritage Chúng tôi xây dựng Stack v2 dựa trên kho lưu trữ Software Heritage (SH) (Abramatic và cộng sự,
+2018), được duy trì bởi tổ chức phi lợi nhuận cùng tên. Sứ mệnh của Software Heritage là
+thu thập và bảo tồn tất cả kiến thức dưới dạng mã nguồn. Chúng tôi làm việc với bộ dữ liệu đồ thị SH (Pietri
+và cộng sự, 2020), một biểu diễn Merkle DAG (Merkle, 1987) đã khử trùng lặp hoàn toàn của toàn bộ kho lưu trữ. Bộ dữ liệu đồ thị SH
+liên kết các định danh tệp, thư mục mã nguồn, và git commit, lên đến toàn bộ trạng thái
+của các repository, như được quan sát trong các lần crawl định kỳ bởi Software Heritage.
+
+Trích xuất repository Chúng tôi tận dụng phiên bản 2023-09-06 của bộ dữ liệu đồ thị SH làm nguồn
+chính. Chúng tôi bắt đầu bằng cách trích xuất các phiên bản được crawl gần nhất của tất cả repository GitHub và lọc
+chúng để chỉ giữ lại nhánh chính. Nhánh được coi là chính nếu metadata repository trong GHArchive
+liệt kê nó là nhánh mặc định hoặc nếu tên của nó là main hoặc master. Chúng tôi chỉ trích xuất revision (commit) mới nhất
+từ nhánh chính và khử trùng lặp các repository dựa trên hash duy nhất của nội dung của chúng (cột
+
+[Tiếp tục với phần còn lại của bài báo...]
+
+===== KẾT THÚC PHẦN ĐẦU =====
+
+[Lưu ý: Đây là phần đầu của bản dịch bài báo StarCoder2. Bài báo này mô tả quá trình phát triển StarCoder2 và The Stack v2, bao gồm các cải tiến về dữ liệu training, kiến trúc mô hình, và hiệu suất so với các mô hình tiền nhiệm.]

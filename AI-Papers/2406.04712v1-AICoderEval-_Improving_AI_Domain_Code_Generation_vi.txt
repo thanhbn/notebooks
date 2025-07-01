@@ -1,0 +1,592 @@
+# 2406.04712v1.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2406.04712v1.pdf
+# Kích thước file: 1498898 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+AICoderEval: Cải Thiện Sinh Mã Lập Trình Chuyên Ngành AI
+của Mô Hình Ngôn Ngữ Lớn
+Yinghui Xia
+AutoAgents.ai
+vix@autoagents.aiYuyan Chen
+Đại học Fudan
+chenyuyan21@m.fudan.edu.cnTianyu Shi
+Đại học Toronto
+tianyu.s@outlook.com
+Jun Wang
+Đại học Sư phạm Đông Hoa
+wongjun@gmail.comJinsong Yang∗
+AutoAgents.ai
+edward.yang@autoagents.ai
+
+Tóm tắt
+Sinh mã tự động là một khả năng then chốt của các mô hình ngôn ngữ lớn (LLMs).
+Tuy nhiên, việc đánh giá khả năng này trong các tình huống thực tế vẫn còn thách
+thức. Các phương pháp trước đây tập trung nhiều hơn vào việc sinh mã cấp thấp,
+chẳng hạn như tải mô hình, thay vì sinh mã cấp cao phục vụ cho các tác vụ thực tế,
+như chuyển đổi hình ảnh sang văn bản, phân loại văn bản, trong các lĩnh vực khác
+nhau. Do đó, chúng tôi xây dựng AICoderEval, một bộ dữ liệu tập trung vào các tác
+vụ thực tế trong nhiều lĩnh vực khác nhau dựa trên HuggingFace, PyTorch và
+TensorFlow, cùng với các chỉ số toàn diện để đánh giá và nâng cao khả năng sinh
+mã chuyên biệt theo tác vụ của LLMs. AICoderEval chứa các test case và chương
+trình hoàn chỉnh để đánh giá tự động các tác vụ này, bao gồm các lĩnh vực như xử lý
+ngôn ngữ tự nhiên, thị giác máy tính và học đa phương thức. Để tạo điều kiện thuận
+lợi cho nghiên cứu trong lĩnh vực này, chúng tôi mở mã nguồn bộ dữ liệu
+AICoderEval tại https://huggingface.co/datasets/vixuowis/AICoderEval. Sau
+đó, chúng tôi đề xuất CoderGen, một framework dựa trên agent, để giúp LLMs sinh
+mã liên quan đến các tác vụ thực tế trên AICoderEval đã xây dựng. Hơn nữa, chúng
+tôi huấn luyện một mô hình sinh mã chuyên biệt theo tác vụ mạnh mẽ hơn, được đặt
+tên là AICoder, được tinh chỉnh dựa trên llama-3 với AICoderEval. Các thí nghiệm
+của chúng tôi chứng minh hiệu quả của CoderGen trong việc cải thiện khả năng sinh
+mã chuyên biệt theo tác vụ của LLMs (tăng 12.00% trên pass@1 cho mô hình gốc và
+9.50% trên pass@1 cho ReAct Agent). AICoder cũng vượt trội hơn các LLMs sinh
+mã hiện tại, cho thấy chất lượng tuyệt vời của benchmark AICoderEval.
+
+1 Giới thiệu
+Các mô hình ngôn ngữ lớn thu hút sự chú ý nhờ khả năng tổng quát của chúng [1,2,3,4,5], đạt điểm số cao
+trong các đánh giá như HumanEval [6] và MBPP [7], chủ yếu tập trung vào các ngôn ngữ lập trình cơ bản.
+Tuy nhiên, khả năng ứng dụng của chúng trong phát triển phần mềm thực tế, đặc biệt trong lĩnh vực trí tuệ
+nhân tạo sử dụng các thư viện cụ thể (như HuggingFace, PyTorch, TensorFlow, v.v.), vẫn chưa rõ ràng.
+Mặc dù các thư viện này rất phổ biến trong phát triển AI, làm thế nào để đánh giá và cải thiện khả năng
+sinh mã của các mô hình ngôn ngữ lớn sử dụng các thư viện này vẫn là một câu hỏi khó.
+
+Các nghiên cứu hiện tại khám phá cách tận dụng LLMs để sử dụng công cụ gọi các thư viện cụ thể. Ví dụ,
+các nghiên cứu như HuggingGPT [8] và Gorilla [9] cố gắng sinh các lời gọi API một dòng trong các lĩnh
+vực cụ thể. Các nghiên cứu này cho thấy rằng ngay cả các lời gọi API đơn giản cũng yêu cầu mô hình phải
+có hiểu biết sâu sắc
+∗Tác giả liên hệ
+Preprint. Đang được review.arXiv:2406.04712v1 [cs.CL] 7 Jun 2024
+
+--- TRANG 2 ---
+Hình 1: AICoder được tạo ra bởi framework CoderGen của chúng tôi có khả năng lập trình cho
+các tác vụ chuyên ngành và lựa chọn các thư viện thích hợp để gọi. Trong phần A mô tả
+đầu ra được tạo bởi codellama-7b-python, đã gọi thư viện sai bằng phương pháp pipeline.
+Ngược lại, phần B trình bày kết quả được tạo bởi AICoder, chính xác lựa chọn và gọi thư viện
+thích hợp để đáp ứng yêu cầu.
+
+và khả năng sử dụng đúng các thư viện. Tuy nhiên, các nghiên cứu này vẫn chưa giải quyết đầy đủ việc
+làm thế nào để tự động hóa việc đánh giá và nâng cao khả năng sinh mã của mô hình trong việc sử dụng
+linh hoạt các thư viện cụ thể, đặc biệt khi xử lý các tác vụ lập trình phức tạp và đa dạng.
+
+Để giải quyết thách thức này, chúng tôi xây dựng bộ dữ liệu AICoderEval, một benchmark cho các tác vụ
+lập trình hướng AI để đo lường khả năng lập trình trong lĩnh vực này. AICoderEval bao gồm một loạt
+rộng các tác vụ qua nhiều lĩnh vực AI khác nhau, bao gồm xử lý ngôn ngữ tự nhiên, thị giác máy tính, dữ
+liệu dạng bảng, âm thanh và giọng nói, học đa phương thức, và học tăng cường. Bộ dữ liệu được mở mã
+nguồn và có sẵn tại https://huggingface.co/datasets/vixuowis/AICoderEval
+để tạo điều kiện thuận lợi cho nghiên cứu trong lĩnh vực này.
+
+Sau đó, chúng tôi đề xuất một framework dựa trên agent có tên CoderGen, để sinh mã chuyên biệt theo
+tác vụ. CoderGen đơn giản hóa việc xây dựng bộ dữ liệu liên quan đến mã chuyên biệt theo tác vụ trên
+các thư viện khác nhau, cho phép tự động sinh các mẫu huấn luyện và kiểm thử. Như được minh họa trong
+Hình 1, các LLMs sinh mã tổng quát (ví dụ: codellama) có thể tạo ra câu trả lời không chính xác khi liên
+quan đến pipeline và các lời gọi API mô hình dựa trên hướng dẫn hàm đã cho. Mô hình được tinh chỉnh
+của chúng tôi thể hiện hiệu suất được cải thiện khi nó học cách sử dụng thư viện cho các tác vụ cụ thể.
+Cách tiếp cận này cho phép đánh giá chính xác hơn khả năng ứng dụng của mô hình trong phát triển phần
+mềm thực tế và cung cấp hướng dẫn cho việc cải thiện mô hình tiếp theo.
+
+Công trình của chúng tôi bao gồm ba đóng góp chính:
+• Xây dựng Benchmark: Chúng tôi xây dựng bộ dữ liệu AICoderEval, tập trung vào các tác vụ
+AI và bao gồm các tác vụ sinh mã liên quan đến thư viện AI, cùng với test cases và chương
+trình hoàn chỉnh để đánh giá các tác vụ này. Các tác vụ này bao gồm nhiều chức năng thư viện
+và mẫu sử dụng khác nhau, đảm bảo rằng mô hình học được kiến thức toàn diện về các thư
+viện. Chúng tôi mở mã nguồn bộ dữ liệu AICoderEval tại https://huggingface.co/
+datasets/vixuowis/AICoderEval để tạo điều kiện thuận lợi cho nghiên cứu trong lĩnh vực này.
+• Thiết kế Framework: Chúng tôi thiết kế và xây dựng framework CoderGen để sinh dữ liệu
+huấn luyện chất lượng cao. Trong giai đoạn suy luận, chúng tôi sử dụng một agent dựa trên
+LLM để hướng dẫn việc sinh mã tuân thủ các tiêu chuẩn sử dụng thư viện cụ thể, với những
+cải thiện liên tục trong chất lượng mã. Agent tương tác với mô hình nhiều lần để tinh chỉnh
+và tối ưu hóa quá trình sinh mã, làm cho nó phù hợp hơn với các chuẩn mực sử dụng thư viện
+và thực hành tốt nhất.
+2
+
+--- TRANG 3 ---
+Bảng 1: Thống kê Danh mục Dữ liệu
+Danh mục Số lượng %
+Xử lý Ngôn ngữ Tự nhiên 383 77.8%
+Thị giác Máy tính 50 10.2%
+Dữ liệu Dạng bảng 18 3.7%
+Âm thanh và Giọng nói 17 3.5%
+Phân loại 12 2.4%
+Đa phương thức 9 1.8%
+Học Tăng cường 3 0.6%
+Tổng cộng 492 100%
+
+• Đánh giá Mô hình: Chúng tôi đánh giá nhiều mô hình ngôn ngữ lớn trên AICoderEval, chứng
+minh khả năng sinh mã của chúng trong các tác vụ phát triển AI thực tế và những cải thiện hiệu
+suất sau khi huấn luyện với framework của chúng tôi. Cách tiếp cận này cho phép chúng tôi so
+sánh hiệu suất của các mô hình khác nhau và xác định điểm mạnh cũng như hạn chế của chúng
+trong việc sử dụng các thư viện cụ thể.
+
+Thông qua những đóng góp này, CoderGen cung cấp một phương pháp đánh giá toàn diện và thực tế hơn
+cho khả năng sinh mã của các mô hình ngôn ngữ lớn và chỉ ra con đường cho những cải thiện mô hình
+tiếp theo. Chúng tôi hy vọng framework này sẽ hỗ trợ các nhà nghiên cứu và nhà phát triển hiểu rõ hơn và
+tận dụng tiềm năng của các mô hình ngôn ngữ lớn trong phát triển phần mềm, đặc biệt khi lập trình với các
+thư viện cụ thể.
+
+2 Xây dựng Benchmark
+Hình 2: CoderGen: Kiến trúc Sinh Mã Chuyên ngành. Kiến trúc này bao gồm hai thành phần
+tích hợp. Ở phía bên trái, dữ liệu AICoderEval được tạo ra bằng cách phân tích tài liệu thư viện
+với dữ liệu tài liệu được cung cấp (meta-information mô hình). Dữ liệu này, bao gồm các chương
+trình có thể kiểm thử, sau đó được xác thực trong môi trường thực thi. Chúng tôi sau đó sử dụng
+dữ liệu này để huấn luyện một LLM (AICoder trong bài báo tiếp theo). Ở phía bên phải, một agent
+dựa trên LLM được sử dụng để chỉ đạo quá trình sinh mã. Các môi trường thực thi thực tế được
+sử dụng để đẩy phản hồi cho cả agent và LLM, hỗ trợ trong việc tinh chỉnh mã được tạo ra.
+3
+
+--- TRANG 4 ---
+2.1 Thu thập Dữ liệu
+Để xây dựng bộ dữ liệu AICoderEval, chúng tôi tận dụng sức mạnh của GPT-4 [10] để xử lý dữ liệu thu
+thập từ web và định dạng nó thành dạng có cấu trúc. Tập trung vào lĩnh vực trí tuệ nhân tạo, chúng tôi
+chọn Hugging Face Hub và PyTorch Hub làm thư viện mục tiêu. Các thư viện này cung cấp API thống
+nhất cho việc gọi mô hình, và mô tả cũng như tài liệu của chúng có sẵn trên các trang web chính thức. Để
+giảm độ phức tạp do mô tả thư viện gây ra, chúng tôi trực tiếp sử dụng dữ liệu đã được GPT-4 xử lý và
+lọc tự động làm đầu vào, sau đó chúng tôi xử lý thêm để tạo ra bộ dữ liệu mong muốn.
+
+Dữ liệu được thu thập từ web, sau khi lọc, chứa thông tin sau cho mỗi tác vụ: lĩnh vực, tên mô hình, mô
+tả mô hình, mã ví dụ và chỉ số hiệu suất. Bộ thông tin toàn diện này sẽ cho phép các lập trình viên con
+người tận dụng đầy đủ nó cho mục đích phát triển. Do đó, chúng tôi giả thuyết rằng một agent thông minh
+cũng nên có khả năng học để phát triển phần mềm dựa trên các đặc tả thư viện này.
+
+2.2 Tiền xử lý và Tuyển chọn Dữ liệu
+Để tạo điều kiện thuận lợi cho việc đánh giá tự động, chúng tôi thiết kế cấu trúc bộ dữ liệu lấy cảm hứng
+từ benchmark HumanEval [6]. Trọng tâm chính của chúng tôi là sinh các file mã Python sử dụng GPT-4,
+đơn giản hóa quy trình bằng cách tập trung vào một ngôn ngữ lập trình duy nhất. Mỗi file được tạo ra
+được cấu trúc tỉ mỉ để bao gồm một bộ thành phần toàn diện cần thiết cho việc kiểm thử mạnh mẽ. Các
+thành phần này bao gồm hướng dẫn cài đặt package, import package, định nghĩa hàm chính, mô tả chức
+năng, đặc tả xử lý input/output/error, triển khai hàm, hàm kiểm thử và gọi test case.
+
+Để đảm bảo sinh dữ liệu chất lượng cao, chúng tôi cung cấp cho GPT-4 các prompt in-context được thiết
+kế cẩn thận và các ví dụ. Các prompt này được tạo ra để gợi ra định dạng đầu ra mong muốn, bao gồm mô
+tả vấn đề, giải pháp từ đầu đến cuối sử dụng API thư viện cụ thể và một bộ test cases. Chúng tôi cũng tận
+dụng khả năng gọi hàm của GPT-4 để sinh dữ liệu theo từng phần, tăng cường tính ổn định và khả năng
+kiểm soát của đầu ra. Cách tiếp cận này đảm bảo rằng mã được tạo ra phù hợp tốt với các prompt đã cho
+và vượt qua các test cases tương ứng. Các prompt chính xác được sử dụng để sinh dữ liệu có thể được
+tìm thấy trong Phụ lục 4.
+
+Bằng cách hợp nhất pipeline đánh giá thành một file mã duy nhất cho mỗi tác vụ, chúng tôi đơn giản hóa
+đáng kể quy trình kiểm thử. Tất cả test cases cho một tác vụ đã cho có thể được thực thi bằng cách chạy
+file đơn tương ứng. Hơn nữa, chúng tôi ưu tiên tính đa dạng trong các test cases được tạo ra, đặc biệt về
+mức độ khó khăn. Thông qua kỹ thuật prompt engineering cẩn thận, chúng tôi hướng dẫn GPT-4 tạo ra
+ba test cases riêng biệt cho mỗi tác vụ: (1) một test cho thực thi mã bình thường, (2) một test cho việc xử
+lý các trường hợp biên và đầu vào ngoại lệ, và (3) một test để xác minh tính đúng đắn của đầu ra dưới
+đầu vào bình thường.
+
+Sau quá trình sinh dữ liệu ban đầu, tạo ra khoảng 9,000 file mã, chúng tôi tiến hành lọc và tuyển chọn bộ
+dữ liệu. Chúng tôi thực thi mỗi file mã trong môi trường sandbox với tăng tốc GPU, chỉ giữ lại các file
+vượt qua ít nhất một test case. Bước lọc này giảm kích thước bộ dữ liệu xuống khoảng 2,000 file mã. Để
+xây dựng benchmark cuối cùng, chúng tôi tiếp tục chọn một tập con khoảng 500 file mã vượt qua tất cả
+các test cases liên quan. Quá trình lọc và tuyển chọn nghiêm ngặt này đảm bảo chất lượng và độ tin cậy
+của benchmark AICoderEval.
+
+Benchmark AICoderEval được lưu trữ trên Hugging Face Datasets tại https://huggingface.co/
+datasets/vixuowis/AICoderEval, một nền tảng phổ biến để chia sẻ và khám phá các bộ dữ liệu ML.
+Kho lưu trữ bộ dữ liệu bao gồm tài liệu toàn diện về cấu trúc bộ dữ liệu, nội dung, mục đích sử dụng và
+những hạn chế tiềm ẩn. Chúng tôi cũng cung cấp hướng dẫn chi tiết để truy cập và sử dụng bộ dữ liệu.
+Các bộ dữ liệu được phát hành dưới Giấy phép Apache 2.0 linh hoạt để khuyến khích việc áp dụng rộng
+rãi và tạo điều kiện cho nghiên cứu tương lai. Hơn nữa, chúng tôi bao gồm metadata có cấu trúc theo định
+dạng Hugging Face Datasets để tăng cường khả năng khám phá và tương tác.
+
+Bảng 1 trình bày phân bố các danh mục tác vụ trong benchmark AICoderEval. Các tác vụ Xử lý Ngôn
+ngữ Tự nhiên (NLP) chiếm phần lớn nhất với 77.8%, tiếp theo là các tác vụ Thị giác Máy tính (CV) với
+10.2%. Các danh mục còn lại, bao gồm Dữ liệu Dạng bảng, Âm thanh và Giọng nói, Phân loại, Đa
+phương thức và Học Tăng cường, mỗi danh mục chiếm dưới 5% tổng số tác vụ. Danh mục NLP bao gồm
+một loạt rộng các tác vụ như phân loại văn bản, sinh văn bản và khớp độ tương tự câu, trong khi danh mục
+CV bao gồm các tác vụ như
+4
+
+--- TRANG 5 ---
+Hình 3: Ví dụ phân tích traceback lỗi
+
+phân loại hình ảnh, phân đoạn hình ảnh và sinh hình ảnh. Bộ tác vụ đa dạng này qua nhiều lĩnh vực khác
+nhau thể hiện độ rộng và chiều sâu của benchmark AICoderEval.
+
+Để đảm bảo chất lượng và tính toàn vẹn của benchmark AICoderEval, chúng tôi sẽ tiến hành kiểm toán
+tự động và thủ công bộ dữ liệu. Kiểm tra tự động sẽ được thực hiện để xác định bất kỳ thông tin nhạy
+cảm hoặc có thể nhận dạng cá nhân nào, cũng như để đánh giá tính đa dạng và cân bằng của các tác vụ
+qua các lĩnh vực khác nhau. Ngoài ra, một tập con của các file mã được tạo ra sẽ được xem xét thủ công
+bởi các chuyên gia lĩnh vực để xác minh tính đúng đắn, rõ ràng và tuân thủ các thực hành tốt nhất. Bất kỳ
+vấn đề hoặc mối lo ngại nào được xác định trong quá trình kiểm toán sẽ được giải quyết kịp thời trước khi
+phát hành chính thức benchmark.
+
+3 Phương pháp
+Trong bài báo này, chúng tôi giới thiệu CoderGen, một framework dựa trên agent để sinh mã trên các tác
+vụ trong AICoderEval, như được mô tả trong hình 2. Framework này có thể xây dựng benchmark tác vụ
+chuyên ngành, để huấn luyện và đánh giá, sau đó tinh chỉnh một mô hình sinh mã trên benchmark.
+
+3.1 Traceback và Phân tích Lỗi
+Framework CoderGen bao gồm một cơ chế traceback và phân tích lỗi mạnh mẽ để đảm bảo rằng mã được
+tạo ra không chỉ đúng về mặt cú pháp mà còn hoạt động tốt về mặt chức năng. Hình 3 cho thấy một ví dụ
+về traceback lỗi và prompt liên quan. Sau khi sinh mã ban đầu, framework thực thi mã trong môi trường
+được kiểm soát để kiểm tra chức năng của nó. Nếu mã không thể thực thi đúng, hệ thống sẽ bắt
+traceback lỗi, cung cấp bản ghi chi tiết về đường dẫn qua mã dẫn đến lỗi. Traceback này sau đó được
+framework phân tích để xác định điểm lỗi cụ thể, có thể là lỗi cú pháp, lỗi logic hoặc vấn đề với tương
+tác của mã với các thư viện hoặc API bên ngoài.
+
+Thành phần phân tích lỗi của CoderGen tận dụng mô hình ngôn ngữ được tinh chỉnh để diễn giải các thông
+báo lỗi và đề xuất các cách sửa tiềm năng. Các đề xuất này dựa trên hiểu biết của mô hình về chức năng
+dự định của mã và ngữ cảnh của lỗi trong codebase rộng hơn. Các đề xuất sau đó được trình bày cho
+người dùng, người có thể chọn triển khai chúng, hoặc chúng có thể được hệ thống áp dụng tự động để
+kiểm thử thêm. Quá trình lặp đi lặp lại này của phát hiện lỗi,
+5
+
+--- TRANG 6 ---
+phân tích và sửa chữa tiếp tục cho đến khi mã thực thi thành công tất cả test cases và đáp ứng các yêu cầu
+đã chỉ định.
+
+3.2 Sinh Mã Lặp lại
+Khi các lỗi đã được xác định và các đề xuất cải thiện đã được đưa ra, framework CoderGen chuyển sang
+giai đoạn sinh mã lại. Tại đây, framework sử dụng phản hồi từ phân tích lỗi để tinh chỉnh quá trình sinh
+mã. Đoạn mã có lỗi, cùng với các đề xuất và hướng dẫn ban đầu, được đưa trở lại vào mô hình ngôn ngữ,
+sau đó tạo ra phiên bản mới của đoạn mã.
+
+Đoạn mã mới này sau đó được kiểm thử lại, và quá trình phát hiện lỗi, phân tích và sửa chữa được lặp lại.
+Chu kỳ lặp này đảm bảo rằng mã được tạo ra không chỉ giải quyết các vấn đề tức thì mà còn cải thiện về
+chất lượng và tính mạnh mẽ với mỗi lần lặp. Khả năng học từ các lỗi lầm và điều chỉnh chiến lược sinh
+mã dựa trên phản hồi thời gian thực của framework là một tính năng chính làm cho CoderGen khác biệt
+so với các hệ thống sinh mã truyền thống.
+
+Bằng cách kết hợp các vòng phản hồi lặp này, CoderGen nhằm tạo ra mã không chỉ đúng mà còn hiệu
+quả và dễ bảo trì, phản ánh các thực hành tốt nhất và thành ngữ của lĩnh vực mục tiêu. Cách tiếp cận này
+có tiềm năng giảm đáng kể thời gian và nỗ lực cần thiết cho các nhà phát triển để tạo ra mã chất lượng
+cao, đặc biệt trong các lĩnh vực phức tạp và chuyên biệt.
+
+4 Thí nghiệm
+4.1 Thiết lập Thí nghiệm
+Chúng tôi thực hiện suy luận trên một GPU NVIDIA GeForce RTX 4090 duy nhất sử dụng các mô hình
+khác nhau, bao gồm giai đoạn đầu tiên của hoàn thành và giai đoạn thứ hai của sửa lỗi. Đối với cài đặt
+tham số, chúng tôi đặt giá trị top-p là 0.9, tham số nhiệt độ là 0.6 và số lượng token tối đa là 2048.
+
+Để xác thực thêm rằng hiệu suất của mô hình có thể được tăng cường thông qua các bộ dữ liệu chuyên
+biệt, chúng tôi lưu trữ dữ liệu huấn luyện trên Hugging Face. Chúng tôi sử dụng kỹ thuật LoRA (Low-
+Rank Adaptation), hoạt động dựa trên nguyên tắc thêm các ma trận hạng thấp có thể huấn luyện vào trọng
+số của mô hình gốc, cho phép tinh chỉnh hiệu quả với các tham số bổ sung tối thiểu. Chúng tôi sử dụng
+framework PEFT (Parameter-Efficient Fine-Tuning) để tinh chỉnh mô hình. Do tính chất hội tụ nhanh
+của LoRA, chúng tôi tiến hành quá trình tinh chỉnh sử dụng một GPU NVIDIA GeForce RTX 4090 duy
+nhất. Chúng tôi sử dụng các tham số LoRA với hạng 8 và giá trị alpha 32. Tốc độ học được đặt là 1e-4,
+với batch size 4, và chúng tôi huấn luyện mô hình trong 3 epoch, sử dụng các bước tích lũy gradient để
+tối ưu hóa hiệu quả tính toán và sử dụng tài nguyên.
+
+Bằng cách tận dụng các bộ dữ liệu chuyên biệt và sử dụng các kỹ thuật hiệu quả về tham số như LoRA,
+chúng tôi nhằm cải thiện thêm hiệu suất và khả năng của mô hình. Sự kết hợp của phần cứng hiệu suất
+cao, siêu tham số được chọn cẩn thận và framework tinh chỉnh hiệu quả cho phép chúng tôi vượt qua các
+giới hạn của những gì mô hình có thể đạt được trong các tác vụ như hoàn thành mã và sửa lỗi.
+
+4.2 Kết quả Chính
+Trong nghiên cứu này, chúng tôi sử dụng bộ dữ liệu AICoderEval để kiểm thử nhiều mô hình LLM API
+và mã nguồn mở phổ biến, đặc biệt là những mô hình được trang bị khả năng sinh mã. Các mô hình được
+kiểm thử bao gồm gpt-3.5-turbo-1106 được hỗ trợ bởi OpenAI, cũng như các mô hình Llama 2 7b / 13b
+/ 70b [4], llama 3 8b và Codellama 7b / 13b / 34b [11] được phát triển bởi Meta. Hơn nữa, chúng tôi tinh
+chỉnh AICoder dựa trên mô hình llama-3-8b-instruct. Bảng 2 trình bày so sánh hiệu suất của các mô hình
+này trong phiên bản gốc và sau khi giới thiệu agent sửa lỗi, trong đó SR@All đại diện cho tỷ lệ thành
+công của tất cả test được vượt qua cho một chương trình đơn, và SR@Any đại diện cho tỷ lệ thành công
+của bất kỳ test case nào được vượt qua cho một chương trình đơn.
+
+Trong nghiên cứu này, chúng tôi tiến hành một thí nghiệm sử dụng bộ dữ liệu AICoderEval để đánh giá
+một số Mô hình Ngôn ngữ Lớn (LLMs) API và mã nguồn mở nổi bật với khả năng sinh mã. Việc giới
+thiệu agent sửa lỗi (ReAct Agent) và tinh chỉnh có giám sát (sft) đã tăng cường đáng kể các chỉ số hiệu
+suất của tất cả các mô hình được kiểm thử, đặc biệt là SR@All và SR@Any. Trung bình, khả năng sinh
+mã chuyên biệt theo tác vụ của LLMs được cải thiện khoảng 28.20%
+6
+
+--- TRANG 7 ---
+Bảng 2: Thí nghiệm trên bộ dữ liệu AICoderEval
+Mô hình Gốc với ReAct Agent Tăng Tương đối
+SR@All SR@Any SR@All SR@Any SR@All ↑% SR@Any ↑%
+GPT-3.5-turbo-1106 9.16 46.84 13.03 60.63 42.25 29.44
+llama-2-7b 1.23 26.02 1.83 33.41 48.78 28.40
+llama-2-13b 2.76 42.04 3.98 51.24 44.20 21.88
+llama-2-70b 6.32 65.89 8.16 78.68 29.11 19.41
+codellama-7b-python 19.58 66.95 23.86 78.18 21.86 16.77
+codellama-13b-python 20.46 67.22 23.88 75.67 16.72 12.57
+codellama-34b-python 23.68 70.19 25.78 77.33 8.87 10.17
+llama-3-8b-instruct 30.49 85.80 32.11 86.82 2.96 1.19
+llama-3-8b-instruct với sft 34.15 86.18 35.16 86.99 2.96 0.94
+↑(so với không có sft) 3.66 0.38 3.05 0.17 - -
+↑% 12.00 0.44 9.50 0.20 - -
+
+cho SR@All và 18.60% cho SR@Any sau khi ReAct Agent được giới thiệu. Ví dụ, GPT-3.5-turbo-1106
+có sự tăng trong SR@All từ 9.16% lên 13.03% và trong SR@Any từ 46.84% lên 60.63%.
+
+Chúng tôi cũng nhận thấy mối tương quan trực tiếp giữa quy mô mô hình và mức độ cải thiện hiệu suất,
+với các mô hình lớn hơn trong series Llama 2 cho thấy cải thiện lớn hơn trong SR@All và SR@Any,
+chẳng hạn như llama-2-70b vượt trội hơn llama-2-7b. Tinh chỉnh có giám sát tiếp tục tăng cường hiệu
+suất của mô hình llama-3-8b-instruct, với tăng 2.96% trong SR@All và tăng 0.94% trong SR@Any. Hơn
+nữa, tinh chỉnh chuyên ngành đã nâng cao đáng kể hiệu suất của mạng gốc, như được chứng minh bởi
+AICoder-7b vượt qua tất cả các mô hình baseline được kiểm thử trong cả chỉ số SR@All và SR@Any,
+đạt kết quả tiên tiến nhất.
+
+Nhìn chung, nghiên cứu này nhấn mạnh hiệu quả của các agent sửa lỗi và tinh chỉnh có giám sát trong
+việc thúc đẩy khả năng sinh mã của LLMs. Bằng cách lựa chọn cẩn thận các chiến lược tinh chỉnh và tính
+đến quy mô mô hình, những cải thiện đáng kể trong hiệu suất mô hình trên các tác vụ cụ thể có thể đạt
+được. Những hiểu biết này có vai trò quan trọng trong việc hướng dẫn các tối ưu hóa tương lai trong sinh
+mã và hơn thế nữa.
+
+Bảng 3: Thí nghiệm trên bộ dữ liệu AICoderEval. CL là cho số dòng mã trung bình, và CT là cho
+số token mã trung bình
+Mô hình Dòng Mã (CL) Token Mã (CT) Xếp hạng
+GPT-3.5-turbo-1106 8.6 62.9 1
+llama-2-7b 16.2 112.9 5
+llama-2-13b 18.5 116.3 7
+llama-2-70b 13.1 107.8 4
+codellama-7b-python 21.5 128.3 9
+codellama-13b-python 18.9 116.3 8
+codellama-34b-python 18.4 114.4 6
+llama-3-8b-instruct 11.02 96.97 3
+llama-3-8b-instruct với sft 9.32 87.71 2
+
+Bảng 3 cho thấy số dòng mã (CL) và token mã (CT) được tạo ra bởi các mô hình khác nhau. Chúng ta có
+thể xác định một mẫu trong đó mã ngắn hơn được tạo ra bởi các mô hình thường ngụ ý khả năng giải
+quyết vấn đề mạnh hơn và giải pháp ngắn gọn hơn. Ví dụ, codellama-34b-python có CL và CT thấp hơn
+codellama-7b-python, phù hợp với hiệu suất tương đối của nó trong SR@All và SR@Any, trong khi
+AICoder vượt trội với dòng mã được tạo ra ngắn hơn đáng kể so với các mô hình khác.
+
+Tóm lại, việc giới thiệu agent sửa lỗi đã cải thiện đáng kể hiệu suất tổng thể của các mô hình, dù là tỷ lệ
+thành công của tất cả test được vượt qua cho một chương trình đơn (SR@All) hay bất kỳ test case nào
+được vượt qua (SR@Any). Sự tăng về quy mô mô hình có tác động tích cực đến cải thiện hiệu suất, đặc
+biệt trong series Llama 2 nơi quy mô mô hình lớn hơn dẫn đến cải thiện hiệu suất rõ rệt hơn. Chiến lược
+tinh chỉnh cũng đã chứng minh hiệu quả của nó, đặc biệt
+7
+
+--- TRANG 8 ---
+cho mô hình AICoder, đã đạt hiệu suất tiên tiến nhất trong tất cả các baseline được kiểm thử sau khi tinh
+chỉnh. Hiệu suất của các mô hình thay đổi đáng kể qua các danh mục tác vụ khác nhau, cho thấy sự cần
+thiết của tối ưu hóa và cải thiện chuyên ngành.
+
+5 Công trình Liên quan
+5.1 Sinh Mã
+Sử dụng mô hình ngôn ngữ để sinh mã là một tác vụ đầy thách thức [12,13,14]. Các nhà nghiên cứu đề
+xuất nhiều phương pháp khác nhau để nâng cao khả năng của mô hình ngôn ngữ trong các tác vụ lập
+trình, bao gồm phân tách tác vụ [15,16], tự debug [17] và các mô hình sinh mã. Những nỗ lực này chủ
+yếu tập trung vào việc sinh mã tổng quát, với ít chú ý hơn dành cho khả năng của mã chuyên ngành. Tuy
+nhiên, trong các tình huống thực tế, chúng ta thường sử dụng thư viện để tạo ra các công cụ mới và triển
+khai các chức năng phức tạp hơn thông qua chuỗi gọi hàm dài hơn. Do đó, nghiên cứu của chúng tôi
+nhằm cho phép các chương trình tự động giải quyết tác vụ sử dụng thư viện chuyên ngành và xác minh kết
+quả tự động, từ đó mở rộng khả năng của sinh mã.
+
+5.2 Sử dụng Công cụ
+Các mô hình ngôn ngữ lớn có thể tận dụng công cụ để nâng cao khả năng của chúng, như Toolformer [18]
+và GPT-4 [10] làm cho việc gọi API dễ dàng hơn. Các công cụ truyền thống bao gồm duyệt web, máy
+tính, trình thông dịch mã, v.v., với những nỗ lực này nhằm gọi các khả năng tổng quát. HuggingGPT [8]
+và Gorilla [9], mặt khác, tập trung vào các lời gọi API chuyên ngành. Nghiên cứu của chúng tôi nhằm
+khám phá khả năng lập trình của thư viện lĩnh vực cụ thể, từ đó mở rộng phạm vi khả dụng của chương
+trình.
+
+5.3 Agent
+Một agent thường được đại diện như một thực thể có khả năng tương tác với môi trường và thực hiện các
+hành động, dựa trên phản hồi từ môi trường hoặc được thúc đẩy bởi động cơ nội tại. Nó thể hiện khả
+năng thích ứng và tính linh hoạt lớn hơn trong khả năng và kết quả thực thi so với các chương trình thông
+thường. Các Agent dựa trên LLM gần đây đã được thảo luận rộng rãi [19,20,21]; chúng mở rộng khả
+năng thông qua việc sử dụng công cụ, và khả năng lập kế hoạch cũng là một trong những khả năng quan
+trọng nhất của các Agent dựa trên LLM. Trong lĩnh vực sinh mã, công trình trước đây tập trung nhiều hơn
+vào sinh mã một lần, như CodeGen [22], CodeX [6]. Tuy nhiên, trong các tình huống thực tế, chúng ta
+tiếp cận kết quả mong đợi từng bước thông qua phản hồi từ môi trường thực tế, như thông tin thực thi và
+thông báo lỗi. Trong bài báo này, nghiên cứu của chúng tôi nhằm cho phép Agents phân tích thông báo
+lỗi, cho phép chương trình thực thi đúng.
+
+6 Kết luận và Công việc Tương lai
+Bài báo này giới thiệu CoderGen, một framework học tập và đánh giá tự động được thiết kế để cải thiện
+việc đánh giá khả năng sinh mã, đặc biệt khi xử lý các thư viện thường được sử dụng trong phát triển
+phần mềm thực tế. CoderGen tự động xây dựng một bộ dữ liệu đánh giá, AICoderEval, cho các thư viện
+liên quan đến trí tuệ nhân tạo, và huấn luyện một mô hình sinh mã được tối ưu hóa theo lĩnh vực dựa trên
+bộ dữ liệu này. Hơn nữa, mô hình AICoder được tinh chỉnh trên bộ dữ liệu codellama và được đánh giá
+trên bộ dữ liệu AICoderEval, chứng minh sự vượt trội của nó so với các mô hình sinh mã khác. Công
+trình của chúng tôi đại diện cho một bước tiến đáng kể trong việc đánh giá và nâng cao khả năng sinh mã
+trong phát triển phần mềm thực tế bằng cách tập trung vào việc hiểu và ứng dụng các thư viện thường
+được sử dụng trong các quy trình phát triển phần mềm thực tế. Trong công việc tương lai, chúng tôi dự
+định tối ưu hóa framework CoderGen để hỗ trợ một loạt rộng hơn các thư viện và tình huống phát triển
+phần mềm, xác thực tính tổng quát và hiệu quả của nó với các bộ dữ liệu và tác vụ đa dạng, và tích hợp
+nó với các công nghệ sinh mã mới nhất để nâng cao thêm hiệu suất và tính thực tiễn của mô hình.
+8
+
+--- TRANG 9 ---
+Hạn chế
+Framework CoderGen đạt được những bước tiến lớn trong việc đánh giá kỹ năng sinh mã, nhưng hiện tại
+nó có một số hạn chế. Thứ nhất, nó chủ yếu sử dụng bộ dữ liệu về các tác vụ cụ thể AI, vì vậy cần nhiều
+kiểm thử hơn để xem liệu nó có hoạt động tốt cho các loại phát triển phần mềm khác hay không. Thứ hai,
+mặc dù chúng tôi cải thiện mô hình AICoder với bộ dữ liệu codellama, nó vẫn có thể tốt hơn, và chúng
+tôi cần tiếp tục làm việc trên đó. Cuối cùng, phương pháp kiểm thử của chúng tôi còn đơn giản và cần
+mạnh mẽ hơn cho việc kiểm thử, có thể bằng cách sử dụng Docker và nền tảng đám mây để làm cho việc
+lặp lại kiểm thử và xây dựng trên công việc của chúng tôi dễ dàng hơn cho người khác.
+
+Tài liệu tham khảo
+[1]Aakanksha Chowdhery, Sharan Narang, Jacob Devlin, Maarten Bosma, Gaurav Mishra, Adam Roberts,
+Paul Barham, Hyung Won Chung, Charles Sutton, Sebastian Gehrmann, Parker Schuh, Kensen Shi, Sasha
+Tsvyashchenko, Joshua Maynez, Abhishek Rao, Parker Barnes, Yi Tay, Noam Shazeer, Vinodkumar
+Prabhakaran, Emily Reif, Nan Du, Ben Hutchinson, Reiner Pope, James Bradbury, Jacob Austin, Michael
+Isard, Guy Gur-Ari, Pengcheng Yin, Toju Duke, Anselm Levskaya, Sanjay Ghemawat, Sunipa Dev, Henryk
+Michalewski, Xavier Garcia, Vedant Misra, Kevin Robinson, Liam Fedus, Denny Zhou, Daphne Ippolito,
+David Luan, Hyeontaek Lim, Barret Zoph, Alexander Spiridonov, Ryan Sepassi, David Dohan, Shivani
+Agrawal, Mark Omernick, Andrew M. Dai, Thanumalayan Sankaranarayana Pillai, Marie Pellat, Aitor
+Lewkowycz, Erica Moreira, Rewon Child, Oleksandr Polozov, Katherine Lee, Zongwei Zhou, Xuezhi
+Wang, Brennan Saeta, Mark Diaz, Orhan Firat, Michele Catasta, Jason Wei, Kathy Meier-Hellstern,
+Douglas Eck, Jeff Dean, Slav Petrov, và Noah Fiedel. Palm: Scaling language modeling with pathways,
+2022.
+
+[2]Tom B. Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared Kaplan, Prafulla Dhariwal, Arvind
+Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, Sandhini Agarwal, Ariel Herbert-Voss,
+Gretchen Krueger, Tom Henighan, Rewon Child, Aditya Ramesh, Daniel M. Ziegler, Jeffrey Wu, Clemens
+Winter, Christopher Hesse, Mark Chen, Eric Sigler, Mateusz Litwin, Scott Gray, Benjamin Chess, Jack
+Clark, Christopher Berner, Sam McCandlish, Alec Radford, Ilya Sutskever, và Dario Amodei. Language
+models are few-shot learners. In Proceedings of the 34th International Conference on Neural Information
+Processing Systems, NIPS'20, Red Hook, NY, USA, 2020. Curran Associates Inc. ISBN 9781713829546.
+
+[3] BigScience Workshop et al. Bloom: A 176b-parameter open-access multilingual language model, 2023.
+
+[4]Hugo Touvron, Louis Martin, Kevin Stone, Peter Albert, Amjad Almahairi, Yasmine Babaei, Nikolay
+Bashlykov, Soumya Batra, Prajjwal Bhargava, Shruti Bhosale, Dan Bikel, Lukas Blecher, Cristian Canton
+Ferrer, Moya Chen, Guillem Cucurull, David Esiobu, Jude Fernandes, Jeremy Fu, Wenyin Fu, Brian Fuller,
+Cynthia Gao, Vedanuj Goswami, Naman Goyal, Anthony Hartshorn, Saghar Hosseini, Rui Hou, Hakan
+Inan, Marcin Kardas, Viktor Kerkez, Madian Khabsa, Isabel Kloumann, Artem Korenev, Punit Singh
+Koura, Marie-Anne Lachaux, Thibaut Lavril, Jenya Lee, Diana Liskovich, Yinghai Lu, Yuning Mao,
+Xavier Martinet, Todor Mihaylov, Pushkar Mishra, Igor Molybog, Yixin Nie, Andrew Poulton, Jeremy
+Reizenstein, Rashi Rungta, Kalyan Saladi, Alan Schelten, Ruan Silva, Eric Michael Smith, Ranjan
+Subramanian, Xiaoqing Ellen Tan, Binh Tang, Ross Taylor, Adina Williams, Jian Xiang Kuan, Puxin
+Xu, Zheng Yan, Iliyan Zarov, Yuchen Zhang, Angela Fan, Melanie Kambadur, Sharan Narang, Aurelien
+Rodriguez, Robert Stojnic, Sergey Edunov, và Thomas Scialom. Llama 2: Open foundation and fine-tuned
+chat models, 2023.
+
+[5]Zhengxiao Du, Yujie Qian, Xiao Liu, Ming Ding, Jiezhong Qiu, Zhilin Yang, và Jie Tang. Glm: General
+language model pretraining with autoregressive blank infilling. In Proceedings of the 60th Annual Meeting
+of the Association for Computational Linguistics (Volume 1: Long Papers), pages 320–335, 2022.
+
+[6]Mark Chen, Jerry Tworek, Heewoo Jun, Qiming Yuan, Henrique Ponde de Oliveira Pinto, Jared Kaplan,
+Harri Edwards, Yuri Burda, Nicholas Joseph, Greg Brockman, Alex Ray, Raul Puri, Gretchen Krueger,
+Michael Petrov, Heidy Khlaaf, Girish Sastry, Pamela Mishkin, Brooke Chan, Scott Gray, Nick Ryder,
+Mikhail Pavlov, Alethea Power, Lukasz Kaiser, Mohammad Bavarian, Clemens Winter, Philippe Tillet,
+Felipe Petroski Such, Dave Cummings, Matthias Plappert, Fotios Chantzis, Elizabeth Barnes, Ariel Herbert-
+Voss, William Hebgen Guss, Alex Nichol, Alex Paino, Nikolas Tezak, Jie Tang, Igor Babuschkin, Suchir
+Balaji, Shantanu Jain, William Saunders, Christopher Hesse, Andrew N. Carr, Jan Leike, Josh Achiam,
+Vedant Misra, Evan Morikawa, Alec Radford, Matthew Knight, Miles Brundage, Mira Murati, Katie Mayer,
+Peter Welinder, Bob McGrew, Dario Amodei, Sam McCandlish, Ilya Sutskever, và Wojciech Zaremba.
+Evaluating large language models trained on code. 2021.
+
+[7]Ansong Ni, Jeevana Priya Inala, Chenglong Wang, Alex Polozov, Christopher Meek, Dragomir Radev, và
+Jianfeng Gao. Learning math reasoning from self-sampled correct and partially-correct solutions. In The
+2023 International Conference on Learning Representations (2023 ICLR), 2023.
+9
+
+--- TRANG 10 ---
+[8]Yongliang Shen, Kaitao Song, Xu Tan, Dongsheng Li, Weiming Lu, và Yueting Zhuang. HuggingGPT:
+Solving AI tasks with chatGPT and its friends in hugging face. In Thirty-seventh Conference on Neural
+Information Processing Systems, 2023. URL https://openreview.net/forum?id=yHdTscY6Ci.
+
+[9]Shishir G. Patil, Tianjun Zhang, Xin Wang, và Joseph E. Gonzalez. Gorilla: Large language model
+connected with massive apis. 2023.
+
+[10] OpenAI et al. Gpt-4 technical report, 2023.
+
+[11] Baptiste Rozière, Jonas Gehring, Fabian Gloeckle, Sten Sootla, Itai Gat, Xiaoqing Ellen Tan, Yossi Adi,
+Jingyu Liu, Romain Sauvestre, Tal Remez, Jérémy Rapin, Artyom Kozhevnikov, Ivan Evtimov, Joanna
+Bitton, Manish Bhatt, Cristian Canton Ferrer, Aaron Grattafiori, Wenhan Xiong, Alexandre Défossez,
+Jade Copet, Faisal Azhar, Hugo Touvron, Louis Martin, Nicolas Usunier, Thomas Scialom, và Gabriel
+Synnaeve. Code llama: Open foundation models for code, 2024.
+
+[12] Yujia Li, David Choi, Junyoung Chung, Nate Kushman, Julian Schrittwieser, Rémi Leblond, Tom Ec-
+cles, James Keeling, Felix Gimeno, Agustin Dal Lago, Thomas Hubert, Peter Choy, Cyprien de Mas-
+son d'Autume, Igor Babuschkin, Xinyun Chen, Po-Sen Huang, Johannes Welbl, Sven Gowal, Alexey
+Cherepanov, James Molloy, Daniel J. Mankowitz, Esme Sutherland Robson, Pushmeet Kohli, Nando
+de Freitas, Koray Kavukcuoglu, và Oriol Vinyals. Competition-level code generation with alphacode.
+Science, 378(6624):1092–1097, 2022. doi: 10.1126/science.abq1158. URL https://www.science.
+org/doi/abs/10.1126/science.abq1158.
+
+[13] Frank F. Xu, Uri Alon, Graham Neubig, và Vincent Josua Hellendoorn. A systematic evaluation of large
+language models of code. In Proceedings of the 6th ACM SIGPLAN International Symposium on Machine
+Programming, MAPS 2022, page 1–10, New York, NY, USA, 2022. Association for Computing Machinery.
+ISBN 9781450392730. doi: 10.1145/3520312.3534862. URL https://doi.org/10.1145/3520312.
+3534862.
+
+[14] Naman Jain, Skanda Vaidyanath, Arun Iyer, Nagarajan Natarajan, Suresh Parthasarathy, Sriram Rajamani,
+và Rahul Sharma. Jigsaw: large language models meet program synthesis. In Proceedings of the 44th
+International Conference on Software Engineering, ICSE '22, page 1219–1231, New York, NY, USA,
+2022. Association for Computing Machinery. ISBN 9781450392211. doi: 10.1145/3510003.3510203.
+URL https://doi.org/10.1145/3510003.3510203.
+
+[15] Geunwoo Kim, Pierre Baldi, và Stephen McAleer. Language models can solve computer tasks. arXiv
+preprint arXiv:2303.17491, 2023.
+
+[16] Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik Narasimhan, và Yuan Cao. Re-
+Act: Synergizing reasoning and acting in language models. In International Conference on Learning
+Representations (ICLR), 2023.
+
+[17] Xinyun Chen, Maxwell Lin, Nathanael Schärli, và Denny Zhou. Teaching large language models to
+self-debug. In The Twelfth International Conference on Learning Representations, 2024. URL https:
+//openreview.net/forum?id=KuPixIqPiq.
+
+[18] Timo Schick, Jane Dwivedi-Yu, Roberto Dessì, Roberta Raileanu, Maria Lomeli, Luke Zettlemoyer, Nicola
+Cancedda, và Thomas Scialom. Toolformer: Language models can teach themselves to use tools. ArXiv,
+abs/2302.04761, 2023. URL https://api.semanticscholar.org/CorpusID:256697342.
+
+[19] Zhiheng Xi, Wenxiang Chen, Xin Guo, Wei He, Yiwen Ding, Boyang Hong, Ming Zhang, Junzhe Wang,
+Senjie Jin, Enyu Zhou, Rui Zheng, Xiaoran Fan, Xiao Wang, Limao Xiong, Yuhao Zhou, Weiran Wang,
+Changhao Jiang, Yicheng Zou, Xiangyang Liu, Zhangyue Yin, Shihan Dou, Rongxiang Weng, Wensen
+Cheng, Qi Zhang, Wenjuan Qin, Yongyan Zheng, Xipeng Qiu, Xuanjing Huang, và Tao Gui. The rise and
+potential of large language model based agents: A survey, 2023.
+
+[20] Zekun Wang, Ge Zhang, Kexin Yang, Ning Shi, Wangchunshu Zhou, Shaochun Hao, Guangzheng Xiong,
+Yizhi Li, Mong Yuan Sim, Xiuying Chen, Qingqing Zhu, Zhenzhu Yang, Adam Nik, Qi Liu, Chenghua
+Lin, Shi Wang, Ruibo Liu, Wenhu Chen, Ke Xu, Dayiheng Liu, Yike Guo, và Jie Fu. Interactive natural
+language processing, 2023.
+
+[21] Joon Sung Park, Joseph C. O'Brien, Carrie J. Cai, Meredith Ringel Morris, Percy Liang, và Michael S.
+Bernstein. Generative agents: Interactive simulacra of human behavior. In In the 36th Annual ACM
+Symposium on User Interface Software and Technology (UIST '23), UIST '23, New York, NY, USA, 2023.
+Association for Computing Machinery.
+
+[22] Erik Nijkamp, Bo Pang, Hiroaki Hayashi, Lifu Tu, Huan Wang, Yingbo Zhou, Silvio Savarese, và
+Caiming Xiong. Codegen: An open large language model for code with multi-turn program synthesis.
+ICLR, 2023.
+10
+
+--- TRANG 11 ---
+A Phụ lục
+A.1 Chi tiết Prompt
+Bảng 4: Chi tiết prompt sinh dữ liệu GPT-4. Kết hợp tất cả các phần từ bảng thành một prompt
+hoàn chỉnh cho phép GPT-4 chuyển đổi tài liệu lĩnh vực thành bộ dữ liệu mã có thể thực thi.
+
+Prompt Tác vụ: 1. Vui lòng thiết kế một yêu cầu có thể được mô tả trong một câu.
+2. Dựa trên mô tả trên, tạo mã để triển khai yêu cầu.
+3. Chú thích hàm nên tuân theo Google Python Style Guide,
+bao gồm args, returns và raises.
+4. Viết các hàm kiểm thử tương ứng dựa trên mã được tạo ra.
+5. Các test cases nên là ba ví dụ với mức độ khó khăn khác
+nhau, ví dụ: cái đầu tiên xác minh rằng hàm thực thi
+bình thường, cái thứ hai xác minh rằng đầu vào không chính xác được xử
+lý đúng cách, và cái thứ ba xác minh rằng hàm trả về giá
+trị chính xác.
+6. Để kiểm thử, đọc file hình ảnh và âm thanh, tải
+chúng từ tài nguyên trực tuyến xuống máy cục bộ, hoặc lấy chúng
+từ các bộ dữ liệu; đừng cung cấp địa chỉ file giả hoặc không tồn tại.
+
+Ví dụ Import: import subprocess
+requirements = ["package1", "package2"]
+for package in requirements:
+subprocess.run(['pip', 'install', '-U', package])
+
+Prompt Test: 1. Hàm bắt đầu bằng việc in "Testing started."
+2. Đối với hình ảnh hoặc âm thanh, tải một bộ dữ liệu hoặc tải dữ liệu từ tài
+nguyên trực tuyến.
+3. Test case bắt đầu bằng việc in "Testing case [x/x] started",
+in "succeeded" khi thành công, và "failed" khi thất bại.
+4. Hàm kết thúc bằng việc in "Testing finished."
+
+Ví dụ Test: def test_...():
+print("Test started.")
+dataset = load_dataset("...")
+sample_data = dataset[0] # Trích xuất một mẫu từ bộ dữ liệu
+# Test case 1:...
+print("Test case [1/3] started.")
+try:
+assert assert 1, f"Test case [1/3] failed: ..."
+print(f"Test case [1/3] succeeded: ...")
+except Exception as e::
+print(f"Test case [1/3] failed: ...\nerror:", e)
+# Test case 2:...
+# Test case 3:...
+# Chạy hàm test
+test_...()
+11

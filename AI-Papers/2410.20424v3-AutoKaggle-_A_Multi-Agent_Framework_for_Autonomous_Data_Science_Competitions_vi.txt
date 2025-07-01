@@ -1,0 +1,1738 @@
+# 2410.20424v3.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2410.20424v3.pdf
+# Kích thước tệp: 1773972 bytes
+
+===============================================
+NỘI DUNG TỆP PDF
+===============================================
+
+
+--- TRANG 1 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+AUTOKAGGLE : MỘT FRAMEWORK ĐA AGENT CHO
+CUỘC THI KHOA HỌC DỮ LIỆU TỰ ĐỘNG
+Ziming Li
+ , Qianbo Zang
+, 4, David Ma
+ , Jiawei Guo
+ , Tuney Zheng
+Minghao Liu2, Xinyao Niu3, Yue Wang
+ , Jian Yang
+ , Jiaheng Liu
+ ,
+Wanjun Zhong1, Wangchunshu Zhou
+ , Wenhao Huang
+, 1†, Ge Zhang
+, 1†
+M-A-P,1ByteDance Inc.,22077AI,3University of Melbourne
+4Interdisciplinary Centre for Security, Reliability and Trust (SnT), Universit ´e du Luxembourg
+TÓM TẮT
+Các tác vụ khoa học dữ liệu liên quan đến dữ liệu dạng bảng đặt ra những thách thức phức tạp đòi hỏi các phương pháp giải quyết vấn đề tinh vi. Chúng tôi đề xuất AutoKaggle, một framework mạnh mẽ và tập trung vào người dùng hỗ trợ các nhà khoa học dữ liệu hoàn thành các pipeline dữ liệu hàng ngày thông qua hệ thống đa agent hợp tác. AutoKaggle triển khai quy trình phát triển lặp đi lặp lại kết hợp thực thi mã, gỡ lỗi và kiểm thử đơn vị toàn diện để đảm bảo tính chính xác của mã và tính nhất quán logic. Framework cung cấp quy trình làm việc có khả năng tùy chỉnh cao, cho phép người dùng can thiệp ở mỗi giai đoạn, do đó tích hợp trí tuệ tự động với chuyên môn con người. Bộ công cụ khoa học dữ liệu toàn diện của chúng tôi, bao gồm các hàm đã được xác thực cho làm sạch dữ liệu, kỹ thuật đặc trưng và mô hình hóa, tạo thành nền tảng của giải pháp này, tăng cường năng suất bằng cách đơn giản hóa các tác vụ phổ biến. Chúng tôi đã chọn 8 cuộc thi Kaggle để mô phỏng quy trình xử lý dữ liệu trong các tình huống ứng dụng thực tế. Kết quả đánh giá cho thấy AutoKaggle đạt được tỷ lệ nộp bài hợp lệ 0.85 và điểm số toàn diện 0.82 trong các pipeline khoa học dữ liệu điển hình, chứng minh đầy đủ tính hiệu quả và thực tiễn của nó trong việc xử lý các tác vụ khoa học dữ liệu phức tạp.1 2
+
+1 GIỚI THIỆU
+Trong những năm gần đây, với sự phát triển nhanh chóng của các mô hình ngôn ngữ lớn (LLM) (OpenAI, 2022; 2023), khoa học dữ liệu tự động dần trở thành khả thi. Các agent dựa trên LLM đã cho thấy tiềm năng to lớn trong lĩnh vực dữ liệu, vì chúng có thể tự động hiểu, phân tích và xử lý dữ liệu (Hassan et al., 2023; Lucas, 2023; Zhang et al., 2024a), từ đó thúc đẩy việc dân chủ hóa và ứng dụng rộng rãi khoa học dữ liệu.
+
+Tuy nhiên, các nghiên cứu hiện tại vẫn có những thiếu sót đáng kể trong việc giải quyết các vấn đề khoa học dữ liệu phức tạp. Nhiều nghiên cứu chỉ giới hạn ở các tác vụ phân tích dữ liệu đơn giản, một bước (Zhang et al., 2024c; Hu et al., 2024), còn xa so với các tình huống ứng dụng thực tế của khoa học dữ liệu. Trong khi nghiên cứu gần đây (Jing et al., 2024) cố gắng đánh giá khả năng khoa học dữ liệu thông qua các tác vụ toàn diện hơn, nó vẫn tập trung vào các tình huống tương đối hạn chế chỉ đại diện cho các phần của một pipeline khoa học dữ liệu hoàn chỉnh. Các nghiên cứu khác dựa vào các cơ sở tri thức được xây dựng sẵn (Guo et al., 2024), làm tăng rào cản sử dụng và hạn chế tính linh hoạt và khả năng thích ứng của các giải pháp. Hơn nữa, nghiên cứu hiện tại tập trung quá mức vào việc cải thiện tỷ lệ hoàn thành tác vụ và tối ưu hóa các chỉ số hiệu suất, trong khi bỏ qua tính diễn giải và minh bạch của các bước ra quyết định trung gian trong các tác vụ khoa học dữ liệu phức tạp về logic. Sự bỏ qua này không chỉ ảnh hưởng đến sự hiểu biết của người dùng về giải pháp mà còn làm giảm độ tin cậy và tính thực tiễn của chúng trong các ứng dụng thực tế.
+
+†Tác giả liên hệ.
+1Tất cả mã nguồn có sẵn tại https://github.com/multimodal-art-projection/AutoKaggle
+2Trang chủ dự án là https://m-a-p.ai/AutoKaggle.github.io/
+1arXiv:2410.20424v3  [cs.AI]  5 Nov 2024
+
+--- TRANG 2 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Để giải quyết những vấn đề này, chúng tôi đề xuất AutoKaggle, một framework đa agent toàn diện cung cấp cho các nhà khoa học dữ liệu giải pháp xử lý end-to-end cho dữ liệu dạng bảng, giúp họ hoàn thành hiệu quả các pipeline dữ liệu hàng ngày và tăng cường năng suất. AutoKaggle có các tính năng sau:
+
+(i) Quy trình Làm việc Theo Giai đoạn và Hợp tác Đa agent. AutoKaggle sử dụng quy trình làm việc theo giai đoạn và hệ thống hợp tác đa agent. Nó chia quy trình cuộc thi khoa học dữ liệu thành sáu giai đoạn chính: hiểu bối cảnh, phân tích dữ liệu khám phá sơ bộ, làm sạch dữ liệu (DC), phân tích dữ liệu khám phá chuyên sâu, kỹ thuật đặc trưng (FE), và xây dựng mô hình, xác thực và dự đoán (MBVP). Để thực hiện các giai đoạn này, năm agent chuyên biệt (Reader, Planner, Developer, Reviewer, và Summarizer) làm việc hợp tác để thực hiện các giai đoạn này, từ phân tích vấn đề đến tạo báo cáo.
+
+(ii) Gỡ lỗi Lặp đi lặp lại và Kiểm thử Đơn vị. AutoKaggle đảm bảo chất lượng mã thông qua gỡ lỗi lặp đi lặp lại và kiểm thử đơn vị. Developer sử dụng ba công cụ chính (thực thi mã, gỡ lỗi và kiểm thử đơn vị) để xác minh cả tính chính xác cú pháp và tính nhất quán logic.
+
+(iii) Thư viện Công cụ Máy học. AutoKaggle tích hợp thư viện công cụ máy học toàn diện bao gồm làm sạch dữ liệu, kỹ thuật đặc trưng, và xây dựng mô hình, xác thực và dự đoán. Thư viện bao gồm các đoạn mã được viết bởi chuyên gia và các công cụ tùy chỉnh, tăng cường hiệu quả và chất lượng tạo mã. Bằng cách kết hợp các công cụ được định nghĩa trước với mã tự tạo, AutoKaggle xử lý các tác vụ phức tạp trong khi giảm sự phụ thuộc vào LLM cho kiến thức chuyên môn cụ thể.
+
+(iv) Báo cáo Toàn diện. AutoKaggle tạo ra các báo cáo chi tiết sau mỗi giai đoạn và khi kết thúc cuộc thi, thể hiện quy trình ra quyết định, các phát hiện chính, hành động và lý luận của nó. Tính năng này làm cho quy trình xử lý dữ liệu trở nên minh bạch, tăng cường sự tin tưởng của người dùng vào AutoKaggle.
+
+AutoKaggle cung cấp giải pháp toàn diện và đa năng cho nhiều loại tác vụ khoa học dữ liệu. Chỉ bằng cách cung cấp tổng quan về tác vụ, nó có thể tự động hoàn thành toàn bộ quy trình từ phát triển đến kiểm thử, làm cho nó cực kỳ dễ sử dụng. AutoKaggle có khả năng thích ứng cao, cho phép người dùng tùy chỉnh theo nhu cầu cụ thể của họ. Hơn nữa, nó cung cấp tính diễn giải rõ ràng trong suốt quy trình khoa học dữ liệu tự động, tăng cường sự hiểu biết và tin tưởng của người dùng vào hệ thống.
+
+Chúng tôi đã chọn các cuộc thi từ nền tảng Kaggle để đánh giá framework của mình. Các cuộc thi khoa học dữ liệu Kaggle mô phỏng những thách thức thực tế mà các nhà khoa học dữ liệu phải đối mặt, bao gồm quy trình hoàn chỉnh từ làm sạch dữ liệu đến triển khai mô hình. Các cuộc thi này yêu cầu người tham gia thực hiện một loạt các tác vụ phức tạp và phụ thuộc lẫn nhau. Bao gồm: làm sạch và tiền xử lý dữ liệu, phân tích dữ liệu khám phá, kỹ thuật đặc trưng và mô hình hóa. Mỗi bước đòi hỏi kiến thức chuyên môn và lập kế hoạch tỉ mỉ, thường cần nhiều lần lặp lại. Sự phức tạp này làm cho Kaggle trở thành nền tảng lý tưởng để đánh giá hiệu quả của các công cụ tự động hóa khoa học dữ liệu. Trong 8 cuộc thi khoa học dữ liệu Kaggle mà chúng tôi đánh giá, AutoKaggle đạt được 0.85 về tỷ lệ nộp bài hợp lệ và 0.82 về điểm số toàn diện. Chúng tôi tóm tắt các đóng góp của mình như sau:
+
+• Chúng tôi đề xuất AutoKaggle, một framework đa agent mới cho các cuộc thi khoa học dữ liệu Kaggle, đạt được tỷ lệ hoàn thành tác vụ cao và hiệu suất cạnh tranh trên mức trung bình của con người trong các đánh giá của chúng tôi.
+
+• Chúng tôi giới thiệu quy trình làm việc theo giai đoạn tích hợp với hợp tác đa agent, kết hợp gỡ lỗi lặp đi lặp lại và kiểm thử đơn vị, giải quyết một cách có hệ thống sự phức tạp của các tác vụ khoa học dữ liệu và đảm bảo tạo mã mạnh mẽ, chính xác.
+
+• Chúng tôi phát triển thư viện công cụ máy học và tích hợp nó vào framework của mình, tăng cường hiệu quả và chất lượng tạo mã cho các tác vụ khoa học dữ liệu phức tạp.
+
+• Chúng tôi triển khai hệ thống báo cáo toàn diện cung cấp cái nhìn chi tiết về quy trình ra quyết định ở mỗi giai đoạn, làm cho AutoKaggle vừa là nhà cung cấp giải pháp vừa là công cụ giáo dục cho các cuộc thi khoa học dữ liệu, từ đó góp phần vào việc dân chủ hóa kỹ năng khoa học dữ liệu.
+2
+
+--- TRANG 3 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+Tác Vụ Khoa Học 
+Dữ Liệu
+Dữ Liệu 
+Dạng Bảng
+  Hiểu Bối Cảnh1.Phân Tích Dữ Liệu
+Khám Phá Sơ Bộ
+Tương Tác 
+Hợp Tác
+2.Làm Sạch 
+Dữ Liệu
+Tương Tác 
+Hợp Tác3.Phân Tích Dữ Liệu 
+Khám Phá Chuyên Sâu
+Tương Tác 
+Hợp Tác4.Kỹ Thuật 
+Đặc Trưng
+5.Mô Hình Hóa
+ Tài Liệu
+ Planner Developer ReviewerTương Tác Hợp Tác
+3Summarizer Tài LiệuTrạng Thái Giải Quyết Vấn Đề
+Định NghĩaHuman in the Loop1
+Sửa ĐổiHuman in the Loop2
+Công Cụ
+Tương Tác 
+Hợp Tác
+Công Cụ
+Reader
+Thư Viện Công Cụ ML
+RAG
+Tương Tác 
+Hợp Tác
+ Công CụRAG
+
+Hình 1: Tổng quan về AutoKaggle. AutoKaggle tích hợp quy trình làm việc theo giai đoạn với các agent chuyên biệt (Reader, Planner, Developer, Reviewer, và Summarizer), gỡ lỗi lặp đi lặp lại và kiểm thử đơn vị, thư viện công cụ máy học toàn diện, và báo cáo chi tiết.
+
+2 NGHIÊN CỨU LIÊN QUAN
+
+2.1 AGENT MÔ HÌNH NGÔN NGỮ LỚN
+Một framework ngắn gọn của các agent bao gồm các module não bộ, cảm nhận và hành động (Xi et al., 2023). Module cảm nhận xử lý thông tin bên ngoài, não bộ lập kế hoạch dựa trên thông tin đó, và module hành động thực hiện các kế hoạch này (Xi et al., 2023; Zhou et al., 2023). LLM, hoạt động như các module não bộ, thể hiện khả năng zero-shot ấn tượng và được áp dụng trong các lĩnh vực như khoa học dữ liệu và sáng tác âm nhạc (Brown et al., 2020; Hong et al., 2024; Deng et al., 2024). Trong khi phương pháp chain-of-thought cải thiện lý luận (Wei et al., 2023), nó thường dẫn đến ảo giác do các biểu diễn nội bộ (Yao et al., 2023). Mô hình ReAct giải quyết điều này bằng cách tích hợp suy nghĩ và hành động, tinh chỉnh đầu ra thông qua tương tác với môi trường bên ngoài (Yao et al., 2023; Madaan et al., 2023; Shinn et al., 2023; Zhou et al., 2024).
+
+2.2 ĐA AGENT
+Trong khi một agent đơn lẻ có thể đạt được các tác vụ xử lý ngôn ngữ tự nhiên (NLP) cơ bản, các tác vụ thực tế có độ phức tạp cao hơn. Trong xã hội loài người, mọi người chia nhỏ các tác vụ phức tạp thành các tác vụ con đơn giản mà những người khác nhau có thể xử lý dễ dàng. Lấy cảm hứng từ nguyên tắc phân công lao động này, các hệ thống đa agent tăng cường hiệu suất (Talebirad & Nadiri, 2023) sử dụng các tương tác hợp tác (Li et al., 2023) để đạt được các mục tiêu chung. Một phương pháp tương tác khác là tương tác đối kháng (Lewis et al., 2017), nơi nhiều agent cạnh tranh với nhau để có kết quả tốt hơn, hoặc một agent phê bình và đánh giá sự tạo ra của agent khác (Gou et al., 2024).
+
+2.3 AGENT KHOA HỌC DỮ LIỆU
+Để giải quyết các yêu cầu được định nghĩa rõ ràng của các tác vụ khoa học dữ liệu, một phương pháp khả thi là thiết kế các hệ thống phân cấp (Hong et al., 2024; Zhang et al., 2024b; Chi et al., 2024) để hoàn thành các tác vụ như hiểu tác vụ, kỹ thuật đặc trưng và xây dựng mô hình. Trong mỗi tầng phân cấp, thiết kế riêng biệt hai agent cho lập kế hoạch mã và tạo mã tương ứng (Hong et al., 2024), và sử dụng kiểm thử đơn vị (Zhang et al., 2024b) để xác minh chất lượng tạo mã. Ngoài việc tự gỡ lỗi bởi các đa agent tự chủ, các cơ chế human-in-the-loop (Hong et al., 2024; Zhang et al., 2024b) cũng cung cấp giám sát và sửa chữa cho đầu ra của LLM, giảm ảo giác trong mỗi tầng phân cấp. Tang et al. (2024) giới thiệu ML-Bench, một benchmark cho các agent ngôn ngữ cho các tác vụ máy học.
+3
+
+--- TRANG 4 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Tóm lại, các hệ thống đa agent và các agent dựa trên LLM đã chứng minh tiềm năng đáng kể trong các lĩnh vực như NLP và khoa học dữ liệu. Trong khi các agent đơn lẻ xuất sắc trong các tác vụ cơ bản, việc tích hợp nhiều agent là rất quan trọng để giải quyết các thách thức thực tế phức tạp. Bằng cách kết hợp các agent chuyên biệt cho tác vụ với các cơ chế human-in-the-loop và kiểm thử đơn vị, các hệ thống này cải thiện chất lượng mã và giải quyết các vấn đề như ảo giác. Framework của chúng tôi, AutoKaggle, tiến xa hơn những nỗ lực này bằng cách tích hợp lý luận dựa trên LLM với hợp tác đa agent, đảm bảo tính thích ứng, chính xác và kiểm soát của người dùng trong các cuộc thi khoa học dữ liệu.
+
+3 AUTOKAGGLE
+
+3.1 FRAMEWORK TỔNG THỂ
+Trong phần này, chúng tôi giới thiệu AutoKaggle, một framework hoàn toàn tự động, mạnh mẽ và thân thiện với người dùng được thiết kế để tạo ra kết quả dự đoán có thể nộp trực tiếp chỉ sử dụng dữ liệu Kaggle gốc. Với sự đa dạng của các vấn đề khoa học dữ liệu, phạm vi của các giải pháp tiềm năng, và nhu cầu lý luận chính xác và hiểu biết thời gian thực về các thay đổi dữ liệu, việc xử lý hiệu quả các tác vụ khoa học dữ liệu phức tạp trên Kaggle là thách thức. Thiết kế kỹ thuật của chúng tôi giải quyết hai vấn đề chính: (i) làm thế nào để phân tách và quản lý có hệ thống các tác vụ khoa học dữ liệu phức tạp; và (ii) làm thế nào để giải quyết hiệu quả các tác vụ này bằng cách sử dụng LLM và hợp tác đa agent.
+
+Khái niệm cốt lõi của AutoKaggle là lý luận đa agent theo giai đoạn. Phương pháp này tận dụng LLM để lý luận và giải quyết các tác vụ trong một quy trình làm việc có cấu trúc, giải quyết các khía cạnh khác nhau của quy trình khoa học dữ liệu thông qua sự hợp tác của nhiều agent. AutoKaggle bao gồm hai thành phần chính: quy trình làm việc theo giai đoạn và hệ thống đa agent, bổ sung cho nhau, như được thể hiện trong Hình 1.
+
+Quy trình Làm việc Theo Giai đoạn. Quy trình khoa học dữ liệu được chia thành sáu giai đoạn chính: hiểu bối cảnh, phân tích dữ liệu khám phá sơ bộ, làm sạch dữ liệu, phân tích dữ liệu khám phá chuyên sâu, kỹ thuật đặc trưng, và xây dựng mô hình, xác thực và dự đoán. Làm sạch dữ liệu, kỹ thuật đặc trưng, và xây dựng mô hình, xác thực và dự đoán là các quy trình cơ bản cần thiết cho bất kỳ cuộc thi khoa học dữ liệu nào. Chúng tôi thiết kế hai giai đoạn phân tích dữ liệu bổ sung để cung cấp thông tin và cái nhìn thiết yếu cho làm sạch dữ liệu và kỹ thuật đặc trưng tương ứng. Cho rằng đầu vào ban đầu của chúng tôi chỉ là tổng quan về cuộc thi khoa học dữ liệu Kaggle và bộ dữ liệu thô, chúng tôi thêm giai đoạn hiểu bối cảnh để phân tích các khía cạnh khác nhau của bối cảnh cuộc thi, mục tiêu, cấu thành tệp và tổng quan dữ liệu từ đầu vào thô. Phương pháp có cấu trúc này đảm bảo rằng tất cả các khía cạnh của vấn đề được giải quyết một cách có hệ thống và toàn diện, với các giai đoạn khác nhau tách rời khỏi nhau. Nó cho phép kiểm thử đơn vị kỹ lưỡng ở mỗi giai đoạn để đảm bảo tính chính xác và ngăn chặn lỗi lan truyền đến các giai đoạn tiếp theo.
+
+Hệ thống Đa agent. Hệ thống bao gồm năm agent chuyên biệt: Reader, Planner, Developer, Reviewer, và Summarizer. Mỗi agent được thiết kế để thực hiện các tác vụ cụ thể trong quy trình làm việc. Chúng hợp tác để phân tích vấn đề, phát triển chiến lược, triển khai giải pháp, đánh giá kết quả và tạo ra các báo cáo toàn diện. Thiết lập chi tiết và quy trình tương tác của các agent được mô tả trong Phụ lục C.1.6.
+
+Chúng tôi tóm tắt mã giả của AutoKaggle trong Thuật toán 1. Để C đại diện cho cuộc thi, D cho bộ dữ liệu, và Φ = {ϕ1, ϕ2, . . . , ϕ 6} tập hợp của tất cả các giai đoạn trong quy trình làm việc cuộc thi. Cho mỗi
+
+Mã Được Tạo bởi Agent Developer
+Công Cụ ThôngtinKhông Chứa
+LỗiKiểm thử nSai(Chi tiết)Đúng
+Tài Liệu
+Hoàn Thành tất cả Kiểm thử trong một Trạng thái
+Công Cụ Kiểm thử Đơn Vị     Thông tin chi tiết về kiểm thử thất bại
+Chứa Lỗi
+
+Hình 2: Gỡ lỗi và kiểm thử lặp đi lặp lại.
+4
+
+--- TRANG 5 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+giai đoạn ϕi, một tập hợp cụ thể của các agent Aϕi được gán để thực hiện các tác vụ khác nhau. Các agent chính bao gồm Planner, Developer, Reviewer, và Summarizer.
+
+3.2 PHÁT TRIỂN DỰA TRÊN GỠ LỖI VÀ KIỂM THỬ LẶP ĐI LẶP LẠI
+Trong AutoKaggle, Developer áp dụng phương pháp phát triển dựa trên sửa lỗi lặp đi lặp lại và kiểm thử. Nó đảm bảo tính mạnh mẽ và chính xác của mã được tạo thông qua thực thi, gỡ lỗi và kiểm thử lặp đi lặp lại.
+
+Hình 2 thể hiện quy trình tổng thể của gỡ lỗi và kiểm thử lặp đi lặp lại. Cụ thể, Developer đầu tiên tạo mã dựa trên trạng thái hiện tại st, kế hoạch Pϕi được tạo bởi Planner, và bối cảnh lịch sử H: Cϕi = GenerateCode(st, Pϕi, H). Cϕi là mã được tạo cho giai đoạn ϕi, và GenerateCode(·) đại diện cho hàm tạo mã được thực hiện bởi Developer. Bối cảnh lịch sử H bao gồm mã, đầu ra của các giai đoạn trước và thông tin liên quan khác từ hoạt động của các agent khác.
+
+Sau khi tạo mã ban đầu, nó bước vào quy trình gỡ lỗi và kiểm thử lặp đi lặp lại. Quy trình này có thể được mô tả bằng Thuật toán 2.
+
+Developer sử dụng ba công cụ chính: thực thi mã, gỡ lỗi mã và kiểm thử đơn vị.
+
+(i) Thực thi Mã. Công cụ Thực thi Mã chạy mã được tạo và ghi lại bất kỳ lỗi runtime nào. Khi phát hiện lỗi, hệ thống khôi phục một tệp để ghi lại thông báo lỗi.
+
+(ii) Gỡ lỗi Mã. Công cụ Gỡ lỗi Mã phân tích thông báo lỗi và cố gắng sửa mã. Nó sử dụng thông báo lỗi cùng với mã hiện tại và bối cảnh lịch sử để tạo ra các bản sửa chữa: C'ϕi = DebugCode(Cϕi, Eϕi, H). C'ϕi là phiên bản đã được gỡ lỗi của mã.
+
+Theo nghiên cứu trước (Tyen et al., 2024), chúng tôi thiết kế quy trình gỡ lỗi thành ba bước chính: định vị lỗi, sửa lỗi và gộp các đoạn mã chính xác và đã được sửa chữa. Chúng tôi đặt tối đa 5 lần thử cho Developer để tự sửa lỗi. Ngoài ra, chúng tôi đã giới thiệu cơ chế hỗ trợ. Chúng tôi ghi lại tất cả thông báo lỗi gặp phải trong quá trình gỡ lỗi. Khi số lần thử sửa chữa đạt 3, Developer đánh giá tính khả thi của việc tiếp tục dựa trên thông tin lịch sử. Nếu thông báo lỗi trong quá khứ tương tự, điều này cho thấy Developer có thể thiếu khả năng giải quyết lỗi cụ thể này, và việc tiếp tục có thể dẫn đến vòng lặp. Trong những trường hợp như vậy, chúng tôi cho phép Developer thoát khỏi quy trình sửa chữa và tạo lại mã từ đầu.
+
+(iii) Kiểm thử Đơn vị. Kiểm thử đơn vị chạy các kiểm thử được định nghĩa trước để đảm bảo mã đáp ứng yêu cầu. Cho mỗi giai đoạn ϕi, một tập hợp kiểm thử đơn vị Tϕi được định nghĩa: Tϕi = {t1, t2, . . . , t k}. Quy trình kiểm thử đơn vị có thể được biểu diễn như: Rϕi = ExecuteUnitTests(Cϕi, Tϕi). Rϕi là tập hợp kết quả kiểm thử, với mỗi kết quả rj ∈ {0,1} chỉ ra liệu kiểm thử tương ứng đã đạt (1) hay thất bại (0).
+
+Trong các tác vụ phức tạp và đòi hỏi độ chính xác như cuộc thi khoa học dữ liệu Kaggle, việc chỉ đảm bảo rằng mã chạy mà không có lỗi là không đủ. Những cuộc thi này thường liên quan đến xử lý dữ liệu phức tạp và thuật toán tinh vi, nơi các lỗi logic ẩn có thể ảnh hưởng đáng kể đến kết quả cuối cùng. Do đó, cần thiết phải thiết kế các kiểm thử đơn vị tỉ mỉ không chỉ xác minh tính chính xác của mã mà còn đảm bảo nó đáp ứng các tiêu chuẩn logic và hiệu suất mong đợi. Nếu không, các lỗi ẩn có thể tích lũy qua các giai đoạn liên tiếp, làm cho việc hoàn thành mỗi giai đoạn tiếp theo ngày càng khó khăn. Ví dụ, các khuyết tật logic không được chú ý trong giai đoạn làm sạch dữ liệu có thể dẫn đến trích xuất đặc trưng kém, từ đó ảnh hưởng đến việc xây dựng mô hình trong các giai đoạn tiếp theo.
+
+Để giảm thiểu những rủi ro này, kiểm thử đơn vị cho mỗi giai đoạn phải được thiết kế cẩn thận để bao gồm một loạt các tình huống, bao gồm các trường hợp biên và điểm thất bại tiềm năng. Điều này không chỉ liên quan đến việc kiểm tra tính chính xác của đầu ra mà còn đảm bảo rằng các bước trung gian tuân thủ logic mong đợi. Ví dụ, trong giai đoạn làm sạch dữ liệu, kiểm thử đơn vị nên xác minh liệu các giá trị thiếu có được xử lý chính xác, các giá trị ngoại lai được quản lý thích hợp và các phép biến đổi dữ liệu được áp dụng chính xác.
+
+Bằng cách triển khai kiểm thử đơn vị toàn diện, chúng ta có thể bắt và sửa lỗi sớm trong quy trình phát triển, ngăn chúng lan truyền đến các giai đoạn sau. Phương pháp kiểm thử có hệ thống này đảm bảo rằng mã ở mỗi giai đoạn không chỉ không có lỗi mà còn hoạt động chính xác và phù hợp với mục tiêu dự án tổng thể.
+5
+
+--- TRANG 6 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Kết luận, phương pháp gỡ lỗi và kiểm thử lặp đi lặp lại được sử dụng bởi Developer đảm bảo việc tạo ra mã mạnh mẽ, không có lỗi và hiệu quả cho mỗi giai đoạn của cuộc thi. Bằng cách sử dụng xử lý lỗi tiên tiến, gỡ lỗi lặp đi lặp lại và kiểm thử đơn vị toàn diện, hệ thống có thể thích ứng với các thách thức khác nhau và liên tục tạo ra đầu ra mã chất lượng cao.
+
+3.3 THỦ VIỆN CÔNG CỤ MÁY HỌC
+Việc tạo mã máy học từ đầu bằng LLM có thể gặp thách thức do sự phức tạp của các tác vụ khác nhau. Những mô hình này cần bao gồm kiến thức chuyên môn trong một loạt các quy trình, từ xử lý dữ liệu và kỹ thuật đặc trưng đến xây dựng mô hình, xác thực và dự đoán. Trong nhiều trường hợp, việc tận dụng các công cụ máy học được tạo bởi chuyên gia hiệu quả hơn so với việc chỉ dựa vào mã được tạo bởi LLM. Điều này là do LLM thường thiếu chuyên môn cụ thể cho lĩnh vực, có thể dẫn đến mã tối ưu dưới mức hoặc không chính xác. Hơn nữa, khi được giao nhiệm vụ với các thao tác phức tạp, mã được tạo có thể gặp phải lỗi cú pháp hoặc logic, tăng khả năng thất bại.
+
+Thư viện máy học của chúng tôi được phân loại thành ba bộ công cụ cốt lõi: làm sạch dữ liệu, kỹ thuật đặc trưng, và xây dựng mô hình, xác thực và dự đoán, mỗi bộ phục vụ một vai trò cụ thể trong quy trình làm việc. Bộ công cụ làm sạch dữ liệu bao gồm bảy công cụ, bao gồm FillMissingValues, RemoveColumnsWithMissingData, DetectAndHandleOutliersZscore, DetectAndHandleOutliersIqr, RemoveDuplicates, ConvertDataTypes và FormatDatetime, tất cả được thiết kế để đảm bảo chuẩn bị dữ liệu sạch, nhất quán và đáng tin cậy. Module kỹ thuật đặc trưng bao gồm mười một công cụ nhằm tăng cường hiệu suất mô hình, như OneHotEncode, FrequencyEncode, CorrelationFeatureSelection, và ScaleFeatures, sử dụng các kỹ thuật khác nhau như phân tích tương quan và chia tỷ lệ đặc trưng để tối ưu hóa biểu diễn dữ liệu. Danh mục xây dựng mô hình, xác thực và dự đoán cung cấp TrainAndValidationAndSelectTheBestModel để hỗ trợ chu kỳ phát triển mô hình đầy đủ, bao gồm lựa chọn mô hình, đào tạo, đánh giá, dự đoán, tích hợp ensemble và tối ưu hóa siêu tham số, tạo điều kiện cho việc triển khai mô hình mạnh mẽ và hiệu suất hiệu quả. Mỗi công cụ đi kèm với giải thích toàn diện, đặc tả đầu vào/đầu ra, phát hiện dị thường và hướng dẫn xử lý lỗi.
+
+Thư viện toàn diện này rất quan trọng cho hợp tác đa agent hiệu quả trong việc giải quyết các cuộc thi Kaggle phức tạp. Mỗi công cụ cung cấp chức năng chuẩn hóa, đáng tin cậy, cho phép AutoKaggle chia sẻ và xử lý dữ liệu một cách liền mạch, tăng cường chất lượng đặc trưng và tối ưu hóa hiệu suất mô hình, cuối cùng cải thiện hiệu quả quy trình làm việc tổng thể và đảm bảo các giải pháp phối hợp, chất lượng cao trong môi trường cạnh tranh. Hơn nữa, thư viện máy học của chúng tôi giảm gánh nặng cho AutoKaggle trong các tác vụ lập trình chi tiết, cho phép chúng tập trung nhiều hơn vào lập kế hoạch tác vụ cấp cao và thiết kế mã. Sự chuyển đổi trọng tâm này cho phép AutoKaggle điều hướng các tác vụ phức tạp hiệu quả hơn, cuối cùng cải thiện hiệu suất tổng thể của chúng. Chi tiết thêm về các công cụ máy học của chúng tôi có thể được tìm thấy trong Phụ lục C.3.
+
+4 THỰC NGHIỆM
+
+4.1 THIẾT LẬP THỰC NGHIỆM
+Lựa chọn Tác vụ. Chúng tôi chọn tám cuộc thi Kaggle chủ yếu sử dụng bộ dữ liệu dạng bảng, tập trung vào các tác vụ phân loại và hồi quy. Các cuộc thi này được phân loại thành hai loại: Classic Kaggle và Recent Kaggle. Các cuộc thi Classic Kaggle là những cuộc thi bắt đầu trước tháng 10 năm 2023 với ít nhất 500 người tham gia, trong khi các cuộc thi Recent Kaggle bắt đầu từ năm 2024 trở về sau. Vì phân tích của chúng tôi dựa trên GPT-4o, được đào tạo trên dữ liệu có sẵn đến tháng 10 năm 2023, nó bao gồm hầu hết các cuộc thi Classic Kaggle. Để đánh giá khả năng tổng quát hóa của AutoKaggle, chúng tôi do đó tập trung vào các cuộc thi được khởi xướng sau năm 2024. Ngoài ra, chúng tôi phân loại các cuộc thi này thành ba mức độ khó: dễ, trung bình và khó. Đối với mỗi bộ dữ liệu, chúng tôi truy cập trang chủ cuộc thi tương ứng trên Kaggle, trích xuất nội dung từ các phần tổng quan và mô tả dữ liệu, và biên soạn thông tin này thành một tệp có tên overview.txt. Tệp này, cùng với các tệp dữ liệu cuộc thi gốc, tạo thành đầu vào chính cho AutoKaggle. Chi tiết thêm về bộ dữ liệu của chúng tôi có thể được tìm thấy trong Phụ lục B.
+
+Đáng chú ý, chúng tôi không kết hợp chín bộ dữ liệu dạng bảng từ MLE-Bench (Hong et al., 2024) do kích thước đáng kể của chúng, điều này sẽ tăng đáng kể thời gian chạy tính toán. Các hạn chế về tài nguyên ngăn chúng tôi tuân thủ thiết lập thực nghiệm của MLE-Bench, which chỉ định cửa sổ tham gia 24 giờ cho mỗi agent và thời gian chờ thực thi mã 9 giờ.
+6
+
+--- TRANG 7 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Bảng 1: Nộp bài thực hiện, nộp bài hợp lệ và điểm số toàn diện trên 8 tác vụ Kaggle. Mỗi thử nghiệm được lặp lại với 5 lần thử. Hiệu suất tốt nhất trên các tác vụ riêng lẻ được gạch dưới, và hiệu suất tốt nhất trên tất cả các tác vụ được in đậm.
+
+Classic Recent
+Chỉ số Thiết lập / Tác vụ Tác vụ 1 Tác vụ 2 Tác vụ 3 Tác vụ 4 Tác vụ 5 Tác vụ 6 Tác vụ 7 Tác vụ 8 Trung bình
+Nộp bài Thực hiệnAutoKaggle gpt-4o 1 0.80 0.80 1 0.80 0.80 0.80 0.80 0.85
+AutoKaggle o1-mini 1 0.60 0.60 1 0.60 0.80 0.60 0.60 0.73
+AIDE gpt-4o 1 0.40 0.20 0.60 1 0.80 0.80 0 0.60
+Nộp bài Hợp lệAutoKaggle gpt-4o 1 0.80 0.80 1 0.80 0.60 0.80 0.80 0.83
+AutoKaggle o1-mini 1 0.60 0.60 1 0.60 0.60 0.60 0.60 0.70
+AIDE gpt-4o 1 0.40 0.20 0.40 1 0.80 0.80 0 0.58
+Điểm Số Toàn DiệnAutoKaggle gpt-4o 0.888 0.786 0.831 0.862 0.810 0.728 0.848 0.812 0.821
+AutoKaggle o1-mini 0.879 0.680 0.729 0.863 0.709 0.735 0.742 0.735 0.759
+AIDE gpt-4o 0.872 0.597 0.542 0.561 0.918 0.793 0.848 0 0.641
+
+Chỉ số đánh giá. Chúng tôi đánh giá khả năng của AutoKaggle từ bốn góc độ: Nộp bài Thực hiện, Nộp bài Hợp lệ, Điểm Hiệu suất Chuẩn hóa Trung bình và Điểm Số Toàn diện. Hai chỉ số đầu tham khảo MLE-bench và chủ yếu được sử dụng để đánh giá khả năng tạo tệp submission.csv. Hai chỉ số cuối đến từ Data Interpreter (Chan et al., 2024), chúng tôi đã sửa đổi để thích ứng với việc đánh giá framework của mình.
+
+(i) Nộp bài Thực hiện (MS). Nộp bài Thực hiện đề cập đến tỷ lệ phần trăm lần tạo ra tệp submission.csv.
+
+(ii) Nộp bài Hợp lệ (VS). Nộp bài Hợp lệ chỉ ra tỷ lệ phần trăm của những tệp submission.csv hợp lệ—có nghĩa là chúng có thể được nộp thành công lên trang web Kaggle, tạo ra kết quả mà không có lỗi và không có vấn đề liên quan đến tỷ lệ dữ liệu hoặc không khớp danh mục.
+
+(iii) Điểm Số Toàn diện (CS). Trong các đánh giá, chỉ số hiệu suất được chia thành hai danh mục: chỉ số có giới hạn, dao động từ 0 đến 1 nơi giá trị cao hơn cho biết hiệu suất tốt hơn, và chỉ số không giới hạn, nơi giá trị thấp hơn biểu thị hiệu suất vượt trội. Để chuẩn hóa những loại chỉ số khác nhau này, chúng tôi sử dụng điểm hiệu suất chuẩn hóa (NPS), được định nghĩa như sau:
+
+NPS = (
+1
+1+s, nếu s là nhỏ hơn càng tốt
+s, ngược lại. (1)
+
+Đối với nhiều lần thử của một tác vụ, chúng tôi tính Điểm Hiệu suất Chuẩn hóa Trung bình (ANPS) như trung bình của các lần thử thành công:
+
+ANPS = 1/Ts ∑(t=1 to Ts) NPS t (2)
+
+trong đó Ts đại diện cho tổng số lần thử thành công cho một tác vụ, và NPS t là giá trị NPS cho lần thử thứ t.
+
+Để đánh giá toàn diện cả tỷ lệ đạt và hiệu suất trung bình, chúng tôi định nghĩa Điểm Số Toàn diện (CS) như trung bình của VS và ANPS:
+
+CS = 0.5 × VS + 0.5 × ANPS (3)
+
+Bảng 2: Nghiên cứu loại bỏ về công cụ máy học. Đánh giá với tỷ lệ hoàn thành và điểm số toàn diện. Hiệu suất tốt nhất được gạch dưới.
+
+Tác vụ 1 Tác vụ 2 Tác vụ 3 Tác vụ 5 Trung bình
+VSKhông Công cụ 0.80 0.60 0.50 0.40 0.58
+Công cụ DC 0.80 0.70 1.00 1.00 0.88
+Công cụ DC & FE 0.80 0.60 0.60 0.60 0.65
+Tất cả Công cụ 1.00 0.80 0.80 0.80 0.85
+CSKhông Công cụ 0.781 0.697 0.666 0.602 0.687
+Công cụ DC 0.781 0.721 0.928 0.909 0.835
+Công cụ DC & FE 0.787 0.684 0.735 0.713 0.730
+Tất cả Công cụ 0.888 0.786 0.831 0.810 0.829
+7
+
+--- TRANG 8 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Chi tiết Thực nghiệm. Chúng tôi đánh giá hiệu suất của AutoKaggle dựa trên cả mô hình GPT-4o và o1-mini. Đáng chú ý, các mô hình khác nhau được gán cho các agent cụ thể dựa trên yêu cầu chức năng của chúng. Reader, Reviewer, và Summarizer, thực hiện các tác vụ đòi hỏi lý luận logic và khả năng mã hóa tối thiểu, được triển khai bằng mô hình GPT-4o-mini. Planner, chịu trách nhiệm phân tách tác vụ và lập kế hoạch đòi hỏi lý luận logic tinh vi, hoạt động trên mô hình GPT-4o hoặc o1-mini. Mặc dù các tác vụ của Developer truyền thống cần lý luận logic tiên tiến và kỹ năng mã hóa, phương pháp phân tách tác vụ hiệu quả của Planner đã làm giảm những yêu cầu này, do đó nó dựa trên mô hình GPT-4o.
+
+Trong các thử nghiệm của chúng tôi, mỗi tác vụ trải qua năm lần thử, với mỗi giai đoạn trong quy trình làm việc cho phép tối đa ba lần lặp. Trong một lần lặp, Developer có thể gỡ lỗi mã lên đến năm lần. Nếu không thành công, họ tiến hành với cùng giai đoạn, rút ra cái nhìn và điều chỉnh chiến lược dựa trên các lần thử trước. Thất bại trong việc giải quyết vấn đề sau ba lần lặp được coi là thất bại dứt khoát.
+
+Baseline. Chúng tôi sử dụng AIDE (Schmidt et al., 2024) làm baseline của mình, đây là framework có hiệu suất tốt nhất trong kết quả đánh giá MLE-bench. Chúng tôi sử dụng cài đặt mặc định của AIDE, chỉ sửa đổi agent.base.model thành mô hình GPT-4o.
+
+4.2 KẾT QUẢ CHÍNH
+Hiệu suất toàn diện của AutoKaggle trên 8 cuộc thi khoa học dữ liệu Kaggle được trình bày trong Bảng 1. Để tạo điều kiện hiểu, chúng tôi đặt tên thống nhất cho tám tác vụ là tác vụ 1-8. Tên tác vụ thực và thông tin bộ dữ liệu chi tiết có sẵn trong Phụ lục B.
+
+Hình 3: Điểm hiệu suất chuẩn hóa trung bình cho các thiết lập/tác vụ khác nhau.
+
+Nộp bài thực hiện và Nộp bài hợp lệ. Chúng tôi đầu tiên đánh giá tỷ lệ thành công của việc tạo tệp submission.csv hợp lệ trên các cấu hình thử nghiệm khác nhau. Framework AutoKaggle, được triển khai với GPT-4o, thể hiện hiệu suất vượt trội với tỷ lệ nộp bài hợp lệ trung bình 83% trên tất cả 8 tác vụ Kaggle, vượt trội framework AIDE 28%. Những kết quả này nhấn mạnh tính mạnh mẽ của framework của chúng tôi trong việc thực hiện quy trình làm việc khoa học dữ liệu toàn diện. Trong khi framework AIDE thành công xử lý Tác vụ 1-7, liên quan đến phân loại hoặc hồi quy đơn biến trên dữ liệu dạng bảng, nó thất bại trong việc tạo nộp bài hợp lệ cho Tác vụ 8, một vấn đề phân loại đa biến. Hiệu suất khác biệt này thể hiện tính linh hoạt của framework của chúng tôi trong việc xử lý các tác vụ dữ liệu dạng bảng đa dạng.
+8
+
+--- TRANG 9 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Một quan sát thú vị khác là trong framework AutoKaggle, mô hình GPT-4o đạt được kết quả tốt hơn so với mô hình o1-mini, mặc dù o1-mini được cho là có khả năng lý luận vượt trội. Sự khác biệt hiệu suất này xuất hiện chỉ từ việc thay đổi mô hình được sử dụng trong thành phần Planner. Chúng tôi giả thuyết rằng kết quả phản trực giác này xuất phát từ xu hướng của o1-mini hướng tới độ phức tạp lập kế hoạch quá mức, điều này tỏ ra bất lợi trong kiến trúc quy trình làm việc theo giai đoạn được sắp xếp hợp lý của chúng tôi. Cùng cân nhắc này đã ảnh hưởng đến quyết định của chúng tôi duy trì GPT-4o làm mô hình cơ sở của Developer, vì các thử nghiệm của chúng tôi chỉ ra rằng Developer dựa trên o1-mini sẽ tăng đáng kể tính dài dòng của mã, mở rộng các giải pháp 100 dòng lên khoảng 500 dòng thông qua việc đưa vào các thành phần không cần thiết như hệ thống logging.
+
+Điểm Số Toàn diện. Tiếp theo, chúng tôi so sánh hiệu suất tổng thể của các thiết lập khác nhau trên 8 tác vụ Kaggle. AutoKaggle với GPT-4o đạt được điểm số toàn diện cao nhất trong 5 tác vụ và thể hiện hiệu suất tổng thể tốt nhất. Hình 3 minh họa sự so sánh của các thiết lập khác nhau dựa trên chỉ số điểm hiệu suất chuẩn hóa trung bình, nơi AutoKaggle với o1-mini đạt được điểm số tổng thể cao nhất. Điều này chỉ ra rằng mặc dù Planner dựa trên o1-mini tạo ra các kế hoạch quá phức tạp làm tăng khó khăn phát triển, việc thực hiện thành công những kế hoạch này theo đặc tả dẫn đến kết quả hiệu suất vượt trội.
+
+4.3 NGHIÊN CỨU LOẠI BỎ
+Ngoài các module liên quan đến nghiên cứu loại bỏ, tất cả các cài đặt thử nghiệm khác đều giống hệt với những cài đặt trong thử nghiệm chính thức.
+
+Nghiên cứu về Công cụ Máy học. Để đánh giá hiệu quả của module công cụ máy học và tác động của công cụ qua các giai đoạn khác nhau đến kết quả, chúng tôi tiến hành các thử nghiệm loại bỏ. Chúng tôi bắt đầu mà không có công cụ nào và dần thêm chúng ở mỗi giai đoạn cho đến khi tất cả công cụ máy học được triển khai. Kết quả được trình bày trong Bảng 2. Đáng chú ý, tỷ lệ hoàn thành tăng 30% với việc sử dụng công cụ giai đoạn làm sạch dữ liệu, và 27.5% khi tất cả công cụ được sử dụng, so với tình huống không có công cụ. Tuy nhiên, tỷ lệ hoàn thành có sự suy giảm trong giai đoạn kỹ thuật đặc trưng, đặc biệt trong các cuộc thi giá nhà và thành công học tập. Sự suy giảm này có thể do số lượng đặc trưng tương đối lớn liên quan, cùng với độ phức tạp và tính đóng gói cao của các công cụ được sử dụng trong giai đoạn này, đòi hỏi việc thêm và loại bỏ đặc trưng, từ đó làm phức tạp việc sử dụng chúng. Hơn nữa, độ phức tạp này gây ra thách thức cho Developer trong việc gỡ lỗi mã có lỗi. Như được minh họa trong Hình 4 (a), tần suất của các trường hợp gỡ lỗi lớn hơn khi sử dụng công cụ từ giai đoạn kỹ thuật đặc trưng.
+
+Bảng 3: Nghiên cứu loại bỏ về kiểm thử đơn vị. Hiệu suất tốt hơn được gạch dưới.
+
+Tác vụ 1 Tác vụ 2 Tác vụ 3 Tác vụ 5 Trung bình
+CRkhông có Kiểm thử Đơn vị 0.20 0 0.20 0 0.10
+có Kiểm thử Đơn vị 1.00 0.80 0.80 0.80 0.85
+CSkhông có Kiểm thử Đơn vị 0.478 0 0.482 0 0.240
+có Kiểm thử Đơn vị 0.888 0.831 0.786 0.810 0.829
+9
+
+--- TRANG 10 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Hình 4 (b) cung cấp một so sánh rõ ràng hơn, thể hiện rằng trong khi điểm hiệu suất chuẩn hóa tốt nhất qua bốn tình huống tương tự, tỷ lệ hoàn thành tăng đáng kể với việc sử dụng công cụ. Điều này cho thấy rằng mặc dù thư viện công cụ máy học chúng tôi phát triển không làm tăng đáng kể giới hạn trên của giải pháp, nó hoạt động như một công cụ ổn định hơn tăng cường tỷ lệ hoàn thành của AutoKaggle. Kết quả này phù hợp với kỳ vọng, vì thư viện công cụ máy học là một sự tái phát triển dựa trên các thư viện được sử dụng rộng rãi như pandas và scikit-learn. Nó không giới thiệu chức năng mới mà thay vào đó kết hợp và đóng gói lại những chức năng hiện có, kết hợp xử lý lỗi và kiểm thử thủ công để đảm bảo tương thích với framework của chúng tôi.
+
+Nghiên cứu về Kiểm thử Đơn vị. Để đánh giá hiệu quả của module kiểm thử đơn vị, chúng tôi tiến hành các thử nghiệm loại bỏ. Kết quả được trình bày trong Bảng 3. Trong trường hợp không có kiểm thử đơn vị, tỷ lệ hoàn thành giảm đáng kể, làm cho việc hoàn thành các tác vụ gần như không thể. Điều này nhấn mạnh rằng đối với các tác vụ như khoa học dữ liệu, đòi hỏi mức độ chính xác và logic cao, việc mã của mỗi giai đoạn chỉ thực thi mà không có lỗi là không đủ. Kiểm thử đơn vị toàn diện được yêu cầu để đảm bảo rằng mã có logic và đạt được mục tiêu của mỗi giai đoạn.
+
+Nghiên cứu về Số Lần Gỡ lỗi. Chúng tôi tiến hành các thử nghiệm loại bỏ để điều tra tác động của số lần gỡ lỗi được phép đến kết quả. Thiết lập thử nghiệm cho phép năm lần thử gỡ lỗi mã trong mỗi giai đoạn, với mỗi giai đoạn có thể thực thi lên đến ba lần. Do đó, chúng tôi phân tích các tình huống với số lần sửa chữa cho phép được đặt ở 0, 5 và 10. Kết quả được thể hiện trong Hình 5. Có thể quan sát thấy rằng khi AutoKaggle được yêu cầu vượt qua mà không có lỗi nào, chỉ có một bản ghi thành công trên tác vụ Titanic. Cho phép năm lần thử gỡ lỗi cải thiện đáng kể tỷ lệ hoàn thành, và việc tăng thêm số lần thử gỡ lỗi cho phép dẫn đến tăng tất cả các chỉ số. Điều này chứng minh hiệu quả của module gỡ lỗi mã của chúng tôi. Tuy nhiên, hiệu suất đạt đỉnh khi số lần thử gỡ lỗi cho phép được đặt ở 10 và 15, cho thấy rằng khả năng tự sửa chữa của agent bị hạn chế. Có những lỗi phức tạp mà nó không thể giải quyết độc lập, và việc tăng thêm số lần thử gỡ lỗi cho phép không giải quyết được những lỗi này. Xem chi tiết thêm trong tiểu mục 4.4.
+
+Nghiên cứu về Ngày Cuộc thi. Để đánh giá thêm khả năng tổng quát hóa của framework AutoKaggle của chúng tôi, chúng tôi đã tiến hành phân tích phân tầng theo ngày cuộc thi. Tác vụ 1-4 tương ứng với các cuộc thi có thể được bao gồm trong dữ liệu đào tạo của các mô hình như GPT-4o và O1-mini, trong khi tác vụ 5-8 được lấy từ các cuộc thi được khởi chạy trong năm hiện tại. Sự phân tầng theo thời gian này cho phép chúng tôi đánh giá hiệu suất của framework trên các tác vụ ngoài phân phối. Đối với các tác vụ Classic Kaggle, AutoKaggle với GPT-4o đạt được tỷ lệ nộp bài hợp lệ 0.90 và điểm số toàn diện 0.842. Trên các tác vụ recent, những chỉ số này lần lượt là 0.75 và 0.800, chỉ thể hiện sự suy giảm hiệu suất nhỏ. Những kết quả này chỉ ra rằng phương pháp tách rời tác vụ và
+
+Bảng 4: Loại Lỗi của AutoKaggle trong Giai đoạn Giải Quyết Vấn đề
+
+Loại Lỗi (Số lượng) Mô tả
+Value Error (49) Thất bại trong việc khớp loại hoặc phạm vi mong đợi của các giá trị đầu vào
+Key Error (44) Cố gắng truy cập một phần tử từ điển sử dụng khóa không tồn tại
+File Error (8) Cố gắng truy cập một tệp không tồn tại ở vị trí được chỉ định
+Model Error (8) Thiết lập không chính xác trong các tham số hoặc cấu trúc của mô hình, dẫn đến thất bại hoạt động
+Type Error (25) Không khớp giữa loại dữ liệu mong đợi và thực tế, dẫn đến thất bại hoạt động
+Timeout Error (6) Thất bại trong việc hoàn thành một quy trình trong khoảng thời gian được phân bổ
+Index Error (3) Cố gắng truy cập một phần tử tại chỉ số nằm ngoài phạm vi của danh sách hoặc mảng
+Assertion Error (1) Một điều kiện khẳng định trong mã không được đáp ứng, chỉ ra một ràng buộc mong đợi không được thỏa mãn
+Name Error (2) Sử dụng một biến chưa được khai báo mà không được hệ thống nhận ra
+Attribute Error (2) Cố gắng truy cập một thuộc tính hoặc phương thức không tồn tại cho một đối tượng
+Indentation Error (1) Thụt lề không chính xác làm gián đoạn cấu trúc mã, ngăn chặn phân tích cú pháp đúng
+10
+
+--- TRANG 11 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Hình 5: Điểm Số Toàn diện qua các thời điểm gỡ lỗi khác nhau.
+
+các đường dẫn thực thi được định nghĩa trước cho phép xử lý hiệu quả các cuộc thi mới, ngay cả trong các tình huống mà mô hình cơ sở thiếu tiếp xúc trước với lĩnh vực.
+
+4.4 PHÂN TÍCH LỖI
+Trong mỗi giai đoạn tác vụ con của AutoKaggle, lỗi có thể xảy ra, với làm sạch dữ liệu và kỹ thuật đặc trưng có tỷ lệ lỗi cao nhất lần lượt là 25% và 22.5%. Đáng chú ý, thất bại trong giai đoạn kỹ thuật đặc trưng dẫn đến thất bại cuộc thi trực tiếp trong 31.25% trường hợp.
+
+Trong bối cảnh của framework AutoKaggle được đề xuất, nhằm hỗ trợ các nhà khoa học dữ liệu giải quyết các thách thức dữ liệu dạng bảng phức tạp thông qua hệ thống đa agent hợp tác, Bảng 4 cung cấp tổng quan về các loại lỗi khác nhau gặp phải trong quy trình phát triển lặp đi lặp lại. Quy trình làm việc của AutoKaggle bao gồm thực thi mã, gỡ lỗi và kiểm thử đơn vị toàn diện, và các lỗi được liệt kê cho thấy các thách thức khác nhau gặp phải khi tự động hóa những giai đoạn này. Các lỗi được quan sát thường xuyên nhất là Value Error (49 lần xuất hiện), liên quan đến không khớp loại hoặc phạm vi đầu vào, và Key Error (44 lần xuất hiện), do cố gắng truy cập các khóa từ điển không tồn tại. Ngoài ra, Type Error (25 lần xuất hiện) và Model Error (8 lần xuất hiện) làm nổi bật các vấn đề hoạt động do không khớp loại dữ liệu hoặc cấu hình mô hình không chính xác tương ứng. Bảng cũng chi tiết các lỗi khác như Timeout, FileNotFound và Index Error, mỗi lỗi góp phần vào quy trình gỡ lỗi. Hiểu những loại lỗi này rất quan trọng để cải thiện tính mạnh mẽ của AutoKaggle và điều chỉnh quy trình làm việc tự động với can thiệp của con người, cuối cùng tăng cường năng suất trong các pipeline khoa học dữ liệu điển hình.
+
+Ngoài ra, chúng tôi cung cấp quy trình gỡ lỗi chi tiết cho các nhà phát triển. Dưới đây, chúng tôi minh họa điều này bằng cách sử dụng FileNotFoundError làm ví dụ về quy trình gỡ lỗi:
+
+• Định vị Lỗi: Developer ban đầu gặp vấn đề khi thực thi script Python liên quan đến các hoạt động lưu tệp với các thư viện như Matplotlib và Pandas. Lỗi cụ thể, FileNotFoundError, được truy vết đến các thư mục không tồn tại hoặc đường dẫn tệp không chính xác. Thông qua phân tích lặp đi lặp lại, các phần có vấn đề của mã được xác định, tập trung vào nhu cầu quản lý đúng các đường dẫn thư mục và xử lý tên tệp.
+
+• Sửa Lỗi: Để giải quyết những vấn đề này, một số sửa đổi được đề xuất. Đầu tiên, tầm quan trọng của việc đảm bảo rằng các thư mục tồn tại trước khi thực hiện các hoạt động tệp được nhấn mạnh bằng cách kết hợp os.makedirs để tạo bất kỳ thư mục nào bị thiếu. Ngoài ra, một phương pháp làm sạch tên tệp được khuyến khích để ngăn chặn lỗi liên quan đến các ký tự không hợp lệ trong đường dẫn tệp. Một hàm sanitize filename tùy chỉnh được giới thiệu để đảm bảo tên tệp chỉ chứa các ký tự hợp lệ, từ đó tránh các vấn đề do ký hiệu đặc biệt hoặc khoảng trắng gây ra.
+
+• Gộp Các Đoạn Mã Chính xác và Đã Sửa chữa: Bước cuối cùng liên quan đến việc gộp các đoạn đã được sửa chữa trở lại vào mã gốc để tạo ra một giải pháp liền mạch và mạnh mẽ. Script được sửa đổi bao gồm các cải tiến như xác minh sự tồn tại của thư mục, tạo các thư mục cần thiết và áp dụng làm sạch tên tệp để đảm bảo tương thích trên
+11
+
+--- TRANG 12 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+các hệ điều hành khác nhau. Mã đã được sửa chữa được cung cấp với trọng tâm vào việc tăng cường độ tin cậy, đặc biệt trong các quy trình lưu tệp, làm cho nó có khả năng chống lại các cạm bẫy phổ biến như thư mục bị thiếu hoặc tên tệp không hợp lệ.
+
+5 KẾT LUẬN
+Trong bài báo này, chúng tôi giới thiệu AutoKaggle, một framework mạnh mẽ được thiết kế để tận dụng quy trình làm việc theo giai đoạn và hợp tác đa agent để giải quyết các cuộc thi khoa học dữ liệu Kaggle phức tạp. AutoKaggle sử dụng quy trình phát triển lặp đi lặp lại, kết hợp gỡ lỗi mã kỹ lưỡng, kiểm thử đơn vị và thư viện công cụ máy học chuyên biệt để giải quyết các yêu cầu phức tạp của các tác vụ khoa học dữ liệu. Framework của chúng tôi tăng cường độ tin cậy và tự động hóa trong việc quản lý quy trình làm việc dữ liệu tinh vi, trong khi duy trì kiểm soát của người dùng thông qua các quy trình có thể tùy chỉnh. Các đánh giá rộng rãi trên nhiều cuộc thi Kaggle khác nhau chứng minh hiệu quả của AutoKaggle, đánh dấu một tiến bộ đáng kể trong giải quyết vấn đề khoa học dữ liệu hỗ trợ AI và mở rộng khả năng của các hệ thống dựa trên LLM trong việc giải quyết các thách thức thực tế.
+
+TÀI LIỆU THAM KHẢO
+Ryan Holbrook Addison Howard, Ashley Chow. Spaceship titanic, 2022. URL https://kaggle.com/competitions/spaceship-titanic .
+
+DataCanary Anna Montoya. House prices - advanced regression techniques, 2016. URL https://kaggle.com/competitions/house-prices-advanced-regression-techniques .
+
+Tom B. Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, Sandhini Agarwal, Ariel Herbert-V oss, Gretchen Krueger, Tom Henighan, Rewon Child, Aditya Ramesh, Daniel M. Ziegler, Jeffrey Wu, Clemens Winter, Christopher Hesse, Mark Chen, Eric Sigler, Mateusz Litwin, Scott Gray, Benjamin Chess, Jack Clark, Christopher Berner, Sam McCandlish, Alec Radford, Ilya Sutskever, and Dario Amodei. Language models are few-shot learners, 2020. URL https://arxiv.org/abs/2005.14165 .
+
+Jun Shern Chan, Neil Chowdhury, Oliver Jaffe, James Aung, Dane Sherburn, Evan Mays, Giulio Starace, Kevin Liu, Leon Maksin, Tejal Patwardhan, et al. Mle-bench: Evaluating machine learning agents on machine learning engineering. arXiv preprint arXiv:2410.07095 , 2024.
+
+Yizhou Chi, Yizhang Lin, Sirui Hong, Duyi Pan, Yaying Fei, Guanghao Mei, Bangbang Liu, Tianqi Pang, Jacky Kwok, Ceyao Zhang, Bang Liu, and Chenglin Wu. Sela: Tree-search enhanced llm agents for automated machine learning, 2024. URL https://arxiv.org/abs/2410.17238 .
+
+Will Cukierski. Titanic - machine learning from disaster, 2012. URL https://kaggle.com/competitions/titanic .
+
+Qixin Deng, Qikai Yang, Ruibin Yuan, Yipeng Huang, Yi Wang, Xubo Liu, Zeyue Tian, Jiahao Pan, Ge Zhang, Hanfeng Lin, Yizhi Li, Yinghao Ma, Jie Fu, Chenghua Lin, Emmanouil Benetos, Wenwu Wang, Guangyu Xia, Wei Xue, and Yike Guo. Composerx: Multi-agent symbolic music composition with llms, 2024. URL https://arxiv.org/abs/2404.18081 .
+
+Zhibin Gou, Zhihong Shao, Yeyun Gong, Yelong Shen, Yujiu Yang, Nan Duan, and Weizhu Chen. Critic: Large language models can self-correct with tool-interactive critiquing, 2024. URL https://arxiv.org/abs/2305.11738 .
+
+Siyuan Guo, Cheng Deng, Ying Wen, Hechang Chen, Yi Chang, and Jun Wang. Ds-agent: Automated data science by empowering large language models with case-based reasoning, 2024. URL https://arxiv.org/abs/2402.17453 .
+
+Md Mahadi Hassan, Alex Knipper, and Shubhra Kanti Karmaker Santu. Chatgpt as your personal data scientist, 2023. URL https://arxiv.org/abs/2305.13657 .
+12
+
+--- TRANG 13 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Sirui Hong, Yizhang Lin, Bang Liu, Bangbang Liu, Binhao Wu, Danyang Li, Jiaqi Chen, Jiayi Zhang, Jinlin Wang, Li Zhang, Lingyao Zhang, Min Yang, Mingchen Zhuge, Taicheng Guo, Tuo Zhou, Wei Tao, Wenyi Wang, Xiangru Tang, Xiangtao Lu, Xiawu Zheng, Xinbing Liang, Yaying Fei, Yuheng Cheng, Zongze Xu, and Chenglin Wu. Data interpreter: An llm agent for data science, 2024. URL https://arxiv.org/abs/2402.18679 .
+
+Xueyu Hu, Ziyu Zhao, Shuang Wei, Ziwei Chai, Qianli Ma, Guoyin Wang, Xuwu Wang, Jing Su, Jingjing Xu, Ming Zhu, Yao Cheng, Jianbo Yuan, Jiwei Li, Kun Kuang, Yang Yang, Hongxia Yang, and Fei Wu. Infiagent-dabench: Evaluating agents on data analysis tasks, 2024. URL https://arxiv.org/abs/2401.05507 .
+
+Liqiang Jing, Zhehui Huang, Xiaoyang Wang, Wenlin Yao, Wenhao Yu, Kaixin Ma, Hongming Zhang, Xinya Du, and Dong Yu. Dsbench: How far are data science agents to becoming data science experts?, 2024. URL https://arxiv.org/abs/2409.07703 .
+
+Wendy Kan. Ghouls, goblins, and ghosts... boo!, 2016. URL https://kaggle.com/competitions/ghouls-goblins-and-ghosts-boo .
+
+Mike Lewis, Denis Yarats, Yann N. Dauphin, Devi Parikh, and Dhruv Batra. Deal or no deal? end-to-end learning for negotiation dialogues, 2017. URL https://arxiv.org/abs/1706.05125 .
+
+Guohao Li, Hasan Abed Al Kader Hammoud, Hani Itani, Dmitrii Khizbullin, and Bernard Ghanem. Camel: Communicative agents for "mind" exploration of large language model society, 2023. URL https://arxiv.org/abs/2303.17760 .
+
+Killian Lucas. GitHub - KillianLucas/open-interpreter: A natural language interface for computers — github.com. https://github.com/KillianLucas/open-interpreter , 2023.
+
+Aman Madaan, Niket Tandon, Prakhar Gupta, Skyler Hallinan, Luyu Gao, Sarah Wiegreffe, Uri Alon, Nouha Dziri, Shrimai Prabhumoye, Yiming Yang, Shashank Gupta, Bodhisattwa Prasad Majumder, Katherine Hermann, Sean Welleck, Amir Yazdanbakhsh, and Peter Clark. Self-refine: Iterative refinement with self-feedback, 2023. URL https://arxiv.org/abs/2303.17651 .
+
+OpenAI. Chatgpt: Optimizing language models for dialogue. https://openai.com/blog/chatgpt , 2022.
+
+OpenAI. Gpt-4 technical report. https://arxiv.org/abs/2303.08774 , 2023.
+
+Dominik Schmidt, Zhengyao Jiang, and Yuxiang Wu. Introducing Weco AIDE. https://www.weco.ai/blog/technical-report , April 2024.
+
+Noah Shinn, Federico Cassano, Edward Berman, Ashwin Gopinath, Karthik Narasimhan, and Shunyu Yao. Reflexion: Language agents with verbal reinforcement learning, 2023. URL https://arxiv.org/abs/2303.11366 .
+
+Yashar Talebirad and Amirhossein Nadiri. Multi-agent collaboration: Harnessing the power of intelligent llm agents, 2023. URL https://arxiv.org/abs/2306.03314 .
+
+Xiangru Tang, Yuliang Liu, Zefan Cai, Yanjun Shao, Junjie Lu, Yichi Zhang, Zexuan Deng, Helan Hu, Kaikai An, Ruijun Huang, Shuzheng Si, Sheng Chen, Haozhe Zhao, Liang Chen, Yan Wang, Tianyu Liu, Zhiwei Jiang, Baobao Chang, Yin Fang, Yujia Qin, Wangchunshu Zhou, Yilun Zhao, Arman Cohan, and Mark Gerstein. Ml-bench: Evaluating large language models and agents for machine learning tasks on repository-level code, 2024. URL https://arxiv.org/abs/2311.09835 .
+
+Gladys Tyen, Hassan Mansoor, Victor C ˘arbune, Peter Chen, and Tony Mak. Llms cannot find reasoning errors, but can correct them given the error location, 2024. URL https://arxiv.org/abs/2311.08516 .
+
+Ashley Chow Walter Reade. Binary classification with a bank churn dataset, 2024a. URL https://kaggle.com/competitions/playground-series-s4e1 .
+13
+
+--- TRANG 14 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Ashley Chow Walter Reade. Multi-class prediction of obesity risk, 2024b. URL https://kaggle.com/competitions/playground-series-s4e2 .
+
+Ashley Chow Walter Reade. Steel plate defect prediction, 2024c. URL https://kaggle.com/competitions/playground-series-s4e3 .
+
+Ashley Chow Walter Reade. Classification with an academic success dataset, 2024d. URL https://kaggle.com/competitions/playground-series-s4e6 .
+
+Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Brian Ichter, Fei Xia, Ed Chi, Quoc Le, and Denny Zhou. Chain-of-thought prompting elicits reasoning in large language models, 2023. URL https://arxiv.org/abs/2201.11903 .
+
+Zhiheng Xi, Wenxiang Chen, Xin Guo, Wei He, Yiwen Ding, Boyang Hong, Ming Zhang, Junzhe Wang, Senjie Jin, Enyu Zhou, Rui Zheng, Xiaoran Fan, Xiao Wang, Limao Xiong, Yuhao Zhou, Weiran Wang, Changhao Jiang, Yicheng Zou, Xiangyang Liu, Zhangyue Yin, Shihan Dou, Rongxiang Weng, Wensen Cheng, Qi Zhang, Wenjuan Qin, Yongyan Zheng, Xipeng Qiu, Xuanjing Huang, and Tao Gui. The rise and potential of large language model based agents: A survey, 2023. URL https://arxiv.org/abs/2309.07864 .
+
+Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik Narasimhan, and Yuan Cao. React: Synergizing reasoning and acting in language models, 2023. URL https://arxiv.org/abs/2210.03629 .
+
+Lei Zhang, Yuge Zhang, Kan Ren, Dongsheng Li, and Yuqing Yang. Mlcopilot: Unleashing the power of large language models in solving machine learning tasks, 2024a. URL https://arxiv.org/abs/2304.14979 .
+
+Yaolun Zhang, Yinxu Pan, Yudong Wang, and Jie Cai. Pybench: Evaluating llm agent on various real-world coding tasks, 2024b. URL https://arxiv.org/abs/2407.16732 .
+
+Yuge Zhang, Qiyang Jiang, Xingyu Han, Nan Chen, Yuqing Yang, and Kan Ren. Benchmarking data science agents, 2024c. URL https://arxiv.org/abs/2402.17168 .
+
+Wangchunshu Zhou, Yuchen Eleanor Jiang, Long Li, Jialong Wu, Tiannan Wang, Shi Qiu, Jintian Zhang, Jing Chen, Ruipu Wu, Shuai Wang, Shiding Zhu, Jiyu Chen, Wentao Zhang, Xiangru Tang, Ningyu Zhang, Huajun Chen, Peng Cui, and Mrinmaya Sachan. Agents: An open-source framework for autonomous language agents, 2023. URL https://arxiv.org/abs/2309.07870 .
+
+Wangchunshu Zhou, Yixin Ou, Shengwei Ding, Long Li, Jialong Wu, Tiannan Wang, Jiamin Chen, Shuai Wang, Xiaohua Xu, Ningyu Zhang, Huajun Chen, and Yuchen Eleanor Jiang. Symbolic learning enables self-evolving agents, 2024. URL https://arxiv.org/abs/2406.18532 .
+14
+
+--- TRANG 15 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+A THUẬT TOÁN
+
+Thuật toán 1: Quy trình Làm việc AutoKaggle
+Đầu vào : Cuộc thi C, Bộ dữ liệu D
+Đầu ra: Giải pháp S, Báo cáo toàn diện R
+1Khởi tạo trạng thái s0 với giai đoạn đầu tiên ϕ1: "Hiểu Bối cảnh";
+2t ← 0;
+3Φ ← {ϕ1, ϕ2, ..., ϕ 6}; /*Tập hợp tất cả các giai đoạn */
+4Định nghĩa Aϕ cho mỗi ϕ ∈ Φ; /*Agent cho mỗi giai đoạn */
+5do
+6 st ← GetCurrentState ();
+7 ϕcurrent ← GetCurrentPhase (Φ);
+8 At ← A ϕcurrent;
+9 for a ∈ At do
+10 if a is Planner then
+11 ra ← a.execute (st);
+12 st ← UpdateState (st, ra);
+13 if UserInteractionEnabled () then
+14 st ← UserReview (st); /*Người dùng Đánh giá kế hoạch */
+15 else if a is Developer then
+16 ra ← a.execute (st);
+17 st ← UpdateState (st, ra);
+18 if NoErrors (ra) then
+19 T ← ExecuteUnitTests (ϕcurrent);
+20 if ¬PassTests (T) then
+21 st ← Debug (st);
+22 else
+23 ra ← a.execute (st);
+24 st ← UpdateState (st, ra);
+25 if AllAgentsCompleted (At) and PassTests (T) then
+26 ϕcurrent ← NextPhase (Φ);
+27 t ← t+ 1;
+28while ∃ϕ ∈ Φ : not completed (ϕ);
+29S ← ExtractSolution (st);
+30R ← GenerateReport (st);
+15
+
+--- TRANG 16 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Thuật toán 2: Phát triển dựa trên Gỡ lỗi và Kiểm thử Lặp đi lặp lại
+Đầu vào : Mã ban đầu Cϕi, Trạng thái hiện tại st, Kế hoạch Pϕi, Bối cảnh lịch sử H, Số lần thử tối đa max tries , Ngưỡng lỗi threshold
+Đầu ra: Mã đã được gỡ lỗi và kiểm thử C′ϕi, Cờ thực thi execution flag
+1round ← 0;
+2error flag ← false ;
+3execution flag ← true ;
+4retry flag ← false ;
+5error history ← ∅;
+6while round < max tries do
+7 if round = 0 or retry flag then
+8 Cϕi ← GenerateCode (st, Pϕi, H);
+9 error history ← ∅;
+10 retry flag ← false ;
+11 error flag, E ϕi ← RunCode (Cϕi);
+12 if error flag then
+13 error history ← error history ∪ {Eϕi};
+14 if |error history | >= threshold then
+15 retry flag ← EvaluateRetry (error history );
+16 if retry flag then
+17 continue ;
+18 Cϕi ← DebugCode (Cϕi, Eϕi, H);
+19 else
+20 Rϕi ← ExecuteUnitTests (Cϕi, Tϕi);
+21 if ∃rj ∈ Rϕi : rj = 0 then
+22 Cϕi ← DebugTestFailures (Cϕi, Rϕi, H);
+23 else
+24 execution flag ← true ;
+25 break ;
+26 round ← round + 1;
+27if round = max tries then
+28 execution flag ← false ;
+29return Cϕi, execution flag
+
+B MÔ TẢ BỘ DỮ LIỆU CHI TIẾT
+
+Đây là mô tả chi tiết về bộ dữ liệu của chúng tôi. Lưu ý rằng chúng tôi sử dụng nhãn tác vụ để đại diện cho các bộ dữ liệu khác nhau. Tác vụ 1 đề cập đến Titanic (Cukierski, 2012), Tác vụ 2 đề cập đến Spaceship Titanic (Addison Howard, 2022), Tác vụ 3 đề cập đến House Prices (Anna Montoya, 2016), Tác vụ 4 đề cập đến Monsters (Kan, 2016), Tác vụ 5 đề cập đến Academic Success (Walter Reade, 2024d), Tác vụ 6 đề cập đến Bank Churn (Walter Reade, 2024a), Tác vụ 7 đề cập đến Obesity Risk (Walter Reade, 2024b), và Tác vụ 8 đề cập đến Plate Defect (Walter Reade, 2024c).
+
+Framework của chúng tôi cố ý tránh chọn các cuộc thi với bộ dữ liệu quá lớn. Lý do cho điều này là bộ dữ liệu lớn hơn làm tăng đáng kể thời gian chạy thực nghiệm, làm cho việc dành một máy cho một thí nghiệm đơn lẻ trong thời gian dài như vậy trở nên không thực tế.
+
+Đầu tiên, chúng tôi cố ý tránh chọn các cuộc thi với bộ dữ liệu quá lớn, vì bộ dữ liệu lớn hơn có thể làm tăng đáng kể thời gian chạy thực nghiệm, làm cho việc sử dụng một máy duy nhất cho các thí nghiệm kéo dài trở nên không thực tế. Thứ hai, chúng tôi tuân thủ cài đặt cuộc thi thực tế bằng cách tạo tệp nộp bài và nộp chúng thủ công để đánh giá. Việc đơn giản chia dữ liệu đào tạo sẽ dẫn đến một bộ kiểm thử với phân phối rất giống với dữ liệu đào tạo, điều này có thể làm tăng các chỉ số hiệu suất—tương tự như sự khác biệt thường thấy giữa điểm xác thực và điểm kiểm thử thực. Thứ ba, bộ dữ liệu của chúng tôi xác định rõ ràng loại cuộc thi, tức là dữ liệu dạng bảng. Thứ tư, vì
+16
+
+--- TRANG 17 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+bộ dữ liệu cho mô hình ngôn ngữ lớn bao gồm các cuộc thi Kaggle có sẵn công khai, chúng tôi chỉ chọn những cuộc thi được phát hành sau năm 2024. Framework của chúng tôi yêu cầu các agent độc lập diễn giải các tác vụ cuộc thi, hiểu dữ liệu và xác định các chiến lược tối ưu hóa thích hợp mà không dựa vào hướng dẫn được định nghĩa trước."
+
+Bảng 5: Các tác vụ Kaggle được chọn. Đối với mỗi tác vụ, chúng tôi hiển thị số của nó, danh mục, mức độ khó, số đội, kích thước train và test trong bộ dữ liệu.
+
+Danh mục Số Tên Tác vụ Mức Tác vụ Đội Train Test
+Classic1 Titanic Phân loại Trung bình 13994 891 418
+2 Spaceship Titanic Phân loại Dễ 1720 8693 4277
+3 House Prices Hồi quy Trung bình 4383 1460 1459
+4 Monsters Phân loại Dễ 763 371 529
+Recent5 Academic Success Hồi quy Trung bình 2684 76.5K 51K
+6 Bank Churn Hồi quy Dễ 3632 165K 110K
+7 Obesity Risk Phân loại Dễ 3587 20.8K 13.8K
+8 Plate Defect Hồi quy Trung bình 2199 19.2K 12.8K
+
+C CHI TIẾT TRIỂN KHAI
+
+C.1 CHI TIẾT AGENT
+
+C.1.1 AGENT CƠ SỞ
+Agent cơ sở là lớp cha của các agent khác (Reader, Planner, Developer, Reviewer, và Summarizer) trong AutoKaggle. Agent này có thể hoạt động với nhiều công cụ khác nhau cho các tác vụ liên quan đến phân tích dữ liệu, đánh giá mô hình và truy xuất tài liệu v.v.
+
+C.1.2 READER
+Reader được thiết kế để đọc tài liệu và tóm tắt thông tin. Nó xử lý overview.txt trong mỗi cuộc thi, sau đó cung cấp tóm tắt được tổ chức tốt về bối cảnh cuộc thi
+
+Prompt của Agent Reader / Task Prompt
+Vai trò: đọc tài liệu và tóm tắt thông tin
+Mô tả: Reader chỉ xuất hiện trong giai đoạn Hiểu Bối cảnh, nó đọc tệp overview.txt của cuộc thi Kaggle, dữ liệu mẫu của cả tập huấn luyện và kiểm thử và tóm tắt nó thành một tệp competition info.txt có cấu trúc rõ ràng theo định dạng markdown.
+17
+
+--- TRANG 18 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Prompt của Agent Reader / Task Prompt
+# BỐI CẢNH #
+{phases_in_context}
+Hiện tại, tôi đang ở giai đoạn: Hiểu Bối cảnh.
+#############
+# TÁC VỤ #
+{task}
+#############
+# PHẢN HỒI #
+Hãy giải quyết điều này theo cách từng bước một.
+#############
+# BẮT ĐẦU PHÂN TÍCH #
+Nếu bạn hiểu, xin hãy yêu cầu tôi cung cấp tổng quan về cuộc thi khoa học dữ liệu này, và xem trước dữ liệu từ tôi.
+Xin hãy tiến hành phân tích toàn diện về cuộc thi, tập trung vào các khía cạnh sau:
+1. Tổng quan Cuộc thi: Hiểu bối cảnh và ngữ cảnh của chủ đề.
+2. Tệp: Phân tích từng tệp được cung cấp, chi tiết mục đích và cách nó nên được sử dụng trong cuộc thi.
+3. Định nghĩa Vấn đề: Làm rõ định nghĩa và yêu cầu của vấn đề.
+4. Thông tin Dữ liệu: Thu thập thông tin chi tiết về dữ liệu, bao gồm cấu trúc và nội dung của nó.
+4.1 Loại dữ liệu:
+4.1.1. Loại ID: các đặc trưng là định danh duy nhất cho mỗi điểm dữ liệu, sẽ KHÔNG được sử dụng trong đào tạo mô hình.
+4.1.2. Loại Số: các đặc trưng là giá trị số.
+4.1.3. Loại Phân loại: các đặc trưng là giá trị phân loại.
+4.1.4 Loại Datetime: các đặc trưng là giá trị datetime.
+4.2 Mô tả dữ liệu chi tiết
+5. Biến Mục tiêu: Xác định biến mục tiêu cần được dự đoán hoặc tối ưu hóa, được cung cấp trong tập huấn luyện nhưng không có trong tập kiểm thử.
+6. Chỉ số Đánh giá: Xác định các chỉ số đánh giá sẽ được sử dụng để đánh giá các bài nộp.
+7. Định dạng Nộp bài: Hiểu định dạng yêu cầu cho bài nộp cuối cùng.
+8. Các Khía cạnh Chính Khác: Làm nổi bật bất kỳ khía cạnh quan trọng nào khác có thể ảnh hưởng đến cách tiếp cận cuộc thi.
+
+Đảm bảo rằng phân tích là kỹ lưỡng, với sự nhấn mạnh mạnh mẽ vào:
+1. Hiểu mục đích và cách sử dụng của mỗi tệp được cung cấp.
+2. Tìm ra biến mục tiêu và chỉ số đánh giá.
+3. Phân loại các đặc trưng.
+
+C.1.3 PLANNER
+Planner được thiết kế để tạo kế hoạch tác vụ và lộ trình. Chức năng chính của agent là cấu trúc và tổ chức các tác vụ thành các kế hoạch có thể thực thi, chủ yếu bằng cách tận dụng các công cụ có sẵn và báo cáo được tạo trước đó.
+
+Prompt của Agent Planner / Task Prompt
+Vai trò: tạo kế hoạch tác vụ và lộ trình
+Mô tả: Trong lần thực thi đầu tiên, Planner thu thập thông tin cuộc thi, trạng thái hiện tại và quy tắc của người dùng để tạo kế hoạch mới. Việc tạo này liên quan đến nhiều vòng tương tác với LLM để thu thập chi tiết tác vụ, tổ chức lại dữ liệu thành các định dạng có cấu trúc (Markdown và JSON), và hoàn thiện kế hoạch.
+18
+
+--- TRANG 19 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Prompt của Agent Planner / Task Prompt
+# BỐI CẢNH #
+{phases_in_context}
+Hiện tại, tôi đang ở giai đoạn: {phase_name}.
+#############
+# THÔNG TIN #
+{background_info}
+{state_info}
+#############
+# GHI CHÚ #
+## HƯỚNG DẪN LẬP KẾ HOẠCH ##
+1. Giới hạn kế hoạch tối đa BỐN tác vụ.
+2. Cung cấp phương pháp và ràng buộc rõ ràng cho mỗi tác vụ.
+3. Tập trung vào các bước quan trọng cụ thể cho giai đoạn hiện tại.
+4. Ưu tiên các phương pháp và giá trị được đề cập trong QUY TẮC NGƯỜI DÙNG.
+5. Cung cấp kế hoạch chi tiết mà không viết mã thực tế.
+6. CHỈ tập trung vào các tác vụ liên quan đến giai đoạn này, tránh những tác vụ thuộc về các giai đoạn khác. Ví dụ, trong giai đoạn EDA chuyên sâu:
+- bạn CÓ THỂ thực hiện phân tích đơn biến chi tiết trên các đặc trưng CHÍNH.
+- bạn KHÔNG THỂ sửa đổi bất kỳ đặc trưng hoặc sửa đổi dữ liệu.
+## TÙY CHỌN ĐẦU RA DỮ LIỆU ##
+1. Ưu tiên định dạng TEXT (print) cho thông tin thống kê.
+2. In mô tả trước khi xuất thống kê.
+3. Chỉ tạo hình ảnh nếu mô tả văn bản không đủ.
+## YÊU CẦU PHƯƠNG PHÁP ##
+1. Cung cấp phương pháp rất chi tiết, đặc biệt cho làm sạch dữ liệu.
+2. Chỉ định hành động cho mỗi đặc trưng mà không bỏ sót.
+## QUẢN LÝ TÀI NGUYÊN ##
+1. Xem xét thời gian chạy và hiệu quả, đặc biệt cho:
+- Trực quan hóa dữ liệu
+- Xử lý bộ dữ liệu lớn
+- Thuật toán phức tạp
+2. Giới hạn hình ảnh được tạo tối đa 10 cho EDA.
+3. Tập trung vào trực quan hóa quan trọng với cái nhìn có giá trị.
+## VÍ DỤ TỐI ƯU ##
+Khi sử dụng seaborn hoặc matplotlib cho bộ dữ liệu lớn:
+- Tắt các chi tiết không cần thiết (ví dụ: annot=False trong heatmap)
+- Ưu tiên hiệu quả trong tạo biểu đồ
+#############
+# TÁC VỤ #
+{task}
+#############
+# PHẢN HỒI #
+Hãy giải quyết điều này theo cách từng bước một.
+#############
+# BẮT ĐẦU LẬP KẾ HOẠCH #
+Trước khi bạn bắt đầu, xin hãy yêu cầu các tài liệu sau từ tôi, chứa thông tin quan trọng sẽ hướng dẫn việc lập kế hoạch của bạn:
+1. Báo cáo và kế hoạch từ giai đoạn trước
+2. Công cụ có sẵn trong giai đoạn này
+3. Dữ liệu mẫu để phân tích
+
+Xin hãy thiết kế kế hoạch rõ ràng và cụ thể cho từng ĐẶC TRƯNG cho giai đoạn phát triển hiện tại: {phase_name}.
+Developer sẽ thực hiện các tác vụ dựa trên kế hoạch của bạn.
+Tôi sẽ cung cấp cho bạn THÔNG TIN, RÀNG BUỘC TÀI NGUYÊN, và báo cáo cũng như kế hoạch trước đó.
+
+Bạn có thể sử dụng mô hình lý luận sau để thiết kế kế hoạch:
+1. Chia nhỏ tác vụ thành các bước nhỏ hơn.
+2. Cho mỗi bước, hãy tự hỏi và trả lời:
+- "Mục tiêu của bước này là gì?"
+- "Các hành động thiết yếu để đạt được mục tiêu là gì?"
+- "Những đặc trưng nào liên quan đến mỗi hành động?"
+- "Công cụ nào có thể được sử dụng cho mỗi hành động? Các tham số của công cụ là gì?"
+- "Đầu ra mong đợi của mỗi hành động là gì? Tác động của hành động đến dữ liệu là gì?"
+- "Các ràng buộc của bước này là gì?"
+19
+
+--- TRANG 20 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+C.1.4 DEVELOPER
+Developer chịu trách nhiệm triển khai và gỡ lỗi mã dựa trên các kế hoạch có cấu trúc được tạo bởi Planner. Chức năng chính của Developer là dịch lộ trình tác vụ cấp cao thành mã có thể thực thi, giải quyết bất kỳ vấn đề nào phát sinh, và thực hiện kiểm thử đơn vị để đảm bảo chức năng của giải pháp.
+
+Prompt của Agent Developer / Task Prompt
+Vai trò: viết và triển khai mã theo kế hoạch
+Mô tả: Developer đầu tiên xem xét kế hoạch tác vụ và thông tin cuộc thi liên quan. Nó có thể thu thập mã từ các giai đoạn trước khi cần thiết và sử dụng LLM để tạo mã mới. Developer cũng dọn dẹp bất kỳ phần mã dư thừa nào, viết hàm, và đảm bảo mã chạy chính xác bằng cách gỡ lỗi và thực hiện kiểm thử đơn vị. Nó lặp lại quy trình cho đến khi mã vượt qua tất cả kiểm thử.
+20
+
+--- TRANG 21 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Prompt của Agent Developer / Task Prompt
+# BỐI CẢNH #
+{phases_in_context}
+Hiện tại, tôi đang ở giai đoạn: {phase_name}.
+#############
+# THÔNG TIN #
+{background_info}
+{state_info}
+#############
+# KẾ HOẠCH #
+{plan}
+#############
+# TÁC VỤ #
+{task}
+#############
+# PHẢN HỒI: KHỐI (MÃ & GIẢI THÍCH) #
+TÁC VỤ 1:
+QUY TRÌNH SUY NGHĨ:
+[Giải thích cách tiếp cận và lý luận của bạn]
+MÃ:
+'''python
+[mã]
+'''
+GIẢI THÍCH:
+[Giải thích ngắn gọn về mã và mục đích của nó]
+TÁC VỤ 2:
+[Lặp lại cấu trúc trên cho mỗi tác vụ/tác vụ con]
+...
+#############
+# BẮT ĐẦU MÃ HÓA #
+Trước khi bạn bắt đầu, xin hãy yêu cầu thông tin sau từ tôi:
+1. Mã từ các giai đoạn trước
+2. Tất cả đặc trưng của dữ liệu
+3. Công cụ có sẵn
+
+Khi bạn có thông tin này, hãy cung cấp phản hồi hoàn chỉnh của bạn với mã và giải thích cho tất cả các tác vụ trong một tin nhắn duy nhất.
+
+Phát triển một giải pháp hiệu quả dựa trên kế hoạch được cung cấp bởi Planner:
+1. Triển khai các tác vụ và phương pháp cụ thể được nêu trong kế hoạch
+2. Đảm bảo mã rõ ràng, ngắn gọn và được tài liệu tốt
+3. Sử dụng các công cụ có sẵn bằng cách gọi chúng với các tham số chính xác
+4. Xem xét loại dữ liệu, yêu cầu dự án và ràng buộc tài nguyên
+5. Viết mã dễ hiểu bởi người khác
+
+Hãy nhớ cân bằng hiệu quả với tính dễ đọc và bảo trì.
+
+C.1.5 REVIEWER
+Reviewer chịu trách nhiệm đánh giá hiệu suất của các agent khác trong việc hoàn thành tác vụ và cung cấp phản hồi xây dựng.
+21
+
+--- TRANG 22 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Prompt của Agent Reviewer / Task Prompt
+Vai trò: đánh giá hiệu suất agent và đưa ra phản hồi
+Mô tả: Agent Reviewer đánh giá hiệu suất của nhiều agent. Trong mỗi giai đoạn đánh giá, nó gộp đề xuất và điểm số từ các agent khác nhau thành một báo cáo thống nhất. Nó tương tác với LLM để tạo phản hồi chi tiết, lặp qua các vòng để đánh giá kết quả tác vụ, gộp phản hồi agent, và tạo ra cả điểm số cuối cùng và đề xuất xây dựng.
+
+Prompt của Agent Reviewer
+# BỐI CẢNH #
+{phases_in_context}
+Mỗi giai đoạn liên quan đến sự hợp tác giữa nhiều agent. Bạn hiện đang đánh giá hiệu suất của các agent trong Giai đoạn: {phase_name}.
+#############
+# TÁC VỤ #
+Tác vụ của bạn là đánh giá hiệu suất của một số agent trong việc hoàn thành Giai đoạn: {phase_name}.
+Tôi sẽ cung cấp mô tả về mỗi agent, các tác vụ họ thực hiện, và kết quả của những tác vụ đó.
+Xin hãy gán điểm từ 1 đến 5 cho mỗi agent, với 1 cho biết hiệu suất rất kém và 5 cho biết hiệu suất xuất sắc.
+Ngoài ra, cung cấp đề xuất cụ thể để cải thiện hiệu suất của mỗi agent, nếu có thể áp dụng.
+Nếu hiệu suất của một agent thỏa đáng, không cần đề xuất.
+#############
+# PHẢN HỒI: ĐỊNH DẠNG JSON #
+Hãy giải quyết điều này theo cách từng bước một.
+#############
+# BẮT ĐẦU ĐÁNH GIÁ #
+Nếu bạn sẵn sàng, xin hãy yêu cầu từ tôi vai trò, mô tả, đầu vào, tác vụ và kết quả thực thi của agent cần được đánh giá.
+
+C.1.6 SUMMARIZER
+Summarizer chịu trách nhiệm tạo tóm tắt, thiết kế câu hỏi, và tổ chức lại cả câu hỏi và câu trả lời để tạo ra báo cáo có cấu trúc dựa trên các giai đoạn cuộc thi.
+
+Prompt của Agent Summarizer / Task Prompt
+Vai trò: đánh giá hiệu suất agent và đưa ra phản hồi
+Mô tả: Agent Summarizer làm việc qua các giai đoạn khác nhau, mỗi giai đoạn tập trung vào một tác vụ cụ thể như chọn hình ảnh liên quan, thiết kế câu hỏi chính, trả lời câu hỏi liên quan đến giai đoạn, và tổ chức phản hồi thành báo cáo có cấu trúc. Mỗi giai đoạn liên quan đến tương tác với các đầu vào được cung cấp như thông tin cuộc thi, kế hoạch của planner và đánh giá của reviewer để tổng hợp những cái nhìn liên quan nhất.
+22
+
+--- TRANG 23 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Prompt của Agent Summarizer
+# TÁC VỤ #
+Xin hãy tổ chức lại các câu trả lời mà bạn đã đưa ra trong bước trước, và tổng hợp chúng thành một báo cáo.
+#############
+# PHẢN HỒI: ĐỊNH DẠNG MARKDOWN #
+'''markdown
+# BÁO CÁO
+## CÂU HỎI VÀ CÂU TRẢ LỜI
+### Câu hỏi 1
+Bạn đã xử lý những tệp nào? Những tệp nào được tạo? Trả lời với đường dẫn tệp chi tiết.
+### Câu trả lời 1
+[câu trả lời cho câu hỏi 1]
+### Câu hỏi 2
+Những đặc trưng nào liên quan đến giai đoạn này? Chúng đã trải qua những thay đổi gì? Nếu bất kỳ loại đặc trưng nào được sửa đổi, hãy trả lời những đặc trưng nào được sửa đổi và cách chúng được sửa đổi. Nếu bất kỳ đặc trưng nào được xóa hoặc tạo, hãy trả lời những đặc trưng nào được xóa hoặc tạo và cung cấp giải thích chi tiết. (Đây là câu hỏi CỐ ĐỊNH cho mỗi giai đoạn.)
+### Câu trả lời 2
+[câu trả lời cho câu hỏi 2]
+### Câu hỏi 3
+[lặp lại câu hỏi 3]
+### Câu trả lời 3
+[câu trả lời cho câu hỏi 3]
+### Câu hỏi 4
+[lặp lại câu hỏi 4]
+### Câu trả lời 4
+[câu trả lời cho câu hỏi 4]
+### Câu hỏi 5
+[lặp lại câu hỏi 5]
+### Câu trả lời 5
+[câu trả lời cho câu hỏi 5]
+### Câu hỏi 6
+[lặp lại câu hỏi 6]
+### Câu trả lời 6
+[câu trả lời cho câu hỏi 6]
+'''
+#############
+# BẮT ĐẦU TỔ CHỨC LẠI CÂU HỎI #
+
+C.2 KIỂM THỬ ĐƠN VỊ
+Trong các cuộc thi khoa học dữ liệu, mã được tạo bởi các agent có thể thực thi được trong trình thông dịch Python, nhưng việc thực thi này không đảm bảo tính chính xác. Để đảm bảo rằng các phụ thuộc dữ liệu được xử lý đúng cách, một Công cụ Kiểm thử Đơn vị là cần thiết. Trong nghiên cứu của chúng tôi, nơi framework hoạt động lặp đi lặp lại, chúng tôi nhằm tách biệt các tác vụ tương ứng với các trạng thái khác nhau trong các cuộc thi khoa học dữ liệu. Mỗi giai đoạn xây dựng dựa trên kết quả của giai đoạn trước, làm cho việc xác nhận rằng logic vẫn hợp lý, xử lý dữ liệu chính xác và thông tin chuyển giao liền mạch từ trạng thái này sang trạng thái khác trở nên quan trọng. Công cụ Kiểm thử Đơn vị của chúng tôi đóng vai trò chính trong việc hỗ trợ giai đoạn self-refine của các agent LLM.
+
+Chúng tôi phát triển các kiểm thử đơn vị (trong Bảng 6 đi kèm) dựa trên các vấn đề được xác định trong quá trình thực thi baseline yếu, baseline mạnh và AutoKaggle của chúng tôi. Nếu mã không thể chạy trong trình thông dịch Python, một thông báo lỗi được chuyển tiếp đến agent Reviewer. Nếu mã vượt qua giai đoạn ban đầu này, nó tiến đến Công cụ Kiểm thử Đơn vị, nơi tất cả các kiểm thử cần thiết được thực thi trong một vòng lặp. Nếu một kiểm thử thất bại, lý do được ghi nhận như bộ nhớ ngắn hạn và chuyển đến trạng thái đánh giá tiếp theo. Các giai đoạn đánh giá và lập kế hoạch hoạt động trong tương tác đối kháng: giai đoạn đánh giá biên soạn lý do cho các kiểm thử đơn vị thất bại, trong khi planner giải quyết những thất bại này trong các lần lặp tiếp theo.
+23
+
+--- TRANG 24 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Bảng 6: Tổng quan về kiểm thử đơn vị cho trạng thái DC, FE, và MBVP. Những kiểm thử đơn vị này xử lý để phát hiện giá trị thiếu, ngoại lai, trùng lặp và các vấn đề nhất quán dữ liệu khác.
+
+Trạng thái Tên kiểm thử đơn vị Mô tả kiểm thử đơn vị
+Trạng thái DCtestdocument exist Kiểm thử nếu cleaned train.csv và cleaned test.csv tồn tại.
+testnoduplicate cleaned train Kiểm thử nếu có bất kỳ hàng trùng lặp nào trong cleaned train.csv.
+testnoduplicate cleaned test Kiểm thử nếu có bất kỳ hàng trùng lặp nào trong cleaned test.csv.
+testreadable cleaned train Kiểm thử nếu cleaned train.csv có thể đọc được.
+testreadable cleaned test Kiểm thử nếu cleaned test.csv có thể đọc được.
+testcleaned train nomissing values Kiểm thử nếu cleaned train.csv chứa giá trị thiếu.
+testcleaned testnomissing values Kiểm thử nếu cleaned test.csv chứa giá trị thiếu.
+testcleaned train noduplicated features Kiểm thử nếu cleaned train.csv chứa đặc trưng trùng lặp.
+testcleaned testnoduplicated features Kiểm thử nếu cleaned test.csv chứa đặc trưng trùng lặp.
+testcleaned difference train testcolumns Kiểm thử nếu cleaned train.csv và cleaned test.csv có cùng đặc trưng ngoại trừ biến mục tiêu.
+testcleaned train nomissing target Kiểm thử nếu biến mục tiêu có trong cleaned train.csv.
+Trạng thái FEtestdocument exist Kiểm thử nếu processed train.csv và processed test.csv tồn tại.
+testprocessed train feature number Kiểm thử nếu giai đoạn kỹ thuật đặc trưng được thực hiện tốt trong processed train.csv.
+testprocessed testfeature number Kiểm thử nếu giai đoạn kỹ thuật đặc trưng được thực hiện tốt trong processed test.csv.
+testfilesize Kiểm thử nếu dữ liệu đã xử lý lớn hơn ngưỡng.
+testprocessed train noduplicated features Kiểm thử nếu processed train.csv chứa đặc trưng trùng lặp.
+testprocessed testnoduplicated features Kiểm thử nếu processed test.csv chứa đặc trưng trùng lặp.
+testprocessed difference train testcolumns Kiểm thử nếu processed train.csv và processed test.csv có cùng đặc trưng ngoại trừ biến mục tiêu.
+testprocessed train nomissing target Kiểm thử nếu biến mục tiêu có trong processed train.csv.
+Trạng thái MBVPtestdocument exist Kiểm thử nếu tệp nộp bài tồn tại.
+testnoduplicate submission Kiểm thử nếu có bất kỳ hàng trùng lặp nào trong tệp nộp bài.
+testreadable submission Kiểm thử nếu tệp nộp bài có thể đọc được.
+testfilenum submission Kiểm thử nếu tệp nộp bài và samplesubmission.csv có cùng số hàng.
+testcolumn names submission Kiểm thử nếu tệp nộp bài và samplesubmission.csv có cùng tên cột.
+testsubmission validity 1) Kiểm thử nếu tệp nộp bài và samplesubmission.csv có cùng chỉ số dữ liệu. 2) Kiểm thử nếu tệp nộp bài và samplesubmission.csv có cùng phạm vi số.
+24
+
+--- TRANG 25 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+C.3 CHI TIẾT CÔNG CỤ MÁY HỌC
+
+Bảng 7: Tổng quan về Công cụ cho trạng thái DC, FE, và MBVP. Bảng này trình bày các công cụ khác nhau được phân loại theo chức năng của chúng.
+
+Trạng thái Tên công cụ Mô tả công cụ
+Trạng thái DCFillMissingValuesDiền giá trị thiếu hoặc loại bỏ cột có giá trị thiếu dựa trên ngưỡng.
+RemoveColumnsWithMissingDataLoại bỏ cột chứa giá trị thiếu từ DataFrame dựa trên ngưỡng.
+DetectAndHandleOutliersZscorePhát hiện và xử lý ngoại lai trong các cột được chỉ định sử dụng phương pháp Z-score.
+DetectAndHandleOutliersIqrPhát hiện và xử lý ngoại lai trong các cột được chỉ định sử dụng phương pháp Interquartile Range (IQR).
+RemoveDuplicates Loại bỏ hàng trùng lặp từ DataFrame.
+ConvertDataTypesChuyển đổi loại dữ liệu của các cột được chỉ định trong DataFrame.
+FormatDatetime Định dạng cột datetime thành định dạng được chỉ định.
+Trạng thái FEOneHotEncodeThực hiện mã hóa one-hot trên các cột phân loại được chỉ định.
+LabelEncodeThực hiện mã hóa nhãn trên các cột phân loại được chỉ định.
+FrequencyEncodeThực hiện mã hóa tần suất trên các cột phân loại được chỉ định.
+TargetEncodeThực hiện mã hóa mục tiêu trên các cột phân loại được chỉ định.
+CorrelationFeatureSelectionThực hiện lựa chọn đặc trưng dựa trên phân tích tương quan.
+VarianceFeatureSelection Thực hiện lựa chọn đặc trưng dựa trên phân tích phương sai.
+ScaleFeaturesChia tỷ lệ đặc trưng số trong các cột được chỉ định của DataFrame.
+PerformPcaThực hiện Principal Component Analysis (PCA) trên các cột được chỉ định của DataFrame.
+PerformRfeThực hiện Recursive Feature Elimination (RFE) trên các cột được chỉ định của DataFrame.
+CreatePolynomialFeaturesTạo đặc trưng đa thức từ các cột được chỉ định của DataFrame.
+CreateFeatureCombinationsTạo kết hợp đặc trưng từ các cột được chỉ định của DataFrame.
+Trạng thái MBVPTrainAndValidationAndSelectTheBestModelHuấn luyện, đánh giá và lựa chọn mô hình máy học tốt nhất dựa trên dữ liệu và nhãn huấn luyện, trả về mô hình hiệu suất tốt nhất cùng với điểm hiệu suất của mỗi mô hình và siêu tham số tốt nhất của chúng.
+25
+
+--- TRANG 26 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Ví dụ về Schema Công cụ. Trong bài báo này, chúng tôi cung cấp hai định dạng schema cho mỗi công cụ máy học: JSON và Markdown. Ở đây, chúng tôi lấy công cụ FillMissingValues làm ví dụ và cung cấp schema ở cả hai định dạng.
+
+Schema công cụ định dạng Markdown cho FillMissingValues
+Mô tả: Điền giá trị thiếu trong các cột được chỉ định của DataFrame. Công cụ này có thể xử lý cả đặc trưng số và phân loại bằng cách sử dụng các phương pháp điền khác nhau.
+
+Tình huống Áp dụng: Xử lý giá trị thiếu trong các loại đặc trưng khác nhau.
+
+Tham số:
+• data :
+– Loại: pd.DataFrame
+– Mô tả: Một đối tượng pandas DataFrame đại diện cho bộ dữ liệu.
+• columns :
+– Loại: string | array
+– Mô tả: Tên của (các) cột nơi giá trị thiếu nên được điền.
+• method :
+– Loại: string
+– Mô tả: Phương pháp sử dụng để điền giá trị thiếu.
+– Enum: auto | mean | median | mode | constant
+– Mặc định: auto
+• fill value :
+– Loại: number | string | null
+– Mô tả: Giá trị sử dụng khi method là constant .
+– Mặc định: None
+
+Bắt buộc: data ,columns
+Kết quả: Điền thành công giá trị thiếu trong (các) cột được chỉ định của data.
+
+Ghi chú:
+• Phương pháp auto sử dụng mean cho cột số và mode cho cột không phải số.
+• Sử dụng mean hoặc median trên cột không phải số sẽ gây ra lỗi.
+• Phương pháp mode sử dụng giá trị xuất hiện thường xuyên nhất, có thể không phải lúc nào cũng thích hợp.
+• Điền giá trị thiếu có thể đưa vào bias, đặc biệt nếu dữ liệu không thiếu hoàn toàn ngẫu nhiên.
+• Xem xét tác động của việc điền giá trị thiếu đến phân tích và hiệu suất mô hình của bạn.
+26
+
+--- TRANG 27 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Schema công cụ định dạng JSON cho FillMissingValues
+{
+"name": "fill_missing_values",
+"description": "Điền giá trị thiếu trong các cột được chỉ định của DataFrame. Công cụ này có thể xử lý cả đặc trưng số và phân loại bằng cách sử dụng các phương pháp điền khác nhau.",
+"applicable_situations": "xử lý giá trị thiếu trong các loại đặc trưng khác nhau",
+"parameters": {
+"data": {
+"type": "pd.DataFrame",
+"description": "Một đối tượng pandas DataFrame đại diện cho bộ dữ liệu."
+},
+"columns": {
+"type": ["string", "array"],
+"items": {
+"type": "string"
+},
+"description": "Tên của (các) cột nơi giá trị thiếu nên được điền."
+},
+"method": {
+"type": "string",
+"description": "Phương pháp sử dụng để điền giá trị thiếu.",
+"enum": ["auto", "mean", "median", "mode", "constant"],
+"default": "auto"
+},
+"fill_value": {
+"type": ["number", "string", "null"],
+"description": "Giá trị sử dụng khi method là 'constant'.",
+"default": null
+}
+},
+"required": ["data", "columns"],
+"result": "Điền thành công giá trị thiếu trong (các) cột được chỉ định của data",
+"additionalProperties": false,
+"notes": [
+"Phương pháp 'auto' sử dụng mean cho cột số và mode cho cột không phải số.",
+"Sử dụng 'mean' hoặc 'median' trên cột không phải số sẽ gây ra lỗi.",
+"Phương pháp 'mode' sử dụng giá trị xuất hiện thường xuyên nhất, có thể không phải lúc nào cũng thích hợp.",
+"Điền giá trị thiếu có thể đưa vào bias, đặc biệt nếu dữ liệu không thiếu hoàn toàn ngẫu nhiên.",
+"Xem xét tác động của việc điền giá trị thiếu đến phân tích và hiệu suất mô hình của bạn."
+]
+}
+27
+
+--- TRANG 28 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Sử dụng công cụ. Trong quá trình thực thi, chúng tôi trích xuất các công cụ máy học được chỉ định trong kế hoạch được tạo bởi Planner và sử dụng chúng như truy vấn để tìm kiếm toàn bộ tài liệu của các công cụ máy học. Vì kế hoạch bao gồm nhiều công cụ, chúng tôi truy xuất một số công cụ dựa trên sự tương tự của chúng với các truy vấn. Developer sau đó sử dụng các công cụ được truy xuất để thực hiện tác vụ.
+
+C.4 SỬ DỤNG CÔNG CỤ
+Trong framework đa agent được thiết kế cho các tác vụ khoa học dữ liệu tự chủ, các công cụ không chỉ phục vụ như tài nguyên tự động hóa mà còn như các thành phần tích hợp của quy trình làm việc. Framework cho phép các agent truy cập và thực thi công cụ một cách động khi chúng chuyển đổi qua các trạng thái giải quyết vấn đề khác nhau, đảm bảo tính thích ứng và hiệu quả.
+
+Quy trình sử dụng công cụ trong framework này được cấu trúc xung quanh một phương pháp có hệ thống. Thông tin công cụ trước tiên được lưu trữ trong Memory của hệ thống, được triển khai như một cơ sở dữ liệu vector. Memory này chứa các giải thích chi tiết về chức năng, cách sử dụng và ngữ cảnh của mỗi công cụ. Một tệp cấu hình được sử dụng để ánh xạ các công cụ cụ thể với các trạng thái mà chúng được yêu cầu, cho phép các agent tham chiếu và xác định các công cụ thích hợp ở mỗi giai đoạn của quy trình giải quyết vấn đề. Để xác định công cụ nào được yêu cầu trong mỗi trạng thái, bảng 7 cung cấp tổng quan về các công cụ được phân loại theo chức năng của chúng. Khi một agent chuyển vào một trạng thái cụ thể, nó tham khảo tệp cấu hình để xác định các công cụ liên quan. Từ hình 1 được hiển thị, agent sau đó truy vấn Memory để truy xuất giải thích chi tiết cho việc sử dụng công cụ, và cuối cùng, thực thi công cụ một cách chính xác dựa trên thông tin được truy xuất.
+
+Tương tác động này giữa Memory, tệp cấu hình và các agent tạo điều kiện cho việc tích hợp công cụ liền mạch, trao quyền cho các agent hoạt động tự chủ trong khi duy trì tính linh hoạt và đảm bảo ứng dụng công cụ chính xác trong suốt quy trình tự chủ.
+
+C.5 TƯƠNG TÁC NGƯỜI DÙNG
+Ở mỗi giai đoạn giải quyết vấn đề, hai phương pháp Human-in-the-Loop được sử dụng. Trước khi Planner xây dựng kế hoạch, con người có thể tương tác với dòng lệnh. Đầu vào bao gồm các quy tắc được tạo thủ công một cách tỉ mỉ, mỗi quy tắc được lập catalog cẩn thận trong một cẩm nang. Module Memory sau đó truy xuất những quy tắc được định nghĩa trước này, tích hợp kiến thức hướng dẫn của con người này trong kỹ thuật prompt để hướng dẫn các bước tiếp theo của Planner. Sau khi tạo kế hoạch, con người có thể xem xét và tinh chỉnh đầu ra của Planner. Họ kiểm tra các khu vực nơi luồng logic có vẻ không nhất quán, tập trung đặc biệt vào các điểm nơi đầu ra khác biệt so với thực tế để giải quyết các vấn đề ảo giác.
+
+D NGHIÊN CỨU TRƯỜNG HỢP : TITANIC
+
+D.1 HIỂU BỐI CẢNH
+Trong bước này, hệ thống sử dụng LLM (GPT-4o) để trích xuất và tóm tắt thông tin chính từ cuộc thi Titanic Kaggle. Khi hoàn thành quy trình này, một tệp markdown được tạo tự động chứa các chi tiết cuộc thi thiết yếu, bao gồm tổng quan cuộc thi, thông tin bộ dữ liệu và chỉ số đánh giá. Dưới đây là đoạn trích từ tệp markdown được tạo:
+28
+
+--- TRANG 29 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Hiểu Bối cảnh
+# Thông tin Cuộc thi
+## 1. Tổng quan Cuộc thi
+Cuộc thi Titanic thách thức người tham gia xây dựng mô hình dự đoán để xác định hành khách nào sống sót trong vụ đắm tàu RMS Titanic vào ngày 15 tháng 4 năm 1912, sử dụng dữ liệu hành khách như tên, tuổi, giới tính và tầng lớp kinh tế xã hội.
+
+## 2. Tệp
+-**train.csv **: Chứa dữ liệu cho 891 hành khách, bao gồm liệu họ có sống sót hay không (ground truth).
+-**test.csv **: Bao gồm dữ liệu cho 418 hành khách, nhưng không có kết quả sống sót—những điều này cần được dự đoán.
+-**sample_submission.csv **: Một mẫu hiển thị định dạng yêu cầu cho bài nộp.
+
+## 3. Định nghĩa Vấn đề
+Mục tiêu là dự đoán sự sống sót của hành khách dựa trên các đặc trưng khác nhau trong bộ dữ liệu. Người tham gia xây dựng mô hình sử dụng tập huấn luyện để học từ dữ liệu và áp dụng mô hình này để đưa ra dự đoán trên tập kiểm thử.
+......
+## 6. Chỉ số Đánh giá
+Chỉ số đánh giá là **độ chính xác **: tỷ lệ phần trăm dự đoán chính xác được thực hiện bởi mô hình.
+
+## 7. Định dạng Nộp bài
+Bài nộp phải ở định dạng CSV với chính xác 418 mục cộng với một hàng tiêu đề, chứa:
+- 'PassengerId': Được sắp xếp theo bất kỳ thứ tự nào.
+- 'Survived': Dự đoán nhị phân (1 cho sống sót, 0 cho chết).
+
+## 8. Các Khía cạnh Chính Khác
+- Cuộc thi chạy vô thời hạn với bảng xếp hạng luân chuyển.
+- Kaggle cung cấp diễn đàn cộng đồng để thảo luận và hợp tác.
+- Có lợi khi khám phá các notebook được chia sẻ để có thêm cái nhìn và phương pháp.
+
+D.2 PHÂN TÍCH DỮ LIỆU KHÁM PHÁ SƠ BỘ
+Trong trạng thái này, một phân tích khám phá tự chủ được tiến hành để hiểu bộ dữ liệu Titanic. LLM sẽ lập kế hoạch một quy trình: 1) bộ dữ liệu được tải và kiểm tra để tiết lộ cấu trúc của nó, bao gồm loại dữ liệu, thống kê cơ bản và giá trị thiếu. Một phân tích đơn biến theo sau, nơi phân phối của các đặc trưng số chính như tuổi và giá vé được khám phá, cũng như tần suất của các đặc trưng phân loại như hạng hành khách và giới tính. 2) Một phân tích song biến được thực hiện để kiểm tra mối quan hệ giữa mỗi đặc trưng và biến mục tiêu, sự sống sót. Bước này liên quan đến việc trực quan hóa tỷ lệ sống sót qua các danh mục khác nhau và kiểm tra cách các đặc trưng số thay đổi giữa người sống sót và không sống sót. 3) Một phân tích tương quan điều tra mối quan hệ giữa các đặc trưng số, được trực quan hóa thông qua ma trận tương quan và so sánh cặp bổ sung. Phân tích này cung cấp hiểu biết sâu hơn về tương tác đặc trưng, làm nổi bật những đặc trưng có thể có tác động đáng kể nhất đến sự sống sót. Dưới đây là đoạn trích từ tệp được tạo:
+29
+
+--- TRANG 30 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Kế hoạch Phân tích Dữ liệu Khám phá Sơ bộ
+Tuyệt vời, cảm ơn bạn vì thông tin. Hãy tiến hành với kế hoạch chi tiết cho giai đoạn Phân tích Dữ liệu Khám phá Sơ bộ. Các mục tiêu chính của giai đoạn này là hiểu cấu trúc dữ liệu, kiểm tra phân phối và xác định bất kỳ mẫu hoặc bất thường ban đầu nào. Chúng tôi sẽ chia nhỏ tác vụ thành bốn bước chính:
+
+### 1. Hiểu Cấu trúc Dữ liệu
+#### Mục tiêu:
+Để có được tổng quan cấp cao về loại dữ liệu, giá trị thiếu và thống kê cơ bản.
+#### Hành động:
+1.**Tải Dữ liệu **:
+- Sử dụng Pandas để đọc các tệp 'train.csv' và 'test.csv'.
+- Công cụ: 'pd.read_csv()'
+- Đầu ra Mong đợi: DataFrame cho dữ liệu train và test.
+2.**Kiểm tra Loại Dữ liệu và Giá trị Thiếu **:
+......
+3.**Tóm tắt Thống kê Cơ bản **:
+......
+### 2. Phân tích Đơn biến của Đặc trưng Số
+#### Mục tiêu:
+Để hiểu phân phối của mỗi đặc trưng số.
+#### Hành động:
+1.**Histogram cho Đặc trưng Số **:
+......
+2.**Box Plot cho Đặc trưng Số **:
+......
+### 3. Phân tích Đặc trưng Phân loại
+#### Mục tiêu:
+Để kiểm tra phân phối và tần suất của mỗi đặc trưng phân loại.
+#### Hành động:
+1.**Bar Plot cho Đặc trưng Phân loại **:
+......
+2.**Đếm Giá trị **:
+......
+### 4. Cái nhìn Ban đầu và Tóm tắt
+#### Mục tiêu:
+Để tóm tắt các phát hiện ban đầu và xác định bất kỳ vấn đề chất lượng dữ liệu hoặc mẫu ngay lập tức nào.
+#### Hành động:
+1.**Tóm tắt Phát hiện Chính **:
+......
+2.**Xác định Bước Tiếp theo **:
+......
+### Ràng buộc:
+-**Hiệu quả **: Đảm bảo rằng trực quan hóa và tính toán hiệu quả và có thể tái tạo.
+-**Rõ ràng **: Cung cấp trực quan hóa và tóm tắt rõ ràng và ngắn gọn để hỗ trợ hiểu.
+
+### Đầu ra Mong đợi:
+1. DataFrame cho tập train và test.
+2. Tóm tắt loại dữ liệu và giá trị thiếu.
+3. Tóm tắt thống kê cơ bản.
+4. Histogram và box plot cho đặc trưng số.
+5. Bar plot và phân phối tần suất cho đặc trưng phân loại.
+6. Tóm tắt chi tiết các cái nhìn ban đầu và bước tiếp theo được khuyến nghị.
+
+Bằng cách tuân theo kế hoạch này, bạn sẽ có được hiểu biết sơ bộ toàn diện về dữ liệu của mình, tạo nền tảng vững chắc cho các giai đoạn tiếp theo.
+30
+
+--- TRANG 31 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Mã Phân tích Dữ liệu Khám phá Sơ bộ
+import os
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+# Đường dẫn tệp
+train_file_path = '/mnt/d/PythonProjects/AutoKaggleMaster/multi_agents/competition/titanic/train.csv'
+test_file_path = '/mnt/d/PythonProjects/AutoKaggleMaster/multi_agents/competition/titanic/test.csv'
+# Tải bộ dữ liệu
+train_df = pd.read_csv(train_file_path)
+test_df = pd.read_csv(test_file_path)
+# Xuất hình dạng bộ dữ liệu
+print(f"Hình dạng bộ dữ liệu Train: {train_df.shape}")
+print(f"Hình dạng bộ dữ liệu Test: {test_df.shape}")
+# Kiểm tra loại dữ liệu và giá trị thiếu
+print("Giá trị thiếu trong bộ dữ liệu train:")
+print(train_df.isnull().sum())
+print("\nGiá trị thiếu trong bộ dữ liệu test:")
+print(test_df.isnull().sum())
+# Tóm tắt thống kê cơ bản cho đặc trưng số
+print("Tóm tắt thống kê cho đặc trưng số trong bộ dữ liệu train:")
+print(train_df.describe())
+# Vẽ histogram cho đặc trưng số
+numerical_features = ['Age', 'Fare', 'SibSp', 'Parch']
+for feature in numerical_features:
+    plt.figure(figsize=(8, 4))
+    sns.histplot(train_df[feature], bins=30, kde=True)
+    plt.title(f'Histogram của {feature}')
+    plt.xlabel(feature)
+    plt.ylabel('Tần suất')
+    plt.savefig(f'/mnt/d/PythonProjects/AutoKaggleMaster/multi_agents/competition/titanic/pre_eda/images/histogram_{feature}.png')
+    plt.close()
+# Vẽ biểu đồ cột cho đặc trưng phân loại
+categorical_features = ['Pclass', 'Sex', 'Embarked', 'Survived']
+for feature in categorical_features:
+    plt.figure(figsize=(8, 4))
+    sns.countplot(x=train_df[feature])
+    plt.title(f'Biểu đồ cột của {feature}')
+    plt.xlabel(feature)
+    plt.ylabel('Số lượng')
+    plt.savefig(f'/mnt/d/PythonProjects/AutoKaggleMaster/multi_agents/competition/titanic/pre_eda/images/bar_chart_{feature}.png')
+    plt.close()
+# Tóm tắt phát hiện chính
+key_findings = """
+Phát hiện Chính từ EDA Sơ bộ:
+1. Giá trị Thiếu:
+- Age có 177 giá trị thiếu trong bộ dữ liệu train.
+- Cabin có giá trị thiếu đáng kể.
+- Embarked có 2 giá trị thiếu trong bộ dữ liệu train.
+2. Đặc trưng Số:
+- Phân phối Age cho thấy độ lệch phải.
+- Phân phối Fare bị lệch cao.
+3. Đặc trưng Phân loại:
+- Nhiều nam hơn nữ trong bộ dữ liệu train.
+- Hầu hết hành khách lên tàu từ cảng 'S' (Southampton).
+- Tỷ lệ sống sót khoảng 38% trong bộ dữ liệu train.
+"""
+print(key_findings)
+31
+
+--- TRANG 32 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+EDA Sơ bộ
+Đầu Bộ dữ liệu Train:
+PassengerId Survived Pclass ... Fare Cabin Embarked
+0 1 0 3 ... 7.2500 NaN S
+1 2 1 1 ... 71.2833 C85 C
+2 3 1 3 ... 7.9250 NaN S
+3 4 1 1 ... 53.1000 C123 S
+4 5 0 3 ... 8.0500 NaN S
+[5 hàng x 12 cột]
+Đầu Bộ dữ liệu Test:
+PassengerId Pclass ... Cabin Embarked
+0 892 3 ... NaN Q
+1 893 3 ... NaN S
+2 894 2 ... NaN Q
+3 895 3 ... NaN S
+4 896 3 ... NaN S
+[5 hàng x 11 cột]
+......
+Giá trị Thiếu trong Bộ dữ liệu Test:
+PassengerId 0
+Pclass 0
+Name 0
+Sex 0
+Age 86
+SibSp 0
+Parch 0
+Ticket 0
+Fare 1
+Cabin 327
+Embarked 0
+dtype: int64
+Tần suất của Pclass:
+Pclass
+3 491
+1 216
+2 184
+Name: count, dtype: int64
+Tần suất của Sex:
+Sex
+male 577
+female 314
+Name: count, dtype: int64
+Tần suất của Embarked:
+Embarked
+S 644
+C 168
+Q 77
+Name: count, dtype: int64
+
+D.3 LÀM SẠCH DỮ LIỆU
+Chúng tôi chứng minh khả năng phân tích dữ liệu của framework bằng cách sử dụng cột age từ tập huấn luyện của cuộc thi Titanic làm ví dụ. Trong giai đoạn pre-EDA, phân phối histogram age được hiển thị như trong Hình 6. Trong giai đoạn làm sạch dữ liệu, chúng tôi lọc ra giá trị thiếu bằng cách sử dụng kiểm thử đơn vị. Bạn có thể thấy so sánh của box plot age trước và sau khi các ngoại lai được xử lý trong Hình 7. Trong giai đoạn deep-EDA, phân phối histogram age được hiển thị như trong Hình 8.
+32
+
+--- TRANG 33 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Hình 6: Histogram của age trước khi ngoại lai được xử lý
+
+Hình 7: So sánh box plot age trước và sau khi xử lý ngoại lai. Hình ảnh bên trái là trước khi ngoại lai được xử lý và hình ảnh bên phải là sau khi quy trình được thực hiện
+
+Hình 8: Histogram của age sau khi ngoại lai được xử lý
+33
+
+--- TRANG 34 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Mã Làm sạch Dữ liệu
+import sys
+import os
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+sys.path.extend(['.', '..', '../..', '../../..', '../../../..', 'multi_agents', 'multi_agents/tools', 'multi_agents/prompts'])
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from tools.ml_tools import *
+def generated_code_function():
+    # Tải bộ dữ liệu
+    train_path = '/mnt/d/PythonProjects/AutoKaggleMaster/multi_agents/competition/titanic/train.csv'
+    test_path = '/mnt/d/PythonProjects/AutoKaggleMaster/multi_agents/competition/titanic/test.csv'
+    train_df = pd.read_csv(train_path)
+    test_df = pd.read_csv(test_path)
+    # Xử lý giá trị thiếu
+    for df in [train_df, test_df]:
+        df = fill_missing_values(df, columns=['Age', 'Fare'], method='median')
+        df = fill_missing_values(df, columns=['Embarked'], method='mode')
+        df = remove_columns_with_missing_data(df, columns=['Cabin'])
+    # Chuyển đổi loại dữ liệu
+    for df in [train_df, test_df]:
+        df = convert_data_types(df, columns=['PassengerId', 'Pclass'], target_type='str')
+    train_df = convert_data_types(train_df, columns=['Survived'], target_type='str')
+    # Vẽ ngoại lai và xử lý sử dụng phương pháp IQR
+    def plot_outliers(data, columns, suffix):
+        output_dir = '/mnt/d/PythonProjects/AutoKaggleMaster/multi_agents/competition/titanic/data_cleaning/images/'
+        os.makedirs(output_dir, exist_ok=True)
+        for column in columns:
+            plt.figure(figsize=(10, 5))
+            sns.boxplot(x=data[column])
+            plt.title(f'Boxplot của {column} {suffix}')
+            plt.savefig(f'{output_dir}{column}_{suffix}.png')
+            plt.close()
+    columns_with_outliers = ['Age', 'Fare']
+    plot_outliers(train_df, columns_with_outliers, 'before_outliers')
+    for df in [train_df, test_df]:
+        df = detect_and_handle_outliers_iqr(df, columns=columns_with_outliers, factor=1.5, method='clip')
+    plot_outliers(train_df, columns_with_outliers, 'after_outliers')
+    # Lưu bộ dữ liệu đã được làm sạch
+    train_df.to_csv('/mnt/d/PythonProjects/AutoKaggleMaster/multi_agents/competition/titanic/cleaned_train.csv', index=False)
+    test_df.to_csv('/mnt/d/PythonProjects/AutoKaggleMaster/multi_agents/competition/titanic/cleaned_test.csv', index=False)
+if __name__ == "__main__":
+    generated_code_function()
+34
+
+--- TRANG 35 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Kết quả Làm sạch Dữ liệu
+Giá trị thiếu trong bộ dữ liệu train trước khi xử lý:
+PassengerId 0
+...
+Sex 0
+Age 177
+...
+Cabin 687
+Embarked 2
+dtype: int64
+Giá trị thiếu trong bộ dữ liệu test trước khi xử lý:
+PassengerId 0
+...
+Age 86
+...
+Fare 1
+Cabin 327
+Embarked 0
+dtype: int64
+Giá trị thiếu trong bộ dữ liệu train sau khi xử lý:
+Age 0
+Embarked 0
+...
+...
+SibSp 0
+Ticket 0
+dtype: int64
+Giá trị thiếu trong bộ dữ liệu test sau khi xử lý:
+Age 0
+Embarked 0
+...
+...
+SibSp 0
+Ticket 0
+dtype: int64
+Loại dữ liệu trong bộ dữ liệu train sau khi chuyển đổi:
+Age float64
+Embarked object
+Fare float64
+Name object
+Parch int64
+PassengerId object
+Pclass object
+Sex object
+SibSp int64
+Survived object
+Ticket object
+dtype: object
+Loại dữ liệu trong bộ dữ liệu test sau khi chuyển đổi:
+Age float64
+Embarked object
+Fare float64
+Name object
+Parch int64
+PassengerId object
+Pclass object
+Sex object
+SibSp int64
+Ticket object
+dtype: object
+Dữ liệu huấn luyện đã được làm sạch lưu vào /mnt/d/PythonProjects/AutoKaggleMaster/multi_agents/competition/titanic/cleaned_train.csv
+Dữ liệu test đã được làm sạch lưu vào /mnt/d/PythonProjects/AutoKaggleMaster/multi_agents/competition/titanic/cleaned_test.csv
+
+D.4 PHÂN TÍCH DỮ LIỆU KHÁM PHÁ CHUYÊN SÂU
+Trong trạng thái này, AutoKaggle đi sâu hơn vào bộ dữ liệu Titanic. 1) Quy trình bắt đầu với phân tích đơn biến mở rộng để khám phá phân phối của cả đặc trưng số và phân loại.
+35
+
+--- TRANG 36 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Tóm tắt thống kê chính được tạo cho các đặc trưng số như tuổi và giá vé, trong khi biểu đồ cột và bảng tần suất được tạo cho các đặc trưng phân loại như hạng hành khách và giới tính. 2) Phân tích song biến điều tra mối quan hệ giữa các đặc trưng riêng lẻ và kết quả sống sót. Box plot và violin plot được sử dụng để phân tích cách các đặc trưng số thay đổi giữa người sống sót và không sống sót, trong khi count plot được tạo cho các đặc trưng phân loại để trực quan hóa tỷ lệ sống sót qua các nhóm khác nhau. 3) Phân tích tương quan được tiến hành để khám phá mối quan hệ giữa các đặc trưng số, được trực quan hóa thông qua ma trận tương quan và heatmap. Điều này giúp xác định bất kỳ tương quan mạnh nào giữa các đặc trưng và biến mục tiêu, sự sống sót. 4) Phân tích đa biến được thực hiện để khám phá tương tác giữa các đặc trưng chính như hạng hành khách, giới tính và tuổi, liên quan đến sự sống sót. Trực quan hóa, như biểu đồ cột xếp chồng và facet grid, được sử dụng để làm nổi bật những tương tác phức tạp này, cung cấp cái nhìn sâu hơn vào dữ liệu. Dưới đây là đoạn trích từ tệp được tạo:
+36
+
+--- TRANG 37 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Kế hoạch Phân tích Dữ liệu Khám phá Chuyên sâu
+Tuyệt vời! Dựa trên thông tin được cung cấp, chúng tôi sẽ tiến hành với kế hoạch chi tiết cho giai đoạn **Phân tích Dữ liệu Khám phá Chuyên sâu (EDA) **. Mục đích là thực hiện phân tích kỹ lưỡng của mỗi đặc trưng để khám phá cái nhìn sâu hơn có thể thông báo cho kỹ thuật đặc trưng và xây dựng mô hình.
+
+### Kế hoạch cho Phân tích Dữ liệu Khám phá Chuyên sâu
+
+#### Tác vụ 1: Phân tích Đơn biến Chi tiết
+**Mục tiêu: **Hiểu phân phối và đặc điểm của mỗi đặc trưng riêng lẻ.
+1.**Age: **
+-**Hành động: **
+- Vẽ histogram để quan sát phân phối.
+- Sử dụng boxplot để xác định bất kỳ ngoại lai còn lại nào.
+-**Công cụ & Tham số: **
+- 'seaborn.histplot(data=cleaned_train, x='Age', bins=30)'
+- 'seaborn.boxplot(data=cleaned_train, x='Age')'
+-**Đầu ra Mong đợi: **
+- Histogram hiển thị phân phối tuổi.
+- Boxplot chỉ ra sự hiện diện của ngoại lai.
+-**Ràng buộc: **
+- Đảm bảo biểu đồ rõ ràng và dễ đọc.
+2.**Fare: **
+......
+3.**Đặc trưng Phân loại (Pclass, Sex, Embarked): **
+......
+
+#### Tác vụ 2: Phân tích Song biến
+**Mục tiêu: **Khám phá mối quan hệ giữa các cặp đặc trưng, đặc biệt với biến mục tiêu 'Survived'.
+1.**Survived vs. Age: **
+......
+2.**Survived vs. Fare: **
+......
+3.**Survived vs. Đặc trưng Phân loại (Pclass, Sex, Embarked): **
+......
+
+#### Tác vụ 3: Phân tích Đa biến
+**Mục tiêu: **Hiểu tương tác giữa nhiều đặc trưng và tác động kết hợp của chúng đến biến mục tiêu.
+1.**Pairplot: **
+......
+2.**Correlation Heatmap: **
+......
+
+#### Tác vụ 4: Tóm tắt Cái nhìn
+**Mục tiêu: **Tóm tắt những phát hiện chính từ EDA chuyên sâu để thông báo cho các giai đoạn tiếp theo.
+1.**Hành động: **
+......
+2.**Công cụ & Tham số: **
+......
+3.**Đầu ra Mong đợi: **
+......
+4.**Ràng buộc: **
+......
+
+Bằng cách tuân theo kế hoạch chi tiết này, bạn sẽ có thể có được hiểu biết kỹ lưỡng về bộ dữ liệu, điều này sẽ vô giá cho các giai đoạn tiếp theo của kỹ thuật đặc trưng và xây dựng mô hình.
+37
+
+--- TRANG 38 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Mã Phân tích Dữ liệu Khám phá Chuyên sâu
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+# Tải dữ liệu huấn luyện đã được làm sạch
+cleaned_train = pd.read_csv('cleaned_train.csv')
+# Tác vụ 1: Phân tích đơn biến trên đặc trưng Age và Fare
+# Histogram và Boxplot cho Age và Fare
+for feature in ['Age', 'Fare']:
+    plt.figure(figsize=(10, 6))
+    cleaned_train[feature].hist(bins=30)
+    plt.title(f'Phân phối {feature}')
+    plt.xlabel(feature)
+    plt.ylabel('Tần suất')
+    plt.savefig(f'deep_eda/images/{feature.lower()}_histogram.png')
+    plt.close()
+    plt.figure(figsize=(10, 6))
+    cleaned_train[feature].plot(kind='box')
+    plt.title(f'Boxplot của {feature}')
+    plt.xlabel(feature)
+    plt.savefig(f'deep_eda/images/{feature.lower()}_boxplot.png')
+    plt.close()
+print("Phân tích đơn biến trên đặc trưng Age và Fare hoàn thành.")
+# Tác vụ 2: Phân tích đơn biến trên đặc trưng phân loại
+# Countplot cho Pclass, Sex, Embarked
+for feature in ['Pclass', 'Sex', 'Embarked']:
+    cleaned_train[feature].value_counts().plot(kind='bar', figsize=(10, 6), title=f'Phân phối {feature}')
+    plt.xlabel(feature)
+    plt.ylabel('Tần suất')
+    plt.savefig(f'deep_eda/images/{feature.lower()}_countplot.png')
+    plt.close()
+# Tác vụ 3: Phân tích song biến của Survived vs. Age, Fare, đặc trưng phân loại
+# Violin plot cho Age và Fare theo Survived
+for feature in ['Age', 'Fare']:
+    plt.figure(figsize=(10, 6))
+    cleaned_train.boxplot(column=feature, by='Survived')
+    plt.title(f'Sống sót theo {feature}')
+    plt.xlabel('Survived')
+    plt.ylabel(feature)
+    plt.savefig(f'deep_eda/images/survived_vs_{feature.lower()}.png')
+    plt.close()
+# Countplot cho đặc trưng phân loại theo Survived
+for feature in ['Pclass', 'Sex', 'Embarked']:
+    pd.crosstab(cleaned_train[feature], cleaned_train['Survived']).plot(kind='bar', stacked=True, figsize=(10, 6))
+    plt.title(f'Sống sót theo {feature}')
+    plt.xlabel(feature)
+    plt.ylabel('Số lượng')
+    plt.savefig(f'deep_eda/images/survived_vs_{feature.lower()}.png')
+    plt.close()
+# Tác vụ 4: Phân tích đa biến sử dụng correlation heatmap
+# Correlation heatmap
+numeric_df = cleaned_train.select_dtypes(include=[np.number])
+plt.figure(figsize=(10, 8))
+plt.matshow(numeric_df.corr(), cmap='coolwarm', fignum=1)
+plt.title('Correlation Heatmap')
+plt.savefig('deep_eda/images/correlation_heatmap.png')
+plt.close()
+# Tác vụ 5: Tóm tắt cái nhìn chính từ EDA
+summary = """
+......
+"""
+# Lưu tóm tắt vào tệp văn bản
+with open('deep_eda/eda_summary.txt', 'w') as file:
+    file.write(summary)
+38
+
+--- TRANG 39 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+EDA Chuyên sâu
+Thống kê tóm tắt cho Age:
+count 891.000000
+mean 29.039282
+std 12.072074
+min 2.500000
+25% 22.000000
+50% 28.000000
+75% 35.000000
+max 54.500000
+Name: Age, dtype: float64
+......
+Tỷ lệ sống sót theo Pclass:
+Pclass
+1 0.629630
+2 0.472826
+3 0.242363
+Name: Survived, dtype: float64
+Tỷ lệ sống sót theo Sex:
+Sex
+female 0.742038
+male 0.188908
+Name: Survived, dtype: float64
+Tỷ lệ sống sót theo Embarked:
+Embarked
+C 0.553571
+Q 0.389610
+S 0.339009
+Name: Survived, dtype: float64
+Ma trận tương quan:
+Age SibSp Parch Fare Survived
+Age 1.000000 -0.239601 -0.178959 0.144544 -0.060622
+SibSp -0.239601 1.000000 0.414838 0.332021 -0.035322
+Parch -0.178959 0.414838 1.000000 0.292616 0.081629
+Fare 0.144544 0.332021 0.292616 1.000000 0.317430
+Survived -0.060622 -0.035322 0.081629 0.317430 1.000000
+
+D.5 KỸ THUẬT ĐẶC TRƯNG
+Trong giai đoạn này, AutoKaggle thêm một số đặc trưng mới để tăng cường sức mạnh dự đoán của bộ dữ liệu. 1) Đặc trưng FamilySize được tạo bằng cách kết hợp các cột SibSp và Parch, đại diện cho tổng số thành viên gia đình trên tàu, bao gồm cả hành khách. Đặc trưng này nắm bắt bối cảnh gia đình, có thể ảnh hưởng đến khả năng sống sót. 2) Đặc trưng AgeGroup được tạo ra bằng cách phân loại hành khách thành các nhóm tuổi, đơn giản hóa biến tuổi liên tục thành các danh mục có ý nghĩa như "Child" và "Senior." Phép biến đổi này giúp xác định các mẫu sống sót liên quan đến tuổi tiềm năng. 3) Các đặc trưng phân loại như Sex, Embarked, và Pclass sau đó được mã hóa thành dạng số để đảm bảo chúng có thể được sử dụng trong mô hình. One-hot encoding được áp dụng cho Sex và Embarked, trong khi label encoding được sử dụng cho Pclass, tôn trọng bản chất thứ tự của nó. 4) Dữ liệu cabin được xử lý bằng cách trích xuất chữ cái đầu tiên của đặc trưng Cabin để tạo biến Deck mới. Đặc trưng này cung cấp thông tin về vị trí của hành khách trên tàu, có thể tương quan với kết quả sống sót. Dữ liệu cabin thiếu được xử lý bằng cách gán danh mục 'Unknown', đảm bảo tính đầy đủ của đặc trưng.
+39
+
+--- TRANG 40 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Kế hoạch Kỹ thuật Đặc trưng
+Tuyệt vời! Hãy thiết kế kế hoạch chi tiết cho giai đoạn Kỹ thuật Đặc trưng, tập trung vào các đặc trưng hiện tại và các công cụ có sẵn. Chúng tôi sẽ đảm bảo rằng mỗi tác vụ rõ ràng, cụ thể và bao gồm các bước cần thiết để đạt được kết quả mong muốn.
+
+### Kế hoạch Kỹ thuật Đặc trưng
+
+#### Tác vụ 1: Tạo Đặc trưng Mới
+**Mục tiêu: **Tăng cường bộ dữ liệu bằng cách tạo các đặc trưng mới có thể nắm bắt thông tin bổ sung liên quan đến dự đoán sự sống sót.
+1.**Family Size: **
+-**Hành động: **Tạo đặc trưng mới 'FamilySize' bằng cách kết hợp 'SibSp' và 'Parch'.
+-**Phương pháp: **'FamilySize = SibSp + Parch + 1' (bao gồm chính hành khách).
+-**Tác động: **Nắm bắt tổng số thành viên gia đình đi cùng nhau, có thể ảnh hưởng đến cơ hội sống sót.
+2.**IsAlone: **
+......
+3.**Age Bins: **
+......
+4.**Fare per Person: **
+......
+
+#### Tác vụ 2: Mã hóa Đặc trưng Phân loại
+**Mục tiêu: **Chuyển đổi các đặc trưng phân loại thành định dạng số phù hợp cho các mô hình máy học.
+1.**Sex: **
+......
+2.**Embarked: **
+......
+
+#### Tác vụ 3: Xử lý Đặc trưng Ticket và Cabin
+**Mục tiêu: **Trích xuất thông tin hữu ích từ các đặc trưng 'Ticket' và 'Cabin', hiện đang ở định dạng văn bản.
+1.**Ticket: **
+......
+2.**Cabin: **
+......
+
+#### Tác vụ 4: Chia tỷ lệ Đặc trưng Số
+**Mục tiêu: **Chuẩn hóa các đặc trưng số để đảm bảo chúng ở tỷ lệ tương đương, cải thiện hiệu suất mô hình.
+1.**Đặc trưng Số: **
+......
+
+### Tóm tắt Đầu ra Mong đợi
+-**Đặc trưng Mới Được Thêm: **'FamilySize', 'IsAlone', 'AgeBins', 'FarePerPerson'
+-**Đặc trưng Được Mã hóa: **'Sex' (label encoded), 'Embarked' (one-hot encoded)
+-**Đặc trưng Được Xử lý: **'TicketPrefix', 'CabinDeck'
+-**Đặc trưng Được Chia tỷ lệ: **'Age', 'Fare', 'FarePerPerson'
+
+### Ràng buộc và Cân nhắc
+-**Hiệu quả Runtime: **Đảm bảo các bước tạo đặc trưng và mã hóa được tối ưu hóa cho hiệu suất.
+-**Xử lý Giá trị Thiếu: **Giải quyết bất kỳ giá trị thiếu nào trong các đặc trưng mới được tạo một cách thích hợp.
+-**Tránh Data Leakage: **Thực hiện mã hóa và chia tỷ lệ riêng biệt trên tập train và test để ngăn chặn data leakage.
+
+Bằng cách tuân theo những tác vụ này, bạn sẽ biến đổi dữ liệu đã được làm sạch thành định dạng thông tin và sẵn sàng cho mô hình hơn ('processed_train.csv' và 'processed_test.csv'). Kế hoạch này đảm bảo rằng các bước quan trọng nhất của kỹ thuật đặc trưng được bao phủ, tăng cường sức mạnh dự đoán của mô hình cho cuộc thi Titanic.
+40
+
+--- TRANG 41 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Mã Kỹ thuật Đặc trưng
+import pandas as pd
+# Tải bộ dữ liệu đã được làm sạch
+train_df = pd.read_csv('cleaned_train.csv')
+test_df = pd.read_csv('cleaned_test.csv')
+# Tạo bản sao của dataframe
+train_df_copy = train_df.copy()
+test_df_copy = test_df.copy()
+# BƯỚC 1: Tạo Đặc trưng Mới
+train_df_copy['FamilySize'] = train_df_copy['SibSp'] + train_df_copy['Parch'] + 1
+test_df_copy['FamilySize'] = test_df_copy['SibSp'] + test_df_copy['Parch'] + 1
+train_df_copy['IsAlone'] = (train_df_copy['FamilySize'] == 1).astype(int)
+test_df_copy['IsAlone'] = (test_df_copy['FamilySize'] == 1).astype(int)
+age_bins = [0, 12, 18, 35, 60, 120]
+age_labels = ['Child', 'Teen', 'Adult', 'Senior', 'Elder']
+train_df_copy['AgeBins'] = pd.cut(train_df_copy['Age'], bins=age_bins, labels=age_labels, right=False)
+test_df_copy['AgeBins'] = pd.cut(test_df_copy['Age'], bins=age_bins, labels=age_labels, right=False)
+train_df_copy['FarePerPerson'] = train_df_copy['Fare'] / train_df_copy['FamilySize']
+test_df_copy['FarePerPerson'] = test_df_copy['Fare'] / test_df_copy['FamilySize']
+# Lưu bộ dữ liệu với đặc trưng mới
+train_df_copy.to_csv('processed_train.csv', index=False)
+test_df_copy.to_csv('processed_test.csv', index=False)
+# Tải bộ dữ liệu đã được xử lý
+train_df = pd.read_csv('processed_train.csv')
+test_df = pd.read_csv('processed_test.csv')
+# Định nghĩa hàm để trích xuất tiền tố ticket và cabin deck
+def extract_ticket_prefix(ticket):
+    parts = ticket.split()
+    return parts[0] if not parts[0].isdigit() else 'None'
+def extract_cabin_deck(cabin):
+    return cabin[0] if pd.notna(cabin) else 'Unknown'
+# Trích xuất TicketPrefix và CabinDeck
+train_df['TicketPrefix'] = train_df['Ticket'].apply(extract_ticket_prefix)
+test_df['TicketPrefix'] = test_df['Ticket'].apply(extract_ticket_prefix)
+train_df['CabinDeck'] = train_df['Cabin'].apply(extract_cabin_deck) if 'Cabin' in train_df.columns else 'Unknown'
+test_df['CabinDeck'] = test_df['Cabin'].apply(extract_cabin_deck) if 'Cabin' in test_df.columns else 'Unknown'
+# Lưu bộ dữ liệu với đặc trưng đã trích xuất
+train_df.to_csv('processed_train.csv', index=False)
+test_df.to_csv('processed_test.csv', index=False)
+
+D.6 XÂY DỰNG MÔ HÌNH , XÁC THỰC ,VÀ DỰ ĐOÁN
+Trong giai đoạn này, chúng tôi tiến hành phân tích toàn diện bộ dữ liệu hành khách Titanic với mục đích dự đoán xác suất sống sót của hành khách. Ban đầu, dữ liệu trải qua tiền xử lý bao gồm điền giá trị thiếu, xóa cột có độ thiếu cao và xử lý ngoại lai. Nỗ lực kỹ thuật đặc trưng tiếp theo giới thiệu các thuộc tính mới như kích thước gia đình, đi một mình, nhóm tuổi và giá vé trên người, và liên quan đến mã hóa cho giới tính và điểm lên tàu. Hơn nữa, mô hình random forest được sử dụng, được tối ưu hóa thông qua grid search và được đánh giá bằng cross-validation. Dự đoán sau đó được thực hiện trên tập test, và tệp nộp bài được chuẩn bị.
+41
+
+--- TRANG 42 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Kế hoạch Xây dựng Mô hình, Xác thực và Dự đoán
+### Kế hoạch Chi tiết
+
+#### Tác vụ 1: Chuẩn bị Dữ liệu Huấn luyện
+**Mục tiêu: **Tách biến mục tiêu và loại bỏ các cột không phải số.
+1.**Tách Cột Mục tiêu **
+-**Hành động: **Trích xuất cột 'Survived' từ 'processed_train.csv' như 'y'.
+-**Công cụ: **pandas
+-**Đầu ra Mong đợi: **'y' như một pandas Series riêng biệt chứa biến mục tiêu.
+-**Ví dụ Mã: **
+'''python
+import pandas as pd
+train_data = pd.read_csv('/mnt/d/PythonProjects/AutoKaggleMaster/multi_agents/competition/titanic/processed_train.csv')
+y = train_data['Survived']
+'''
+2.**Loại bỏ Các Cột Không Phải Số **
+-**Hành động: **Xác định và bỏ các cột không phải số từ tập huấn luyện.
+-**Đặc trưng Liên quan: **'Name', 'Ticket', 'TicketPrefix', 'CabinDeck'
+-**Công cụ: **pandas
+-**Đầu ra Mong đợi: **'X_train' như DataFrame chỉ chứa các cột số.
+-**Ví dụ Mã: **
+'''python
+X_train = train_data.drop(columns=['Survived', 'Name', 'Ticket', 'TicketPrefix', 'CabinDeck'])
+'''
+
+#### Tác vụ 2: Chuẩn bị Dữ liệu Test
+**Mục tiêu: **Đảm bảo dữ liệu test có cùng cấu trúc với dữ liệu huấn luyện.
+1.**Loại bỏ Các Cột Không Phải Số **
+......
+
+#### Tác vụ 3: Huấn luyện và Xác thực Mô hình
+**Mục tiêu: **Huấn luyện và xác thực mô hình máy học sử dụng các bộ dữ liệu đã được chuẩn bị.
+1.**Lựa chọn và Huấn luyện Mô hình **
+......
+2.**Điều chỉnh Siêu tham số **
+......
+
+#### Tác vụ 4: Thực hiện Dự đoán
+**Mục tiêu: **Sử dụng mô hình đã được huấn luyện để thực hiện dự đoán trên bộ dữ liệu test.
+1.**Dự đoán **
+......
+
+#### Tác vụ 5: Chuẩn bị Tệp Nộp bài
+**Mục tiêu: **Chuẩn bị tệp nộp bài theo định dạng yêu cầu.
+1.**Chuẩn bị Tệp Nộp bài **
+......
+
+### Ghi chú Cuối cùng
+- Đảm bảo rằng tất cả các bước được thực hiện theo trình tự để duy trì tính toàn vẹn dữ liệu.
+- Xác thực mỗi bước với print statement hoặc log để xác nhận thực hiện thành công.
+- Sử dụng cross-validation để đảm bảo tính mạnh mẽ của mô hình và tránh overfitting.
+
+Hãy tự do thực hiện các tác vụ dựa trên kế hoạch chi tiết này. Nếu bạn có bất kỳ câu hỏi nào hoặc cần điều chỉnh thêm, đừng ngần ngại hỏi.
+42
+
+--- TRANG 43 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+Mã Xây dựng Mô hình, Xác thực và Dự đoán
+import pandas as pd
+# Tải dữ liệu huấn luyện đã được xử lý
+processed_train_path = '/mnt/d/PythonProjects/AutoKaggleMaster/multi_agents/competition/titanic/processed_train.csv'
+train_df = pd.read_csv(processed_train_path)
+# Tách biến mục tiêu
+y = train_df['Survived']
+# Xác định các cột không phải số cần bỏ
+columns_to_drop = ['Survived', 'Name', 'Ticket', 'TicketPrefix', 'CabinDeck', 'AgeBins']
+# Bỏ biến mục tiêu và các cột không phải số
+X_train = train_df.drop(columns=columns_to_drop)
+# Tải dữ liệu test đã được xử lý
+processed_test_path = '/mnt/d/PythonProjects/AutoKaggleMaster/multi_agents/competition/titanic/processed_test.csv'
+test_df = pd.read_csv(processed_test_path)
+# Bỏ các cột không phải số để khớp với X_train
+X_test = test_df.drop(columns=['Name', 'Ticket', 'TicketPrefix', 'CabinDeck', 'AgeBins'])
+# Đảm bảo thứ tự cột khớp với X_train
+X_test = X_test[X_train.columns]
+print(f"Dữ liệu test đã được xử lý. Hình dạng X_test: {X_test.shape}")
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV, cross_val_score
+# Định nghĩa mô hình và lưới tham số
+model = RandomForestClassifier(random_state=42)
+param_grid = {
+    'n_estimators': [100, 200, 300],
+    'max_depth': [None, 10, 20, 30]
+}
+# Sử dụng GridSearchCV để điều chỉnh siêu tham số
+grid_search = GridSearchCV(model, param_grid, cv=5, scoring='accuracy')
+grid_search.fit(X_train, y)
+# Lấy mô hình tốt nhất
+best_model = grid_search.best_estimator_
+# Xác thực mô hình sử dụng cross-validation
+cv_scores = cross_val_score(best_model, X_train, y, cv=5, scoring='accuracy')
+# Thực hiện dự đoán trên dữ liệu test
+predictions = best_model.predict(X_test)
+# Chuyển đổi dự đoán thành DataFrame
+predictions_df = pd.DataFrame({
+    'PassengerId': test_df['PassengerId'],
+    'Survived': predictions
+})
+print(f"Dự đoán đã được thực hiện. Dự đoán mẫu:\n{predictions_df.head()}")
+# Chuẩn bị tệp nộp bài
+submission_path = '/mnt/d/PythonProjects/AutoKaggleMaster/multi_agents/competition/titanic/submission.csv'
+predictions_df.to_csv(submission_path, index=False)
+43
+
+--- TRANG 44 ---
+AutoKaggle: Một Framework Đa Agent cho Cuộc Thi Khoa Học Dữ Liệu Tự Động
+
+D.7 BÁO CÁO NGHIÊN CỨU
+Sau khi hoàn thành toàn bộ pipeline khoa học dữ liệu, AutoKaggle xem xét các báo cáo tạm thời từ mỗi giai đoạn và cuối cùng biên soạn Báo cáo Nghiên cứu để ghi lại những phát hiện chính, quyết định quan trọng và lý do của chúng ở mọi giai đoạn. Điều này giúp người dùng hiểu rõ hơn về các giải pháp được cung cấp bởi AutoKaggle.
+
+Kế hoạch Xây dựng Mô hình, Xác thực và Dự đoán
+# BÁO CÁO NGHIÊN CỨU CUỘC THI
+
+## 1. EDA SƠ BỘ
+Phân tích dữ liệu khám phá sơ bộ (EDA) liên quan đến việc kiểm tra cấu trúc bộ dữ liệu và xác định các đặc trưng chính. Phân tích tiết lộ những cái nhìn quan trọng như:
+-**Giá trị Thiếu **: Đáng chú ý, các đặc trưng 'Age' và 'Cabin' có giá trị thiếu đáng kể.
+-**Ngoại lai **: Ngoại lai được xác định trong các đặc trưng 'Fare' và 'Age', với giá vé vượt quá 200 và tuổi trên 60.
+-**Tóm tắt Thống kê **: Tuổi trung vị khoảng 30, trong khi giá vé trung vị xấp xỉ 14.45.
+...
+
+## 2. LÀM SẠCH DỮ LIỆU
+Giai đoạn làm sạch dữ liệu tập trung vào giải quyết giá trị thiếu và ngoại lai. Các hành động chính bao gồm:
+-**Gán Giá trị **:
+- 'Age': Giá trị thiếu được điền bằng trung bình.
+- 'Cabin': Điền bằng 'Missing' để chỉ ra vắng mặt.
+- 'Embarked': Giá trị thiếu điền bằng mode.
+-**Xử lý Ngoại lai **:
+- 'Fare' và 'Age' được cắt bằng phương pháp IQR để giảm ảnh hưởng của ngoại lai.
+...
+
+## 3. EDA CHUYÊN SÂU
+EDA chuyên sâu tiết lộ những cái nhìn có giá trị về mối quan hệ giữa các đặc trưng và tỷ lệ sống sót:
+-**Pclass **: Các hạng cao hơn cho thấy tỷ lệ sống sót cao hơn; Pclass trung bình là 2.31.
+-**Sex**: Nữ có tỷ lệ sống sót cao hơn đáng kể so với nam.
+-**Fare **: Giá vé cao hơn tương quan tích cực với sự sống sót, chỉ ra mối liên kết tiềm năng với chỗ ở tốt hơn và an toàn.
+...
+
+## 4. KỸ THUẬT ĐẶC TRƯNG
+Kỹ thuật đặc trưng liên quan đến tạo và biến đổi đặc trưng để tăng cường hiệu suất mô hình:
+-**Đặc trưng Mới Được Tạo **:
+-**Title **: Trích xuất từ 'Name'.
+-**FamilySize **: Tổng của 'SibSp' và 'Parch'.
+-**IsAlone **: Đặc trưng nhị phân chỉ ra nếu hành khách đi một mình.
+-**FarePerPerson **: Giá vé được tính trên mỗi cá nhân trong gia đình.
+...
+
+## 5. XÂY DỰNG MÔ HÌNH, XÁC THỰC VÀ DỰ ĐOÁN
+Nhiều mô hình được huấn luyện trong giai đoạn này, bao gồm:
+-**Mô hình **: XGBoost, SVM, Random Forest, Decision Tree, và Logistic Regression.
+-**Mô hình Tốt nhất **: Random Forest đạt được điểm xác thực cao nhất 0.8379.
+...
+
+## 6. KẾT LUẬN
+Phương pháp của cuộc thi liên quan đến quy trình có cấu trúc của EDA, làm sạch dữ liệu, kỹ thuật đặc trưng và đánh giá mô hình. Những cái nhìn chính bao gồm ảnh hưởng mạnh mẽ của 'Sex', 'Pclass', và 'Fare' đến tỷ lệ sống sót. Các quyết định có tác động nhất liên quan đến giải quyết giá trị thiếu và ngoại lai, cùng nhau cải thiện chất lượng dữ liệu và độ chính xác mô hình. Khuyến nghị trong tương lai bao gồm kỹ thuật đặc trưng thêm, điều chỉnh siêu tham số và xác thực tầm quan trọng đặc trưng để tăng cường hiệu suất mô hình.

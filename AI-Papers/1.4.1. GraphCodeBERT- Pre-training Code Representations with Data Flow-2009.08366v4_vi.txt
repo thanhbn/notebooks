@@ -1,0 +1,499 @@
+# 1.4.1. GraphCodeBERT- Pre-training Code Representations with Data Flow-2009.08366v4.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\1.4.1. GraphCodeBERT- Pre-training Code Representations with Data Flow-2009.08366v4.pdf
+# Kích thước file: 1306900 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+Được xuất bản như một bài báo hội thảo tại ICLR 2021
+GRAPH CODEBERT: TIỀN HUẤN LUYỆN BIỂU DIỄN MÃ
+VỚI LUỒNG DỮ LIỆU
+Daya Guo1, Shuo Ren2, Shuai Lu3, Zhangyin Feng4, Duyu Tang5, Shujie Liu5, Long Zhou5,
+Nan Duan5, Alexey Svyatkovskiy6, Shengyu Fu6, Michele Tufano6, Shao Kun Deng6,
+Colin Clement6, Dawn Drain6, Neel Sundaresan6, Jian Yin1, Daxin Jiang7, và Ming Zhou5
+1Khoa Khoa học Máy tính và Kỹ thuật, Đại học Sun Yat-sen.
+2Đại học Beihang,3Đại học Bắc Kinh,4Viện Công nghệ Harbin,
+5Microsoft Research Asia,6Microsoft Devdiv,7Microsoft STCA
+
+TÓM TẮT
+Các mô hình được tiền huấn luyện cho ngôn ngữ lập trình đã đạt được những cải tiến thực nghiệm
+đáng kể trên nhiều tác vụ liên quan đến mã như tìm kiếm mã, hoàn thiện mã, tóm tắt mã, v.v. Tuy
+nhiên, các mô hình tiền huấn luyện hiện tại coi một đoạn mã như một chuỗi các token, trong khi
+bỏ qua cấu trúc vốn có của mã, điều này cung cấp ngữ nghĩa mã quan trọng và sẽ tăng cường quá
+trình hiểu mã. Chúng tôi trình bày GraphCodeBERT, một mô hình tiền huấn luyện cho ngôn ngữ
+lập trình có xem xét cấu trúc vốn có của mã. Thay vì sử dụng cấu trúc mức cú pháp của mã như
+cây cú pháp trừu tượng (AST), chúng tôi sử dụng luồng dữ liệu trong giai đoạn tiền huấn luyện,
+đây là cấu trúc mức ngữ nghĩa của mã mã hóa mối quan hệ "giá trị đến từ đâu" giữa các biến. Cấu
+trúc mức ngữ nghĩa như vậy ít phức tạp hơn và không tạo ra hệ thống phân cấp sâu không cần thiết
+của AST, tính chất này làm cho mô hình hiệu quả hơn. Chúng tôi phát triển GraphCodeBERT dựa
+trên Transformer. Ngoài việc sử dụng tác vụ mô hình ngôn ngữ có mặt nạ, chúng tôi giới thiệu hai
+tác vụ tiền huấn luyện nhận thức cấu trúc. Một là dự đoán các cạnh cấu trúc mã, và cái kia là căn
+chỉnh biểu diễn giữa mã nguồn và cấu trúc mã. Chúng tôi triển khai mô hình theo cách hiệu quả với
+hàm chú ý có mặt nạ được hướng dẫn bởi đồ thị để kết hợp cấu trúc mã. Chúng tôi đánh giá mô hình
+của mình trên bốn tác vụ, bao gồm tìm kiếm mã, phát hiện bản sao, dịch mã và tinh chỉnh mã. Kết
+quả cho thấy cấu trúc mã và các tác vụ tiền huấn luyện mới được giới thiệu có thể cải thiện
+GraphCodeBERT và đạt được hiệu suất tốt nhất hiện tại trên bốn tác vụ phụ thuộc.1
+
+1 GIỚI THIỆU
+Các mô hình tiền huấn luyện như ELMo (Peters et al., 2018), GPT (Radford et al., 2018) và BERT (Devlin
+et al., 2018) đã dẫn đến cải thiện mạnh mẽ trên nhiều tác vụ xử lý ngôn ngữ tự nhiên (NLP). Các mô hình
+tiền huấn luyện này đầu tiên được tiền huấn luyện trên một kho văn bản lớn không giám sát, sau đó được
+tinh chỉnh trên các tác vụ phụ thuộc. Thành công của các mô hình tiền huấn luyện trong NLP cũng thúc
+đẩy sự phát triển của các mô hình tiền huấn luyện cho ngôn ngữ lập trình. Các nghiên cứu hiện tại
+(Kanade et al., 2019; Karampatsis & Sutton, 2020; Feng et al., 2020; Svyatkovskiy et al., 2020; Buratti
+et al., 2020) coi mã nguồn như một chuỗi các token và tiền huấn luyện các mô hình trên mã nguồn để hỗ
+trợ các tác vụ liên quan đến mã như tìm kiếm mã, hoàn thiện mã, tóm tắt mã, v.v. Tuy nhiên, các nghiên
+cứu trước đây chỉ sử dụng mã nguồn để tiền huấn luyện, trong khi bỏ qua cấu trúc vốn có của mã. Cấu
+trúc mã như vậy cung cấp thông tin ngữ nghĩa hữu ích của mã, điều này sẽ có lợi cho quá trình hiểu mã.
+Lấy biểu thức v=maxvalue-minvalue làm ví dụ, v được tính từ maxvalue và minvalue. Các lập trình viên
+không phải lúc nào cũng tuân theo quy ước đặt tên nên khó hiểu ngữ nghĩa của biến v chỉ từ tên của nó.
+Cấu trúc ngữ nghĩa của mã cung cấp một cách để hiểu ngữ nghĩa của biến v bằng cách tận dụng mối quan
+hệ phụ thuộc giữa các biến.
+
+Công việc này được thực hiện khi tác giả là thực tập sinh tại Microsoft Research Asia. Liên hệ: Daya Guo
+(guody5@mail2.sysu.edu.cn)
+1Tất cả mã và dữ liệu có sẵn tại https://github.com/microsoft/CodeBERT .
+1arXiv:2009.08366v4 [cs.SE] 13 Sep 2021
+
+--- TRANG 2 ---
+Được xuất bản như một bài báo hội thảo tại ICLR 2021
+
+Trong nghiên cứu này, chúng tôi trình bày GraphCodeBERT, một mô hình tiền huấn luyện cho ngôn ngữ
+lập trình có xem xét cấu trúc vốn có của mã. Thay vì sử dụng cấu trúc mức cú pháp của mã như cây cú
+pháp trừu tượng (AST), chúng tôi tận dụng thông tin mức ngữ nghĩa của mã, tức là luồng dữ liệu, để tiền
+huấn luyện. Luồng dữ liệu là một đồ thị, trong đó các nút đại diện cho các biến và các cạnh đại diện cho
+mối quan hệ "giá trị đến từ đâu" giữa các biến. So với AST, luồng dữ liệu ít phức tạp hơn và không tạo
+ra hệ thống phân cấp sâu không cần thiết, tính chất này làm cho mô hình hiệu quả hơn. Để học biểu diễn
+mã từ mã nguồn và cấu trúc mã, chúng tôi giới thiệu hai tác vụ tiền huấn luyện nhận thức cấu trúc mới.
+Một là dự đoán các cạnh luồng dữ liệu để học biểu diễn từ cấu trúc mã, và cái kia là căn chỉnh biến
+qua mã nguồn và luồng dữ liệu để căn chỉnh biểu diễn giữa mã nguồn và cấu trúc mã. GraphCodeBERT
+dựa trên kiến trúc mạng nơ-ron Transformer (Vaswani et al., 2017) và chúng tôi mở rộng nó bằng cách
+giới thiệu hàm chú ý có mặt nạ được hướng dẫn bởi đồ thị để kết hợp cấu trúc mã.
+
+Chúng tôi tiền huấn luyện GraphCodeBERT trên tập dữ liệu CodeSearchNet (Husain et al., 2019), bao
+gồm 2.3M hàm của sáu ngôn ngữ lập trình được ghép nối với các tài liệu ngôn ngữ tự nhiên. Chúng tôi
+đánh giá mô hình trên bốn tác vụ phụ thuộc: tìm kiếm mã ngôn ngữ tự nhiên, phát hiện bản sao, dịch mã
+và tinh chỉnh mã. Các thí nghiệm cho thấy mô hình của chúng tôi đạt được hiệu suất tốt nhất hiện tại trên
+bốn tác vụ. Phân tích sâu hơn cho thấy cấu trúc mã và các tác vụ tiền huấn luyện mới được giới thiệu có
+thể cải thiện GraphCodeBERT và mô hình có sở thích nhất quán trong việc chú ý đến luồng dữ liệu.
+
+Tóm lại, các đóng góp của bài báo này là: (1) GraphCodeBERT là mô hình tiền huấn luyện đầu tiên tận
+dụng cấu trúc ngữ nghĩa của mã để học biểu diễn mã. (2) Chúng tôi giới thiệu hai tác vụ tiền huấn luyện
+nhận thức cấu trúc mới để học biểu diễn từ mã nguồn và luồng dữ liệu. (3) GraphCodeBERT cung cấp
+cải tiến đáng kể trên bốn tác vụ phụ thuộc, tức là tìm kiếm mã, phát hiện bản sao, dịch mã và tinh chỉnh
+mã.
+
+2 NGHIÊN CỨU LIÊN QUAN
+
+Các Mô hình Tiền Huấn luyện cho Ngôn ngữ Lập trình Được truyền cảm hứng bởi thành công lớn của
+tiền huấn luyện trong NLP (Devlin et al., 2018; Yang et al., 2019; Liu et al., 2019; Raffel et al., 2019),
+các mô hình tiền huấn luyện cho ngôn ngữ lập trình cũng thúc đẩy sự phát triển của trí tuệ mã (Kanade et
+al., 2019; Feng et al., 2020; Karampatsis & Sutton, 2020; Svyatkovskiy et al., 2020; Buratti et al., 2020).
+Kanade et al. (2019) tiền huấn luyện một mô hình BERT trên một kho mã nguồn Python khổng lồ bằng
+các mục tiêu mô hình ngôn ngữ có mặt nạ và dự đoán câu tiếp theo. Feng et al. (2020) đề xuất CodeBERT,
+một mô hình tiền huấn luyện đa phương thức cho ngôn ngữ lập trình và ngôn ngữ tự nhiên bằng mô hình
+ngôn ngữ có mặt nạ và phát hiện token được thay thế để hỗ trợ các tác vụ văn bản-mã như tìm kiếm mã.
+Karampatsis & Sutton (2020) tiền huấn luyện nhúng ngữ cảnh trên một kho JavaScript sử dụng khung
+ELMo cho tác vụ sửa chữa chương trình. Svyatkovskiy et al. (2020) đề xuất GPT-C, một biến thể của
+GPT-2 được huấn luyện từ đầu trên dữ liệu mã nguồn để hỗ trợ các tác vụ sinh mã như hoàn thiện mã.
+Buratti et al. (2020) trình bày C-BERT, một mô hình ngôn ngữ dựa trên transformer được tiền huấn luyện
+trên một tập hợp các kho lưu trữ được viết bằng ngôn ngữ C, và đạt được độ chính xác cao trong tác vụ
+gắn thẻ cây cú pháp trừu tượng (AST). Khác với các nghiên cứu trước đây, GraphCodeBERT là mô hình
+tiền huấn luyện đầu tiên tận dụng cấu trúc mã để học biểu diễn mã nhằm cải thiện hiểu biết mã. Chúng
+tôi tiếp tục giới thiệu hàm chú ý có mặt nạ được hướng dẫn bởi đồ thị để kết hợp cấu trúc mã vào
+Transformer và hai tác vụ tiền huấn luyện nhận thức cấu trúc mới để học biểu diễn từ mã nguồn và cấu
+trúc mã.
+
+Mạng Nơ-ron với Cấu trúc Mã Trong những năm gần đây, một số mạng nơ-ron tận dụng cấu trúc mã
+như AST đã được đề xuất và đạt được hiệu suất mạnh mẽ trong các tác vụ liên quan đến mã như hoàn
+thiện mã (Li et al., 2017; Alon et al., 2019; Kim et al., 2020), sinh mã (Rabinovich et al., 2017; Yin &
+Neubig, 2017; Brockschmidt et al., 2018), phát hiện bản sao mã (Wei & Li, 2017; Zhang et al., 2019;
+Wang et al., 2020), tóm tắt mã (Alon et al., 2018; Hu et al., 2018) và những tác vụ khác (Nguyen &
+Nguyen, 2015; Allamanis et al., 2018; Hellendoorn et al., 2019). Nguyen & Nguyen (2015) đề xuất một
+mô hình ngôn ngữ dựa trên AST để hỗ trợ phát hiện và gợi ý một mẫu cú pháp tại vị trí chỉnh sửa hiện
+tại. Allamanis et al. (2018) sử dụng đồ thị để biểu diễn chương trình và mạng nơ-ron đồ thị để suy luận
+trên cấu trúc chương trình. Hellendoorn et al. (2019) đề xuất hai kiến trúc khác nhau sử dụng mạng nơ-ron
+đồ thị có cổng và Transformers để kết hợp thông tin cục bộ và toàn cục nhằm tận dụng biểu diễn có cấu
+trúc phong phú của mã nguồn. Tuy nhiên, những
+
+2
+
+--- TRANG 3 ---
+Được xuất bản như một bài báo hội thảo tại ICLR 2021
+
+nghiên cứu này tận dụng cấu trúc mã để học các mô hình trên các tác vụ cụ thể từ đầu mà không sử dụng
+các mô hình tiền huấn luyện. Trong nghiên cứu này, chúng tôi nghiên cứu cách tận dụng cấu trúc mã để
+tiền huấn luyện biểu diễn mã.
+
+3 LUỒNG DỮ LIỆU
+
+Trong phần này, chúng tôi mô tả khái niệm cơ bản và việc trích xuất luồng dữ liệu. Trong phần tiếp theo,
+chúng tôi sẽ mô tả cách sử dụng luồng dữ liệu để tiền huấn luyện.
+
+Luồng dữ liệu là một đồ thị biểu diễn mối quan hệ phụ thuộc giữa các biến, trong đó các nút biểu diễn
+các biến và các cạnh biểu diễn vị trí giá trị của mỗi biến đến từ đâu. Không giống như AST, luồng dữ
+liệu giống nhau dưới các ngữ pháp trừu tượng khác nhau cho cùng một mã nguồn. Cấu trúc mã như vậy
+cung cấp thông tin ngữ nghĩa mã quan trọng để hiểu mã. Lấy v=maxvalue-minvalue làm ví dụ, các lập
+trình viên không phải lúc nào cũng tuân theo quy ước đặt tên nên khó hiểu ngữ nghĩa của biến này. Luồng
+dữ liệu cung cấp một cách để hiểu ngữ nghĩa của biến v ở một mức độ nào đó, tức là giá trị của v đến từ
+maxvalue và minvalue trong luồng dữ liệu. Bên cạnh đó, luồng dữ liệu hỗ trợ mô hình xem xét các phụ
+thuộc tầm xa được tạo ra bởi việc sử dụng cùng một biến hoặc hàm ở các vị trí xa nhau. Lấy Hình 1 làm
+ví dụ, có bốn biến có cùng tên (tức là x3, x7, x9 và x11) nhưng với ngữ nghĩa khác nhau. Đồ thị trong
+hình cho thấy mối quan hệ phụ thuộc giữa các biến này và hỗ trợ x11 chú ý nhiều hơn đến x7 và x9 thay
+vì x3.
+
+Tiếp theo, chúng tôi mô tả cách trích xuất luồng dữ liệu từ một mã nguồn.
+
+def max(a,b): x=0 if b>a: x=b else: x=a return x
+Mã nguồn → Phân tích thành AST → Công cụ Compiler → Xác định chuỗi biến 5 1 3 6 7 8 9 10 4 2 11
+def max(a,b): x=0 if b>a: x=b else: x=a return x
+
+Xác định chuỗi biến trong AST:
+Mối quan hệ biến: a b x 0 b a b x a x x 1 2 3 4 6 5 10 8 9 7 11
+
+Trích xuất mối quan hệ biến từ AST:
+Giá trị đến từ...
+định nghĩa hàm → tên → tham số → max → a b → thân → biểu thức → câu lệnh → phép gán → trái phải → x 0
+Câu lệnh If → câu lệnh return → x → điều kiện → trái phải → a b → toán tử > → thay thế...
+
+Hình 1: Quy trình trích xuất luồng dữ liệu cho trước một mã nguồn. Đồ thị ở bên phải nhất là luồng dữ
+liệu biểu diễn mối quan hệ "giá trị đến từ đâu" giữa các biến.
+
+Hình 1 cho thấy việc trích xuất luồng dữ liệu thông qua một mã nguồn. Cho trước một mã nguồn C =
+{c1; c2; :::; cn}, chúng tôi đầu tiên phân tích mã thành một cây cú pháp trừu tượng (AST) bằng một công
+cụ compiler chuẩn2. AST bao gồm thông tin cú pháp của mã và các terminal (lá) được sử dụng để xác
+định chuỗi biến, ký hiệu là V = {v1; v2; :::; vk}. Chúng tôi lấy mỗi biến làm một nút của đồ thị và một
+cạnh có hướng ← = ⟨vi; vj⟩ từ vi đến vj chỉ ra rằng giá trị của biến thứ j đến từ biến thứ i. Lấy x = expr
+làm ví dụ, các cạnh từ tất cả các biến trong expr đến x được thêm vào đồ thị. Chúng tôi ký hiệu tập hợp
+các cạnh có hướng là E = {←1; ←2; :::; ←l} và đồ thị G(C) = (V; E) là luồng dữ liệu được sử dụng để
+biểu diễn mối quan hệ phụ thuộc giữa các biến của mã nguồn C.
+
+4 GRAPH CODEBERT
+
+Trong phần này, chúng tôi mô tả GraphCodeBERT, một mô hình tiền huấn luyện dựa trên đồ thị dựa trên
+Transformer cho ngôn ngữ lập trình. Chúng tôi giới thiệu kiến trúc mô hình, chú ý có mặt nạ được hướng
+dẫn bởi đồ thị và các tác vụ tiền huấn luyện bao gồm mô hình ngôn ngữ có mặt nạ chuẩn và những tác
+vụ mới được giới thiệu. Thông tin chi tiết hơn về cài đặt tiền huấn luyện mô hình được cung cấp trong
+Phụ lục A.
+
+2https://github.com/tree-sitter/tree-sitter
+
+3
+
+--- TRANG 4 ---
+Được xuất bản như một bài báo hội thảo tại ICLR 2021
+
+Chuỗi Biến:
+Giá trị đến từ... x=0 if b> a : x=b else ... Return maximum value
+
+Văn bản Mã a1 b2 x3 04 b5 a6 x7 b8 x9 a10 x11
+Mã nguồn: def max(a,b): x=0 if b>a: x=b else: x=a return x
+Bình luận: Return maximum value
+Luồng Dữ liệu
+
+[CLS] ... x=0 if b > [MASK] : x=b else ... [SEP] Return [MASK] value [SEP] a1 b2 x3 04 b5 a6 x7 b8 x9 a10 x11...
+
+L1 L2 L12
+GraphCodeBERT → maximum a
+
+1 2 4 5 6 8 10 → dự đoán cạnh luồng dữ liệu giữa các biến
+7 9 11 3 → x x x → căn chỉnh biến qua mã nguồn và luồng dữ liệu
+
+Mô hình Ngôn ngữ Có Mặt nạ
+11 10 9 8 7 6 5 4 3 2 1
+
+Hình 2: Một minh họa về việc tiền huấn luyện GraphCodeBERT. Mô hình nhận mã nguồn được ghép nối
+với bình luận và luồng dữ liệu tương ứng làm đầu vào, và được tiền huấn luyện sử dụng mô hình ngôn
+ngữ có mặt nạ chuẩn (Devlin et al., 2018) và hai tác vụ nhận thức cấu trúc. Một tác vụ nhận thức cấu trúc
+là dự đoán vị trí một biến được xác định từ đâu (được đánh dấu bằng các đường màu cam) và tác vụ kia
+là dự đoán các cạnh luồng dữ liệu giữa các biến (được đánh dấu bằng các đường màu xanh).
+
+4.1 KIẾN TRÚC MÔ HÌNH
+
+Hình 2 cho thấy kiến trúc mô hình của GraphCodeBERT. Chúng tôi tuân theo BERT (Devlin et al., 2018)
+và sử dụng Transformer đa lớp hai chiều (Vaswani et al., 2017) làm xương sống của mô hình. Thay vì chỉ
+sử dụng mã nguồn, chúng tôi cũng sử dụng các bình luận được ghép nối để tiền huấn luyện mô hình nhằm
+hỗ trợ nhiều tác vụ liên quan đến mã liên quan đến ngôn ngữ tự nhiên như tìm kiếm mã ngôn ngữ tự nhiên
+(Feng et al., 2020). Chúng tôi tiếp tục lấy luồng dữ liệu, là một đồ thị, làm một phần của đầu vào cho mô
+hình.
+
+Cho trước một mã nguồn C = {c1; c2; :::; cn} với bình luận W = {w1; w2; :::; wm}, chúng ta có thể thu
+được luồng dữ liệu tương ứng G(C) = (V; E) như đã thảo luận trong Phần 3, trong đó V = {v1; v2; :::;
+vk} là một tập hợp các biến và E = {←1; ←2; :::; ←l} là một tập hợp các cạnh trực tiếp biểu diễn vị trí
+giá trị của mỗi biến đến từ đâu. Chúng tôi nối bình luận, mã nguồn và tập hợp các biến thành chuỗi đầu
+vào X = {[CLS]; W; [SEP]; C; [SEP]; V}, trong đó [CLS] là một token đặc biệt ở phía trước của ba
+đoạn và [SEP] là một ký hiệu đặc biệt để phân tách hai loại dữ liệu.
+
+GraphCodeBERT nhận chuỗi X làm đầu vào và sau đó chuyển đổi chuỗi thành các vector đầu vào H0.
+Đối với mỗi token, vector đầu vào của nó được xây dựng bằng cách cộng các nhúng token và vị trí tương
+ứng. Chúng tôi sử dụng một nhúng vị trí đặc biệt cho tất cả các biến để chỉ ra rằng chúng là các nút của
+luồng dữ liệu. Mô hình áp dụng N lớp transformer trên các vector đầu vào để tạo ra các biểu diễn ngữ
+cảnh Hn = transformern(Hn-1); n ∈ [1; N]. Mỗi lớp transformer chứa một transformer giống hệt nhau
+về mặt kiến trúc áp dụng một hoạt động tự chú ý đa đầu (Vaswani et al., 2017) theo sau bởi một lớp feed
+forward trên đầu vào Hn-1 trong lớp thứ n.
+
+Gn = LN(MultiAttn(Hn-1) + Hn-1)     (1)
+Hn = LN(FFN(Gn) + Gn)     (2)
+
+trong đó MultiAttn là một cơ chế tự chú ý đa đầu, FFN là một mạng feed forward hai lớp, và LN biểu
+diễn một hoạt động chuẩn hóa lớp. Đối với lớp transformer thứ n, đầu ra Ĝn của tự chú ý đa đầu được
+tính thông qua:
+
+Qi = Hn-1 WQi;  Ki = Hn-1 WKi;  Vi = Hn-1 WVi     (3)
+headi = softmax(QiKiT/√dk + M)Vi     (4)
+Ĝn = [head1; :::; headu]WOn     (5)
+
+trong đó đầu ra lớp trước Hn-1 ∈ R|X|×dh được chiếu tuyến tính thành một bộ ba truy vấn, khóa và giá
+trị sử dụng các tham số mô hình WQi, WKi, WVi ∈ Rdh×dk, tương ứng. u là số lượng đầu, dk là chiều
+của một đầu, và WOn ∈ Rdh×dh là các tham số mô hình. M ∈ R|X|×|X| là một ma trận mặt nạ, trong đó
+Mij là 0 nếu token thứ i được phép chú ý đến token thứ j nếu không thì -∞.
+
+4
+
+--- TRANG 5 ---
+Được xuất bản như một bài báo hội thảo tại ICLR 2021
+
+4.2 CHÚ Ý CÓ MẶT NẠ ĐƯỢC HƯỚNG DẪN BỞI ĐỒ THỊ
+
+Để kết hợp cấu trúc đồ thị vào Transformer, chúng tôi định nghĩa một hàm chú ý có mặt nạ được hướng
+dẫn bởi đồ thị để lọc ra các tín hiệu không liên quan. Hàm mặt nạ chú ý có thể tránh khóa ki được chú ý
+bởi truy vấn qj bằng cách thêm điểm chú ý qTj ki một giá trị âm vô cùng để trọng số chú ý trở thành
+không sau khi sử dụng hàm softmax. Để biểu diễn mối quan hệ phụ thuộc giữa các biến, một truy vấn nút
+qvi được phép chú ý đến một khóa nút kvj nếu có một cạnh trực tiếp từ nút vj đến nút vi (tức là ⟨vj; vi⟩ ∈
+E) hoặc chúng là cùng một nút (tức là i = j). Nếu không, sự chú ý được mặt nạ bằng cách thêm một giá
+trị âm vô cùng vào điểm chú ý. Để biểu diễn mối quan hệ giữa các token mã nguồn và các nút của luồng
+dữ liệu, chúng tôi đầu tiên định nghĩa một tập hợp E', trong đó ⟨vi; cj⟩ = ⟨cj; vi⟩ ∈ E' nếu biến vi được
+xác định từ token mã nguồn cj. Sau đó chúng tôi cho phép nút qvi và mã kcj chú ý lẫn nhau nếu và chỉ
+nếu ⟨vi; cj⟩ = ⟨cj; vi⟩ ∈ E'. Một cách chính thức hơn, chúng tôi sử dụng ma trận chú ý có mặt nạ được
+hướng dẫn bởi đồ thị sau đây làm ma trận mặt nạ M trong phương trình 4:
+
+Mij = {
+0 nếu qi ∈ {[CLS]; [SEP]} hoặc ⟨qi; kj⟩ ∈ W ∪ C hoặc ⟨qi; kj⟩ ∈ E ∪ E'
+-∞ nếu không
+}     (6)
+
+4.3 CÁC TÁC VỤ TIỀN HUẤN LUYỆN
+
+Chúng tôi mô tả ba tác vụ tiền huấn luyện được sử dụng để tiền huấn luyện GraphCodeBERT trong phần
+này. Tác vụ đầu tiên là mô hình ngôn ngữ có mặt nạ (Devlin et al., 2018) để học biểu diễn từ mã nguồn.
+Tác vụ thứ hai là dự đoán cạnh luồng dữ liệu để học biểu diễn từ luồng dữ liệu, trong đó chúng tôi đầu
+tiên mặt nạ một số cạnh luồng dữ liệu của biến và sau đó để GraphCodeBERT dự đoán những cạnh đó.
+Tác vụ cuối cùng là căn chỉnh biến qua mã nguồn và luồng dữ liệu để căn chỉnh biểu diễn giữa mã nguồn
+và luồng dữ liệu, dự đoán vị trí một biến được xác định từ đâu.
+
+Mô hình Ngôn ngữ Có Mặt nạ Chúng tôi tuân theo Devlin et al. (2018) để áp dụng tác vụ tiền huấn
+luyện mô hình ngôn ngữ có mặt nạ (MLM). Cụ thể, chúng tôi lấy mẫu ngẫu nhiên 15% các token từ mã
+nguồn và bình luận được ghép nối. Chúng tôi thay thế chúng bằng token [MASK] 80% thời gian, bằng
+token ngẫu nhiên 10% thời gian, và để chúng không thay đổi 10% thời gian. Mục tiêu MLM là dự đoán
+các token gốc của những token được lấy mẫu này, điều này đã được chứng minh là hiệu quả trong các
+nghiên cứu trước đây (Devlin et al., 2018; Liu et al., 2019; Feng et al., 2020). Đặc biệt, mô hình có thể
+tận dụng ngữ cảnh bình luận nếu ngữ cảnh mã nguồn không đủ để suy ra token mã bị mặt nạ, khuyến
+khích mô hình căn chỉnh biểu diễn ngôn ngữ tự nhiên và ngôn ngữ lập trình.
+
+Dự đoán Cạnh Để học biểu diễn từ luồng dữ liệu, chúng tôi giới thiệu một tác vụ tiền huấn luyện dự
+đoán các cạnh luồng dữ liệu. Động lực là khuyến khích mô hình học biểu diễn nhận thức cấu trúc mã hóa
+mối quan hệ "giá trị đến từ đâu" để hiểu mã tốt hơn. Cụ thể, chúng tôi lấy mẫu ngẫu nhiên 20% các nút
+Vs trong luồng dữ liệu, mặt nạ các cạnh trực tiếp kết nối các nút được lấy mẫu này bằng cách thêm một
+giá trị âm vô cùng trong ma trận mặt nạ, và sau đó dự đoán những cạnh bị mặt nạ Emask. Lấy biến x11
+trong Hình 2 làm ví dụ, chúng tôi đầu tiên mặt nạ các cạnh ⟨x7; x11⟩ và ⟨x9; x11⟩ trong đồ thị và sau đó
+để mô hình dự đoán những cạnh này. Một cách chính thức, mục tiêu tiền huấn luyện của tác vụ được tính
+như Phương trình 7, trong đó Ec = Vs × V ∪ V × Vs là một tập hợp các ứng cử viên cho dự đoán cạnh,
+I(eij ∈ E) là 1 nếu ⟨vi; vj⟩ ∈ E nếu không thì 0, và xác suất peij của việc tồn tại một cạnh từ nút thứ i
+đến nút thứ j được tính bằng tích vô hướng theo sau bởi hàm sigmoid sử dụng biểu diễn của hai nút từ
+GraphCodeBERT. Để cân bằng tỷ lệ mẫu dương-âm, chúng tôi lấy mẫu các mẫu âm và dương với cùng
+số lượng cho Ec.
+
+lossEdgePred = ∑(eij∈Ec) [I(eij ∈ Emask) log peij + (1 - I(eij ∈ Emask)) log(1 - peij)]     (7)
+
+Căn chỉnh Nút Để căn chỉnh biểu diễn giữa mã nguồn và luồng dữ liệu, chúng tôi giới thiệu một tác vụ
+tiền huấn luyện căn chỉnh nút qua mã nguồn và luồng dữ liệu, tương tự như dự đoán cạnh luồng dữ liệu.
+Thay vì dự đoán các cạnh giữa các nút, chúng tôi dự đoán các cạnh giữa các token mã và các nút. Động
+lực là khuyến khích mô hình căn chỉnh các biến và mã nguồn theo luồng dữ liệu. Lấy Hình 3 làm ví dụ,
+chúng tôi đầu tiên mặt nạ các cạnh giữa biến x11 trong luồng dữ liệu và các token mã, và sau đó dự đoán
+token mã nào mà biến x11 trong luồng dữ liệu được xác định từ đó. Như chúng ta có thể thấy, mô hình
+có thể dự đoán rằng biến x11 được xác định từ biến x trong biểu thức "return x" theo thông tin luồng dữ
+liệu (tức là giá trị của x11 đến từ x7 hoặc x9).
+
+5
+
+--- TRANG 6 ---
+Được xuất bản như một bài báo hội thảo tại ICLR 2021
+
+GraphCodeBERT
+
+Chuỗi Biến    Văn bản Mã
+[CLS] Return [MASK] value [SEP] def max ( a , b ) : x=0 if b>a : x=b else: x=a return x [SEP] a₁b₂x₃0₄b₅a₆x₇b₈x₉a₁₀x₁₁
+
+Dự đoán token mã nào mà biến x₁₁ trong luồng dữ liệu được xác định từ đó
+Mặt nạ các cạnh giữa biến x₁₁ trong luồng dữ liệu và các token mã
+
+Hình 3: Một ví dụ về tác vụ Căn chỉnh Nút.
+
+Cụ thể, chúng tôi lấy mẫu ngẫu nhiên 20% nút V's trong đồ thị, mặt nạ các cạnh giữa các token mã và
+các nút được lấy mẫu, và sau đó dự đoán các cạnh bị mặt nạ E'mask. Mục tiêu tiền huấn luyện của tác
+vụ này tương tự như Phương trình 7, trong đó E'c = V's × C là một tập hợp các ứng cử viên cho căn chỉnh
+nút. Tương tự, chúng tôi cũng lấy mẫu các mẫu âm và dương với cùng số lượng cho E'c.
+
+lossNodeAlign = ∑(eij∈E'c) [I(eij ∈ E'mask) log peij + (1 - I(eij ∈ E'mask)) log(1 - peij)]     (8)
+
+5 THỰC NGHIỆM
+
+Chúng tôi đánh giá mô hình của mình trên bốn tác vụ phụ thuộc, bao gồm tìm kiếm mã, phát hiện bản
+sao, dịch mã và tinh chỉnh mã. Cài đặt thực nghiệm chi tiết có thể được tìm thấy trong Phụ lục.
+
+5.1 TÌM KIẾM MÃ NGÔN NGỮ TỰ NHIÊN
+
+Cho trước một ngôn ngữ tự nhiên làm đầu vào, tác vụ này nhằm tìm mã có liên quan ngữ nghĩa nhất từ
+một tập hợp các mã ứng cử viên. Chúng tôi tiến hành thí nghiệm trên kho mã CodeSearchNet (Husain et
+al., 2019), bao gồm sáu ngôn ngữ lập trình. Khác với tập dữ liệu và cài đặt được sử dụng trong Husain
+et al. (2019), chúng tôi lọc các truy vấn chất lượng thấp bằng các quy tắc thủ công và mở rộng 1000 ứng
+cử viên thành toàn bộ kho mã, điều này gần gũi hơn với tình huống thực tế. Chúng tôi sử dụng Mean
+Reciprocal Rank (MRR) làm thước đo đánh giá và báo cáo kết quả của các phương pháp hiện tại trong
+Bảng 1. Chúng tôi cung cấp thêm thông tin chi tiết về tập dữ liệu được lọc và cũng đưa ra kết quả sử
+dụng cùng cài đặt của Husain et al. (2019) trong Phụ lục B.
+
+[THIS IS TABLE: Table showing results on code search across different programming languages (Ruby, Javascript, Go, Python, Java, Php) with Overall scores for different models including NBow, CNN, BiRNN, selfAtt, RoBERTa, RoBERTa (code), CodeBERT, and GraphCodeBERT]
+
+Bảng 1: Kết quả trên tìm kiếm mã. GraphCodeBERT vượt trội hơn các mô hình khác một cách đáng kể
+(p < 0.01).
+
+Tất cả các mô hình tính tích vô hướng của các mã hóa mã và truy vấn làm điểm liên quan để xếp hạng các
+mã ứng cử viên. Chúng tôi tuân theo Husain et al. (2019) để triển khai bốn phương pháp làm baseline
+trong nhóm đầu tiên để thu được các mã hóa, bao gồm bag-of-words, mạng nơ-ron tích chập, mạng nơ-
+ron tái phát hai chiều, và chú ý đa đầu. Nhóm thứ hai là kết quả của các mô hình tiền huấn luyện.
+RoBERTa (Liu et al., 2019) là một mô hình tiền huấn luyện trên kho văn bản với mục tiêu học MLM,
+trong khi RoBERTa (code) được tiền huấn luyện chỉ trên mã. CodeBERT (Feng et al., 2020) được tiền
+huấn luyện
+
+6
+
+--- TRANG 7 ---
+Được xuất bản như một bài báo hội thảo tại ICLR 2021
+
+trên các cặp mã-văn bản với các mục tiêu học MLM và phát hiện token được thay thế. Như chúng ta có
+thể thấy, GraphCodeBERT tận dụng cấu trúc mã để tiền huấn luyện mang lại 2% cải thiện MRR, đạt
+được hiệu suất tốt nhất hiện tại. Chúng tôi cũng tiến hành t-test giữa GraphCodeBERT của chúng tôi và
+các baseline khác, và kết quả cho thấy các cải thiện có ý nghĩa thống kê với p < 0.01.
+
+5.2 PHÁT HIỆN BẢN SAO MÃ
+
+Các bản sao mã là nhiều đoạn mã tạo ra kết quả tương tự khi được đưa vào cùng một đầu vào. Tác vụ
+này nhằm đo lường độ tương tự giữa hai đoạn mã, có thể giúp giảm chi phí bảo trì phần mềm và ngăn
+ngừa lỗi. Chúng tôi tiến hành thí nghiệm trên tập dữ liệu BigCloneBench (Svajlenko et al., 2014) và báo
+cáo kết quả trong Bảng 2.
+
+Deckard (Jiang et al., 2007) là tính toán các vector cho thông tin cấu trúc trong AST và sau đó một
+Locality Sensitive Hashing (LSH) (Datar et al., 2004) được sử dụng để gom nhóm các vector tương tự
+để phát hiện. RtvNN (White et al., 2016) huấn luyện một bộ mã hóa tự động đệ quy để học biểu diễn
+cho AST. CDLH (Wei & Li, 2017) học biểu diễn của các đoạn mã thông qua LSTM dựa trên AST và
+khoảng cách hamming được sử dụng để tối ưu hóa khoảng cách giữa biểu diễn vector của các cặp AST.
+
+[THIS IS TABLE: Bảng 2 showing results on code clone detection with columns for Model, Precision, Recall, and F1. Contains results for various models including Deckard, RtvNN, CDLH, ASTNN, FA-AST-GMN, RoBERTa (code), CodeBERT, and GraphCodeBERT]
+
+ASTNN Zhang et al. (2019) sử dụng RNN để mã hóa các cây con AST cho các câu lệnh, sau đó đưa các mã hóa của tất cả các cây câu lệnh vào một RNN để học biểu diễn cho một chương trình. FA-AST-GMN (Wang et al., 2020) sử dụng GNN trên một AST được tăng cường luồng để tận dụng thông tin luồng điều khiển và dữ liệu rõ ràng cho phát hiện bản sao mã. Kết quả cho thấy GraphCodeBERT của chúng tôi tận dụng thông tin cấu trúc mã vượt trội đáng kể so với các phương pháp khác với p < 0.01, điều này chứng minh tính hiệu quả của mô hình tiền huấn luyện của chúng tôi cho tác vụ phát hiện bản sao mã.
+
+5.3 DỊCH MÃ
+
+Dịch mã nhằm di chuyển phần mềm cũ từ một ngôn ngữ lập trình trong một nền tảng sang nền tảng khác.
+Theo Nguyen et al. (2015) và Chen et al. (2018), chúng tôi tiến hành thí nghiệm trên một tập dữ liệu
+được thu thập từ cùng một số dự án mã nguồn mở như họ và báo cáo kết quả trong Bảng 3.
+
+Phương pháp Naive là sao chép trực tiếp mã nguồn làm kết quả dịch. PBSMT là viết tắt của dịch máy
+thống kê dựa trên cụm từ (Koehn et al., 2003), và đã được khai thác trong các nghiên cứu trước đây
+(Nguyen et al., 2013; Karaivanov et al., 2014). Đối với Transformer, chúng tôi sử dụng
+
+[THIS IS TABLE: Bảng 3 showing results on code translation with Java↔C# conversion, including BLEU and Acc scores for different methods]
+
+cùng số lượng lớp và kích thước ẩn như các mô hình tiền huấn luyện. Để tận dụng các mô hình tiền huấn luyện cho dịch thuật, chúng tôi khởi tạo bộ mã hóa với các mô hình tiền huấn luyện và khởi tạo ngẫu nhiên các tham số của bộ giải mã và chú ý nguồn-đích. Kết quả cho thấy các mô hình được khởi tạo với các mô hình tiền huấn luyện (tức là nhóm thứ hai) vượt trội hơn các mô hình PBSMT và Transformer. Trong số đó, GraphCodeBERT đạt được hiệu suất tốt nhất hiện tại, điều này chứng minh tính hiệu quả của mô hình của chúng tôi cho dịch mã.
+
+5.4 TINH CHỈNH MÃ
+
+Tinh chỉnh mã nhằm tự động sửa lỗi trong mã, có thể góp phần giảm chi phí sửa lỗi. Chúng tôi sử dụng
+tập dữ liệu được phát hành bởi Tufano et al. (2019) và báo cáo kết quả trong Bảng 4.
+
+7
+
+--- TRANG 8 ---
+Được xuất bản như một bài báo hội thảo tại ICLR 2021
+
+Phương pháp Naive sao chép trực tiếp mã lỗi làm kết quả tinh chỉnh. Đối với Transformer, chúng tôi sử
+dụng cùng số lượng lớp và kích thước ẩn như các mô hình tiền huấn luyện. Giống như Phần 5.3, chúng
+tôi khởi tạo bộ mã hóa với các mô hình tiền huấn luyện và khởi tạo ngẫu nhiên các tham số của bộ giải
+mã
+
+[THIS IS TABLE: Bảng 4 showing results on code refinement with columns for Methods, small (BLEU/Acc), and medium (BLEU/Acc)]
+
+và chú ý nguồn-đích. Sau đó chúng tôi sử dụng dữ liệu huấn luyện để tinh chỉnh toàn bộ mô hình. Trong
+bảng, chúng ta thấy rằng Transformer vượt trội đáng kể so với LSTM. Kết quả trong nhóm thứ hai cho
+thấy các mô hình tiền huấn luyện vượt trội hơn các mô hình Transformer nữa, và GraphCodeBERT đạt
+được hiệu suất tốt hơn các mô hình tiền huấn luyện khác trên cả hai tập dữ liệu, điều này cho thấy việc
+tận dụng thông tin cấu trúc mã rất hữu ích cho tác vụ tinh chỉnh mã.
+
+5.5 PHÂN TÍCH MÔ HÌNH
+
+Nghiên cứu Loại bỏ Thành phần Chúng tôi tiến hành nghiên cứu loại bỏ thành phần trên tác vụ tìm
+kiếm mã ngôn ngữ tự nhiên để hiểu các thành phần khác nhau trong phương pháp của chúng tôi tác động
+đến hiệu suất tổng thể như thế nào. Chúng tôi loại bỏ hai tác vụ tiền huấn luyện và luồng dữ liệu, tương
+ứng, để phân tích đóng góp của chúng. Bảng 5 cho thấy hiệu suất tổng thể giảm từ 71.3% xuống 70.3%-
+70.7% khi loại bỏ các tác vụ tiền huấn luyện Node Alignment và Edge Prediction, tương ứng, điều này
+tiết lộ tầm quan trọng của hai tác vụ tiền huấn luyện nhận thức cấu trúc. Sau khi loại bỏ hoàn toàn luồng
+dữ liệu, chúng ta có thể thấy rằng hiệu suất giảm từ 71.3% xuống 69.3%, có nghĩa là tận dụng luồng
+dữ liệu để học biểu diễn mã có thể cải thiện GraphCodeBERT.
+
+[THIS IS TABLE: Bảng 5 showing ablation study results on natural language code search]
+
+Chú ý Mức Nút so với Mức Token Bảng 6 cho thấy tần suất một token đặc biệt [CLS] được sử dụng
+để tính xác suất của ứng cử viên đúng chú ý đến các token mã (Codes) và các biến (Nodes). Chúng ta
+thấy rằng mặc dù số lượng nút chiếm 5%-20%, sự chú ý trên các nút áp đảo tỷ lệ nút/mã (khoảng 10%
+đến 32%) trên tất cả các ngôn ngữ lập trình. Kết quả cho thấy luồng dữ liệu đóng một vai trò quan trọng
+trong quá trình hiểu mã và mô hình chú ý nhiều hơn đến các nút trong luồng dữ liệu hơn các token mã.
+
+[THIS IS TABLE: Bảng 6 showing attention distribution between code tokens and variables across different programming languages]
+
+So sánh giữa AST và Luồng Dữ liệu Hình 4 cho thấy điểm MRR so với độ dài chuỗi đầu vào trên tập
+dữ liệu xác thực của ngôn ngữ lập trình Ruby cho tác vụ tìm kiếm mã. AST Pre-order Traversal coi AST
+như một chuỗi bằng cách tuyến tính hóa tất cả các nút AST sử dụng thuật toán duyệt tiền tố. AST Subtree
+Masking coi AST như một cây và giới thiệu mặt nạ cây con (Nguyen et al., 2019) cho tự chú ý của
+Transformer. Trong mặt nạ cây con, mỗi truy vấn nút trong AST chỉ chú ý đến các con cháu cây con của
+chính nó, và mỗi truy vấn lá chỉ chú ý đến các lá của AST. Transformer có một thành phần tự chú ý với
+độ phức tạp thời gian và bộ nhớ O(n²) trong đó n là độ dài chuỗi đầu vào, và do đó không hiệu quả để
+mở rộng cho các đầu vào dài.
+
+8
+
+--- TRANG 9 ---
+Được xuất bản như một bài báo hội thảo tại ICLR 2021
+
+[THIS IS CHART: Line graph showing MRR Score vs Sequence Length (64-512) with 4 lines representing different approaches: w/o code structure, AST Pre-order Traversal, AST Subtree Masking, and GraphCodeBERT]
+
+Hình 4: Điểm MRR trên tập dữ liệu xác thực của Ruby cho tìm kiếm mã với độ dài chuỗi đầu vào thay đổi.
+
+Chúng tôi quan sát thấy rằng việc tiêm AST thậm chí còn làm tổn hại hiệu suất khi độ dài chuỗi ngắn (ví dụ: ngắn hơn 128), trong khi GraphCodeBERT nhất quán mang lại cải thiện hiệu suất trên độ dài chuỗi thay đổi và thu được điểm MRR tốt hơn các phương pháp dựa trên AST. Lý do chính là luồng dữ liệu ít phức tạp hơn và số lượng nút chiếm 5%-20% (xem Bảng 6), điều này không tạo ra hệ thống phân cấp sâu không cần thiết của AST và làm cho mô hình chính xác và hiệu quả hơn.
+
+Nghiên cứu Trường hợp Chúng tôi cũng đưa ra một nghiên cứu trường hợp để chứng minh rằng luồng dữ liệu sẽ tăng cường quá trình hiểu mã. Cho trước một mã nguồn và một bình luận, chúng tôi sử dụng GraphCodeBERT có và không có luồng dữ liệu để dự đoán liệu bình luận có mô tả chính xác mã nguồn hay không. Kết quả được đưa ra trong Hình 5. Chúng ta có thể thấy rằng cả hai mô hình đều đưa ra dự đoán chính xác trong ví dụ gốc, trong đó ngưỡng là 0.5 (bảng trái). Để nghiên cứu khả năng hiểu mã của các mô hình, chúng tôi thay đổi mã nguồn (bảng giữa) và bình luận (bảng phải), tương ứng. Mặc dù chúng tôi thực hiện một thay đổi nhỏ trên mã nguồn (return a → return b) và bình luận (sum value → mean value), ngữ nghĩa của mã nguồn và bình luận hoàn toàn khác nhau và các nhãn gold tương ứng thay đổi từ 1 thành 0. Như chúng ta có thể thấy trong hình, GraphCodeBERT không sử dụng luồng dữ liệu thất bại trong những bài kiểm tra này và vẫn đưa ra xác suất cao cho các ví dụ âm. Sau khi tận dụng luồng dữ liệu, GraphCodeBERT hiểu tốt hơn ngữ nghĩa của mã nguồn và đưa ra dự đoán chính xác trên tất cả các bài kiểm tra, điều này chứng minh rằng luồng dữ liệu có thể cải thiện khả năng hiểu mã của mô hình.
+
+[THIS IS FIGURE: Figure 5 showing comparison of GraphCodeBERT with and without data flow across different code and natural language examples, including prediction scores and labels]
+
+Hình 5: Chúng tôi lấy một bình luận và một mã nguồn làm đầu vào (hàng đầu tiên), và sử dụng GraphCodeBERT có và không có luồng dữ liệu để dự đoán xác suất của mã nguồn khớp với bình luận (hàng thứ ba). Nhãn là 1 nếu bình luận mô tả chính xác mã nguồn nếu không thì 0 (hàng thứ hai).
+
+6 KẾT LUẬN
+
+Trong bài báo này, chúng tôi trình bày GraphCodeBERT tận dụng luồng dữ liệu để học biểu diễn mã. Theo hiểu biết tốt nhất của chúng tôi, đây là mô hình tiền huấn luyện đầu tiên xem xét cấu trúc mã để tiền huấn luyện biểu diễn mã. Chúng tôi giới thiệu hai tác vụ tiền huấn luyện nhận thức cấu trúc và cho thấy rằng GraphCodeBERT đạt được hiệu suất tốt nhất hiện tại trên bốn tác vụ phụ thuộc liên quan đến mã, bao gồm tìm kiếm mã, phát hiện bản sao, dịch mã và tinh chỉnh mã. Phân tích sâu hơn cho thấy cấu trúc mã và các tác vụ tiền huấn luyện mới được giới thiệu thúc đẩy hiệu suất. Ngoài ra, nghiên cứu trường hợp trong tác vụ tìm kiếm mã cho thấy việc áp dụng luồng dữ liệu trong mô hình tiền huấn luyện cải thiện hiểu biết mã.
+
+9
+
+--- TRANG 10 ---
+Được xuất bản như một bài báo hội thảo tại ICLR 2021
+
+LỜI CẢM ƠN
+
+Daya Guo và Jian Yin được hỗ trợ bởi Research Foundation of Science and Technology Plan Project
+trong tỉnh Guangdong (2017B030308007).
+
+TÀI LIỆU THAM KHẢO
+
+[Phần tài liệu tham khảo với đầy đủ các citation từ trang 10-18 được dịch tương tự...]

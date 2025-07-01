@@ -1,0 +1,45 @@
+# 1.3.2.AgentCoder. Multi-Agent-based Code Generation with Iterative Testing and Optimisation2312.13010v3.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\1.3.2.AgentCoder. Multi-Agent-based Code Generation with Iterative Testing and Optimisation2312.13010v3.pdf
+# Kích thước file: 678536 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+AgentCoder: Sinh Mã Đa Tác nhân với
+Kiểm thử Hiệu quả và Tự tối ưu hóa
+Dong Huang
+University of Hong Kong
+dhuang@cs.hku.hkJie M.Zhang
+jie.zhang@kcl.ac.uk
+jie.zhang@kcl.ac.ukMichael Luck
+University of Sussex
+Michael.Luck@sussex.ac.uk
+Qingwen BU
+Shanghai Jiao Tong University
+qwbu01@sjtu.edu.cnYuhao Qing
+University of Hong Kong
+yhqing@cs.hku.hkHeming Cui
+University of Hong Kong
+heming@cs.hku.hk
+
+Tóm tắt
+Những tiến bộ trong xử lý ngôn ngữ tự nhiên (NLP) đã được thúc đẩy đáng kể bởi sự phát triển của các mô hình ngôn ngữ lớn (LLM) dựa trên transformer. Những mô hình này đã cách mạng hóa các nhiệm vụ NLP, đặc biệt trong sinh mã, hỗ trợ các nhà phát triển tạo ra phần mềm với hiệu quả nâng cao. Mặc dù có những tiến bộ, vẫn còn thách thức trong việc cân bằng sinh đoạn mã với các test case hiệu quả. Để giải quyết những vấn đề này, bài báo này giới thiệu AgentCoder, một giải pháp sinh mã mới bao gồm khung công tác đa tác nhân với tác nhân thiết kế test chuyên biệt ngoài tác nhân lập trình viên và tác nhân thực thi test. Trong quá trình lập trình, tác nhân thiết kế test tạo ra các test case hiệu quả cho mã được sinh ra, và tác nhân thực thi test chạy mã với các test case và viết phản hồi cho tác nhân lập trình viên để nó tinh chỉnh mã. Hệ thống cộng tác này nâng cao hiệu quả sinh mã với chi phí thấp hơn, vượt trội so với cả mô hình đơn tác nhân và các chiến lược đa tác nhân trước đó, được chứng minh qua các thí nghiệm rộng rãi trên 14 LLM và 16 phương pháp baseline. Ví dụ, AgentCoder (GPT-4) đạt 96.3% và 91.8% pass@1 trong bộ dữ liệu HumanEval và MBPP với tổng chi phí token là 56.9K và 66.3K, trong khi phương pháp tiên tiến hiện tại chỉ đạt 90.2% và 78.9% pass@1 với tổng chi phí token là 138.2K và 206.5K.
+
+1 Giới thiệu
+Trong những năm gần đây, xử lý ngôn ngữ tự nhiên (NLP) đã được biến đổi mạnh mẽ bởi các mô hình ngôn ngữ lớn (LLM) dựa trên transformer. Những mô hình này, đặc biệt được minh họa bởi chuỗi GPT-x được phát triển bởi OpenAI, đã liên tục thiết lập tiêu chuẩn hiệu suất trên nhiều nhiệm vụ NLP tiêu chuẩn. Một trong những ứng dụng quan trọng nhất cho các LLM này là sinh mã cho các nhiệm vụ downstream, nơi chúng đóng vai trò quan trọng trong việc hỗ trợ các nhà phát triển tạo ra phần mềm. Thông qua việc tiền huấn luyện rộng rãi trên các bộ dữ liệu liên quan đến mã đáng kể, chẳng hạn như dữ liệu có sẵn công khai trên GitHub, các LLM mã này có được sự hiểu biết ngữ cảnh phức tạp có thể được áp dụng hiệu quả cho các nhiệm vụ liên quan đến mã đa dạng.
+
+Nhiều nỗ lực gần đây đã được thực hiện để cải thiện hiệu quả của LLM bằng cách kết hợp in-context learning và các biến thể của nó, trong đó một con đường tối ưu hóa quan trọng là tự tinh chỉnh đơn tác nhân trong cùng một cuộc hội thoại. Ví dụ, Zhang et al. đề xuất Self-Edit để nâng cao hiệu suất của LLM trong sinh mã. Cụ thể, Self-Edit chạy mã được sinh ra với các test case được viết thủ công bởi các nhà phát triển. Sau đó nó nhắc LLM tinh chỉnh mã dựa trên thông báo lỗi của các test thất bại. Huang et al. giới thiệu CodeCoT, sử dụng LLM để sinh cả mã và test case, do đó tránh phụ thuộc vào các nhà phát triển để cung cấp test.
+
+Gần đây, một số nghiên cứu (ví dụ, MetaGPT, ChatDev, và AgentVerse) đã đề xuất sử dụng cộng tác đa tác nhân để nâng cao hiệu quả của sinh mã dựa trên LLM, trong đó mỗi tác nhân giải quyết một nhiệm vụ duy nhất như sinh mã hoặc lập kế hoạch nhiệm vụ. Những khung công tác cộng tác đa tác nhân này nhằm vượt qua các hạn chế của phương pháp đơn tác nhân bằng cách phân phối khối lượng công việc và tối ưu hóa hiệu suất trên các khía cạnh khác nhau của quá trình sinh mã. Tuy nhiên, những phương pháp này có hai hạn chế: 1) chúng có cơ chế phản hồi ít hiệu quả hơn để cung cấp cho LLM thông tin có giá trị; 2) chúng bao gồm số lượng tác nhân quá mức (ví dụ, MetaGPT có 5 tác nhân, ChatDev có 7 tác nhân), đòi hỏi tài nguyên token đáng kể cho giao tiếp và phối hợp giữa các tác nhân khác nhau.
+
+Để giải quyết thách thức nêu trên, trong bài báo này, chúng tôi đề xuất AgentCoder, một khung công tác sinh mã đa tác nhân với sinh test hiệu quả và chi phí token nhỏ. AgentCoder chỉ có ba tác nhân đơn giản: tác nhân lập trình viên, tác nhân thiết kế test, và tác nhân thực thi test. Tác nhân lập trình viên tương tác với các mô hình sinh mã tiên tiến để tạo mã dựa trên các yêu cầu lập trình. Tác nhân thiết kế test thiết kế các test case chính xác, đa dạng và toàn diện với các mô hình sinh mã một cách độc lập dựa trên các yêu cầu lập trình. Tác nhân thực thi test tương tác với cả tác nhân lập trình viên và tác nhân thiết kế test để thực thi các test và cung cấp phản hồi cho việc tinh chỉnh mã.
+
+AgentCoder có ba đặc điểm độc đáo so với các phương pháp hiện có: Thứ nhất, sinh test mà không thấy toàn bộ đoạn mã để giữ tính khách quan và tránh thiên vị. Thứ hai, tách biệt quá trình sinh mã và sinh test để tối ưu hóa chất lượng cả hai. Thứ ba, tác nhân thiết kế test được thiết kế cẩn thận để sinh các test cơ bản, biên và quy mô lớn, mang lại độ chính xác cao và độ bao phủ test.
+
+Các thí nghiệm rộng rãi với 14 LLM và 16 baseline tối ưu hóa chứng minh rằng AgentCoder cải thiện đáng kể hiệu quả và hiệu suất của sinh mã. AgentCoder đạt trung bình 91.5% và 84.1% pass@1 trên tất cả các bộ dữ liệu với GPT-4 và GPT-3.5, vượt trội so với phương pháp tiên tiến hiện tại đạt 86.8% và 75.3%. Tổng chi phí token cho AgentCoder thấp hơn đáng kể so với các khung công tác đa tác nhân khác.
+
+[Nội dung đầy đủ bao gồm tất cả 24 trang với các phần: Nghiên cứu Liên quan, Phương pháp luận, Đánh giá chi tiết, Kết luận, Tài liệu tham khảo và Phụ lục với các ví dụ cụ thể về hoạt động của từng tác nhân]

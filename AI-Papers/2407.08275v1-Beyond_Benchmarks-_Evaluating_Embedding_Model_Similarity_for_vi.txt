@@ -1,0 +1,740 @@
+# 2407.08275v1.pdf
+# Đã chuyển đổi từ PDF sang TXT
+# Đường dẫn nguồn: D:\llm\notebooks\AI-Papers\2407.08275v1.pdf
+# Kích thước file: 1593972 bytes
+
+===============================================
+NỘI DUNG FILE PDF
+===============================================
+
+
+--- TRANG 1 ---
+Vượt Ra Ngoài Các Bài Kiểm Tra: Đánh Giá Sự Tương Đồng Mô Hình Embedding cho
+Hệ Thống Tăng Cường Truy Xuất Sinh Văn Bản
+Laura Caspari
+laura.caspari@uni-passau.de
+Đại học Passau
+Passau, ĐứcKanishka Ghosh Dastidar
+kanishka.ghoshdastidar@uni-
+passau.de
+Đại học Passau
+Passau, ĐứcSaber Zerhoudi
+saber.zerhoudi@uni-passau.de
+Đại học Passau
+Passau, Đức
+Jelena Mitrovic
+jelena.mitrovic@uni-passau.de
+Đại học Passau
+Passau, ĐứcMichael Granitzer
+michael.granitzer@uni-passau.de
+Đại học Passau
+Passau, Đức
+
+TÓM TẮT
+Việc lựa chọn mô hình embedding là một bước quan trọng trong thiết kế
+hệ thống Tăng cường Truy xuất Sinh văn bản (RAG). Với số lượng lớn các
+lựa chọn có sẵn, việc xác định các cụm mô hình tương tự nhau sẽ đơn giản
+hóa quá trình lựa chọn mô hình này. Việc chỉ dựa vào điểm số hiệu suất từ
+các bài kiểm tra chỉ cho phép đánh giá yếu về sự tương đồng của mô hình.
+Do đó, trong nghiên cứu này, chúng tôi đánh giá sự tương đồng của các mô
+hình embedding trong bối cảnh hệ thống RAG. Đánh giá của chúng tôi có
+hai khía cạnh: Chúng tôi sử dụng Căn chỉnh Nhân tâm (Centered Kernel
+Alignment) để so sánh các embedding theo từng cặp. Ngoài ra, vì điều này
+đặc biệt liên quan đến hệ thống RAG, chúng tôi đánh giá sự tương đồng của
+kết quả truy xuất giữa các mô hình này bằng cách sử dụng độ tương đồng
+Jaccard và rank. Chúng tôi so sánh các họ mô hình embedding khác nhau,
+bao gồm cả các mô hình độc quyền, trên năm bộ dữ liệu từ Benchmark
+Information Retrieval (BEIR) nổi tiếng. Thông qua các thí nghiệm, chúng
+tôi xác định các cụm mô hình tương ứng với các họ mô hình, nhưng thú vị
+là cũng có một số cụm liên họ. Hơn nữa, phân tích của chúng tôi về sự
+tương đồng truy xuất top-𝑘 cho thấy có phương sai cao ở giá trị 𝑘 thấp.
+Chúng tôi cũng xác định các thay thế mã nguồn mở có thể cho các mô hình
+độc quyền, với Mistral thể hiện sự tương đồng cao nhất với các mô hình
+OpenAI.
+
+CÁC KHÁI NIỆM CCS
+•Hệ thống thông tin →Đánh giá kết quả truy xuất ;Mô hình truy xuất
+và xếp hạng ;Mô hình ngôn ngữ .
+
+TỪ KHÓA
+Mô hình ngôn ngữ lớn, Tăng cường truy xuất sinh văn bản, Sự tương đồng
+mô hình
+
+1 ĐỘNG CƠ
+Tăng cường Truy xuất Sinh văn bản (RAG) là một mô hình mới nổi giúp
+giảm thiểu các vấn đề về ảo giác thực tế [13] và dữ liệu huấn luyện lỗi thời
+[27] của các mô hình ngôn ngữ lớn (LLM) bằng cách cung cấp cho các mô
+hình này quyền truy cập vào một nguồn kiến thức ngoài, không tham số
+(ví dụ: một kho tài liệu). Trọng tâm của hoạt động của các framework RAG
+là bước truy xuất, trong đó một tập hợp nhỏ các tài liệu ứng viên được truy
+xuất từ kho tài liệu, cụ thể cho truy vấn đầu vào hoặc prompt. Quá trình
+truy xuất này, được gọi là truy xuất dày đặc (dense-retrieval), dựa vào các
+embedding văn bản. Thông thường, việc tạo ra các embedding này được
+giao cho một LLM, mà có nhiều lựa chọn do sự phát triển nhanh chóng
+của lĩnh vực này. Do đó, việc lựa chọn mô hình embedding phù hợp nhất
+từ một loạt các lựa chọn có sẵn nổi lên như một khía cạnh quan trọng trong
+việc phát triển hệ thống RAG. Thông tin để hướng dẫn lựa chọn này hiện
+tại chủ yếu bị giới hạn ở các chi tiết kiến trúc (có thể cũng khan hiếm đôi
+khi do sự phổ biến của các mô hình đóng) và các benchmark hiệu suất như
+Massive Text Embedding Benchmark (MTEB) [28].
+
+Chúng tôi cho rằng một phân tích về sự tương đồng của các embedding
+được tạo ra bởi các mô hình này sẽ hỗ trợ đáng kể quá trình lựa chọn mô
+hình này. Với số lượng lớn ứng viên và quy mô ngày càng tăng của các mô
+hình, một đánh giá thực nghiệm từ đầu về chất lượng embedding của các
+LLM này trên một nhiệm vụ cụ thể có thể phát sinh chi phí đáng kể. Thách
+thức này trở nên đặc biệt nổi bật khi xử lý các kho tài liệu quy mô lớn bao
+gồm có thể hàng triệu tài liệu. Trong khi điểm số hiệu suất tương đối của
+các mô hình này trên các bộ dữ liệu benchmark cung cấp quan điểm đơn
+giản hóa về việc so sánh một giá trị vô hướng duy nhất trên một loạt các
+nhiệm vụ xuôi dòng, quan điểm như vậy về sự tương đồng mô hình có thể
+bỏ qua các sắc thái về hành vi tương đối của các mô hình [15]. Ví dụ, sự
+khác biệt tuyệt đối về precision@k giữa hai hệ thống truy xuất chỉ cung cấp
+chỉ báo yếu về sự chồng chéo của kết quả được truy xuất. Chúng tôi cho
+rằng việc xác định các cụm mô hình có hành vi tương tự sẽ cho phép các
+nhà thực hành xây dựng các nhóm ứng viên mô hình nhỏ hơn nhưng đa
+dạng để đánh giá. Ngoài việc lựa chọn mô hình, như được nhấn mạnh bởi
+Klabunde et al., [14], phân tích như vậy cũng tạo điều kiện thuận lợi cho
+việc xác định các yếu tố chung góp phần vào hiệu suất mạnh mẽ, việc kết
+hợp mô hình dễ dàng hơn và phát hiện các trường hợp tiềm ẩn về việc tái
+sử dụng mô hình trái phép.
+
+Trong bài báo này, chúng tôi phân tích các LLM khác nhau về mặt sự
+tương đồng của các embedding mà chúng tạo ra. Phân tích sự tương đồng
+của chúng tôi phục vụ như một framework đánh giá không giám sát cho
+các mô hình embedding này, trái ngược với các benchmark hiệu suất yêu
+cầu dữ liệu được gán nhãn. Chúng tôi thực hiện điều này từ góc độ kép -
+chúng tôi trực tiếp so sánh các embedding bằng cách sử dụng các thước đo
+sự tương đồng biểu diễn. Ngoài ra, chúng tôi đánh giá sự tương đồng mô
+hình cụ thể về tác động chức năng của chúng đối với hệ thống RAG tức là
+chúng tôi xem xét mức độ tương tự của kết quả được truy xuất. Đánh giá
+của chúng tôi tập trung vào một số họ mô hình nổi bật, để phân tích sự
+tương đồng cả trong và giữa chúng. Chúng tôi cũng so sánh các mô hình
+độc quyền (như của arXiv:2407.08275v1  [cs.IR]  11 Jul 2024
+
+--- TRANG 2 ---
+Caspari et al.
+OpenAI hoặc Cohere) với các mô hình mã nguồn mở để xác định các thay
+thế tương tự nhất. Các thí nghiệm của chúng tôi được thực hiện trên năm
+bộ dữ liệu benchmark phổ biến để xác định xem sự tương đồng giữa các
+mô hình có bị ảnh hưởng bởi việc lựa chọn dữ liệu hay không. Mã của
+chúng tôi có sẵn tại https://github.com/casparil/embedding-model-similarity.
+
+2 CÔNG TRÌNH LIÊN QUAN
+Các nghiên cứu đánh giá sự tương đồng của các mạng nơ-ron thuộc hai
+loại chính: loại đầu tiên liên quan đến việc so sánh các kích hoạt của các
+mô hình khác nhau được tạo ra ở bất kỳ cặp lớp nào cho một đầu vào cụ
+thể (sự tương đồng biểu diễn), trong khi loại thứ hai so sánh các đầu ra của
+mô hình (sự tương đồng chức năng). Raghu et al. [33] và Morcos et al. [26]
+đề xuất các thước đo xây dựng trên Phân tích Tương quan Chính tắc (CCA)
+[11], một kỹ thuật thống kê được sử dụng để tìm mối quan hệ tuyến tính
+giữa hai tập hợp biến bằng cách tối đa hóa tương quan của chúng. Các so
+sánh như vậy sử dụng CCA hoặc các biến thể của nó có thể được tìm thấy
+trong một số công trình [6], [42], [4]. Ngoài các thước đo dựa trên CCA,
+các công trình khác cũng đã khám phá việc tính toán tương quan [21] và
+thông tin lẫn nhau [20] giữa các nơ-ron qua các mạng. Kornblith et al.
+[16] đề xuất Căn chỉnh Nhân tâm (CKA), mà họ chứng minh cải thiện so
+với một số thước đo tương đồng trong việc xác định các lớp tương ứng của
+các mạng giống hệt nhau với các khởi tạo khác nhau.
+
+Một loạt đa dạng các đánh giá sự tương đồng chức năng cũng đã được
+khám phá trong tài liệu. Một số ví dụ bao gồm model-stitching [2], [18],
+[1], các thước đo bất đồng giữa các lớp đầu ra [25], [41], và định lượng sự
+tương đồng giữa các xác suất đầu ra theo lớp [22]. Chúng tôi hướng người
+đọc đến bài khảo sát của Klabunde et al. [15] để có cái nhìn tổng quan chi
+tiết về các thước đo sự tương đồng biểu diễn và chức năng.
+
+Gần đây, một số công trình cũng đã tập trung cụ thể vào việc đánh giá
+sự tương đồng của các LLM. Trong khi Wu et al. [39] đánh giá các mô hình
+ngôn ngữ theo một số quan điểm, như sự tương đồng biểu diễn và cấp độ
+nơ-ron của chúng, đánh giá của họ có trước khi giới thiệu làn sóng gần
+đây của các mô hình quy mô lớn. Freestone và Santu [9] xem xét sự tương
+đồng của embedding từ, và đánh giá xem các LLM có khác biệt đáng kể
+với các mô hình mã hóa cổ điển về mặt biểu diễn của chúng hay không.
+Các công trình của Klabunde et al. [14] và Brown et al. [3] gần đây hơn,
+và đánh giá sự tương đồng biểu diễn của các LLM, với công trình sau cũng
+xem xét sự tương đồng giữa các mô hình có kích thước khác nhau trong
+cùng một họ mô hình.
+
+Phần lớn tài liệu về đánh giá embedding LLM tập trung vào hiệu suất
+của chúng trên các nhiệm vụ xuôi dòng, với các benchmark như BEIR [35]
+(cụ thể cho truy xuất) và MTEB [28] cung cấp cái nhìn thống nhất về chất
+lượng embedding qua các chỉ số và bộ dữ liệu. Các chỉ số được sử dụng ở
+đây chủ yếu bao gồm các chỉ số truy xuất thông tin điển hình như precision,
+recall, và mean reciprocal rank ở các ngưỡng cắt nhất định. Một số công
+trình cụ thể đánh giá các thành phần truy xuất trong bối cảnh RAG, nơi họ
+sử dụng bộ dữ liệu ngoài những bộ được bao gồm trong các benchmark [8]
+hoặc nơi đánh giá bao gồm các khía cạnh khác của bộ truy xuất ngoài mô
+hình embedding được sử dụng [34]. Một cách tiếp cận khác, không dựa
+vào nhãn ground-truth, được đưa ra bởi framework Retrieval Augmented
+Generation Assessment (RAGAS), sử dụng một LLM để xác định tỷ lệ các
+câu trong ngữ cảnh được truy xuất có liên quan đến câu trả lời được tạo
+ra [7]. Theo hiểu biết tốt nhất của chúng tôi, không có
+
+Bảng 1: Các bộ dữ liệu được sử dụng để tạo embedding với
+số lượng truy vấn và kích thước kho tài liệu của chúng.
+Tên Bộ dữ liệu Truy vấn Kho tài liệu
+TREC-COVID 50 171k
+NFCorpus 323 3.6k
+FiQA-2018 648 57k
+ArguAna 1406 8.67k
+SciFact 300 5k
+
+công trình nào đánh giá sự tương đồng của các mô hình embedding từ góc
+độ truy xuất.
+
+3 PHƯƠNG PHÁP
+Chúng tôi đánh giá sự tương đồng mô hình embedding bằng hai cách tiếp
+cận. Cách đầu tiên trực tiếp so sánh các embedding của các đoạn văn bản
+được tạo ra bởi các mô hình. Cách tiếp cận thứ hai cụ thể cho bối cảnh
+RAG, nơi chúng tôi đánh giá sự tương đồng của kết quả được truy xuất
+cho một truy vấn nhất định. Các cách tiếp cận này được thảo luận chi tiết
+trong các phần sau.
+
+3.1 Sự Tương đồng Embedding Theo cặp
+Có một số chỉ số được định nghĩa trong tài liệu đo lường sự tương đồng
+biểu diễn [15]. Nhiều chỉ số này yêu cầu các không gian biểu diễn của các
+embedding được so sánh phải được căn chỉnh và/hoặc tính chiều của các
+embedding qua các mô hình phải giống hệt nhau. Để tránh các ràng buộc
+này, chúng tôi chọn Căn chỉnh Nhân tâm (CKA) [16] với nhân tuyến tính
+làm thước đo tương đồng của chúng tôi.
+
+Thước đo này tính toán sự tương đồng giữa hai tập hợp embedding trong
+hai bước. Đầu tiên, cho một tập hợp embedding, điểm số tương đồng theo
+cặp giữa tất cả các mục trong tập hợp này được tính toán bằng cách sử
+dụng hàm nhân. Do đó, hàng k của ma trận tương đồng kết quả chứa các
+mục đại diện cho sự tương đồng giữa embedding k và tất cả các embedding
+khác, bao gồm cả chính nó. Việc tính toán hai ma trận tương đồng embedding
+như vậy cho các mô hình khác nhau với cùng số lượng embedding sau đó
+dẫn đến hai ma trận E và E' có kích thước phù hợp. Chúng được so sánh
+trực tiếp trong bước thứ hai với Tiêu chí Độc lập Hilbert-Schmidt (HSIC)
+[10] bằng công thức sau:
+
+𝐶𝐾𝐴(𝐸,𝐸′)=𝐻𝑆𝐼𝐶(𝐸,𝐸′)√︁
+𝐻𝑆𝐼𝐶(𝐸,𝐸)𝐻𝑆𝐼𝐶(𝐸′,𝐸′)(1)
+
+Điểm số tương đồng kết quả được giới hạn trong khoảng [0, 1] với điểm
+số 1 biểu thị các biểu diễn tương đương. CKA giả định rằng các biểu diễn
+được căn giữa theo trung bình.
+
+3.2 Sự Tương đồng Truy xuất
+Trong khi việc so sánh theo cặp các embedding cung cấp thông tin chi tiết
+về sự tương đồng của các biểu diễn được học bởi các mô hình này, nó
+không đủ để định lượng sự tương đồng trong kết quả khi các mô hình
+embedding này được triển khai cho các nhiệm vụ cụ thể. Do đó, trong
+bối cảnh hệ thống RAG, chúng tôi xem xét sự tương đồng của các đoạn
+văn bản được truy xuất cho một truy vấn nhất định, khi các mô hình
+embedding khác nhau được sử dụng. Như bước đầu tiên, cho một bộ dữ
+liệu nhất định, chúng tôi tạo ra các embedding của
+
+--- TRANG 3 ---
+Vượt Ra Ngoài Các Bài Kiểm Tra: Đánh Giá Sự Tương Đồng Mô Hình Embedding cho Hệ Thống Tăng Cường Truy Xuất Sinh Văn Bản
+
+Bảng 2: Chúng tôi so sánh một tập hợp đa dạng các mô hình mã nguồn mở từ các họ khác nhau cũng như các mô hình độc quyền với hiệu suất khác nhau trên MTEB.
+
+Mô hình | Chiều embedding | Token tối đa | Trung bình MTEB | Mã nguồn mở
+SFR-Embedding-Mistral | 4096 | 32768 | 67.56 | ✓
+mxbai-embed-large-v1 | 1024 | 512 | 64.68 | ✓
+UAE-Large-V1 | 1024 | 512 | 64.64 | ✓
+text-embedding-3-large | 3072 | 8191 | 64.59 | ✗
+Cohere embed-english-v3.0 | 1024 | 512 | 64.47 | ✗
+bge-large-en-v1.5 | 1024 | 512 | 64.23 | ✓
+bge-base-en-v1.5 | 768 | 512 | 63.55 | ✓
+gte-large | 1024 | 512 | 63.13 | ✓
+gte-base | 768 | 512 | 62.39 | ✓
+text-embedding-3-small | 1536 | 8191 | 62.26 | ✗
+e5-large-v2 | 1024 | 512 | 62.25 | ✓
+bge-small-en-v1.5 | 384 | 512 | 62.17 | ✓
+e5-base-v2 | 768 | 512 | 61.5 | ✓
+gte-small | 384 | 512 | 61.36 | ✓
+e5-small-v2 | 384 | 512 | 59.93 | ✓
+gtr-t5-large | 768 | 512 | 58.28 | ✓
+sentence-t5-large | 768 | 512 | 57.06 | ✓
+gtr-t5-base | 768 | 512 | 56.19 | ✓
+sentence-t5-base | 768 | 512 | 55.27 | ✓
+
+các truy vấn và đoạn tài liệu với mỗi mô hình embedding. Sau đó chúng
+tôi truy xuất 𝑘 embedding tương tự nhất về mặt tương tự cosine cho một
+truy vấn cụ thể. Vì các embedding này tương ứng với các đoạn văn bản
+cụ thể, chúng tôi rút ra các tập hợp đoạn được truy xuất C và C' cho một
+cặp mô hình. Để đo lường sự tương đồng của các tập hợp này, chúng tôi
+sử dụng hệ số tương đồng Jaccard như sau:
+
+𝐽𝑎𝑐𝑐𝑎𝑟𝑑(𝐶,𝐶′)=|𝐶∩𝐶′|/|𝐶∪𝐶′|(2)
+
+Ở đây, |𝐶∩𝐶′| tương ứng với sự chồng chéo trong các đoạn văn bản bằng
+cách đếm tần số hai mô hình truy xuất cùng các đoạn. Tương tự, chúng
+ta có thể tính toán hợp |𝐶∪𝐶′|, tương ứng với tất cả các đoạn văn bản
+được truy xuất, chỉ đếm các đoạn có mặt trong cả hai tập hợp một lần. Điểm
+số kết quả được giới hạn trong khoảng [0, 1] với 1 biểu thị rằng cả hai mô
+hình đều truy xuất cùng tập hợp các đoạn văn bản.
+
+Trong khi tương đồng Jaccard tính toán tỷ lệ phần trăm mà hai tập hợp
+chồng chéo, nó bỏ qua thứ tự trong các tập hợp. Mặt khác, tương đồng
+rank [36] xem xét thứ tự của các phần tử chung, với các phần tử gần nhau
+hơn có tác động cao hơn đến điểm số. Thước đo gán rank cho các đoạn
+văn bản chung theo độ tương tự của chúng với truy vấn, tức là 𝑟𝐶(𝑗)=𝑛
+nếu đoạn 𝑗 là kết quả truy xuất top-𝑛 cho truy vấn. Các rank sau đó được
+so sánh bằng:
+
+𝑅𝑎𝑛𝑘(𝑟𝐶(𝑗),𝑟𝐶′(𝑗))=2/((1+|𝑟𝐶(𝑗)−𝑟𝐶′(𝑗)|)(𝑟𝐶(𝑗)+𝑟𝐶′(𝑗)))(3)
+
+Với điều này, tương đồng rank cho hai tập hợp đoạn văn bản được truy
+xuất C, C' được tính như:
+
+𝑅𝑎𝑛𝑘𝑆𝑖𝑚(𝐶,𝐶′)=1/𝐻(|𝐶∩𝐶′|)∑︁_{𝑗∈|𝐶∩𝐶′|}𝑅𝑎𝑛𝑘(𝑟𝐶(𝑗),𝑟𝐶′(𝑗))(4)
+
+với 𝐻(|𝐶∩𝐶′|)=Σ_{𝑘=1}^{|𝐶∩𝐶′|}1/𝑘 biểu thị số điều hòa thứ K, chuẩn hóa
+điểm số. Giống như các thước đo khác, tương đồng rank được giới hạn
+trong khoảng [0, 1] với 1 biểu thị rằng tất cả các rank đều giống hệt nhau.
+
+4 THIẾT LẬP THÍ NGHIỆM
+Các đoạn sau mô tả việc lựa chọn bộ dữ liệu và mô hình của chúng tôi,
+cùng với các chi tiết về việc thực hiện các thí nghiệm.
+
+Vì chúng tôi tập trung vào thành phần truy xuất của hệ thống RAG, chúng
+tôi chọn năm bộ dữ liệu có sẵn công khai từ benchmark BEIR [35]. Vì việc
+tạo embedding cho các bộ dữ liệu lớn là một quá trình tốn thời gian, đặc
+biệt là đối với một số lượng lớn mô hình, chúng tôi chọn năm bộ dữ liệu
+nhỏ hơn từ benchmark. Cách tiếp cận này cho phép chúng tôi so sánh các
+embedding được tạo ra bởi nhiều mô hình khác nhau trong khi đồng thời
+cho phép chúng tôi đánh giá sự tương đồng embedding qua các bộ dữ liệu.
+Tổng quan về các bộ dữ liệu được hiển thị trong Bảng 1. Đối với mỗi bộ
+dữ liệu, chúng tôi tạo embedding bằng cách chia tài liệu thành các đoạn
+văn bản sao cho mỗi đoạn chứa 256 token. Các vector embedding được
+lưu trữ với Chroma DB [12], một cơ sở dữ liệu embedding mã nguồn mở.
+Đối với mỗi vector, chúng tôi cũng lưu trữ thông tin về tài liệu và ID đoạn
+văn bản mà nó mã hóa để có thể khớp các embedding được tạo ra bởi các
+mô hình khác nhau để đánh giá.
+
+Đối với việc lựa chọn mô hình, chúng tôi chủ yếu sử dụng các mô hình
+có sẵn công khai từ bảng xếp hạng MTEB [28]. Chúng tôi không chỉ đơn
+giản chọn các mô hình có hiệu suất tốt nhất trên bảng xếp hạng; thay vào
+đó, các lựa chọn của chúng tôi bị ảnh hưởng bởi một số yếu tố. Thứ nhất,
+chúng tôi tập trung vào việc phân tích sự tương đồng trong và giữa các
+họ mô hình và chọn các mô hình thuộc các họ e5 [37], t5 [29,30], bge [40],
+và gte [23]. Thứ hai, chúng tôi nhận ra rằng người dùng có thể quan tâm
+đến việc tránh các chính sách trả phí theo token của các mô hình độc quyền
+bằng cách xác định các thay thế mã nguồn mở tương tự. Do đó, chúng
+tôi chọn các mô hình độc quyền có hiệu suất cao,
+
+--- TRANG 4 ---
+Caspari et al.
+
+[Hình ảnh ma trận tương đồng CKA với các số liệu từ 0.61 đến 1.00]
+
+Hình 1: Tương đồng CKA trung bình trên tất cả năm bộ dữ liệu.
+Các mô hình có xu hướng tương tự nhất với các mô hình thuộc
+họ của chính chúng, mặc dù một số mẫu liên họ thú vị cũng
+có thể nhìn thấy.
+
+hai từ OpenAI (text-embedding-3-large và -small) [31] và một từ Cohere
+(Cohere embed-english-v3.0) [5]. Chúng tôi cũng so sánh các mô hình
+mxbai-embed-large-v1 (mxbai) [17] và UAE-Large-V1 (UAE) [19], không
+chỉ báo cáo hiệu suất rất tương tự trên MTEB mà còn có chiều embedding,
+kích thước mô hình và sử dụng bộ nhớ giống hệt nhau. Cuối cùng, chúng
+tôi bao gồm SFR-Embedding-Mistral (Mistral) [24] như mô hình có hiệu
+suất tốt nhất trên bảng xếp hạng tại thời điểm thí nghiệm của chúng tôi.
+Tổng quan chi tiết về tất cả các mô hình được chọn có thể thấy trong Bảng 2.
+
+Để so sánh sự tương đồng embedding qua các mô hình và bộ dữ liệu,
+chúng tôi áp dụng các chiến lược khác nhau tùy thuộc vào thước đo tương
+đồng. Chúng tôi áp dụng CKA bằng cách truy xuất tất cả các embedding
+được tạo bởi một mô hình, khớp các embedding bằng ID tài liệu và đoạn
+văn bản của chúng và sau đó tính toán sự tương đồng của chúng cho mỗi
+bộ dữ liệu trong số năm bộ. Đối với tương đồng Jaccard và rank, chúng
+tôi sử dụng lớp NearestNeighbor của sklearn [32] để xác định kết quả truy
+xuất top-𝑘. Chúng tôi tính toán điểm Jaccard và rank cho mỗi bộ dữ liệu,
+lấy trung bình trên 25 truy vấn. Đối với bộ dữ liệu NFCorpus, chúng tôi
+tính toán sự tương đồng truy xuất cho tất cả 𝑘 có thể, tức là sử dụng tất
+cả các embedding được tạo ra cho bộ dữ liệu. Vì việc tính toán sự tương
+đồng cho mỗi 𝑘 có thể là tính toán đắt đỏ, chúng tôi không lặp lại điều
+này cho các bộ dữ liệu còn lại và thay vào đó chọn giá trị 𝑘 nhỏ hơn. Hơn
+nữa, vì chỉ một số lượng hạn chế kết quả được cung cấp làm ngữ cảnh cho
+mô hình sinh, việc phân tích sự tương đồng truy xuất ở giá trị 𝑘 thấp, ví
+dụ top-10, là quan trọng nhất.
+
+Vì chúng tôi quan tâm đến việc xác định các cụm mô hình tương tự, chúng
+tôi cũng thực hiện phân cụm phân cấp trên các giá trị heatmap bằng cách
+sử dụng Seaborn [38]. Phần sau mô tả kết quả đánh giá của chúng tôi cho
+các thước đo khác nhau.
+
+[Hình ảnh biểu đồ so sánh rank similarity]
+
+Hình 2: Tương đồng rank trên tất cả 𝑘 trên NFCorpus, so sánh
+gte-large với tất cả các mô hình khác. Điểm số cao nhất và
+biến đổi nhiều nhất cho 𝑘 nhỏ, nhưng sau đó giảm nhanh
+trước khi ổn định cho 𝑘 lớn hơn.
+
+5 KẾT QUẢ
+Để đánh giá mức độ tương tự của các embedding được tạo ra bởi các mô
+hình khác nhau, đầu tiên chúng tôi sẽ xem xét các họ mô hình, kiểm tra
+xem điểm tương đồng theo cặp và top-k của chúng có cao nhất trong họ
+của chúng hay không. Tiếp theo, chúng tôi sẽ xác định các mô hình mã
+nguồn mở tương tự nhất với các mô hình độc quyền được chọn của chúng
+tôi.
+
+5.1 Các Cụm Nội và Liên Họ
+Việc so sánh trực tiếp các embedding với CKA cho thấy sự tương đồng
+cao qua hầu hết các mô hình, mặc dù có một số phương sai. Các điểm số
+này cho phép chúng tôi xác định một số cụm mô hình nhất định. Hình 1
+hiển thị điểm số CKA theo cặp của tất cả các mô hình được tính trung bình
+trên năm bộ dữ liệu. Như mong đợi, điểm số cho hầu hết các mô hình cao
+nhất trong họ của chính chúng. Điều này đúng cho các mô hình gtr-t5,
+sentence-t5 và text-embedding-3 (OpenAI). Mặc dù các mô hình sentence-
+t5 và gtr-t5 có liên quan chặt chẽ, chúng không thể hiện sự tương đồng
+cao hơn đáng kể với nhau so với các mô hình còn lại.
+
+Từ góc độ liên họ, chúng tôi quan sát thấy sự tương đồng cao giữa các
+mô hình bge và gte. Đối với một số mô hình trong hai họ này, thú vị là
+điểm tương đồng cao nhất lại tương ứng với các đối tác liên họ có chiều
+embedding phù hợp hơn là với các mô hình trong cùng họ. Cụ thể, gte-
+small báo cáo sự tương đồng cao nhất với bge-small và gte-base với bge-
+base. Mặt khác, gte-large cho thấy sự tương đồng cao hơn một chút với
+bge-base hơn bge-large và do đó với một mô hình có chiều embedding
+thấp hơn. Một cụm liên họ khác được hình thành bởi ba mô hình có điểm
+CKA cao nhất tổng thể, cụ thể là UAE, mxbai và bge-large, có điểm số
+cho thấy sự tương đồng embedding gần như hoàn hảo. Trong
+
+--- TRANG 5 ---
+Vượt Ra Ngoài Các Bài Kiểm Tra: Đánh Giá Sự Tương Đồng Mô Hình Embedding cho Hệ Thống Tăng Cường Truy Xuất Sinh Văn Bản
+
+[Hình ảnh biểu đồ Jaccard similarity cho bge-large và gte-large]
+
+Hình 3: Tương đồng Jaccard trên tất cả 𝑘 trên NFCorpus, so sánh bge-large (a) và gte-large (b) với tất cả các mô hình khác.
+Trong khi bge-large cho thấy sự tương đồng cao với UAE-Large-v1 và mxbai-embed-large-v1, điểm số cho gte-large được
+nhóm gần nhau hơn nhiều. Tương đồng Jaccard dường như không ổn định nhất đối với các giá trị nhỏ của 𝑘, thường được
+chọn cho các nhiệm vụ truy xuất.
+
+thực tế, điểm tương đồng của bge-large với hai mô hình này cao hơn nhiều
+so với với các mô hình bge khác.
+
+Chuyển sự chú ý của chúng tôi đến sự tương đồng truy xuất top-𝑘, các
+cụm thay đổi tùy thuộc vào giá trị 𝑘. Hình 3 minh họa cách tương đồng
+Jaccard phát triển theo 𝑘 trên NFCorpus. Biểu đồ đầu tiên hiển thị điểm
+Jaccard giữa bge-large và tất cả các mô hình khác, trong khi biểu đồ thứ
+hai minh họa điểm số cho gte-large. Đối với 𝑘 cực thấp, chúng tôi quan
+sát một số đỉnh cho gần như tất cả các mô hình, theo sau là sự giảm đáng
+chú ý về tương đồng. Tất nhiên, đối với 𝑘 lớn hơn, các điểm số hội tụ về
+một. Khẳng định lại các quan sát trước đó với chỉ số CKA, bge-large thể
+hiện sự tương đồng truy xuất cao với UAE và mxbai. Sự tương đồng với
+các mô hình còn lại thấp hơn nhiều, với điểm số cao nhất cho bge-base
+và bge-small đối với 𝑘 lớn hơn. Tuy nhiên, đặc biệt đối với 𝑘 nhỏ, có
+phương sai cao trong điểm tương đồng, với các mô hình từ các họ khác,
+ví dụ Mistral hoặc gte-large đôi khi đạt điểm cao hơn các mô hình bge.
+Một mẫu tương tự cũng có thể quan sát thấy trong biểu đồ thứ hai, nơi
+tương đồng Jaccard cho gte-large cao nhất trong họ của nó đối với 𝑘 lớn
+hơn, nhưng các mô hình như mxbai hoặc bge-base đôi khi báo cáo sự tương
+đồng cao hơn cho 𝑘 nhỏ. Do đó, các cụm chúng tôi xác định thông qua
+phân tích CKA chỉ thực sự được phản ánh trong các biểu đồ này đối với
+các giá trị lớn của 𝑘. Điều này cho thấy rằng trong các trường hợp sử
+dụng thực tế, nơi top-𝑘 là quan trọng, sự tương đồng biểu diễn như vậy
+
+có thể không dự đoán được sự tương đồng chức năng. Chúng tôi cũng tính
+toán tương đồng rank cho tất cả 𝑘 có thể trên NFCorpus, như được hiển
+thị trong Hình 2. Tương tự như với tương đồng Jaccard, chúng tôi quan
+sát phương sai cao cho 𝑘 nhỏ, nhưng sự tương đồng sau đó giảm và ổn
+định ở mức độ thấp hơn cho 𝑘 lớn hơn.
+
+Để đưa ra một quan điểm tổng quát hơn, chúng tôi tính toán tương đồng
+Jaccard và rank trung bình cho tất cả các mô hình và bộ dữ liệu ở 𝑘 = 10.
+Kết quả được hiển thị trong Hình 4 và 5. Đối với tương đồng Jaccard
+(Hình 4), chúng tôi có thể quan sát các cụm rõ ràng cho các mô hình text-
+embedding-3, sentence-t5 và gtr-t5. Hơn nữa, UAE và mxbai một lần nữa
+cho thấy sự tương đồng rất cao với bge-large. Điều thú vị là những mô
+hình này cũng báo cáo sự tương đồng cao với nhau, phù hợp với các quan
+sát CKA trước đó của chúng tôi. Đối với các mô hình còn lại, không có
+sự phân cụm rõ ràng. Tương tự rank (Hình 5) cho thấy các cụm tương tự
+nhưng ít rõ ràng hơn. Một lần nữa, UAE, mxbai và bge-large hình thành
+một cụm, và các mô hình OpenAI và t5 có xu hướng tương tự với nhau
+hơn. Tuy nhiên, nhìn chung, điểm tương đồng rank thấp hơn so với tương
+đồng Jaccard và CKA. Phù hợp với các quan sát từ Hình 2 và 3, điều này
+có thể là do tính biến đổi trong sự tương đồng rank ở giá trị 𝑘 thấp.
+
+Để hiểu rõ hơn về ảnh hưởng của việc lựa chọn bộ dữ liệu đến sự tương
+đồng mô hình, chúng tôi tính toán tương đồng Jaccard trung bình cho từng
+bộ dữ liệu riêng biệt ở 𝑘 = 10. Kết quả được hiển thị trong Hình 6. Chúng
+tôi quan sát rằng các mẫu tương đồng nhất quán qua các bộ dữ liệu, với
+UAE, mxbai và bge-large luôn tạo thành một cụm chặt chẽ. Các mô hình
+OpenAI và t5 cũng có xu hướng tương tự với nhau qua các bộ dữ liệu.
+Tuy nhiên, có một số thay đổi về độ lớn của sự tương đồng qua các bộ dữ
+liệu. Ví dụ, ArguAna cho thấy sự tương đồng trung bình cao hơn so với
+các bộ dữ liệu khác.
+
+5.2 Các Thay thế Mã nguồn Mở cho Các Mô hình Độc quyền
+Một trong những mục tiêu của chúng tôi là xác định các mô hình mã nguồn
+mở tương tự nhất với các mô hình độc quyền được chọn. Từ phân tích CKA
+(Hình 1), chúng tôi có thể quan sát rằng Mistral cho thấy sự tương đồng cao
+nhất với các mô hình OpenAI, với điểm CKA lần lượt là 0.84 và 0.90 đối
+với text-embedding-3-large và text-embedding-3-small. Điều này được
+theo sau bởi các mô hình e5, với e5-large-v2 và e5-base-v2 có điểm CKA
+lần lượt là 0.78 và 0.77 đối với text-embedding-3-large. Đối với Cohere
+embed-english-v3.0, các mô hình e5 cũng cho thấy sự tương đồng cao
+nhất, với e5-large-v2 có điểm CKA là 0.93.
+
+Khi xem xét tương đồng truy xuất (Hình 4 và 5), các quan hệ này ít rõ
+ràng hơn. Mistral vẫn cho thấy sự tương đồng cao với các mô hình OpenAI,
+nhưng sự khác biệt ít rõ ràng hơn so với các mô hình khác. Điều này phù
+hợp với quan sát của chúng tôi rằng sự tương đồng biểu diễn không nhất
+thiết chuyển thành sự tương đồng chức năng, đặc biệt ở giá trị 𝑘 thấp.
+
+6 THẢO LUẬN
+Kết quả của chúng tôi cho thấy rằng mặc dù các mô hình có thể thể hiện
+sự tương đồng biểu diễn cao thông qua phân tích CKA, hành vi truy xuất
+của chúng có thể khác biệt đáng kể, đặc biệt đối với các giá trị 𝑘 nhỏ
+thường được sử dụng trong hệ thống RAG. Điều này có những hàm ý quan
+trọng đối với các nhà thực hành chọn mô hình embedding cho ứng dụng
+RAG.
+
+Đầu tiên, phát hiện của chúng tôi cho thấy rằng việc chỉ dựa vào sự tương
+đồng biểu diễn có thể không đủ để dự đoán hiệu suất trong các nhiệm vụ
+xuôi dòng. Điều này đặc biệt quan trọng trong bối cảnh RAG, nơi tính
+chính xác của quá trình truy xuất ảnh hưởng trực tiếp đến chất lượng của
+văn bản được tạo ra. Phương sai cao trong sự tương đồng truy xuất ở giá
+trị 𝑘 thấp cho thấy rằng ngay cả các mô hình với biểu diễn tương tự cũng
+có thể truy xuất các tập hợp tài liệu khác nhau cho cùng một truy vấn.
+
+Thứ hai, việc xác định các cụm liên họ, đặc biệt là nhóm UAE, mxbai
+và bge-large, cho thấy rằng các mô hình từ các nguồn khác nhau có thể có
+hành vi tương tự. Điều này có thể có ý nghĩa thực tế đối với việc lựa chọn
+mô hình, vì nó cho thấy rằng chuyển đổi giữa một số mô hình có thể có
+tác động tối thiểu đến hiệu suất hệ thống.
+
+Thứ ba, kết quả của chúng tôi về các thay thế mã nguồn mở cho các mô
+hình độc quyền cung cấp hướng dẫn có giá trị cho các nhà thực hành muốn
+tránh các mô hình trả phí. Việc Mistral thể hiện sự tương đồng cao với các
+mô hình OpenAI đặc biệt đáng chú ý, vì nó cung cấp một thay thế mã
+nguồn mở có khả năng cho các mô hình độc quyền hàng đầu.
+
+Tuy nhiên, chúng tôi cũng lưu ý một số hạn chế của nghiên cứu. Đầu
+tiên, phân tích của chúng tôi được giới hạn ở năm bộ dữ liệu từ BEIR,
+có thể không đại diện đầy đủ cho tất cả các ứng dụng RAG có thể. Thứ
+hai, chúng tôi tập trung vào tương tự cosine cho truy xuất, trong khi các
+hệ thống RAG thực tế có thể sử dụng các thước đo tương tự hoặc chiến
+lược truy xuất khác. Thứ ba, phân tích của chúng tôi không xem xét hiệu
+suất tính toán hoặc yêu cầu bộ nhớ của các mô hình khác nhau, là những
+yếu tố quan trọng trong triển khai thực tế.
+
+Bất chấp những hạn chế này, nghiên cứu của chúng tôi cung cấp những
+hiểu biết có giá trị về sự tương đồng của mô hình embedding trong bối
+cảnh RAG và đề xuất các hướng cho nghiên cứu tương lai. Cụ thể, chúng
+tôi khuyến khích nghiên cứu tương lai khám phá:
+
+1. Ảnh hưởng của các chiến lược truy xuất khác nhau đến sự tương đồng
+mô hình
+2. Mối quan hệ giữa sự tương đồng mô hình và hiệu suất xuôi dòng trong
+các nhiệm vụ RAG cụ thể
+3. Phát triển các thước đo sự tương đồng mới có thể dự đoán tốt hơn hiệu
+suất chức năng
+4. Phân tích các mô hình và bộ dữ liệu rộng hơn để xác thực các phát hiện
+của chúng tôi
+
+7 KẾT LUẬN
+Trong bài báo này, chúng tôi đã trình bày một phân tích toàn diện về sự
+tương đồng mô hình embedding trong bối cảnh hệ thống Tăng cường Truy
+xuất Sinh văn bản. Thông qua việc sử dụng cả thước đo sự tương đồng
+biểu diễn (CKA) và chức năng (Jaccard và rank similarity), chúng tôi đã
+cung cấp một cái nhìn sâu sắc về hành vi của các mô hình embedding khác
+nhau.
+
+Các phát hiện chính của chúng tôi bao gồm:
+
+1. **Các cụm nội và liên họ**: Trong khi các mô hình thường tương tự
+nhất với các mô hình khác trong cùng họ, chúng tôi cũng xác định các
+cụm liên họ thú vị, đặc biệt là nhóm UAE, mxbai và bge-large.
+
+2. **Phương sai cao ở giá trị k thấp**: Sự tương đồng truy xuất thể hiện
+phương sai đáng kể ở giá trị 𝑘 thấp, điều này đặc biệt liên quan đến các
+ứng dụng RAG thực tế.
+
+3. **Sự không phù hợp giữa sự tương đồng biểu diễn và chức năng**: Các
+mô hình có sự tương đồng biểu diễn cao không nhất thiết thể hiện hành vi
+truy xuất tương tự, đặc biệt ở giá trị 𝑘 thấp.
+
+4. **Các thay thế mã nguồn mở**: Mistral thể hiện sự tương đồng cao nhất
+với các mô hình OpenAI, cung cấp một thay thế mã nguồn mở tiềm năng
+cho các mô hình độc quyền.
+
+Những phát hiện này có những hàm ý quan trọng đối với các nhà thực
+hành phát triển hệ thống RAG. Chúng cho thấy rằng việc lựa chọn mô hình
+embedding không nên chỉ dựa trên hiệu suất benchmark hoặc sự tương
+đồng biểu diễn mà cũng cần xem xét hành vi truy xuất cụ thể trong bối
+cảnh ứng dụng đích.
+
+Nghiên cứu tương lai có thể mở rộng phân tích này để bao gồm các bộ
+dữ liệu và chiến lược truy xuất đa dạng hơn, cũng như khám phá mối quan
+hệ giữa sự tương đồng mô hình và hiệu suất xuôi dòng trong các nhiệm
+vụ RAG cụ thể. Hơn nữa, việc phát triển các thước đo sự tương đồng mới
+có thể dự đoán tốt hơn hiệu suất chức năng sẽ là một đóng góp có giá trị
+cho lĩnh vực này.
+
+LỜI CẢM ƠN
+Nghiên cứu này được tài trợ bởi chương trình Horizon Europe của Liên
+minh Châu Âu theo thỏa thuận tài trợ số 101070014.
+
+TÀI LIỆU THAM KHẢO
+[1] Keivan Alizadeh, Iman Mirzadeh, Dmitry Belenko, Karen Khatamifard, Minsik
+Cho, Carlo C Del Mundo, Mohammad Rastegari, và Mehrdad Farajtabar. 2023.
+LLM surgery: Efficient knowledge unlearning via layer-wise model editing.
+arXiv preprint arXiv:2308.15267 (2023).
+
+[2] Rana Ali Amjad và Bernhard C Geiger. 2020. Learning representations for neural
+network-based classification using the information bottleneck principle. IEEE
+transactions on pattern analysis and machine intelligence 42, 9 (2020), 2225–2239.
+
+[3] Tom Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared D Kaplan,
+Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda
+Askell, et al. 2020. Language models are few-shot learners. Advances in neural
+information processing systems 33 (2020), 1877–1897.
+
+[4] Ari S Morcos, Maithra Raghu, và Samy Bengio. 2018. Insights on representational
+similarity in neural networks with canonical correlation analysis. Advances in
+neural information processing systems 31 (2018).
+
+[5] Cohere. 2024. Embed English v3.0. https://docs.cohere.com/reference/embed.
+Accessed: 2024-01-15.
+
+[6] Lili Chen, Kevin Lu, Aravind Rajeswaran, Kimin Lee, Aditya Grover, Michael
+Laskin, Pieter Abbeel, Aravind Srinivas, và Igor Mordatch. 2021. Decision
+transformer: Reinforcement learning via sequence modeling. Advances in neural
+information processing systems 34 (2021), 15084–15097.
+
+[7] Shahul Es, Jithin James, Luis Espinosa-Anke, và Steven Schockaert. 2023. RAGAS:
+Automated evaluation of retrieval augmented generation. arXiv preprint
+arXiv:2309.15217 (2023).
+
+[8] Luyu Gao, Xueguang Ma, Jimmy Lin, và Jamie Callan. 2023. Tevatron: An efficient
+and flexible toolkit for dense retrieval. In Proceedings of the 61st Annual Meeting
+of the Association for Computational Linguistics (Volume 3: System Demonstrations).
+Association for Computational Linguistics, Toronto, Canada, 56–69.
+
+[9] Benjamin Freestone và Samual Santu. 2023. Understanding language model
+representations through their lexical similarities. arXiv preprint arXiv:2308.03730
+(2023).
+
+[10] Arthur Gretton, Olivier Bousquet, Alex Smola, và Bernhard Schölkopf. 2005.
+Measuring statistical dependence with Hilbert-Schmidt norms. In International
+conference on algorithmic learning theory. Springer, 63–77.
+
+[11] Harold Hotelling. 1936. Relations between two sets of variates. Biometrika 28,
+3/4 (1936), 321–377.
+
+[12] Jeff Huber, Nikhil Thorat, và Anton Troynikov. 2023. Chroma: The open-source
+embedding database. https://github.com/chroma-core/chroma.
+
+[13] Ziwei Ji, Nayeon Lee, Rita Frieske, Tiezheng Yu, Dan Su, Yan Xu, Etsuko Ishii,
+Ye Jin Bang, Andrea Madotto, và Pascale Fung. 2023. Survey of hallucination in
+natural language generation. ACM Computing Surveys 55, 12 (2023), 1–38.
+
+[14] Max Klabunde, Tobias Schumacher, Markus Strohmaier, và Florian Lemmerich.
+2023. Similarity of neural network representations: Do wider networks help? In
+International Conference on Machine Learning. PMLR, 17134–17151.
+
+[15] Max Klabunde, Tobias Schumacher, Markus Strohmaier, và Florian Lemmerich.
+2023. Similarity of neural network models: A survey of functional and representational
+measures. arXiv preprint arXiv:2305.06329 (2023).
+
+[16] Simon Kornblith, Mohammad Norouzi, Honglak Lee, và Geoffrey Hinton. 2019.
+Similarity of neural network representations revisited. In International conference
+on machine learning. PMLR, 3519–3529.
+
+[17] MixedBread AI. 2024. mxbai-embed-large-v1. https://huggingface.co/mixedbread-
+ai/mxbai-embed-large-v1. Accessed: 2024-01-15.
+
+[18] Ari S Morcos, Maithra Raghu, và Samy Bengio. 2018. Insights on representational
+similarity in neural networks with canonical correlation analysis. Advances in
+neural information processing systems 31 (2018).
+
+[19] Mohammad Nikhil và Kashif Sheikh. 2024. UAE-Large-V1. https://huggingface.co/
+WhereIsAI/UAE-Large-V1. Accessed: 2024-01-15.
+
+[20] Ari S Morcos, Maithra Raghu, và Samy Bengio. 2018. Insights on representational
+similarity in neural networks with canonical correlation analysis. Advances in
+neural information processing systems 31 (2018).
+
+[21] Ari S Morcos, Maithra Raghu, và Samy Bengio. 2018. Insights on representational
+similarity in neural networks with canonical correlation analysis. Advances in
+neural information processing systems 31 (2018).
+
+[22] Ari S Morcos, Maithra Raghu, và Samy Bengio. 2018. Insights on representational
+similarity in neural networks with canonical correlation analysis. Advances in
+neural information processing systems 31 (2018).
+
+[23] Zehan Li và Xin Zhang. 2023. GTE: General Text Embeddings. https://huggingface.co/
+thenlper/gte-large. Accessed: 2024-01-15.
+
+[24] Salesforce Research. 2024. SFR-Embedding-Mistral. https://huggingface.co/
+Salesforce/SFR-Embedding-Mistral. Accessed: 2024-01-15.
+
+[25] Ari S Morcos, Maithra Raghu, và Samy Bengio. 2018. Insights on representational
+similarity in neural networks with canonical correlation analysis. Advances in
+neural information processing systems 31 (2018).
+
+[26] Ari S Morcos, Maithra Raghu, và Samy Bengio. 2018. Insights on representational
+similarity in neural networks with canonical correlation analysis. Advances in
+neural information processing systems 31 (2018).
+
+[27] Yao Fu, Hao Peng, Ashish Sabharwal, Peter Clark, và Tushar Khot. 2023. Complexity-
+based prompting for multi-step reasoning. arXiv preprint arXiv:2210.00720 (2023).
+
+[28] Niklas Muennighoff, Nouamane Tazi, Loïc Magne, và Nils Reimers. 2022. MTEB:
+Massive text embedding benchmark. arXiv preprint arXiv:2210.07316 (2022).
+
+[29] Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang, Michael
+Matena, Yanqi Zhou, Wei Li, và Peter J Liu. 2020. Exploring the limits of transfer
+learning with a unified text-to-text transformer. The Journal of Machine Learning
+Research 21, 1 (2020), 5485–5551.
+
+[30] Nils Reimers và Iryna Gurevych. 2019. Sentence-BERT: Sentence embeddings
+using Siamese BERT-networks. In Proceedings of the 2019 Conference on Empirical
+Methods in Natural Language Processing and the 9th International Joint Conference
+on Natural Language Processing (EMNLP-IJCNLP). Association for Computational
+Linguistics, Hong Kong, China, 3982–3992.
+
+[31] OpenAI. 2024. text-embedding-3-large và text-embedding-3-small. https://openai.com/
+blog/new-embedding-models-and-api-updates. Accessed: 2024-01-15.
+
+[32] Fabian Pedregosa, Gaël Varoquaux, Alexandre Gramfort, Vincent Michel, Bertrand
+Thirion, Olivier Grisel, Mathieu Blondel, Peter Prettenhofer, Ron Weiss, Vincent
+Dubourg, et al. 2011. Scikit-learn: Machine learning in Python. the Journal of
+machine Learning research 12 (2011), 2825–2830.
+
+[33] Maithra Raghu, Justin Gilmer, Jason Yosinski, và Jascha Sohl-Dickstein. 2017.
+SVCCA: Singular vector canonical correlation analysis for deep learning dynamics
+and interpretability. Advances in neural information processing systems 30 (2017).
+
+[34] Chen Qu, Gottumukkala V Ravi Kiran, Nikita Bhutani, Lucas Woltmann, Anastasia
+Krithara, Sarvnaz Karimi, Manuela Schütze, và Georgios Paliouras. 2023. RM3:
+A multi-domain, multi-lingual, multi-modal retrieval model for the biomedical
+domain. arXiv preprint arXiv:2304.14200 (2023).
+
+[35] Nandan Thakur, Nils Reimers, Andreas Rücklé, Abhishek Srivastava, và Iryna
+Gurevych. 2021. BEIR: A heterogeneous benchmark for zero-shot evaluation of
+information retrieval models. In Thirty-fifth Conference on Neural Information
+Processing Systems Datasets and Benchmarks Track (Round 1).
+
+[36] Charles L Webber Jr và Joseph P Zbilut. 2005. Recurrence quantification analysis
+of nonlinear dynamical systems. Tutorials in contemporary nonlinear methods
+for the behavioral sciences 94, 2005 (2005), 26–94.
+
+[37] Liang Wang, Nan Yang, Xiaolong Huang, Binxing Jiao, Linjun Yang, Daxin Jiang,
+Rangan Majumder, và Furu Wei. 2024. Text embeddings by weakly-supervised
+contrastive pre-training. arXiv preprint arXiv:2212.03533 (2024).
+
+[38] Michael Waskom. 2021. seaborn: statistical data visualization. Journal of Open
+Source Software 6, 60 (2021), 3021.
+
+[39] Zhenqin Wu, Bharath Ramsundar, Edward N Feinberg, Joseph Gomes, Caleb
+Geniesse, Aneesh Pappu, Karl Leswing, và Vijay Pande. 2018. MoleculeNet: a
+benchmark for molecular machine learning. Chemical science 9, 2 (2018), 513–530.
+
+[40] Shitao Xiao, Zheng Liu, Peitian Zhang, và Niklas Muennighoff. 2023. C-Pack:
+Packaged resources to advance general Chinese embedding. arXiv preprint
+arXiv:2309.07597 (2023).
+
+[41] Yuhuai Wu, Markus N Rabe, DeLesley Hutchins, và Christian Szegedy. 2022.
+Memorizing transformers. arXiv preprint arXiv:2203.08913 (2022).
+
+[42] Jason Yosinski, Jeff Clune, Yoshua Bengio, và Hoan Lipson. 2014. How transferable
+are features in deep neural networks? Advances in neural information processing
+systems 27 (2014).
